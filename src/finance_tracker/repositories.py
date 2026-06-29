@@ -38,6 +38,27 @@ class TransactionRepository:
             raise TransactionNotFoundError(f"Transaction {transaction_id} was not found.")
         return self._from_row(row)
 
+    def update(self, transaction_id: int, transaction: Transaction) -> Transaction:
+        cursor = self.connection.execute(
+            """
+            UPDATE transactions
+            SET type = ?, amount = ?, category = ?, description = ?, date = ?
+            WHERE id = ?
+            """,
+            (
+                transaction.type.value,
+                str(transaction.amount),
+                transaction.category,
+                transaction.description,
+                transaction.date.isoformat(),
+                transaction_id,
+            ),
+        )
+        self.connection.commit()
+        if cursor.rowcount == 0:
+            raise TransactionNotFoundError(f"Transaction {transaction_id} was not found.")
+        return self.get(transaction_id)
+
     def list(self, filters: TransactionFilters | None = None) -> list[Transaction]:
         filters = filters or TransactionFilters()
         clauses: list[str] = []

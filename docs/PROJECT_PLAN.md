@@ -47,6 +47,7 @@ Supported commands:
 
 - `init`: create the database and schema.
 - `add`: add an income or expense.
+- `edit`: update selected fields on an existing transaction.
 - `list`: list transactions with optional filters.
 - `delete`: remove a transaction by ID.
 - `summary`: print monthly totals.
@@ -76,6 +77,10 @@ Invalid data rows are skipped during import and reported to the user. Missing re
 6. Add CSV import/export.
 7. Add monthly reports and chart output.
 8. Add tests and README polish.
+
+## Next Development Direction
+
+The project should stay CLI-first for the next iteration. A web interface would be a meaningful scope change because it would add routing, browser UI, packaging, and likely a second application boundary. Before taking that on, the better portfolio step is to deepen the local CLI with practical finance features such as budgets, recurring transaction templates, richer report filters, or category summaries.
 
 ## Testing Strategy
 

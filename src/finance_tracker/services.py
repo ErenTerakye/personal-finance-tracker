@@ -34,6 +34,31 @@ class TransactionService:
         with connect(self.db_path) as connection:
             return TransactionRepository(connection).add(transaction)
 
+    def edit_transaction(
+        self,
+        transaction_id: int,
+        transaction_type: str | None = None,
+        amount: str | None = None,
+        category: str | None = None,
+        description: str | None = None,
+        transaction_date: str | None = None,
+    ) -> Transaction:
+        with connect(self.db_path) as connection:
+            repository = TransactionRepository(connection)
+            current = repository.get(transaction_id)
+            updated = Transaction.create(
+                transaction_type=(
+                    transaction_type if transaction_type is not None else current.type.value
+                ),
+                amount=amount if amount is not None else current.amount,
+                category=category if category is not None else current.category,
+                description=description if description is not None else current.description,
+                transaction_date=(
+                    transaction_date if transaction_date is not None else current.date
+                ),
+            )
+            return repository.update(transaction_id, updated)
+
     def list_transactions(
         self,
         month: int | None = None,

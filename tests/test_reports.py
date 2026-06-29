@@ -55,6 +55,48 @@ def test_cli_smoke_flow(tmp_path):
     assert "Expenses:     $45.90" in summary_result.output
 
 
+def test_cli_edit_updates_transaction(tmp_path):
+    runner = CliRunner()
+    db_path = tmp_path / "finance.sqlite3"
+
+    add_result = runner.invoke(
+        app,
+        [
+            "add",
+            "expense",
+            "45.90",
+            "--category",
+            "Food",
+            "--description",
+            "Groceries",
+            "--date",
+            "2026-06-12",
+            "--db-path",
+            str(db_path),
+        ],
+    )
+    edit_result = runner.invoke(
+        app,
+        [
+            "edit",
+            "1",
+            "--amount",
+            "52.25",
+            "--category",
+            "Household",
+            "--db-path",
+            str(db_path),
+        ],
+    )
+    list_result = runner.invoke(app, ["list", "--db-path", str(db_path)])
+
+    assert add_result.exit_code == 0
+    assert edit_result.exit_code == 0
+    assert "Updated #1: expense $52.25 in Household" in edit_result.output
+    assert "Household" in list_result.output
+    assert "$52.25" in list_result.output
+
+
 def test_save_monthly_chart_creates_png(tmp_path):
     service = TransactionService(tmp_path / "finance.sqlite3")
     service.add_transaction("income", "3000", "Salary", "Paycheck", "2026-06-01")

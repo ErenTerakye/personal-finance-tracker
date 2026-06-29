@@ -4,7 +4,7 @@ A Python CLI application for tracking income and expenses using SQLite, CSV proc
 
 ## Highlights
 
-- Add, list, delete, import, and export financial transactions.
+- Add, edit, list, delete, import, and export financial transactions.
 - Store records locally in SQLite.
 - Generate monthly income, expense, net savings, and category reports.
 - Save optional PNG charts for monthly reports.
@@ -33,6 +33,7 @@ finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png
 ```bash
 finance-tracker add income 2500 --category Salary --description "June salary" --date 2026-06-01
 finance-tracker add expense 45.90 --category Food --description "Groceries" --date 2026-06-12
+finance-tracker edit 2 --amount 52.25 --category Household
 finance-tracker list --month 6 --year 2026
 finance-tracker export-csv exports/transactions.csv
 finance-tracker delete 1

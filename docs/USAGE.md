@@ -29,6 +29,15 @@ finance-tracker add income 2500 --category Salary --description "June salary" --
 finance-tracker add expense 45.90 --category Food --description "Groceries" --date 2026-06-12
 ```
 
+## Edit Transactions
+
+Update only the fields that need to change:
+
+```bash
+finance-tracker edit 2 --amount 52.25 --category Household
+finance-tracker edit 2 --type income --description "Reclassified refund" --date 2026-06-13
+```
+
 ## List Transactions
 
 ```bash

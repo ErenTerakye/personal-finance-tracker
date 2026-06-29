@@ -50,3 +50,30 @@ def test_delete_transaction(tmp_path):
     assert service.count_transactions() == 0
     with pytest.raises(TransactionNotFoundError):
         service.delete_transaction(transaction.id)
+
+
+def test_edit_transaction_updates_selected_fields(tmp_path):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+    transaction = service.add_transaction("expense", "15", "Food", "Coffee", "2026-06-02")
+
+    updated = service.edit_transaction(
+        transaction.id,
+        amount="18.50",
+        category="Dining",
+        description="Breakfast",
+    )
+
+    assert updated.id == transaction.id
+    assert updated.amount == Decimal("18.50")
+    assert updated.category == "Dining"
+    assert updated.description == "Breakfast"
+    assert updated.type == transaction.type
+    assert updated.date == transaction.date
+
+
+def test_edit_transaction_validates_updates(tmp_path):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+    transaction = service.add_transaction("expense", "15", "Food", "Coffee", "2026-06-02")
+
+    with pytest.raises(ValidationError, match="greater than zero"):
+        service.edit_transaction(transaction.id, amount="-1")

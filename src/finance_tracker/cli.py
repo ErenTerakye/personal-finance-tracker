@@ -125,6 +125,50 @@ def delete(
 
 
 @app.command()
+def edit(
+    transaction_id: Annotated[int, typer.Argument(help="Transaction ID to edit")],
+    transaction_type: Annotated[
+        str | None,
+        typer.Option("--type", "-t", help="Set transaction type to income or expense"),
+    ] = None,
+    amount: Annotated[
+        str | None,
+        typer.Option("--amount", "-a", help="Set positive transaction amount"),
+    ] = None,
+    category: Annotated[
+        str | None,
+        typer.Option("--category", "-c", help="Set transaction category"),
+    ] = None,
+    description: Annotated[
+        str | None,
+        typer.Option("--description", "-d", help="Set transaction note"),
+    ] = None,
+    transaction_date: Annotated[
+        str | None,
+        typer.Option("--date", help="Set transaction date in YYYY-MM-DD format"),
+    ] = None,
+    db_path: DbPathOption = None,
+) -> None:
+    """Edit fields on an existing transaction."""
+    try:
+        transaction = _service(db_path).edit_transaction(
+            transaction_id=transaction_id,
+            transaction_type=transaction_type,
+            amount=amount,
+            category=category,
+            description=description,
+            transaction_date=transaction_date,
+        )
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+
+    typer.echo(
+        f"Updated #{transaction.id}: {transaction.type.value} {format_money(transaction.amount)} "
+        f"in {transaction.category} on {transaction.date.isoformat()}"
+    )
+
+
+@app.command()
 def summary(
     month: Annotated[int, typer.Option("--month", "-m", help="Report month 1-12")],
     year: Annotated[int, typer.Option("--year", "-y", help="Report year")],
