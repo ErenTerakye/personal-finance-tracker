@@ -206,6 +206,13 @@ tempCodeRunnerFile.py
 # Ruff stuff:
 .ruff_cache/
 
+# Personal Finance Tracker local outputs
+data/
+reports/
+exports/
+*.sqlite3
+*.sqlite3-journal
+
 # PyPI configuration file
 .pypirc
 
@@ -216,3 +223,21 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Agent custom instructions
+AGENTS.md
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE settings
+.vscode/
+.idea/
+

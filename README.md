@@ -1,2 +1,74 @@
-# personal-finance-tracker
+# Personal Finance Tracker
+
 A Python CLI application for tracking income and expenses using SQLite, CSV processing, OOP, and data visualization.
+
+## Highlights
+
+- Add, list, delete, import, and export financial transactions.
+- Store records locally in SQLite.
+- Generate monthly income, expense, net savings, and category reports.
+- Save optional PNG charts for monthly reports.
+- Use a clean `src/` package layout with Typer, pytest, and Ruff.
+
+## Install
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+```
+
+## Quick Start
+
+```bash
+finance-tracker init
+finance-tracker import-csv examples/sample_transactions.csv
+finance-tracker list
+finance-tracker summary --month 6 --year 2026
+finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png
+```
+
+## Common Commands
+
+```bash
+finance-tracker add income 2500 --category Salary --description "June salary" --date 2026-06-01
+finance-tracker add expense 45.90 --category Food --description "Groceries" --date 2026-06-12
+finance-tracker list --month 6 --year 2026
+finance-tracker export-csv exports/transactions.csv
+finance-tracker delete 1
+```
+
+The default database path is `./data/finance_tracker.sqlite3`. Override it with `--db-path` or the `FINANCE_TRACKER_DB` environment variable.
+
+## CSV Format
+
+Import and export use:
+
+```csv
+type,amount,category,description,date
+income,3200.00,Salary,June salary,2026-06-01
+expense,45.90,Food,Groceries,2026-06-12
+```
+
+## Project Structure
+
+```text
+src/finance_tracker/
+  cli.py            # Typer commands
+  models.py         # Domain objects and validation
+  services.py       # Use-case coordination
+  database.py       # SQLite setup
+  repositories.py   # SQL queries
+  csv_io.py         # CSV import/export
+  reports.py        # Monthly report calculations
+  charts.py         # PNG chart generation
+```
+
+## Development
+
+```bash
+python -m pytest
+python -m ruff check .
+```
+
+See [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md), [docs/USAGE.md](docs/USAGE.md), and [AGENTS.md](AGENTS.md) for deeper project notes.
