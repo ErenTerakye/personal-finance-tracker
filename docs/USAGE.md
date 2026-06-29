@@ -58,6 +58,22 @@ finance-tracker summary --month 6 --year 2026
 finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png
 ```
 
+## Multi-Month Trends
+
+Print a six-month trend report ending in June 2026:
+
+```bash
+finance-tracker trends --end-month 6 --end-year 2026
+```
+
+Choose a custom period and save a PNG chart:
+
+```bash
+finance-tracker trends --months 3 --end-month 6 --end-year 2026 --chart reports/trends.png
+```
+
+Trend reports include monthly income, expenses, net savings, savings rate, transaction counts, and top expense categories across the selected period.
+
 ## Budgets
 
 Set or update a monthly category budget:

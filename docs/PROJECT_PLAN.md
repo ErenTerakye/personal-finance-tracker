@@ -16,7 +16,7 @@ The application uses a layered structure:
 - `repositories.py` owns SQL queries and maps database rows into domain objects.
 - `database.py` owns SQLite connection setup and schema initialization.
 - `csv_io.py` owns portable CSV import/export behavior.
-- `reports.py` owns monthly report calculations and text formatting.
+- `reports.py` owns monthly and trend report calculations and text formatting.
 - `charts.py` owns optional PNG chart generation with matplotlib.
 
 SQL should stay in repository/database modules. Business validation should stay in models/services. CLI commands should stay thin and user-facing.
@@ -67,6 +67,7 @@ Supported commands:
 - `budget-status`: compare monthly category budgets with actual expenses.
 - `summary`: print monthly totals.
 - `report`: print monthly totals and optionally save a PNG chart.
+- `trends`: print multi-month trend totals and optionally save a PNG chart.
 - `import-csv`: import transactions from CSV.
 - `export-csv`: export transactions to CSV.
 
@@ -95,9 +96,9 @@ Invalid data rows are skipped during import and reported to the user. Missing re
 
 ## Current Development Direction
 
-The project should stay CLI-first for the next iteration. A web interface would be a meaningful scope change because it would add routing, browser UI, packaging, and likely a second application boundary. The current pre-web milestone is monthly category budgets: users can set category limits for a specific month, list or delete those budgets, and compare them to actual expenses.
+The project should stay CLI-first for the next iteration. A web interface would be a meaningful scope change because it would add routing, browser UI, packaging, and likely a second application boundary. The current pre-web milestone is portfolio polish: monthly category budgets are in place, and multi-month trends provide a reusable reporting layer that can later feed a dashboard.
 
-Future CLI-first improvements can build from this foundation with recurring transaction templates, richer report filters, or trend summaries.
+Future CLI-first improvements can build from this foundation with recurring transaction templates, budget import/export, or richer category analysis.
 
 ## Testing Strategy
 
@@ -109,5 +110,6 @@ Use pytest with temporary SQLite databases. Cover:
 - CSV import/export round trips.
 - Monthly budget create/update/delete flows.
 - Budget status calculations by category.
-- Monthly report calculations.
+- Monthly and trend report calculations.
+- Chart output for monthly and trend reports.
 - CLI smoke flows through Typer's test runner.

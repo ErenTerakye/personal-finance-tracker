@@ -6,12 +6,18 @@ from typing import Annotated
 
 import typer
 
-from finance_tracker.charts import save_monthly_chart
+from finance_tracker.charts import save_monthly_chart, save_trend_chart
 from finance_tracker.config import resolve_db_path
 from finance_tracker.csv_io import export_transactions_csv, import_transactions_csv
 from finance_tracker.database import initialize_database
 from finance_tracker.exceptions import CsvFormatError, FinanceTrackerError
-from finance_tracker.reports import build_monthly_report, format_money, format_monthly_report
+from finance_tracker.reports import (
+    build_monthly_report,
+    build_trend_report,
+    format_money,
+    format_monthly_report,
+    format_trend_report,
+)
 from finance_tracker.services import BudgetService, BudgetStatus, TransactionService
 
 app = typer.Typer(help="Track income and expenses from the command line.")
@@ -307,6 +313,32 @@ def report(
     typer.echo(format_monthly_report(monthly_report))
     if chart is not None:
         chart_path = save_monthly_chart(monthly_report, chart)
+        typer.echo(f"\nSaved chart to {chart_path}")
+
+
+@app.command()
+def trends(
+    months: Annotated[int, typer.Option("--months", help="Number of months to include")] = 6,
+    end_month: Annotated[int, typer.Option("--end-month", help="Final month 1-12")] = ...,
+    end_year: Annotated[int, typer.Option("--end-year", help="Final year")] = ...,
+    chart: Annotated[Path | None, typer.Option("--chart", help="Optional PNG output path")] = None,
+    db_path: DbPathOption = None,
+) -> None:
+    """Print a multi-month financial trend report."""
+    try:
+        transactions = _service(db_path).list_transactions()
+        trend_report = build_trend_report(
+            transactions=transactions,
+            months=months,
+            end_month=end_month,
+            end_year=end_year,
+        )
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+
+    typer.echo(format_trend_report(trend_report))
+    if chart is not None:
+        chart_path = save_trend_chart(trend_report, chart)
         typer.echo(f"\nSaved chart to {chart_path}")
 
 
