@@ -8,7 +8,12 @@ import typer
 
 from finance_tracker.charts import save_monthly_chart, save_trend_chart
 from finance_tracker.config import resolve_db_path
-from finance_tracker.csv_io import export_transactions_csv, import_transactions_csv
+from finance_tracker.csv_io import (
+    export_budgets_csv,
+    export_transactions_csv,
+    import_budgets_csv,
+    import_transactions_csv,
+)
 from finance_tracker.database import initialize_database
 from finance_tracker.exceptions import CsvFormatError, FinanceTrackerError
 from finance_tracker.reports import (
@@ -360,6 +365,24 @@ def import_csv(
             typer.echo(f"  - {error}")
 
 
+@app.command("import-budgets-csv")
+def import_budgets(
+    path: Annotated[Path, typer.Argument(help="Budget CSV file to import")],
+    db_path: DbPathOption = None,
+) -> None:
+    """Import monthly category budgets from a CSV file."""
+    try:
+        result = import_budgets_csv(path, _budget_service(db_path))
+    except (CsvFormatError, FinanceTrackerError) as exc:
+        _handle_error(exc)
+
+    typer.echo(f"Imported {result.imported_count} budget(s).")
+    if result.skipped_count:
+        typer.echo(f"Skipped {result.skipped_count} invalid row(s):")
+        for error in result.errors:
+            typer.echo(f"  - {error}")
+
+
 @app.command("export-csv")
 def export_csv(
     path: Annotated[Path, typer.Argument(help="CSV output path")],
@@ -388,3 +411,28 @@ def export_csv(
         _handle_error(exc)
 
     typer.echo(f"Exported {len(transactions)} transaction(s) to {output_path}")
+
+
+@app.command("export-budgets-csv")
+def export_budgets(
+    path: Annotated[Path, typer.Argument(help="Budget CSV output path")],
+    month: Annotated[int | None, typer.Option("--month", "-m", help="Filter by month 1-12")] = None,
+    year: Annotated[int | None, typer.Option("--year", "-y", help="Filter by year")] = None,
+    category: Annotated[
+        str | None,
+        typer.Option("--category", "-c", help="Filter by category"),
+    ] = None,
+    db_path: DbPathOption = None,
+) -> None:
+    """Export monthly category budgets to a CSV file."""
+    try:
+        budgets = _budget_service(db_path).list_budgets(
+            month=month,
+            year=year,
+            category=category,
+        )
+        output_path = export_budgets_csv(path, budgets)
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+
+    typer.echo(f"Exported {len(budgets)} budget(s) to {output_path}")

@@ -6,6 +6,7 @@ A Python CLI application for tracking income and expenses using SQLite, CSV proc
 
 - Add, edit, list, delete, import, and export financial transactions.
 - Set monthly category budgets and compare them to actual expenses.
+- Import and export transactions and budgets with CSV files.
 - Store records locally in SQLite.
 - Generate monthly and multi-month income, expense, net savings, and category reports.
 - Save optional PNG charts for monthly reports and trend reports.
@@ -24,6 +25,7 @@ python -m pip install -e ".[dev]"
 ```bash
 finance-tracker init
 finance-tracker import-csv examples/sample_transactions.csv
+finance-tracker import-budgets-csv examples/sample_budgets.csv
 finance-tracker list
 finance-tracker summary --month 6 --year 2026
 finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png
@@ -41,19 +43,28 @@ finance-tracker budget-status --month 6 --year 2026
 finance-tracker trends --months 6 --end-month 6 --end-year 2026
 finance-tracker list --month 6 --year 2026
 finance-tracker export-csv exports/transactions.csv
+finance-tracker export-budgets-csv exports/budgets.csv
 finance-tracker delete 1
 ```
 
 The default database path is `./data/finance_tracker.sqlite3`. Override it with `--db-path` or the `FINANCE_TRACKER_DB` environment variable.
 
-## CSV Format
+## CSV Formats
 
-Import and export use:
+Transaction import and export use:
 
 ```csv
 type,amount,category,description,date
 income,3200.00,Salary,June salary,2026-06-01
 expense,45.90,Food,Groceries,2026-06-12
+```
+
+Budget import and export use:
+
+```csv
+category,amount,month,year
+Food,400.00,6,2026
+Rent,1200.00,6,2026
 ```
 
 ## Project Structure

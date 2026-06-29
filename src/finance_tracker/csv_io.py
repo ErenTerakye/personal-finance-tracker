@@ -5,10 +5,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from finance_tracker.exceptions import CsvFormatError, ValidationError
-from finance_tracker.models import Transaction
-from finance_tracker.services import TransactionService
+from finance_tracker.models import Budget, Transaction
+from finance_tracker.services import BudgetService, TransactionService
 
 CSV_FIELDS = ["type", "amount", "category", "description", "date"]
+BUDGET_CSV_FIELDS = ["category", "amount", "month", "year"]
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,44 @@ def import_transactions_csv(path: Path | str, service: TransactionService) -> Im
     return ImportResult(imported_count=imported_count, skipped_count=skipped_count, errors=errors)
 
 
+def import_budgets_csv(path: Path | str, service: BudgetService) -> ImportResult:
+    csv_path = Path(path)
+    imported_count = 0
+    skipped_count = 0
+    errors: list[str] = []
+
+    with csv_path.open(newline="", encoding="utf-8") as csv_file:
+        reader = csv.DictReader(csv_file)
+        if reader.fieldnames is None:
+            raise CsvFormatError("CSV file must include a header row.")
+        missing_fields = set(BUDGET_CSV_FIELDS) - set(reader.fieldnames)
+        if missing_fields:
+            missing = ", ".join(sorted(missing_fields))
+            raise CsvFormatError(f"CSV file is missing required columns: {missing}.")
+
+        for line_number, row in enumerate(reader, start=2):
+            try:
+                service.set_budget(
+                    category=row["category"],
+                    amount=row["amount"],
+                    month=_parse_csv_integer(row["month"], "Month"),
+                    year=_parse_csv_integer(row["year"], "Year"),
+                )
+                imported_count += 1
+            except ValidationError as exc:
+                skipped_count += 1
+                errors.append(f"Line {line_number}: {exc}")
+
+    return ImportResult(imported_count=imported_count, skipped_count=skipped_count, errors=errors)
+
+
+def _parse_csv_integer(value: str, field_name: str) -> int:
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise ValidationError(f"{field_name} must be a valid integer.") from exc
+
+
 def export_transactions_csv(path: Path | str, transactions: list[Transaction]) -> Path:
     csv_path = Path(path)
     csv_path.parent.mkdir(parents=True, exist_ok=True)
@@ -65,6 +104,26 @@ def export_transactions_csv(path: Path | str, transactions: list[Transaction]) -
                     "category": transaction.category,
                     "description": transaction.description,
                     "date": transaction.date.isoformat(),
+                }
+            )
+
+    return csv_path
+
+
+def export_budgets_csv(path: Path | str, budgets: list[Budget]) -> Path:
+    csv_path = Path(path)
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with csv_path.open("w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=BUDGET_CSV_FIELDS)
+        writer.writeheader()
+        for budget in budgets:
+            writer.writerow(
+                {
+                    "category": budget.category,
+                    "amount": str(budget.amount),
+                    "month": budget.month,
+                    "year": budget.year,
                 }
             )
 

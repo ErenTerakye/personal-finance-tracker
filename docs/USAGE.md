@@ -118,10 +118,22 @@ finance-tracker budget-delete 1
 finance-tracker import-csv examples/sample_transactions.csv
 ```
 
-Expected CSV columns:
+Expected transaction CSV columns:
 
 ```csv
 type,amount,category,description,date
+```
+
+Import budgets from CSV:
+
+```bash
+finance-tracker import-budgets-csv examples/sample_budgets.csv
+```
+
+Expected budget CSV columns:
+
+```csv
+category,amount,month,year
 ```
 
 ## Export CSV
@@ -129,6 +141,8 @@ type,amount,category,description,date
 ```bash
 finance-tracker export-csv exports/transactions.csv
 finance-tracker export-csv exports/june.csv --month 6 --year 2026
+finance-tracker export-budgets-csv exports/budgets.csv
+finance-tracker export-budgets-csv exports/june-budgets.csv --month 6 --year 2026
 ```
 
 ## Quality Checks

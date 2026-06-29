@@ -15,7 +15,7 @@ The application uses a layered structure:
 - `services.py` coordinates use cases and keeps CLI code away from persistence details.
 - `repositories.py` owns SQL queries and maps database rows into domain objects.
 - `database.py` owns SQLite connection setup and schema initialization.
-- `csv_io.py` owns portable CSV import/export behavior.
+- `csv_io.py` owns portable transaction and budget CSV import/export behavior.
 - `reports.py` owns monthly and trend report calculations and text formatting.
 - `charts.py` owns optional PNG chart generation with matplotlib.
 
@@ -70,15 +70,23 @@ Supported commands:
 - `trends`: print multi-month trend totals and optionally save a PNG chart.
 - `import-csv`: import transactions from CSV.
 - `export-csv`: export transactions to CSV.
+- `import-budgets-csv`: import monthly category budgets from CSV.
+- `export-budgets-csv`: export monthly category budgets to CSV.
 
 Database path defaults to `./data/finance_tracker.sqlite3`. Users can override it with `--db-path` or `FINANCE_TRACKER_DB`.
 
 ## CSV Format
 
-CSV files use this header:
+Transaction CSV files use this header:
 
 ```csv
 type,amount,category,description,date
+```
+
+Budget CSV files use this header:
+
+```csv
+category,amount,month,year
 ```
 
 Invalid data rows are skipped during import and reported to the user. Missing required columns stop the import.
@@ -96,9 +104,9 @@ Invalid data rows are skipped during import and reported to the user. Missing re
 
 ## Current Development Direction
 
-The project should stay CLI-first for the next iteration. A web interface would be a meaningful scope change because it would add routing, browser UI, packaging, and likely a second application boundary. The current pre-web milestone is portfolio polish: monthly category budgets are in place, and multi-month trends provide a reusable reporting layer that can later feed a dashboard.
+The project should stay CLI-first for the next iteration. A web interface would be a meaningful scope change because it would add routing, browser UI, packaging, and likely a second application boundary. The current pre-web milestone is portfolio polish: monthly category budgets, multi-month trends, and budget CSV import/export provide a reusable local-first data foundation that can later feed a dashboard.
 
-Future CLI-first improvements can build from this foundation with recurring transaction templates, budget import/export, or richer category analysis.
+Future CLI-first improvements can build from this foundation with recurring transaction templates, richer category analysis, or a carefully scoped web UI.
 
 ## Testing Strategy
 
@@ -108,6 +116,7 @@ Use pytest with temporary SQLite databases. Cover:
 - Transaction validation and persistence.
 - Filtering by month, year, category, and type.
 - CSV import/export round trips.
+- Budget CSV import/export round trips.
 - Monthly budget create/update/delete flows.
 - Budget status calculations by category.
 - Monthly and trend report calculations.
