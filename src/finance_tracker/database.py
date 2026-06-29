@@ -14,9 +14,21 @@ CREATE TABLE IF NOT EXISTS transactions (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS budgets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT NOT NULL,
+    month INTEGER NOT NULL CHECK (month BETWEEN 1 AND 12),
+    year INTEGER NOT NULL CHECK (year > 0),
+    amount TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category);
 CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+CREATE INDEX IF NOT EXISTS idx_budgets_period ON budgets(year, month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_budgets_period_category
+ON budgets(year, month, LOWER(category));
 """
 
 

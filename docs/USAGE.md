@@ -58,6 +58,44 @@ finance-tracker summary --month 6 --year 2026
 finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png
 ```
 
+## Budgets
+
+Set or update a monthly category budget:
+
+```bash
+finance-tracker budget-set Food 400 --month 6 --year 2026
+```
+
+List budgets:
+
+```bash
+finance-tracker budget-list --month 6 --year 2026
+```
+
+Compare budgets to actual expenses:
+
+```bash
+finance-tracker budget-status --month 6 --year 2026
+```
+
+Example status output:
+
+```text
+Budget status for 2026-06
+
+Category  Budget      Actual      Remaining   Used    Status
+--------  ----------  ----------  ----------  ------  -----------
+Food      $400.00     $325.50     $74.50      81.4%   ok
+Dining    $150.00     $150.00     $0.00       100.0%  near limit
+Travel    $50.00      $75.00      $-25.00     150.0%  over budget
+```
+
+Delete a budget:
+
+```bash
+finance-tracker budget-delete 1
+```
+
 ## Import CSV
 
 ```bash

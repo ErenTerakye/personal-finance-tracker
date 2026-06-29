@@ -35,6 +35,17 @@ The first version stores transactions with:
 
 The SQLite schema enforces valid transaction types with a `CHECK` constraint.
 
+Monthly category budgets are stored separately with:
+
+- `id`: SQLite autoincrement primary key
+- `category`: required text label matched case-insensitively for status calculations
+- `month`: integer month, `1-12`
+- `year`: positive integer year
+- `amount`: positive decimal value stored as text
+- `created_at`: SQLite timestamp
+
+Each category can have one budget per month and year. Setting the same category/month/year again updates the existing budget.
+
 ## CLI Commands
 
 Primary command:
@@ -50,6 +61,10 @@ Supported commands:
 - `edit`: update selected fields on an existing transaction.
 - `list`: list transactions with optional filters.
 - `delete`: remove a transaction by ID.
+- `budget-set`: set or update a monthly category budget.
+- `budget-list`: list stored budgets with optional filters.
+- `budget-delete`: remove a budget by ID.
+- `budget-status`: compare monthly category budgets with actual expenses.
 - `summary`: print monthly totals.
 - `report`: print monthly totals and optionally save a PNG chart.
 - `import-csv`: import transactions from CSV.
@@ -78,9 +93,11 @@ Invalid data rows are skipped during import and reported to the user. Missing re
 7. Add monthly reports and chart output.
 8. Add tests and README polish.
 
-## Next Development Direction
+## Current Development Direction
 
-The project should stay CLI-first for the next iteration. A web interface would be a meaningful scope change because it would add routing, browser UI, packaging, and likely a second application boundary. Before taking that on, the better portfolio step is to deepen the local CLI with practical finance features such as budgets, recurring transaction templates, richer report filters, or category summaries.
+The project should stay CLI-first for the next iteration. A web interface would be a meaningful scope change because it would add routing, browser UI, packaging, and likely a second application boundary. The current pre-web milestone is monthly category budgets: users can set category limits for a specific month, list or delete those budgets, and compare them to actual expenses.
+
+Future CLI-first improvements can build from this foundation with recurring transaction templates, richer report filters, or trend summaries.
 
 ## Testing Strategy
 
@@ -90,5 +107,7 @@ Use pytest with temporary SQLite databases. Cover:
 - Transaction validation and persistence.
 - Filtering by month, year, category, and type.
 - CSV import/export round trips.
+- Monthly budget create/update/delete flows.
+- Budget status calculations by category.
 - Monthly report calculations.
 - CLI smoke flows through Typer's test runner.

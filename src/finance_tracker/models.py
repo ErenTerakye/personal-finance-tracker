@@ -42,6 +42,31 @@ class Transaction:
 
 
 @dataclass(frozen=True)
+class Budget:
+    category: str
+    month: int
+    year: int
+    amount: Decimal
+    id: int | None = None
+    created_at: datetime | None = None
+
+    @classmethod
+    def create(
+        cls,
+        category: str,
+        amount: str | int | float | Decimal,
+        month: int,
+        year: int,
+    ) -> Budget:
+        return cls(
+            category=validate_text(category, "category"),
+            amount=parse_amount(amount),
+            month=validate_month(month),
+            year=validate_year(year),
+        )
+
+
+@dataclass(frozen=True)
 class TransactionFilters:
     month: int | None = None
     year: int | None = None
@@ -49,10 +74,23 @@ class TransactionFilters:
     transaction_type: TransactionType | None = None
 
     def __post_init__(self) -> None:
-        if self.month is not None and not 1 <= self.month <= 12:
-            raise ValidationError("Month must be between 1 and 12.")
-        if self.year is not None and self.year < 1:
-            raise ValidationError("Year must be a positive integer.")
+        if self.month is not None:
+            validate_month(self.month)
+        if self.year is not None:
+            validate_year(self.year)
+
+
+@dataclass(frozen=True)
+class BudgetFilters:
+    month: int | None = None
+    year: int | None = None
+    category: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.month is not None:
+            validate_month(self.month)
+        if self.year is not None:
+            validate_year(self.year)
 
 
 def parse_transaction_type(value: str | TransactionType) -> TransactionType:
@@ -71,6 +109,18 @@ def parse_amount(value: str | int | float | Decimal) -> Decimal:
     if amount <= 0:
         raise ValidationError("Amount must be greater than zero.")
     return amount
+
+
+def validate_month(value: int) -> int:
+    if not 1 <= value <= 12:
+        raise ValidationError("Month must be between 1 and 12.")
+    return value
+
+
+def validate_year(value: int) -> int:
+    if value < 1:
+        raise ValidationError("Year must be a positive integer.")
+    return value
 
 
 def parse_date(value: str | date) -> date:

@@ -13,5 +13,9 @@ class TransactionNotFoundError(FinanceTrackerError):
     """Raised when a transaction cannot be found."""
 
 
+class BudgetNotFoundError(FinanceTrackerError):
+    """Raised when a budget cannot be found."""
+
+
 class CsvFormatError(FinanceTrackerError):
     """Raised when a CSV file does not match the expected format."""

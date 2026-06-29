@@ -12,7 +12,7 @@ from finance_tracker.csv_io import export_transactions_csv, import_transactions_
 from finance_tracker.database import initialize_database
 from finance_tracker.exceptions import CsvFormatError, FinanceTrackerError
 from finance_tracker.reports import build_monthly_report, format_money, format_monthly_report
-from finance_tracker.services import TransactionService
+from finance_tracker.services import BudgetService, BudgetStatus, TransactionService
 
 app = typer.Typer(help="Track income and expenses from the command line.")
 
@@ -29,9 +29,17 @@ def _service(db_path: Path | None) -> TransactionService:
     return TransactionService(resolve_db_path(db_path))
 
 
+def _budget_service(db_path: Path | None) -> BudgetService:
+    return BudgetService(resolve_db_path(db_path))
+
+
 def _handle_error(error: FinanceTrackerError) -> None:
     typer.secho(f"Error: {error}", fg=typer.colors.RED, err=True)
     raise typer.Exit(code=1)
+
+
+def _format_percent(status: BudgetStatus) -> str:
+    return f"{status.percent_used:.1f}%"
 
 
 @app.command()
@@ -122,6 +130,105 @@ def delete(
     except FinanceTrackerError as exc:
         _handle_error(exc)
     typer.echo(f"Deleted transaction #{transaction_id}")
+
+
+@app.command("budget-set")
+def budget_set(
+    category: Annotated[str, typer.Argument(help="Budget category")],
+    amount: Annotated[str, typer.Argument(help="Positive monthly budget amount")],
+    month: Annotated[int, typer.Option("--month", "-m", help="Budget month 1-12")],
+    year: Annotated[int, typer.Option("--year", "-y", help="Budget year")],
+    db_path: DbPathOption = None,
+) -> None:
+    """Set or update a monthly category budget."""
+    try:
+        budget = _budget_service(db_path).set_budget(
+            category=category,
+            amount=amount,
+            month=month,
+            year=year,
+        )
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+
+    typer.echo(
+        f"Set budget #{budget.id}: {budget.category} {format_money(budget.amount)} "
+        f"for {budget.year}-{budget.month:02d}"
+    )
+
+
+@app.command("budget-list")
+def budget_list(
+    month: Annotated[int | None, typer.Option("--month", "-m", help="Filter by month 1-12")] = None,
+    year: Annotated[int | None, typer.Option("--year", "-y", help="Filter by year")] = None,
+    category: Annotated[
+        str | None,
+        typer.Option("--category", "-c", help="Filter by category"),
+    ] = None,
+    db_path: DbPathOption = None,
+) -> None:
+    """List monthly category budgets."""
+    try:
+        budgets = _budget_service(db_path).list_budgets(
+            month=month,
+            year=year,
+            category=category,
+        )
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+
+    if not budgets:
+        typer.echo("No budgets found.")
+        return
+
+    typer.echo("ID  Month    Category  Amount")
+    typer.echo("--  -------  --------  ----------")
+    for budget in budgets:
+        typer.echo(
+            f"{budget.id:<3} {budget.year}-{budget.month:02d}  "
+            f"{budget.category:<9} {format_money(budget.amount)}"
+        )
+
+
+@app.command("budget-delete")
+def budget_delete(
+    budget_id: Annotated[int, typer.Argument(help="Budget ID to delete")],
+    db_path: DbPathOption = None,
+) -> None:
+    """Delete a budget by ID."""
+    try:
+        _budget_service(db_path).delete_budget(budget_id)
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+    typer.echo(f"Deleted budget #{budget_id}")
+
+
+@app.command("budget-status")
+def budget_status(
+    month: Annotated[int, typer.Option("--month", "-m", help="Budget month 1-12")],
+    year: Annotated[int, typer.Option("--year", "-y", help="Budget year")],
+    db_path: DbPathOption = None,
+) -> None:
+    """Compare monthly category budgets to actual expenses."""
+    try:
+        statuses = _budget_service(db_path).budget_statuses(month=month, year=year)
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+
+    if not statuses:
+        typer.echo("No budgets found.")
+        return
+
+    typer.echo(f"Budget status for {year}-{month:02d}")
+    typer.echo("")
+    typer.echo("Category  Budget      Actual      Remaining   Used    Status")
+    typer.echo("--------  ----------  ----------  ----------  ------  -----------")
+    for status in statuses:
+        typer.echo(
+            f"{status.budget.category:<9} {format_money(status.budget.amount):<11} "
+            f"{format_money(status.actual_expenses):<11} {format_money(status.remaining):<11} "
+            f"{_format_percent(status):<7} {status.status}"
+        )
 
 
 @app.command()
