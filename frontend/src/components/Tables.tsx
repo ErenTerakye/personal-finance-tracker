@@ -47,13 +47,15 @@ export function TransactionTable({
               <td data-label="Amount">
                 <strong className={transaction.type}>{money(transaction.amount)}</strong>
               </td>
-              <td className="row-actions" data-label="Actions">
-                <IconButton icon={Pencil} variant="secondary" onClick={() => onEdit(transaction)}>
-                  Edit
-                </IconButton>
-                <IconButton icon={Trash2} variant="danger" onClick={() => onDelete(transaction)}>
-                  Delete
-                </IconButton>
+              <td data-label="Actions">
+                <div className="row-actions">
+                  <IconButton icon={Pencil} variant="secondary" onClick={() => onEdit(transaction)}>
+                    Edit
+                  </IconButton>
+                  <IconButton icon={Trash2} variant="danger" onClick={() => onDelete(transaction)}>
+                    Delete
+                  </IconButton>
+                </div>
               </td>
             </tr>
           ))}
@@ -101,13 +103,15 @@ export function BudgetTable({
               <td data-label="Amount">
                 <strong>{money(budget.amount)}</strong>
               </td>
-              <td className="row-actions" data-label="Actions">
-                <IconButton icon={Pencil} variant="secondary" onClick={() => onEdit(budget)}>
-                  Update
-                </IconButton>
-                <IconButton icon={Trash2} variant="danger" onClick={() => onDelete(budget)}>
-                  Delete
-                </IconButton>
+              <td data-label="Actions">
+                <div className="row-actions">
+                  <IconButton icon={Pencil} variant="secondary" onClick={() => onEdit(budget)}>
+                    Update
+                  </IconButton>
+                  <IconButton icon={Trash2} variant="danger" onClick={() => onDelete(budget)}>
+                    Delete
+                  </IconButton>
+                </div>
               </td>
             </tr>
           ))}

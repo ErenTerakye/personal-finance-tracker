@@ -1177,8 +1177,15 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .data-table td[data-label="Date"],
+  .data-table td[data-label="Period"],
+  .data-table td[data-label="Amount"] {
+    white-space: nowrap;
+  }
+
   .row-actions {
     display: flex;
+    align-items: center;
     flex-wrap: nowrap;
     gap: 0.4rem;
   }
