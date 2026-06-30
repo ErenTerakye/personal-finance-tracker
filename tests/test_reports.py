@@ -69,6 +69,20 @@ def test_trend_report_calculates_monthly_totals_empty_months_and_top_categories(
     assert "Top expense categories:" in format_trend_report(report)
 
 
+def test_trend_report_table_aligns_columns_for_large_values(tmp_path):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+    service.add_transaction("income", "1234567.89", "Salary", "Paycheck", "2026-06-01")
+    service.add_transaction("expense", "98765.43", "Transportation", "Travel", "2026-06-02")
+
+    report = build_trend_report(service.list_transactions(), months=1, end_month=6, end_year=2026)
+
+    lines = format_trend_report(report).splitlines()
+    header = next(line for line in lines if line.startswith("Month"))
+    row = next(line for line in lines if line.startswith("2026-06"))
+    assert header.index("Expenses") == row.index("$98,765.43")
+    assert row[header.index("Transactions") :].strip() == "2"
+
+
 def test_cli_smoke_flow(tmp_path):
     runner = CliRunner()
     db_path = tmp_path / "finance.sqlite3"

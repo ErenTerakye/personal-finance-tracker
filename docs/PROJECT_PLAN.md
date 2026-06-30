@@ -122,3 +122,4 @@ Use pytest with temporary SQLite databases. Cover:
 - Monthly and trend report calculations.
 - Chart output for monthly and trend reports.
 - CLI smoke flows through Typer's test runner.
+- GitHub Actions should run pytest and Ruff on Python 3.14.

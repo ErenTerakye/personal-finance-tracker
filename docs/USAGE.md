@@ -3,7 +3,7 @@
 ## Install for Development
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
@@ -20,6 +20,22 @@ Use a custom path:
 
 ```bash
 finance-tracker init --db-path demo.sqlite3
+```
+
+## Reviewer Demo
+
+This sequence imports the included examples, prints budget and report output, creates charts, and exports CSV files:
+
+```bash
+finance-tracker init --db-path demo.sqlite3
+finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
+finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
+finance-tracker list --month 6 --year 2026 --db-path demo.sqlite3
+finance-tracker budget-status --month 6 --year 2026 --db-path demo.sqlite3
+finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png --db-path demo.sqlite3
+finance-tracker trends --months 3 --end-month 6 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
+finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 ```
 
 ## Add Transactions
@@ -147,7 +163,11 @@ finance-tracker export-budgets-csv exports/june-budgets.csv --month 6 --year 202
 
 ## Quality Checks
 
+After activating `.venv`, run:
+
 ```bash
 python -m pytest
 python -m ruff check .
 ```
+
+The GitHub Actions workflow runs these checks on Python 3.14.

@@ -141,3 +141,62 @@ def test_cli_budget_flow(tmp_path):
     assert "90.0%" in status_result.output
     assert "near limit" in status_result.output
     assert "Deleted budget #1" in delete_result.output
+
+
+def test_cli_budget_tables_align_long_category_names(tmp_path):
+    runner = CliRunner()
+    db_path = tmp_path / "finance.sqlite3"
+
+    runner.invoke(
+        app,
+        [
+            "budget-set",
+            "Transportation",
+            "100",
+            "--month",
+            "6",
+            "--year",
+            "2026",
+            "--db-path",
+            str(db_path),
+        ],
+    )
+    runner.invoke(
+        app,
+        [
+            "add",
+            "expense",
+            "22.50",
+            "--category",
+            "Transportation",
+            "--description",
+            "Monthly pass",
+            "--date",
+            "2026-06-18",
+            "--db-path",
+            str(db_path),
+        ],
+    )
+
+    list_result = runner.invoke(
+        app,
+        ["budget-list", "--month", "6", "--year", "2026", "--db-path", str(db_path)],
+    )
+    status_result = runner.invoke(
+        app,
+        ["budget-status", "--month", "6", "--year", "2026", "--db-path", str(db_path)],
+    )
+
+    assert list_result.exit_code == 0
+    assert status_result.exit_code == 0
+
+    list_lines = list_result.output.splitlines()
+    list_header = next(line for line in list_lines if line.startswith("ID"))
+    list_row = next(line for line in list_lines if "Transportation" in line)
+    assert list_header.index("Amount") == list_row.index("$100.00")
+
+    status_lines = status_result.output.splitlines()
+    status_header = next(line for line in status_lines if line.startswith("Category"))
+    status_row = next(line for line in status_lines if "Transportation" in line)
+    assert status_header.index("Budget") == status_row.index("$100.00")
+    assert status_header.index("Actual") == status_row.index("$22.50")

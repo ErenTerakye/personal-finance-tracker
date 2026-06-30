@@ -1,7 +1,9 @@
 from decimal import Decimal
 
 import pytest
+from typer.testing import CliRunner
 
+from finance_tracker.cli import app
 from finance_tracker.exceptions import TransactionNotFoundError, ValidationError
 from finance_tracker.services import TransactionService
 
@@ -77,3 +79,33 @@ def test_edit_transaction_validates_updates(tmp_path):
 
     with pytest.raises(ValidationError, match="greater than zero"):
         service.edit_transaction(transaction.id, amount="-1")
+
+
+def test_cli_list_aligns_long_category_names(tmp_path):
+    runner = CliRunner()
+    db_path = tmp_path / "finance.sqlite3"
+
+    runner.invoke(
+        app,
+        [
+            "add",
+            "expense",
+            "22.50",
+            "--category",
+            "Transportation",
+            "--description",
+            "Monthly pass",
+            "--date",
+            "2026-06-18",
+            "--db-path",
+            str(db_path),
+        ],
+    )
+
+    result = runner.invoke(app, ["list", "--db-path", str(db_path)])
+
+    assert result.exit_code == 0
+    lines = result.output.splitlines()
+    header = next(line for line in lines if line.startswith("ID"))
+    row = next(line for line in lines if "Transportation" in line)
+    assert header.index("Description") == row.index("Monthly pass")

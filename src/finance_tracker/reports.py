@@ -123,6 +123,28 @@ def format_money(value: Decimal) -> str:
     return f"${value:,.2f}"
 
 
+def _format_table(headers: list[str], rows: list[list[str]]) -> list[str]:
+    widths = [
+        max(len(header), *(len(row[index]) for row in rows))
+        for index, header in enumerate(headers)
+    ]
+
+    def format_cell(index: int, value: str) -> str:
+        if index == len(headers) - 1:
+            return value
+        return value.ljust(widths[index])
+
+    lines = [
+        "  ".join(format_cell(index, header) for index, header in enumerate(headers)),
+        "  ".join("-" * width for width in widths),
+    ]
+    lines.extend(
+        "  ".join(format_cell(index, value) for index, value in enumerate(row))
+        for row in rows
+    )
+    return lines
+
+
 def format_monthly_report(report: MonthlyReport) -> str:
     lines = [
         f"Monthly report for {report.year}-{report.month:02d}",
@@ -156,21 +178,23 @@ def format_trend_report(report: TrendReport) -> str:
 
     start = report.months[0]
     end = report.months[-1]
+    rows = [
+        [
+            f"{period.year}-{period.month:02d}",
+            format_money(period.total_income),
+            format_money(period.total_expenses),
+            format_money(period.net_savings),
+            f"{period.savings_rate:.1f}%",
+            str(period.transaction_count),
+        ]
+        for period in report.months
+    ]
     lines = [
         f"Trend report for {start.year}-{start.month:02d} through {end.year}-{end.month:02d}",
         "",
-        "Month    Income      Expenses    Net savings  Savings  Transactions",
-        "-------  ----------  ----------  -----------  -------  ------------",
     ]
-
-    for period in report.months:
-        lines.append(
-            f"{period.year}-{period.month:02d}  {format_money(period.total_income):<10}  "
-            f"{format_money(period.total_expenses):<10}  "
-            f"{format_money(period.net_savings):<11}  "
-            f"{period.savings_rate:.1f}%".ljust(7)
-            + f"  {period.transaction_count}"
-        )
+    headers = ["Month", "Income", "Expenses", "Net savings", "Savings", "Transactions"]
+    lines.extend(_format_table(headers, rows))
 
     lines.extend(
         [

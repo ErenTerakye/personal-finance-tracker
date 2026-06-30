@@ -53,6 +53,35 @@ def _format_percent(status: BudgetStatus) -> str:
     return f"{status.percent_used:.1f}%"
 
 
+def _format_table(
+    headers: list[str],
+    rows: list[list[str]],
+    right_aligned_headers: set[str] | None = None,
+) -> list[str]:
+    right_aligned_headers = right_aligned_headers or set()
+    widths = [
+        max(len(header), *(len(row[index]) for row in rows))
+        for index, header in enumerate(headers)
+    ]
+
+    def format_cell(index: int, value: str) -> str:
+        if index == len(headers) - 1:
+            return value
+        if headers[index] in right_aligned_headers:
+            return value.rjust(widths[index])
+        return value.ljust(widths[index])
+
+    lines = [
+        "  ".join(format_cell(index, header) for index, header in enumerate(headers)),
+        "  ".join("-" * width for width in widths),
+    ]
+    lines.extend(
+        "  ".join(format_cell(index, value) for index, value in enumerate(row))
+        for row in rows
+    )
+    return lines
+
+
 @app.command()
 def init(db_path: DbPathOption = None) -> None:
     """Initialize the SQLite database."""
@@ -120,14 +149,19 @@ def list_transactions(
         typer.echo("No transactions found.")
         return
 
-    typer.echo("ID  Date        Type     Amount      Category  Description")
-    typer.echo("--  ----------  -------  ----------  --------  -----------")
-    for transaction in transactions:
-        typer.echo(
-            f"{transaction.id:<3} {transaction.date.isoformat():<10} "
-            f"{transaction.type.value:<8} {format_money(transaction.amount):<11} "
-            f"{transaction.category:<9} {transaction.description}"
-        )
+    rows = [
+        [
+            str(transaction.id),
+            transaction.date.isoformat(),
+            transaction.type.value,
+            format_money(transaction.amount),
+            transaction.category,
+            transaction.description,
+        ]
+        for transaction in transactions
+    ]
+    for line in _format_table(["ID", "Date", "Type", "Amount", "Category", "Description"], rows):
+        typer.echo(line)
 
 
 @app.command()
@@ -192,13 +226,17 @@ def budget_list(
         typer.echo("No budgets found.")
         return
 
-    typer.echo("ID  Month    Category  Amount")
-    typer.echo("--  -------  --------  ----------")
-    for budget in budgets:
-        typer.echo(
-            f"{budget.id:<3} {budget.year}-{budget.month:02d}  "
-            f"{budget.category:<9} {format_money(budget.amount)}"
-        )
+    rows = [
+        [
+            str(budget.id),
+            f"{budget.year}-{budget.month:02d}",
+            budget.category,
+            format_money(budget.amount),
+        ]
+        for budget in budgets
+    ]
+    for line in _format_table(["ID", "Month", "Category", "Amount"], rows):
+        typer.echo(line)
 
 
 @app.command("budget-delete")
@@ -232,14 +270,20 @@ def budget_status(
 
     typer.echo(f"Budget status for {year}-{month:02d}")
     typer.echo("")
-    typer.echo("Category  Budget      Actual      Remaining   Used    Status")
-    typer.echo("--------  ----------  ----------  ----------  ------  -----------")
-    for status in statuses:
-        typer.echo(
-            f"{status.budget.category:<9} {format_money(status.budget.amount):<11} "
-            f"{format_money(status.actual_expenses):<11} {format_money(status.remaining):<11} "
-            f"{_format_percent(status):<7} {status.status}"
-        )
+    rows = [
+        [
+            status.budget.category,
+            format_money(status.budget.amount),
+            format_money(status.actual_expenses),
+            format_money(status.remaining),
+            _format_percent(status),
+            status.status,
+        ]
+        for status in statuses
+    ]
+    headers = ["Category", "Budget", "Actual", "Remaining", "Used", "Status"]
+    for line in _format_table(headers, rows):
+        typer.echo(line)
 
 
 @app.command()

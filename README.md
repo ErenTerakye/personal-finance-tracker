@@ -15,7 +15,7 @@ A Python CLI application for tracking income and expenses using SQLite, CSV proc
 ## Install
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
@@ -30,6 +30,21 @@ finance-tracker list
 finance-tracker summary --month 6 --year 2026
 finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png
 finance-tracker trends --months 6 --end-month 6 --end-year 2026 --chart reports/trends.png
+```
+
+## Demo Flow
+
+Run a fresh local demo without touching the default database:
+
+```bash
+finance-tracker init --db-path demo.sqlite3
+finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
+finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
+finance-tracker budget-status --month 6 --year 2026 --db-path demo.sqlite3
+finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png --db-path demo.sqlite3
+finance-tracker trends --months 3 --end-month 6 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
+finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 ```
 
 ## Common Commands
@@ -83,9 +98,13 @@ src/finance_tracker/
 
 ## Development
 
+After activating the virtual environment, run:
+
 ```bash
 python -m pytest
 python -m ruff check .
 ```
+
+GitHub Actions runs the same checks on Python 3.14.
 
 See [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md), [docs/USAGE.md](docs/USAGE.md), and [AGENTS.md](AGENTS.md) for deeper project notes.
