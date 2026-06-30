@@ -5,7 +5,7 @@
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,web]"
 ```
 
 ## Initialize the Database
@@ -34,9 +34,34 @@ finance-tracker list --month 6 --year 2026 --db-path demo.sqlite3
 finance-tracker budget-status --month 6 --year 2026 --db-path demo.sqlite3
 finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png --db-path demo.sqlite3
 finance-tracker trends --months 3 --end-month 6 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker web --db-path demo.sqlite3
 finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
 finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 ```
+
+## Run the Local Web UI
+
+Start the browser dashboard:
+
+```bash
+finance-tracker web
+```
+
+Open `http://127.0.0.1:8000`.
+
+Use a custom database path:
+
+```bash
+finance-tracker web --host 127.0.0.1 --port 8000 --db-path demo.sqlite3
+```
+
+The Web UI supports:
+
+- Monthly dashboard totals, trends, category charts, recent transactions, and budget status.
+- Transaction add, edit, delete, and filters.
+- Budget set/update, delete, filters, and monthly status comparison.
+
+The Web UI is a local Python app. GitHub Pages cannot run the live app because Pages does not run Python or SQLite; use [showcase/index.html](showcase/index.html) as a static portfolio preview and run `finance-tracker web` for live CRUD.
 
 ## Add Transactions
 
@@ -166,8 +191,8 @@ finance-tracker export-budgets-csv exports/june-budgets.csv --month 6 --year 202
 After activating `.venv`, run:
 
 ```bash
-python -m pytest
-python -m ruff check .
+.venv/bin/python -m pytest
+.venv/bin/python -m ruff check .
 ```
 
 The GitHub Actions workflow runs these checks on Python 3.14.

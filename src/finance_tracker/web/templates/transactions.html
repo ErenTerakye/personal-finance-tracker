@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">Transaction desk</p>
+    <h1>Transactions</h1>
+  </div>
+</section>
+
+{% if error %}
+  <div class="alert">{{ error }}</div>
+{% endif %}
+
+<section class="tool-grid">
+  <form class="panel form-panel" method="post" action="/transactions">
+    <h2>Add transaction</h2>
+    <div class="form-grid">
+      <label>Type
+        <select name="type">
+          <option value="expense">expense</option>
+          <option value="income">income</option>
+        </select>
+      </label>
+      <label>Amount
+        <input name="amount" inputmode="decimal" placeholder="45.90" required>
+      </label>
+      <label>Category
+        <input name="category" placeholder="Food" required>
+      </label>
+      <label>Date
+        <input name="date" type="date" value="{{ today }}" required>
+      </label>
+      <label class="span-2">Description
+        <input name="description" placeholder="Groceries">
+      </label>
+    </div>
+    <button type="submit">Add</button>
+  </form>
+
+  <form class="panel form-panel" method="get" action="/transactions">
+    <h2>Filters</h2>
+    <div class="form-grid">
+      <label>Month
+        <input name="month" type="number" min="1" max="12" value="{{ filters.month }}">
+      </label>
+      <label>Year
+        <input name="year" type="number" min="1" value="{{ filters.year }}">
+      </label>
+      <label>Type
+        <select name="transaction_type">
+          <option value="">all</option>
+          <option value="income" {{ "selected" if filters.transaction_type == "income" else "" }}>income</option>
+          <option value="expense" {{ "selected" if filters.transaction_type == "expense" else "" }}>expense</option>
+        </select>
+      </label>
+      <label>Category
+        <input name="category" list="categories" value="{{ filters.category }}">
+      </label>
+    </div>
+    <datalist id="categories">
+      {% for category in categories %}
+        <option value="{{ category }}"></option>
+      {% endfor %}
+    </datalist>
+    <button type="submit">Apply</button>
+  </form>
+</section>
+
+<section class="panel table-panel">
+  <div class="panel-heading">
+    <h2>Ledger</h2>
+    <span>{{ transactions|length }} shown</span>
+  </div>
+  {% if transactions %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for transaction in transactions %}
+            <tr>
+              <td><input form="edit-{{ transaction.id }}" name="date" type="date" value="{{ transaction.date.isoformat() }}"></td>
+              <td>
+                <select form="edit-{{ transaction.id }}" name="type">
+                  <option value="income" {{ "selected" if transaction.type.value == "income" else "" }}>income</option>
+                  <option value="expense" {{ "selected" if transaction.type.value == "expense" else "" }}>expense</option>
+                </select>
+              </td>
+              <td><input form="edit-{{ transaction.id }}" name="amount" value="{{ transaction.amount }}"></td>
+              <td><input form="edit-{{ transaction.id }}" name="category" value="{{ transaction.category }}"></td>
+              <td><input form="edit-{{ transaction.id }}" name="description" value="{{ transaction.description }}"></td>
+              <td class="actions">
+                <form id="edit-{{ transaction.id }}" method="post" action="/transactions/{{ transaction.id }}"></form>
+                <button form="edit-{{ transaction.id }}" type="submit">Save</button>
+                <form method="post" action="/transactions/{{ transaction.id }}/delete">
+                  <button class="danger" type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">No transactions match these filters.</p>
+  {% endif %}
+</section>
+{% endblock %}

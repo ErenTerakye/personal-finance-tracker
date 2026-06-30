@@ -91,6 +91,35 @@ def init(db_path: DbPathOption = None) -> None:
 
 
 @app.command()
+def web(
+    host: Annotated[
+        str,
+        typer.Option("--host", help="Host for the local web server"),
+    ] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", help="Port for the local web server")] = 8000,
+    db_path: DbPathOption = None,
+) -> None:
+    """Run the local browser-based finance dashboard."""
+    resolved_path = resolve_db_path(db_path)
+    try:
+        import uvicorn
+
+        from finance_tracker.web.app import create_app
+    except ImportError as exc:
+        typer.secho(
+            "Error: Web dependencies are not installed. "
+            'Install them with: python -m pip install -e ".[web]"',
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=1) from exc
+
+    typer.echo(f"Starting finance tracker web UI at http://{host}:{port}")
+    typer.echo(f"Using database: {resolved_path}")
+    uvicorn.run(create_app(resolved_path), host=host, port=port)
+
+
+@app.command()
 def add(
     transaction_type: Annotated[str, typer.Argument(help="income or expense")],
     amount: Annotated[str, typer.Argument(help="Positive transaction amount")],

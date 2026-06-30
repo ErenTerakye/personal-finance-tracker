@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Personal Finance Tracker is a portfolio-ready Python CLI application for recording income and expenses, storing records in SQLite, moving data through CSV files, and producing monthly financial reports.
+Personal Finance Tracker is a portfolio-ready Python application for recording income and expenses, storing records in SQLite, moving data through CSV files, producing monthly financial reports, and presenting the same local data in a browser-based dashboard.
 
-The project is intentionally local-first and easy to run. It demonstrates Python packaging, CLI design, object-oriented domain modeling, persistence, CSV processing, testing, and data visualization.
+The project is intentionally local-first and easy to run. It demonstrates Python packaging, CLI design, object-oriented domain modeling, persistence, CSV processing, testing, data visualization, and a lightweight local Web UI.
 
 ## Architecture
 
@@ -18,8 +18,9 @@ The application uses a layered structure:
 - `csv_io.py` owns portable transaction and budget CSV import/export behavior.
 - `reports.py` owns monthly and trend report calculations and text formatting.
 - `charts.py` owns optional PNG chart generation with matplotlib.
+- `web/` owns the FastAPI app, HTML templates, static assets, and browser UI routing.
 
-SQL should stay in repository/database modules. Business validation should stay in models/services. CLI commands should stay thin and user-facing.
+SQL should stay in repository/database modules. Business validation should stay in models/services. CLI commands should stay thin and user-facing. Web routes should call the same service and report layers rather than duplicating business rules.
 
 ## Data Model
 
@@ -72,8 +73,25 @@ Supported commands:
 - `export-csv`: export transactions to CSV.
 - `import-budgets-csv`: import monthly category budgets from CSV.
 - `export-budgets-csv`: export monthly category budgets to CSV.
+- `web`: run the local FastAPI Web UI.
 
 Database path defaults to `./data/finance_tracker.sqlite3`. Users can override it with `--db-path` or `FINANCE_TRACKER_DB`.
+
+## Web UI
+
+The Web UI is an intentional scope expansion from the original CLI-first milestone while preserving the local-first architecture. It runs with:
+
+```bash
+finance-tracker web --host 127.0.0.1 --port 8000
+```
+
+Supported browser workflows:
+
+- Dashboard with monthly totals, savings rate, browser-rendered charts, recent transactions, budget status, and six-month trends.
+- Transaction add, edit, delete, and filtering.
+- Budget set/update, delete, filtering, and budget status comparison.
+
+The live Web UI is not designed for GitHub Pages because Pages only serves static files. The repository can include a static showcase page for portfolio presentation, but live CRUD requires running the local Python server.
 
 ## CSV Format
 
@@ -104,9 +122,9 @@ Invalid data rows are skipped during import and reported to the user. Missing re
 
 ## Current Development Direction
 
-The project should stay CLI-first for the next iteration. A web interface would be a meaningful scope change because it would add routing, browser UI, packaging, and likely a second application boundary. The current pre-web milestone is portfolio polish: monthly category budgets, multi-month trends, and budget CSV import/export provide a reusable local-first data foundation that can later feed a dashboard.
+The current milestone is a local Web UI over the existing SQLite/service/report foundation. It should remain a portfolio-scale app: no authentication, cloud sync, background workers, or hosted database unless the project scope changes again.
 
-Future CLI-first improvements can build from this foundation with recurring transaction templates, richer category analysis, or a carefully scoped web UI.
+Future improvements can build from this foundation with recurring transaction templates, richer category analysis, CSV import/export from the browser, or downloadable chart artifacts.
 
 ## Testing Strategy
 
@@ -121,5 +139,6 @@ Use pytest with temporary SQLite databases. Cover:
 - Budget status calculations by category.
 - Monthly and trend report calculations.
 - Chart output for monthly and trend reports.
+- Web dashboard rendering, form validation feedback, CRUD flows, and filters.
 - CLI smoke flows through Typer's test runner.
 - GitHub Actions should run pytest and Ruff on Python 3.14.

@@ -10,6 +10,7 @@ A Python CLI application for tracking income and expenses using SQLite, CSV proc
 - Store records locally in SQLite.
 - Generate monthly and multi-month income, expense, net savings, and category reports.
 - Save optional PNG charts for monthly reports and trend reports.
+- Run a polished local FastAPI Web UI for dashboard, transaction, and budget workflows.
 - Use a clean `src/` package layout with Typer, pytest, and Ruff.
 
 ## Install
@@ -17,7 +18,7 @@ A Python CLI application for tracking income and expenses using SQLite, CSV proc
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,web]"
 ```
 
 ## Quick Start
@@ -30,6 +31,13 @@ finance-tracker list
 finance-tracker summary --month 6 --year 2026
 finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png
 finance-tracker trends --months 6 --end-month 6 --end-year 2026 --chart reports/trends.png
+finance-tracker web
+```
+
+Open the Web UI at `http://127.0.0.1:8000`. It uses the same default SQLite database as the CLI. To run it against a demo database:
+
+```bash
+finance-tracker web --db-path demo.sqlite3
 ```
 
 ## Demo Flow
@@ -43,9 +51,16 @@ finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sq
 finance-tracker budget-status --month 6 --year 2026 --db-path demo.sqlite3
 finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png --db-path demo.sqlite3
 finance-tracker trends --months 3 --end-month 6 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker web --db-path demo.sqlite3
 finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
 finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 ```
+
+## Web UI
+
+The local Web UI provides a browser dashboard with monthly totals, browser-rendered charts, recent transactions, budget status, transaction CRUD, and budget CRUD. It remains local-first: the Python server reads and writes your SQLite database on your machine.
+
+GitHub Pages can host static files only, so it cannot run the live Python/SQLite app. A static showcase is available in [docs/showcase/index.html](docs/showcase/index.html) for portfolio hosting, while real CRUD requires `finance-tracker web`.
 
 ## Common Commands
 
@@ -94,6 +109,7 @@ src/finance_tracker/
   csv_io.py         # CSV import/export
   reports.py        # Monthly report calculations
   charts.py         # PNG chart generation
+  web/              # Local FastAPI Web UI
 ```
 
 ## Development
@@ -101,8 +117,8 @@ src/finance_tracker/
 After activating the virtual environment, run:
 
 ```bash
-python -m pytest
-python -m ruff check .
+.venv/bin/python -m pytest
+.venv/bin/python -m ruff check .
 ```
 
 GitHub Actions runs the same checks on Python 3.14.
