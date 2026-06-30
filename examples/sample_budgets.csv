@@ -1,5 +1,8 @@
 category,amount,month,year
-Food,400.00,6,2026
-Rent,1200.00,6,2026
-Utilities,180.00,6,2026
-Transport,100.00,6,2026
+Rent,1600.00,6,2026
+Food,500.00,6,2026
+Dining,190.00,6,2026
+Travel,150.00,6,2026
+Utilities,225.00,6,2026
+Transport,120.00,6,2026
+Subscriptions,50.00,6,2026

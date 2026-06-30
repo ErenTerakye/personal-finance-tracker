@@ -6,6 +6,8 @@
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev,web]"
+npm install
+npm run build
 ```
 
 ## Initialize the Database
@@ -57,9 +59,21 @@ finance-tracker web --host 127.0.0.1 --port 8000 --db-path demo.sqlite3
 
 The Web UI supports:
 
-- Monthly dashboard totals, trends, category charts, recent transactions, and budget status.
-- Transaction add, edit, delete, and filters.
-- Budget set/update, delete, filters, and monthly status comparison.
+- A Ledger Workbench dashboard with a six-month statement tape, KPI cards, trend/category charts, recent transactions, and budget pressure.
+- Route-aware browser navigation for `/`, `/transactions`, and `/budgets`.
+- Transaction add, edit, delete, and filters through native dialog workflows.
+- Budget set/update, delete, filters, and monthly status comparison with pressure shown first.
+
+The Python server exposes JSON under `/api` and serves the compiled React + Vite app from the same local origin. Money values in API responses are decimal strings, preserving the SQLite/`Decimal` behavior used by the CLI.
+
+For frontend development, run the API and Vite dev server in separate terminals:
+
+```bash
+finance-tracker web --db-path demo.sqlite3
+npm run dev
+```
+
+Browser support policy: the Web UI targets modern Baseline-capable browsers as of June 2026. Newly available browser features are used only as progressive enhancements, so core navigation and CRUD workflows remain usable without large polyfills. The UI uses color-scheme-aware dark mode, native dialogs, SVG charts, container queries, mobile-safe viewport units, and reduced-motion-aware animation.
 
 The Web UI is a local Python app. GitHub Pages cannot run the live app because Pages does not run Python or SQLite; use [showcase/index.html](showcase/index.html) as a static portfolio preview and run `finance-tracker web` for live CRUD.
 
@@ -67,7 +81,7 @@ The Web UI is a local Python app. GitHub Pages cannot run the live app because P
 
 ```bash
 finance-tracker add income 2500 --category Salary --description "June salary" --date 2026-06-01
-finance-tracker add expense 45.90 --category Food --description "Groceries" --date 2026-06-12
+finance-tracker add expense 386.40 --category Food --description "Groceries and farmers market" --date 2026-06-10
 ```
 
 ## Edit Transactions
@@ -120,7 +134,7 @@ Trend reports include monthly income, expenses, net savings, savings rate, trans
 Set or update a monthly category budget:
 
 ```bash
-finance-tracker budget-set Food 400 --month 6 --year 2026
+finance-tracker budget-set Food 500 --month 6 --year 2026
 ```
 
 List budgets:
@@ -140,11 +154,15 @@ Example status output:
 ```text
 Budget status for 2026-06
 
-Category  Budget      Actual      Remaining   Used    Status
---------  ----------  ----------  ----------  ------  -----------
-Food      $400.00     $325.50     $74.50      81.4%   ok
-Dining    $150.00     $150.00     $0.00       100.0%  near limit
-Travel    $50.00      $75.00      $-25.00     150.0%  over budget
+Category       Budget     Actual     Remaining  Used    Status
+-------------  ---------  ---------  ---------  ------  -----------
+Dining         $190.00    $171.00    $19.00     90.0%   near limit
+Food           $500.00    $386.40    $113.60    77.3%   ok
+Rent           $1,600.00  $1,500.00  $100.00    93.8%   near limit
+Subscriptions  $50.00     $44.99     $5.01      90.0%   near limit
+Transport      $120.00    $96.80     $23.20     80.7%   ok
+Travel         $150.00    $185.00    $-35.00    123.3%  over budget
+Utilities      $225.00    $192.35    $32.65     85.5%   ok
 ```
 
 Delete a budget:
@@ -193,6 +211,8 @@ After activating `.venv`, run:
 ```bash
 .venv/bin/python -m pytest
 .venv/bin/python -m ruff check .
+npm test
+npm run build
 ```
 
 The GitHub Actions workflow runs these checks on Python 3.14.

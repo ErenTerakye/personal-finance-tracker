@@ -1,6 +1,37 @@
 type,amount,category,description,date
-income,3200.00,Salary,June salary,2026-06-01
-expense,45.90,Food,Groceries,2026-06-12
-expense,89.99,Utilities,Internet bill,2026-06-15
-expense,22.50,Transport,Metro card,2026-06-18
-income,250.00,Freelance,Landing page update,2026-06-20
+income,4200.00,Salary,January salary,2026-01-01
+expense,1500.00,Rent,Apartment rent,2026-01-02
+expense,178.40,Utilities,Electric and internet,2026-01-06
+expense,312.60,Food,Groceries and staples,2026-01-12
+expense,88.20,Dining,Weekend brunch,2026-01-18
+income,4200.00,Salary,February salary,2026-02-01
+expense,1500.00,Rent,Apartment rent,2026-02-02
+expense,184.10,Utilities,Electric and internet,2026-02-06
+expense,298.45,Food,Groceries and pantry restock,2026-02-11
+expense,82.00,Transport,Transit pass,2026-02-17
+income,4200.00,Salary,March salary,2026-03-01
+income,350.00,Freelance,Dashboard copy polish,2026-03-08
+expense,1500.00,Rent,Apartment rent,2026-03-02
+expense,176.80,Utilities,Electric and internet,2026-03-06
+expense,336.90,Food,Groceries and household basics,2026-03-14
+income,4200.00,Salary,April salary,2026-04-01
+expense,1500.00,Rent,Apartment rent,2026-04-02
+expense,181.65,Utilities,Electric and internet,2026-04-06
+expense,321.35,Food,Groceries and market run,2026-04-12
+expense,142.50,Dining,Birthday dinner,2026-04-20
+income,4200.00,Salary,May salary,2026-05-01
+income,120.00,Refund,Insurance reimbursement,2026-05-18
+expense,1500.00,Rent,Apartment rent,2026-05-02
+expense,189.70,Utilities,Electric and internet,2026-05-06
+expense,260.00,Travel,Weekend train tickets,2026-05-16
+expense,118.40,Health,Prescription refill,2026-05-22
+income,4200.00,Salary,June salary,2026-06-01
+expense,1500.00,Rent,Apartment rent,2026-06-02
+expense,192.35,Utilities,Electric and internet,2026-06-06
+expense,386.40,Food,Groceries and farmers market,2026-06-10
+income,450.00,Freelance,Landing page update,2026-06-26
+expense,171.00,Dining,Team dinner and coffee,2026-06-15
+expense,96.80,Transport,Metro card and rideshare,2026-06-18
+expense,44.99,Subscriptions,Streaming and storage,2026-06-21
+expense,185.00,Travel,Family visit fuel,2026-06-24
+expense,72.50,Health,Clinic copay,2026-06-27

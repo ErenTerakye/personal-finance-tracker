@@ -1,265 +1,384 @@
-"""FastAPI web application for the local finance tracker."""
+"""FastAPI JSON API and static SPA host for the local finance tracker."""
 
 from __future__ import annotations
 
-import json
-from dataclasses import asdict
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Literal
 
-from fastapi import FastAPI, Form, Request, Response, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, ConfigDict
 
-from finance_tracker.exceptions import FinanceTrackerError
-from finance_tracker.models import Transaction
+from finance_tracker.exceptions import (
+    BudgetNotFoundError,
+    FinanceTrackerError,
+    TransactionNotFoundError,
+)
+from finance_tracker.models import Budget, Transaction
 from finance_tracker.reports import (
     MonthlyReport,
     TrendReport,
     build_monthly_report,
     build_trend_report,
-    format_money,
 )
 from finance_tracker.services import BudgetService, BudgetStatus, TransactionService
 
 WEB_DIR = Path(__file__).parent
-templates = Jinja2Templates(directory=WEB_DIR / "templates")
-templates.env.filters["money"] = format_money
+STATIC_DIR = WEB_DIR / "static"
+ASSETS_DIR = STATIC_DIR / "spa" / "assets"
+INDEX_PATH = STATIC_DIR / "spa" / "index.html"
+
+MONTH_NAMES = (
+    "",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+)
+
+
+class ApiModel(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ErrorResponse(ApiModel):
+    error: str
+
+
+class NoticeResponse(ApiModel):
+    notice: str
+
+
+class TransactionRequest(ApiModel):
+    type: Literal["income", "expense"]
+    amount: str
+    category: str
+    description: str = ""
+    date: str
+
+
+class TransactionPatchRequest(ApiModel):
+    type: Literal["income", "expense"] | None = None
+    amount: str | None = None
+    category: str | None = None
+    description: str | None = None
+    date: str | None = None
+
+
+class BudgetRequest(ApiModel):
+    category: str
+    amount: str
+    month: int
+    year: int
+
+
+class TransactionResponse(ApiModel):
+    id: int
+    type: str
+    amount: str
+    category: str
+    description: str
+    date: str
+    created_at: str | None
+
+
+class BudgetResponse(ApiModel):
+    id: int
+    category: str
+    amount: str
+    month: int
+    year: int
+    created_at: str | None
+
+
+class BudgetStatusResponse(ApiModel):
+    budget: BudgetResponse
+    actual_expenses: str
+    remaining: str
+    percent_used: str
+    status: str
+
+
+class MonthlyReportResponse(ApiModel):
+    month: int
+    year: int
+    total_income: str
+    total_expenses: str
+    net_savings: str
+    transaction_count: int
+    income_by_category: dict[str, str]
+    expenses_by_category: dict[str, str]
+
+
+class TrendMonthResponse(ApiModel):
+    month: int
+    year: int
+    label: str
+    total_income: str
+    total_expenses: str
+    net_savings: str
+    transaction_count: int
+    savings_rate: str
+
+
+class TrendReportResponse(ApiModel):
+    months: list[TrendMonthResponse]
+    total_income: str
+    total_expenses: str
+    net_savings: str
+    transaction_count: int
+    top_expense_categories: dict[str, str]
+
+
+class DashboardResponse(ApiModel):
+    month: int
+    year: int
+    period_label: str
+    report: MonthlyReportResponse
+    trend: TrendReportResponse
+    savings_rate: str
+    recent_transactions: list[TransactionResponse]
+    budget_statuses: list[BudgetStatusResponse]
+
+
+class TransactionListResponse(ApiModel):
+    transactions: list[TransactionResponse]
+
+
+class TransactionMutationResponse(ApiModel):
+    notice: str
+    transaction: TransactionResponse
+
+
+class BudgetListResponse(ApiModel):
+    budgets: list[BudgetResponse]
+
+
+class BudgetMutationResponse(ApiModel):
+    notice: str
+    budget: BudgetResponse
+
+
+class BudgetStatusListResponse(ApiModel):
+    statuses: list[BudgetStatusResponse]
 
 
 def create_app(db_path: Path | str) -> FastAPI:
     app = FastAPI(title="Personal Finance Tracker")
     app.state.db_path = Path(db_path)
-    app.mount("/static", StaticFiles(directory=WEB_DIR / "static"), name="static")
 
-    @app.get("/", response_class=HTMLResponse)
+    if ASSETS_DIR.exists():
+        app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
+
+    @app.exception_handler(FinanceTrackerError)
+    async def handle_finance_error(_request: Request, exc: FinanceTrackerError) -> JSONResponse:
+        status_code = (
+            status.HTTP_404_NOT_FOUND
+            if isinstance(exc, (BudgetNotFoundError, TransactionNotFoundError))
+            else status.HTTP_400_BAD_REQUEST
+        )
+        return JSONResponse(status_code=status_code, content={"error": str(exc)})
+
+    @app.get("/api/health")
+    def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @app.get(
+        "/api/dashboard",
+        response_model=DashboardResponse,
+        responses={400: {"model": ErrorResponse}},
+    )
     def dashboard(
         request: Request,
         month: int | None = None,
         year: int | None = None,
-    ) -> HTMLResponse:
+    ) -> DashboardResponse:
         period = _period(month, year)
-        transaction_service = _transaction_service(request)
-        budget_service = _budget_service(request)
-        transactions = transaction_service.list_transactions(
+        transactions = _transaction_service(request).list_transactions(
             month=period["month"],
             year=period["year"],
         )
-        recent_transactions = transaction_service.list_transactions()[:5]
-        monthly_report = build_monthly_report(
-            transactions,
-            month=period["month"],
-            year=period["year"],
-        )
-        trend_report = build_trend_report(
-            transaction_service.list_transactions(),
+        all_transactions = _transaction_service(request).list_transactions()
+        report = build_monthly_report(transactions, month=period["month"], year=period["year"])
+        trend = build_trend_report(
+            all_transactions,
             months=6,
             end_month=period["month"],
             end_year=period["year"],
         )
-        budget_statuses = budget_service.budget_statuses(period["month"], period["year"])
+        statuses = _budget_service(request).budget_statuses(period["month"], period["year"])
 
-        return templates.TemplateResponse(
-            request,
-            "dashboard.html",
-            {
-                **_base_context("dashboard", period),
-                "report": monthly_report,
-                "savings_rate": _savings_rate(monthly_report),
-                "recent_transactions": recent_transactions,
-                "budget_statuses": budget_statuses,
-                "chart_data": _json(
-                    {
-                        "monthly": _monthly_chart_data(monthly_report),
-                        "trend": _trend_chart_data(trend_report),
-                        "budgets": _budget_chart_data(budget_statuses),
-                    }
-                ),
-            },
+        return DashboardResponse(
+            month=period["month"],
+            year=period["year"],
+            period_label=_period_label(period),
+            report=_monthly_report_response(report),
+            trend=_trend_report_response(trend),
+            savings_rate=_moneyless_decimal(_savings_rate(report)),
+            recent_transactions=[
+                _transaction_response(transaction)
+                for transaction in all_transactions[:5]
+            ],
+            budget_statuses=[_budget_status_response(item) for item in statuses],
         )
 
-    @app.get("/transactions", response_class=HTMLResponse)
-    def transactions_page(
+    @app.get(
+        "/api/transactions",
+        response_model=TransactionListResponse,
+        responses={400: {"model": ErrorResponse}},
+    )
+    def list_transactions(
         request: Request,
         month: int | None = None,
         year: int | None = None,
         category: str | None = None,
-        transaction_type: str | None = None,
-    ) -> HTMLResponse:
-        return _render_transactions(
-            request,
+        transaction_type: Literal["income", "expense"] | None = None,
+    ) -> TransactionListResponse:
+        transactions = _transaction_service(request).list_transactions(
             month=month,
             year=year,
-            category=category,
+            category=category or None,
             transaction_type=transaction_type,
         )
+        return TransactionListResponse(
+            transactions=[_transaction_response(transaction) for transaction in transactions]
+        )
 
-    @app.post("/transactions", response_class=HTMLResponse)
+    @app.post(
+        "/api/transactions",
+        response_model=TransactionMutationResponse,
+        status_code=status.HTTP_201_CREATED,
+        responses={400: {"model": ErrorResponse}},
+    )
     def create_transaction(
         request: Request,
-        transaction_type: Annotated[str, Form(alias="type")],
-        amount: Annotated[str, Form()],
-        category: Annotated[str, Form()],
-        description: Annotated[str, Form()] = "",
-        transaction_date: Annotated[str, Form(alias="date")] = "",
-    ) -> Response:
-        try:
-            _transaction_service(request).add_transaction(
-                transaction_type=transaction_type,
-                amount=amount,
-                category=category,
-                description=description,
-                transaction_date=transaction_date,
-            )
-        except FinanceTrackerError as exc:
-            return _render_transactions(
-                request,
-                error=str(exc),
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-        return _redirect("/transactions")
+        payload: TransactionRequest,
+    ) -> TransactionMutationResponse:
+        transaction = _transaction_service(request).add_transaction(
+            transaction_type=payload.type,
+            amount=payload.amount,
+            category=payload.category,
+            description=payload.description,
+            transaction_date=payload.date,
+        )
+        return TransactionMutationResponse(
+            notice="Transaction added to the local ledger.",
+            transaction=_transaction_response(transaction),
+        )
 
-    @app.post("/transactions/{transaction_id}", response_class=HTMLResponse)
+    @app.patch(
+        "/api/transactions/{transaction_id}",
+        response_model=TransactionMutationResponse,
+        responses={400: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    )
     def update_transaction(
         request: Request,
         transaction_id: int,
-        transaction_type: Annotated[str, Form(alias="type")],
-        amount: Annotated[str, Form()],
-        category: Annotated[str, Form()],
-        description: Annotated[str, Form()] = "",
-        transaction_date: Annotated[str, Form(alias="date")] = "",
-    ) -> Response:
-        try:
-            _transaction_service(request).edit_transaction(
-                transaction_id=transaction_id,
-                transaction_type=transaction_type,
-                amount=amount,
-                category=category,
-                description=description,
-                transaction_date=transaction_date,
-            )
-        except FinanceTrackerError as exc:
-            return _render_transactions(
-                request,
-                error=str(exc),
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-        return _redirect("/transactions")
+        payload: TransactionPatchRequest,
+    ) -> TransactionMutationResponse:
+        transaction = _transaction_service(request).edit_transaction(
+            transaction_id=transaction_id,
+            transaction_type=payload.type,
+            amount=payload.amount,
+            category=payload.category,
+            description=payload.description,
+            transaction_date=payload.date,
+        )
+        return TransactionMutationResponse(
+            notice="Transaction changes saved.",
+            transaction=_transaction_response(transaction),
+        )
 
-    @app.post("/transactions/{transaction_id}/delete")
-    def delete_transaction(request: Request, transaction_id: int) -> RedirectResponse:
+    @app.delete(
+        "/api/transactions/{transaction_id}",
+        response_model=NoticeResponse,
+        responses={404: {"model": ErrorResponse}},
+    )
+    def delete_transaction(request: Request, transaction_id: int) -> NoticeResponse:
         _transaction_service(request).delete_transaction(transaction_id)
-        return _redirect("/transactions")
+        return NoticeResponse(notice="Transaction removed from the local ledger.")
 
-    @app.get("/budgets", response_class=HTMLResponse)
-    def budgets_page(
+    @app.get(
+        "/api/budgets",
+        response_model=BudgetListResponse,
+        responses={400: {"model": ErrorResponse}},
+    )
+    def list_budgets(
         request: Request,
         month: int | None = None,
         year: int | None = None,
         category: str | None = None,
-    ) -> HTMLResponse:
-        return _render_budgets(request, month=month, year=year, category=category)
+    ) -> BudgetListResponse:
+        budgets = _budget_service(request).list_budgets(
+            month=month,
+            year=year,
+            category=category or None,
+        )
+        return BudgetListResponse(budgets=[_budget_response(budget) for budget in budgets])
 
-    @app.post("/budgets", response_class=HTMLResponse)
-    def set_budget(
-        request: Request,
-        category: Annotated[str, Form()],
-        amount: Annotated[str, Form()],
-        month: Annotated[int, Form()],
-        year: Annotated[int, Form()],
-    ) -> Response:
-        try:
-            _budget_service(request).set_budget(
-                category=category,
-                amount=amount,
-                month=month,
-                year=year,
-            )
-        except FinanceTrackerError as exc:
-            return _render_budgets(request, error=str(exc), status_code=status.HTTP_400_BAD_REQUEST)
-        return _redirect(f"/budgets?month={month}&year={year}")
+    @app.post(
+        "/api/budgets",
+        response_model=BudgetMutationResponse,
+        status_code=status.HTTP_201_CREATED,
+        responses={400: {"model": ErrorResponse}},
+    )
+    def set_budget(request: Request, payload: BudgetRequest) -> BudgetMutationResponse:
+        budget = _budget_service(request).set_budget(
+            category=payload.category,
+            amount=payload.amount,
+            month=payload.month,
+            year=payload.year,
+        )
+        return BudgetMutationResponse(
+            notice="Budget saved for the selected month.",
+            budget=_budget_response(budget),
+        )
 
-    @app.post("/budgets/{budget_id}/delete")
-    def delete_budget(request: Request, budget_id: int) -> RedirectResponse:
+    @app.get(
+        "/api/budgets/status",
+        response_model=BudgetStatusListResponse,
+        responses={400: {"model": ErrorResponse}},
+    )
+    def budget_status(request: Request, month: int, year: int) -> BudgetStatusListResponse:
+        statuses = _budget_service(request).budget_statuses(month=month, year=year)
+        return BudgetStatusListResponse(
+            statuses=[_budget_status_response(item) for item in statuses]
+        )
+
+    @app.delete(
+        "/api/budgets/{budget_id}",
+        response_model=NoticeResponse,
+        responses={404: {"model": ErrorResponse}},
+    )
+    def delete_budget(request: Request, budget_id: int) -> NoticeResponse:
         _budget_service(request).delete_budget(budget_id)
-        return _redirect("/budgets")
+        return NoticeResponse(notice="Budget removed from the local ledger.")
+
+    @app.get("/", include_in_schema=False)
+    def spa_index() -> FileResponse:
+        return _spa_response()
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def spa_fallback(path: str) -> FileResponse:
+        if path.startswith("api/"):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "Not found."},
+            )
+        return _spa_response()
 
     return app
-
-
-def _render_transactions(
-    request: Request,
-    month: int | None = None,
-    year: int | None = None,
-    category: str | None = None,
-    transaction_type: str | None = None,
-    error: str | None = None,
-    status_code: int = status.HTTP_200_OK,
-) -> HTMLResponse:
-    period = _period(month, year)
-    transactions = _transaction_service(request).list_transactions(
-        month=month,
-        year=year,
-        category=category or None,
-        transaction_type=transaction_type or None,
-    )
-    categories = sorted(
-        {
-            transaction.category
-            for transaction in _transaction_service(request).list_transactions()
-        }
-    )
-    return templates.TemplateResponse(
-        request,
-        "transactions.html",
-        {
-            **_base_context("transactions", period),
-            "transactions": transactions,
-            "categories": categories,
-            "filters": {
-                "month": month or "",
-                "year": year or "",
-                "category": category or "",
-                "transaction_type": transaction_type or "",
-            },
-            "today": date.today().isoformat(),
-            "error": error,
-        },
-        status_code=status_code,
-    )
-
-
-def _render_budgets(
-    request: Request,
-    month: int | None = None,
-    year: int | None = None,
-    category: str | None = None,
-    error: str | None = None,
-    status_code: int = status.HTTP_200_OK,
-) -> HTMLResponse:
-    period = _period(month, year)
-    budget_service = _budget_service(request)
-    budgets = budget_service.list_budgets(month=month, year=year, category=category or None)
-    statuses = budget_service.budget_statuses(period["month"], period["year"])
-    return templates.TemplateResponse(
-        request,
-        "budgets.html",
-        {
-            **_base_context("budgets", period),
-            "budgets": budgets,
-            "budget_statuses": statuses,
-            "filters": {
-                "month": month or "",
-                "year": year or "",
-                "category": category or "",
-            },
-            "error": error,
-        },
-        status_code=status_code,
-    )
 
 
 def _transaction_service(request: Request) -> TransactionService:
@@ -275,56 +394,81 @@ def _period(month: int | None, year: int | None) -> dict[str, int]:
     return {"month": month or today.month, "year": year or today.year}
 
 
-def _base_context(active_page: str, period: dict[str, int]) -> dict[str, Any]:
-    return {
-        "active_page": active_page,
-        "selected_month": period["month"],
-        "selected_year": period["year"],
-        "months": range(1, 13),
-    }
+def _period_label(period: dict[str, int]) -> str:
+    return f"{MONTH_NAMES[period['month']]} {period['year']}"
 
 
-def _redirect(path: str) -> RedirectResponse:
-    return RedirectResponse(path, status_code=status.HTTP_303_SEE_OTHER)
+def _transaction_response(transaction: Transaction) -> TransactionResponse:
+    return TransactionResponse(
+        id=_require_id(transaction.id),
+        type=transaction.type.value,
+        amount=_money_decimal(transaction.amount),
+        category=transaction.category,
+        description=transaction.description,
+        date=transaction.date.isoformat(),
+        created_at=_datetime_response(transaction.created_at),
+    )
 
 
-def _monthly_chart_data(report: MonthlyReport) -> dict[str, Any]:
-    return {
-        "totals": [
-            {"label": "Income", "value": report.total_income},
-            {"label": "Expenses", "value": report.total_expenses},
-            {"label": "Net", "value": report.net_savings},
+def _budget_response(budget: Budget) -> BudgetResponse:
+    return BudgetResponse(
+        id=_require_id(budget.id),
+        category=budget.category,
+        amount=_money_decimal(budget.amount),
+        month=budget.month,
+        year=budget.year,
+        created_at=_datetime_response(budget.created_at),
+    )
+
+
+def _budget_status_response(status_item: BudgetStatus) -> BudgetStatusResponse:
+    return BudgetStatusResponse(
+        budget=_budget_response(status_item.budget),
+        actual_expenses=_money_decimal(status_item.actual_expenses),
+        remaining=_money_decimal(status_item.remaining),
+        percent_used=_moneyless_decimal(status_item.percent_used),
+        status=status_item.status,
+    )
+
+
+def _monthly_report_response(report: MonthlyReport) -> MonthlyReportResponse:
+    return MonthlyReportResponse(
+        month=report.month,
+        year=report.year,
+        total_income=_money_decimal(report.total_income),
+        total_expenses=_money_decimal(report.total_expenses),
+        net_savings=_money_decimal(report.net_savings),
+        transaction_count=report.transaction_count,
+        income_by_category=_decimal_map(report.income_by_category),
+        expenses_by_category=_decimal_map(report.expenses_by_category),
+    )
+
+
+def _trend_report_response(report: TrendReport) -> TrendReportResponse:
+    return TrendReportResponse(
+        months=[
+            TrendMonthResponse(
+                month=item.month,
+                year=item.year,
+                label=f"{item.year}-{item.month:02d}",
+                total_income=_money_decimal(item.total_income),
+                total_expenses=_money_decimal(item.total_expenses),
+                net_savings=_money_decimal(item.net_savings),
+                transaction_count=item.transaction_count,
+                savings_rate=_moneyless_decimal(item.savings_rate),
+            )
+            for item in report.months
         ],
-        "expenses": [
-            {"label": category, "value": amount}
-            for category, amount in report.expenses_by_category.items()
-        ],
-    }
+        total_income=_money_decimal(report.total_income),
+        total_expenses=_money_decimal(report.total_expenses),
+        net_savings=_money_decimal(report.net_savings),
+        transaction_count=report.transaction_count,
+        top_expense_categories=_decimal_map(report.top_expense_categories),
+    )
 
 
-def _trend_chart_data(report: TrendReport) -> list[dict[str, Any]]:
-    return [
-        {
-            "label": f"{period.year}-{period.month:02d}",
-            "income": period.total_income,
-            "expenses": period.total_expenses,
-            "net": period.net_savings,
-        }
-        for period in report.months
-    ]
-
-
-def _budget_chart_data(statuses: list[BudgetStatus]) -> list[dict[str, Any]]:
-    return [
-        {
-            "category": status.budget.category,
-            "budget": status.budget.amount,
-            "actual": status.actual_expenses,
-            "percent": status.percent_used,
-            "status": status.status,
-        }
-        for status in statuses
-    ]
+def _decimal_map(values: dict[str, Decimal]) -> dict[str, str]:
+    return {key: _money_decimal(value) for key, value in values.items()}
 
 
 def _savings_rate(report: MonthlyReport) -> Decimal:
@@ -333,15 +477,26 @@ def _savings_rate(report: MonthlyReport) -> Decimal:
     return (report.net_savings / report.total_income * Decimal("100")).quantize(Decimal("0.1"))
 
 
-def _json(value: Any) -> str:
-    return json.dumps(value, default=_json_default)
+def _money_decimal(value: Decimal) -> str:
+    return f"{value.quantize(Decimal('0.01'))}"
 
 
-def _json_default(value: Any) -> Any:
-    if isinstance(value, Decimal):
-        return float(value)
-    if isinstance(value, date):
-        return value.isoformat()
-    if isinstance(value, Transaction):
-        return asdict(value)
+def _moneyless_decimal(value: Decimal) -> str:
     return str(value)
+
+
+def _datetime_response(value: datetime | None) -> str | None:
+    return value.isoformat() if value is not None else None
+
+
+def _require_id(value: int | None) -> int:
+    if value is None:
+        raise ValueError("Stored records must have an id.")
+    return value
+
+
+def _spa_response() -> FileResponse:
+    if INDEX_PATH.exists():
+        return FileResponse(INDEX_PATH)
+    fallback_path = STATIC_DIR / "fallback.html"
+    return FileResponse(fallback_path)

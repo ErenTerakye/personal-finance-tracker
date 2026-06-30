@@ -10,7 +10,7 @@ A Python CLI application for tracking income and expenses using SQLite, CSV proc
 - Store records locally in SQLite.
 - Generate monthly and multi-month income, expense, net savings, and category reports.
 - Save optional PNG charts for monthly reports and trend reports.
-- Run a polished local FastAPI Web UI for dashboard, transaction, and budget workflows.
+- Run a polished local FastAPI JSON API and React Web UI with route-aware dashboard, transaction, and budget workflows.
 - Use a clean `src/` package layout with Typer, pytest, and Ruff.
 
 ## Install
@@ -19,6 +19,8 @@ A Python CLI application for tracking income and expenses using SQLite, CSV proc
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev,web]"
+npm install
+npm run build
 ```
 
 ## Quick Start
@@ -58,7 +60,25 @@ finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 
 ## Web UI
 
-The local Web UI provides a browser dashboard with monthly totals, browser-rendered charts, recent transactions, budget status, transaction CRUD, and budget CRUD. It remains local-first: the Python server reads and writes your SQLite database on your machine.
+The local Web UI is an intentional portfolio-scale scope expansion: a Ledger Workbench for trend-first monthly review, transaction entry, and budget pressure checks. It remains local-first: the Python server reads and writes your SQLite database on your machine.
+
+Architecture: FastAPI exposes JSON endpoints under `/api`, and a React + Vite + TypeScript SPA is served from the same local server after `npm run build`. Money values are sent as decimal strings so the browser never depends on floating-point rounding for stored amounts.
+
+The browser workspace includes:
+
+- A compact dashboard led by a six-month statement tape, KPI cards, budget pressure, category mix, and recent activity.
+- Route-aware navigation for `/`, `/transactions`, and `/budgets`.
+- Dialog-based transaction add/edit/delete and budget set/update/delete flows.
+- Read-only ledger tables that collapse into mobile-friendly record cards.
+
+During frontend development, run the Python app and Vite separately:
+
+```bash
+finance-tracker web --db-path demo.sqlite3
+npm run dev
+```
+
+The browser interface uses modern platform features progressively, including semantic landmarks, accessible forms, native dialogs, SVG charts, container queries, color-scheme-aware dark mode, mobile-safe viewport units, and reduced-motion-aware animation. The support policy is modern Baseline-capable browsers as of June 2026; newer features must degrade without large polyfills.
 
 GitHub Pages can host static files only, so it cannot run the live Python/SQLite app. A static showcase is available in [docs/showcase/index.html](docs/showcase/index.html) for portfolio hosting, while real CRUD requires `finance-tracker web`.
 
@@ -66,9 +86,9 @@ GitHub Pages can host static files only, so it cannot run the live Python/SQLite
 
 ```bash
 finance-tracker add income 2500 --category Salary --description "June salary" --date 2026-06-01
-finance-tracker add expense 45.90 --category Food --description "Groceries" --date 2026-06-12
+finance-tracker add expense 386.40 --category Food --description "Groceries and farmers market" --date 2026-06-10
 finance-tracker edit 2 --amount 52.25 --category Household
-finance-tracker budget-set Food 400 --month 6 --year 2026
+finance-tracker budget-set Food 500 --month 6 --year 2026
 finance-tracker budget-status --month 6 --year 2026
 finance-tracker trends --months 6 --end-month 6 --end-year 2026
 finance-tracker list --month 6 --year 2026
@@ -85,16 +105,16 @@ Transaction import and export use:
 
 ```csv
 type,amount,category,description,date
-income,3200.00,Salary,June salary,2026-06-01
-expense,45.90,Food,Groceries,2026-06-12
+income,4200.00,Salary,June salary,2026-06-01
+expense,386.40,Food,Groceries and farmers market,2026-06-10
 ```
 
 Budget import and export use:
 
 ```csv
 category,amount,month,year
-Food,400.00,6,2026
-Rent,1200.00,6,2026
+Food,500.00,6,2026
+Rent,1600.00,6,2026
 ```
 
 ## Project Structure
@@ -109,7 +129,12 @@ src/finance_tracker/
   csv_io.py         # CSV import/export
   reports.py        # Monthly report calculations
   charts.py         # PNG chart generation
-  web/              # Local FastAPI Web UI
+  web/              # Local FastAPI JSON API and packaged SPA host
+```
+
+```text
+frontend/
+  src/              # React + TypeScript Ledger Workbench SPA
 ```
 
 ## Development
@@ -119,6 +144,8 @@ After activating the virtual environment, run:
 ```bash
 .venv/bin/python -m pytest
 .venv/bin/python -m ruff check .
+npm test
+npm run build
 ```
 
 GitHub Actions runs the same checks on Python 3.14.

@@ -4,7 +4,7 @@
 
 Personal Finance Tracker is a portfolio-ready Python application for recording income and expenses, storing records in SQLite, moving data through CSV files, producing monthly financial reports, and presenting the same local data in a browser-based dashboard.
 
-The project is intentionally local-first and easy to run. It demonstrates Python packaging, CLI design, object-oriented domain modeling, persistence, CSV processing, testing, data visualization, and a lightweight local Web UI.
+The project is intentionally local-first and easy to run. It demonstrates Python packaging, CLI design, object-oriented domain modeling, persistence, CSV processing, testing, data visualization, a FastAPI JSON API, and a React + Vite Web UI.
 
 ## Architecture
 
@@ -18,7 +18,8 @@ The application uses a layered structure:
 - `csv_io.py` owns portable transaction and budget CSV import/export behavior.
 - `reports.py` owns monthly and trend report calculations and text formatting.
 - `charts.py` owns optional PNG chart generation with matplotlib.
-- `web/` owns the FastAPI app, HTML templates, static assets, and browser UI routing.
+- `web/` owns the FastAPI JSON API and static SPA hosting.
+- `frontend/` owns the React + Vite + TypeScript browser app.
 
 SQL should stay in repository/database modules. Business validation should stay in models/services. CLI commands should stay thin and user-facing. Web routes should call the same service and report layers rather than duplicating business rules.
 
@@ -85,11 +86,16 @@ The Web UI is an intentional scope expansion from the original CLI-first milesto
 finance-tracker web --host 127.0.0.1 --port 8000
 ```
 
+The Python app exposes JSON endpoints under `/api` and serves the compiled React SPA for browser routes. During development, Vite can run separately against the same local API.
+
 Supported browser workflows:
 
-- Dashboard with monthly totals, savings rate, browser-rendered charts, recent transactions, budget status, and six-month trends.
-- Transaction add, edit, delete, and filtering.
-- Budget set/update, delete, filtering, and budget status comparison.
+- Ledger Workbench dashboard with a six-month statement tape, monthly KPI cards, functional browser-rendered charts, recent transactions, budget pressure, and category mix.
+- Route-aware SPA navigation for `/`, `/transactions`, and `/budgets`.
+- Transaction add, edit, delete, and filtering through native dialog workflows.
+- Budget set/update, delete, filtering, and budget status comparison with pressure as the primary view.
+
+Browser support policy: target modern Baseline-capable browsers as of June 2026. Newly available platform features, such as native dialogs, SVG chart affordances, container queries, color-scheme-aware dark mode, and reduced-motion-aware animation, are allowed when they are progressive enhancements and the core local CRUD workflows remain usable without large polyfills.
 
 The live Web UI is not designed for GitHub Pages because Pages only serves static files. The repository can include a static showcase page for portfolio presentation, but live CRUD requires running the local Python server.
 
@@ -122,7 +128,7 @@ Invalid data rows are skipped during import and reported to the user. Missing re
 
 ## Current Development Direction
 
-The current milestone is a local Web UI over the existing SQLite/service/report foundation. It should remain a portfolio-scale app: no authentication, cloud sync, background workers, or hosted database unless the project scope changes again.
+The current milestone is a 2026-quality local Web UI over the existing SQLite/service/report foundation. It should remain a portfolio-scale app: no authentication, cloud sync, background workers, or hosted database unless the project scope changes again.
 
 Future improvements can build from this foundation with recurring transaction templates, richer category analysis, CSV import/export from the browser, or downloadable chart artifacts.
 
@@ -139,6 +145,7 @@ Use pytest with temporary SQLite databases. Cover:
 - Budget status calculations by category.
 - Monthly and trend report calculations.
 - Chart output for monthly and trend reports.
-- Web dashboard rendering, form validation feedback, CRUD flows, and filters.
+- Web API dashboard data, form validation feedback, CRUD flows, and filters.
+- React dashboard, route navigation, transaction/budget dialog workflows, delete-dialog, API-client, and SVG chart behavior.
 - CLI smoke flows through Typer's test runner.
 - GitHub Actions should run pytest and Ruff on Python 3.14.

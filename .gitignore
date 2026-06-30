@@ -151,6 +151,7 @@ activemq-data/
 .env
 .envrc
 .venv
+node_modules/
 env/
 venv/
 ENV/
@@ -226,6 +227,8 @@ __marimo__/
 
 # Agent custom instructions
 AGENTS.md
+.agents/
+skills-lock.json
 
 # macOS system files
 .DS_Store
@@ -240,4 +243,3 @@ Desktop.ini
 # IDE settings
 .vscode/
 .idea/
-
