@@ -1,4 +1,4 @@
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   applyColorSchemePreference,
@@ -26,7 +26,8 @@ export function ThemeToggle() {
     : systemScheme === "dark"
       ? "Use light mode"
       : "Use dark mode";
-  const Icon = manual ? Monitor : systemScheme === "dark" ? Sun : Moon;
+  const currentScheme: ColorScheme = preference === "system" ? systemScheme : preference;
+  const Icon = currentScheme === "dark" ? Sun : Moon;
 
   useEffect(() => {
     applyColorSchemePreference(preference);
@@ -52,7 +53,7 @@ export function ThemeToggle() {
       }}
     >
       <Icon aria-hidden="true" size={17} />
-      <span>{label}</span>
+      <span className="sr-only">{label}</span>
     </button>
   );
 }
