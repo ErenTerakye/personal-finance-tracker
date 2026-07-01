@@ -101,11 +101,7 @@
     min-inline-size: 320px;
     min-block-size: 100dvh;
     color: var(--text);
-    background:
-      linear-gradient(90deg, color-mix(in srgb, var(--rule) 42%, transparent) 1px, transparent 1px)
-        0 0 / 28px 28px,
-      linear-gradient(180deg, color-mix(in srgb, var(--action-cobalt) 10%, transparent), transparent 20rem),
-      var(--paper);
+    background-color: var(--paper);
     font-family: var(--font-sans);
     line-height: var(--line-height-normal);
     font-size-adjust: from-font;
@@ -175,7 +171,13 @@
 
 @layer layout {
   .app {
+    display: flow-root;
     min-block-size: 100dvh;
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--rule) 42%, transparent) 1px, transparent 1px)
+        0 0 / 28px 28px,
+      linear-gradient(180deg, color-mix(in srgb, var(--action-cobalt) 10%, transparent), transparent 20rem),
+      var(--paper);
   }
 
   .skip-link {
@@ -207,6 +209,17 @@
     background: color-mix(in srgb, var(--paper) 92%, transparent);
     border-block-end: 1px solid var(--rule);
     backdrop-filter: blur(18px);
+  }
+
+  .app-header::before {
+    content: "";
+    position: absolute;
+    inset-block-end: 100%;
+    inset-inline: 0;
+    block-size: 100dvh;
+    background: inherit;
+    backdrop-filter: inherit;
+    pointer-events: none;
   }
 
   .brand {
