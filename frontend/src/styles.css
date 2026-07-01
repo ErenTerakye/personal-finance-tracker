@@ -49,6 +49,8 @@
     --radius: 8px;
     --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", monospace;
+    --page-gutter: clamp(0.5rem, 2vw, 1rem);
+    --tap-target: 2.75rem;
 
     /* Typography Scale */
     --font-size-xs: 0.75rem;
@@ -173,6 +175,7 @@
   .app {
     display: flow-root;
     min-block-size: 100dvh;
+    overflow-x: clip;
     background:
       linear-gradient(90deg, color-mix(in srgb, var(--rule) 42%, transparent) 1px, transparent 1px)
         0 0 / 28px 28px,
@@ -226,8 +229,13 @@
     display: inline-flex;
     align-items: center;
     gap: 0.75rem;
+    min-inline-size: 0;
     color: var(--ink);
     text-decoration: none;
+  }
+
+  .brand span:last-child {
+    min-inline-size: 0;
   }
 
   .brand-mark {
@@ -249,6 +257,7 @@
 
   .brand strong {
     font-weight: var(--font-weight-extrabold);
+    overflow-wrap: anywhere;
   }
 
   .brand em {
@@ -274,13 +283,17 @@
     scrollbar-gutter: stable;
   }
 
+  nav {
+    min-inline-size: 0;
+  }
+
   nav a {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
     min-inline-size: 8.5rem;
-    min-block-size: 2.45rem;
+    min-block-size: var(--tap-target);
     padding-inline: 0.85rem;
     color: var(--muted);
     border: 1px solid transparent;
@@ -326,7 +339,7 @@
     display: grid;
     grid-template-columns: 10rem minmax(0, 1fr);
     gap: 1rem;
-    inline-size: min(90rem, calc(100% - 2rem));
+    inline-size: min(90rem, calc(100% - (var(--page-gutter) * 2)));
     margin: 1rem auto 3rem;
   }
 
@@ -374,10 +387,12 @@
   }
 
   main {
+    container: workspace-main / inline-size;
     min-inline-size: 0;
   }
 
   .page-heading {
+    container: page-heading / inline-size;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 1rem;
@@ -393,9 +408,10 @@
   .page-heading h1 {
     max-inline-size: 16ch;
     color: var(--ink);
-    font-size: var(--font-size-display);
+    font-size: clamp(1.8rem, 4.5cqi, 3.4rem);
     line-height: var(--line-height-tight);
     letter-spacing: 0;
+    overflow-wrap: anywhere;
   }
 
   .page-heading p:not(.eyebrow) {
@@ -425,7 +441,8 @@
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
-    min-block-size: 2.45rem;
+    min-block-size: var(--tap-target);
+    max-inline-size: 100%;
     padding-inline: 0.8rem;
     border: 1px solid transparent;
     border-radius: 6px;
@@ -468,6 +485,8 @@
   .button span,
   .icon-button span {
     text-box: trim-both cap alphabetic;
+    overflow-wrap: anywhere;
+    text-align: center;
   }
 
   .button.primary {
@@ -500,7 +519,7 @@
   }
 
   .icon-button {
-    inline-size: 2.4rem;
+    inline-size: var(--tap-target);
     padding: 0;
     color: var(--muted);
     background: var(--panel-subtle);
@@ -543,6 +562,7 @@
 
   .panel-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: start;
     justify-content: space-between;
     gap: 1rem;
@@ -553,6 +573,7 @@
     color: var(--ink);
     font-size: var(--font-size-lg);
     letter-spacing: 0;
+    overflow-wrap: anywhere;
   }
 
   .panel-header p {
@@ -563,12 +584,12 @@
 
   .deferred-section {
     content-visibility: auto;
-    contain-intrinsic-size: auto none auto 24rem;
+    contain-intrinsic-block-size: auto 24rem;
   }
 
   .dashboard-lead {
     display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.55fr);
+    grid-template-columns: 1fr;
     gap: 1rem;
   }
 
@@ -592,17 +613,17 @@
 
   .quick-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
     gap: 0.55rem;
   }
 
   .kpi-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
     margin-block-start: 1rem;
   }
 
   .analysis-grid {
-    grid-template-columns: minmax(0, 1.25fr) minmax(20rem, 0.75fr);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
     margin-block-start: 1rem;
   }
 
@@ -611,11 +632,11 @@
   }
 
   .workbench-grid {
-    grid-template-columns: minmax(18rem, 0.32fr) minmax(0, 0.68fr);
+    grid-template-columns: 1fr;
   }
 
   .budget-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.42fr);
+    grid-template-columns: 1fr;
   }
 
   .budget-layout .records-panel {
@@ -627,7 +648,7 @@
     display: grid;
     align-content: space-between;
     gap: 0.25rem;
-    min-block-size: 7.4rem;
+    min-block-size: 7rem;
     padding: 0.9rem;
     background: var(--panel);
     border: 1px solid var(--rule);
@@ -668,6 +689,7 @@
     font-variant-numeric: tabular-nums;
     line-height: 1;
     overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .filter-form,
@@ -685,9 +707,11 @@
   }
 
   .field-group {
-    display: inline-flex;
+    display: grid;
+    grid-template-columns: auto minmax(6rem, 1fr);
     align-items: center;
     gap: 0.45rem;
+    min-inline-size: min(100%, 10rem);
   }
 
   .period-form label,
@@ -715,7 +739,7 @@
   input,
   select {
     inline-size: 100%;
-    min-block-size: 2.45rem;
+    min-block-size: var(--tap-target);
     padding: 0.52rem 0.65rem;
     color: var(--ink);
     background: var(--panel);
@@ -763,7 +787,7 @@
   }
 
   .filter-form {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
   }
 
   .filter-form.compact {
@@ -771,8 +795,8 @@
   }
 
   .filter-actions {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
     gap: 0.55rem;
     align-items: end;
   }
@@ -782,14 +806,13 @@
   }
 
   .statement-tape {
+    container: statement-tape / inline-size;
     display: grid;
     gap: 1rem;
   }
 
   .statement-tape figcaption {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
+    display: grid;
     gap: 1rem;
     color: var(--muted);
   }
@@ -804,7 +827,7 @@
 
   .statement-tape ol {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 0.55rem;
     margin: 0;
     padding: 0;
@@ -814,8 +837,12 @@
   .statement-tape li {
     container: tape-card / inline-size;
     display: grid;
-    gap: 0.5rem;
-    min-block-size: 13rem;
+    grid-template-columns: minmax(3.8rem, auto) minmax(0, 1fr) minmax(6.5rem, auto);
+    grid-template-areas:
+      "time bars value"
+      "entries bars value";
+    gap: 0.35rem 0.6rem;
+    min-block-size: 0;
     padding: 0.7rem;
     background: var(--panel-subtle);
     border: 1px solid var(--rule);
@@ -823,53 +850,59 @@
   }
 
   .statement-tape time {
+    grid-area: time;
     color: var(--muted);
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
   }
 
   .statement-tape li > span {
+    grid-area: entries;
     color: var(--muted);
     font-size: var(--font-size-xs);
   }
 
   .statement-tape strong {
-    align-self: end;
+    grid-area: value;
+    align-self: center;
+    justify-self: end;
     color: var(--ink);
     font-family: var(--font-mono);
-    font-size: clamp(0.95rem, 8cqi, 1.35rem);
+    font-size: clamp(0.95rem, 4.8cqi, 1.2rem);
     font-variant-numeric: tabular-nums;
-    text-wrap: nowrap;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    text-align: end;
   }
 
   .tape-bars {
+    grid-area: bars;
     display: grid;
-    align-items: end;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.35rem;
-    min-block-size: 6.5rem;
+    align-content: center;
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+    min-block-size: 2rem;
+    min-inline-size: 0;
   }
 
   .tape-bars span {
     display: block;
-    align-self: end;
-    min-block-size: 0.45rem;
-    border-radius: 999px 999px 3px 3px;
+    inline-size: max(0.45rem, var(--bar-size, 0%));
+    block-size: 0.4rem;
+    border-radius: 999px;
   }
 
   .tape-bars .cash {
-    block-size: var(--income-size);
+    --bar-size: var(--income-size);
     background: var(--cash);
   }
 
   .tape-bars .outflow {
-    block-size: var(--expense-size);
+    --bar-size: var(--expense-size);
     background: var(--outflow);
   }
 
   .tape-bars .net {
-    block-size: var(--net-size);
+    --bar-size: var(--net-size);
     background: var(--action-cobalt);
   }
 
@@ -884,11 +917,15 @@
     min-inline-size: 0;
   }
 
+  .line-chart {
+    container: line-chart / inline-size;
+  }
+
   .line-chart svg {
     display: block;
     inline-size: 100%;
     block-size: auto;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .axis {
@@ -954,14 +991,15 @@
   }
 
   .category-bars {
+    container: category-bars / inline-size;
     display: grid;
     gap: 0.65rem;
   }
 
   .category-bar {
     display: grid;
-    grid-template-columns: minmax(8rem, 0.45fr) minmax(8rem, 1fr) auto;
-    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 0.75rem;
     align-items: center;
   }
 
@@ -972,6 +1010,7 @@
   }
 
   .category-bar > div {
+    grid-column: 1 / -1;
     block-size: 0.7rem;
     overflow: clip;
     background: var(--panel-subtle);
@@ -989,18 +1028,20 @@
   .category-bar strong {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    text-align: end;
   }
 
   .pressure-list {
+    container: pressure-list / inline-size;
     display: grid;
     gap: 0.6rem;
   }
 
   .pressure-row {
     display: grid;
-    grid-template-columns: minmax(9rem, 1fr) minmax(8rem, 0.8fr) auto;
-    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.55rem 0.75rem;
     align-items: center;
     padding: 0.75rem;
     background: var(--panel-subtle);
@@ -1019,6 +1060,7 @@
   }
 
   progress {
+    grid-column: 1 / -1;
     -webkit-appearance: none;
     appearance: none;
     inline-size: 100%;
@@ -1083,7 +1125,7 @@
     font-size: var(--font-size-xs);
     font-style: normal;
     font-weight: var(--font-weight-extrabold);
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   .pressure-row em span,
@@ -1103,6 +1145,7 @@
   }
 
   .activity-list {
+    container: activity-list / inline-size;
     display: grid;
     gap: 0.5rem;
     margin: 0;
@@ -1111,9 +1154,8 @@
   }
 
   .activity-list li {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 1rem;
     padding-block: 0.6rem;
     border-block-end: 1px solid var(--rule);
@@ -1141,21 +1183,24 @@
   .activity-list li > strong {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   .table-wrap {
+    container: table-wrap / inline-size;
     overflow-x: auto;
     scrollbar-gutter: stable;
   }
 
   .data-table {
+    display: block;
     inline-size: 100%;
-    min-inline-size: 48rem;
+    min-inline-size: 0;
     border-collapse: collapse;
   }
 
   .data-table caption {
+    display: block;
     margin-block-end: 0.45rem;
     color: var(--muted);
     text-align: start;
@@ -1167,6 +1212,42 @@
     border-block-end: 1px solid var(--rule);
     text-align: start;
     vertical-align: middle;
+  }
+
+  .data-table thead {
+    display: none;
+  }
+
+  .data-table tbody {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .data-table tr {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.75rem;
+    background: var(--panel-subtle);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+
+  .data-table td {
+    display: grid;
+    grid-template-columns: minmax(5rem, 0.36fr) minmax(0, 1fr);
+    gap: 0.55rem;
+    min-inline-size: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .data-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .data-table tbody tr {
@@ -1193,13 +1274,13 @@
   .data-table td[data-label="Date"],
   .data-table td[data-label="Period"],
   .data-table td[data-label="Amount"] {
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   .row-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr));
     align-items: center;
-    flex-wrap: nowrap;
     gap: 0.4rem;
   }
 
@@ -1243,6 +1324,7 @@
 
   .segmented-field label {
     position: relative;
+    flex: 1 1 8rem;
   }
 
   .segmented-field input {
@@ -1252,12 +1334,14 @@
 
   .segmented-field span {
     display: block;
+    min-block-size: var(--tap-target);
     padding: 0.5rem 0.8rem;
     color: var(--muted);
     background: var(--panel-subtle);
     border: 1px solid var(--rule);
     border-radius: 999px;
     font-weight: var(--font-weight-extrabold);
+    text-align: center;
   }
 
   .segmented-field input:checked + span {
@@ -1273,9 +1357,10 @@
   }
 
   .modal {
-    inline-size: min(34rem, calc(100% - 2rem));
-    max-block-size: min(90dvh, 44rem);
+    inline-size: min(34rem, calc(100% - 1rem));
+    max-block-size: min(calc(100dvh - 1rem), 44rem);
     padding: 1rem;
+    overflow: auto;
     color: var(--text);
     background: var(--panel);
     border: 1px solid var(--rule-strong);
@@ -1285,6 +1370,7 @@
 
   .modal-header {
     display: flex;
+    align-items: start;
     justify-content: space-between;
     gap: 1rem;
     margin-block-end: 1rem;
@@ -1302,8 +1388,8 @@
   }
 
   .dialog-actions {
-    display: flex;
-    justify-content: flex-end;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
     gap: 0.55rem;
     margin-block-start: 0.5rem;
   }
@@ -1355,23 +1441,217 @@
 }
 
 @layer responsive {
-  @container panel (inline-size > 42rem) {
+  @container workspace-main (min-width: 44rem) {
+    .kpi-grid {
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    }
+
+    .analysis-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .analysis-grid .panel:first-child,
+    .budget-layout .records-panel {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @container workspace-main (min-width: 62rem) {
+    .dashboard-lead {
+      grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.55fr);
+    }
+
+    .workbench-grid {
+      grid-template-columns: minmax(18rem, 0.32fr) minmax(0, 0.68fr);
+    }
+
+    .budget-layout {
+      grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.42fr);
+    }
+  }
+
+  @container workspace-main (max-width: 43.99rem) {
+    .page-heading {
+      grid-template-columns: 1fr;
+      align-items: start;
+    }
+
+    .page-actions {
+      min-inline-size: 0;
+    }
+
+    .period-form {
+      justify-content: flex-start;
+    }
+  }
+
+  @container page-heading (max-width: 28rem) {
+    .period-form,
+    .field-group,
+    .period-form .button {
+      inline-size: 100%;
+    }
+
+    .field-group {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @container panel (min-width: 28rem) {
+    .panel-header {
+      flex-wrap: nowrap;
+    }
+
+    .activity-list li {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
+  }
+
+  @container panel (min-width: 34rem) {
+    .statement-tape ol {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .statement-tape li {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "time"
+        "bars"
+        "value"
+        "entries";
+      min-block-size: 9.5rem;
+    }
+
+    .statement-tape strong {
+      align-self: end;
+      justify-self: start;
+      text-align: start;
+    }
+
+    .tape-bars {
+      align-items: end;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.35rem;
+      min-block-size: 4.6rem;
+    }
+
+    .tape-bars span {
+      inline-size: auto;
+      block-size: max(0.45rem, var(--bar-size, 0%));
+      align-self: end;
+      border-radius: 999px 999px 3px 3px;
+    }
+  }
+
+  @container panel (min-width: 42rem) {
     .category-bars {
       gap: 0.75rem;
+    }
+
+    .statement-tape figcaption {
+      grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.5fr);
+      align-items: baseline;
+    }
+
+    .statement-tape ol {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .category-bar {
+      grid-template-columns: minmax(8rem, 0.45fr) minmax(8rem, 1fr) auto;
+      gap: 0.75rem;
+    }
+
+    .category-bar > div {
+      grid-column: auto;
+    }
+
+    .pressure-row {
+      grid-template-columns: minmax(9rem, 1fr) minmax(8rem, 0.8fr) auto;
+      gap: 0.75rem;
+    }
+
+    .pressure-row progress {
+      grid-column: auto;
+    }
+  }
+
+  @container panel (min-width: 54rem) {
+    .statement-tape ol {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .statement-tape li {
+      min-block-size: 12rem;
+    }
+  }
+
+  @container line-chart (max-width: 26rem) {
+    .chart-line {
+      stroke-width: 3;
+    }
+
+    .line-chart text {
+      font-size: 0.66rem;
+    }
+  }
+
+  @container table-wrap (min-width: 48rem) {
+    .data-table {
+      display: table;
+      min-inline-size: 0;
+      border-collapse: collapse;
+    }
+
+    .data-table caption {
+      display: table-caption;
+    }
+
+    .data-table thead {
+      display: table-header-group;
+    }
+
+    .data-table tbody {
+      display: table-row-group;
+    }
+
+    .data-table tr {
+      display: table-row;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .data-table th,
+    .data-table td {
+      display: table-cell;
+      padding: 0.65rem;
+      border-block-end: 1px solid var(--rule);
+      vertical-align: middle;
+    }
+
+    .data-table td::before {
+      content: none;
+    }
+
+    .data-table td[data-label="Date"],
+    .data-table td[data-label="Period"],
+    .data-table td[data-label="Amount"] {
+      white-space: nowrap;
+    }
+
+    .row-actions {
+      display: flex;
+      flex-wrap: nowrap;
     }
   }
 
   @media (max-width: 1050px) {
-    .app-header,
-    .workspace,
-    .dashboard-lead,
-    .workbench-grid,
-    .budget-layout {
-      grid-template-columns: 1fr;
-    }
-
     .app-header {
       position: static;
+      grid-template-columns: minmax(0, 1fr);
       padding: 1rem;
     }
 
@@ -1394,14 +1674,8 @@
       border-inline-end: 0;
     }
 
-    .kpi-grid,
-    .analysis-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .analysis-grid .panel:first-child,
-    .budget-layout .records-panel {
-      grid-column: 1 / -1;
+    .workspace {
+      grid-template-columns: 1fr;
     }
   }
 
@@ -1410,30 +1684,29 @@
       inline-size: min(100% - 1rem, 90rem);
     }
 
-    .page-heading,
-    .filter-form,
-    .kpi-grid,
-    .analysis-grid,
-    .statement-tape ol,
-    .category-bar,
-    .pressure-row {
-      grid-template-columns: 1fr;
+    .app-header {
+      gap: 0.75rem;
+      padding: 0.75rem 0.5rem;
     }
 
-    .period-form {
-      justify-content: flex-start;
+    .brand-mark {
+      inline-size: 2.25rem;
+      block-size: 2.25rem;
     }
 
-    .page-actions {
+    nav ul {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      overflow-x: visible;
+      scrollbar-gutter: auto;
+    }
+
+    nav a {
+      flex-direction: column;
+      gap: 0.25rem;
       min-inline-size: 0;
-    }
-
-    .quick-actions {
-      grid-template-columns: 1fr;
-    }
-
-    .context-rail {
-      grid-template-columns: 1fr;
+      padding: 0.5rem 0.25rem;
+      font-size: var(--font-size-xs);
     }
 
     .context-rail div {
@@ -1441,47 +1714,27 @@
       border-block-end: 1px solid var(--rule);
       padding-block-end: 0.55rem;
     }
+  }
 
-    .data-table {
-      min-inline-size: 0;
-    }
-
-    .data-table thead {
+  @media (max-width: 420px) {
+    .brand em,
+    .period-pill svg {
       display: none;
     }
 
-    .data-table tr {
-      display: grid;
-      gap: 0.45rem;
-      padding: 0.75rem;
-      border-block-end: 1px solid var(--rule);
+    .period-pill {
+      inline-size: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media (pointer: coarse) {
+    :root {
+      --tap-target: 3rem;
     }
 
-    .data-table td {
-      display: grid;
-      grid-template-columns: 7.5rem minmax(0, 1fr);
-      gap: 0.55rem;
-      padding: 0;
-      border: 0;
-    }
-
-    .data-table td::before {
-      content: attr(data-label);
-      color: var(--muted);
-      font-size: 0.7rem;
-      font-weight: var(--font-weight-semibold);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .row-actions {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .dialog-actions {
-      display: grid;
-      grid-template-columns: 1fr;
+    .segmented-field span {
+      padding-block: 0.7rem;
     }
   }
 }
@@ -1496,13 +1749,19 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      scroll-behavior: auto !important;
-      animation-duration: 0.001ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.001ms !important;
+    html {
+      scroll-behavior: auto;
+    }
+
+    .panel,
+    .kpi-card,
+    .page-heading,
+    .spin {
+      animation: none;
+    }
+
+    .modal {
+      transition: none;
     }
   }
 
