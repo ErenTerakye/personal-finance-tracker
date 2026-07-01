@@ -886,7 +886,7 @@
 
   .tape-bars span {
     display: block;
-    inline-size: max(0.45rem, var(--bar-size, 0%));
+    inline-size: var(--bar-size, 0%);
     block-size: 0.4rem;
     border-radius: 999px;
   }
@@ -1508,7 +1508,7 @@
     }
   }
 
-  @container panel (min-width: 34rem) {
+  @container statement-tape (min-width: 34rem) {
     .statement-tape ol {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -1530,25 +1530,23 @@
     }
 
     .tape-bars {
+      display: flex;
       align-items: end;
-      grid-template-columns: repeat(3, 1fr);
       gap: 0.35rem;
-      min-block-size: 4.6rem;
+      block-size: 4.6rem;
+      min-block-size: 0;
     }
 
     .tape-bars span {
+      flex: 1 1 0;
       inline-size: auto;
-      block-size: max(0.45rem, var(--bar-size, 0%));
+      block-size: var(--bar-size, 0%);
       align-self: end;
       border-radius: 999px 999px 3px 3px;
     }
   }
 
-  @container panel (min-width: 42rem) {
-    .category-bars {
-      gap: 0.75rem;
-    }
-
+  @container statement-tape (min-width: 42rem) {
     .statement-tape figcaption {
       grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.5fr);
       align-items: baseline;
@@ -1556,6 +1554,12 @@
 
     .statement-tape ol {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @container panel (min-width: 42rem) {
+    .category-bars {
+      gap: 0.75rem;
     }
 
     .category-bar {
@@ -1577,7 +1581,7 @@
     }
   }
 
-  @container panel (min-width: 54rem) {
+  @container statement-tape (min-width: 54rem) {
     .statement-tape ol {
       grid-template-columns: repeat(6, minmax(0, 1fr));
     }

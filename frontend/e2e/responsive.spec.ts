@@ -54,6 +54,27 @@ for (const width of viewports) {
   });
 }
 
+test.describe("statement tape graph rendering", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await mockApi(page);
+  });
+
+  test("scales desktop bars and leaves empty months blank", async ({ page }) => {
+    await page.goto("/");
+
+    await expect(page.getByText("Six-month cashflow strip")).toBeVisible();
+    const activeBars = await measureTapeBars(page.locator(".statement-tape li").first());
+    const emptyBars = await measureTapeBars(page.locator(".statement-tape li").last());
+
+    expect(activeBars.cash).toBeGreaterThan(activeBars.outflow);
+    expect(activeBars.net).toBeGreaterThan(activeBars.outflow);
+    expect(emptyBars.cash).toBeLessThanOrEqual(1);
+    expect(emptyBars.outflow).toBeLessThanOrEqual(1);
+    expect(emptyBars.net).toBeLessThanOrEqual(1);
+  });
+});
+
 async function assertNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(() => {
     const root = document.documentElement;
@@ -81,6 +102,18 @@ async function expectTableModeMatchesContainer(page: Page) {
     return;
   }
   expect(headerDisplay).not.toBe("none");
+}
+
+async function measureTapeBars(card: ReturnType<Page["locator"]>) {
+  return card.evaluate((node) => {
+    const barHeight = (selector: string) =>
+      node.querySelector(selector)?.getBoundingClientRect().height ?? 0;
+    return {
+      cash: barHeight(".tape-bars .cash"),
+      outflow: barHeight(".tape-bars .outflow"),
+      net: barHeight(".tape-bars .net")
+    };
+  });
 }
 
 async function expectDialogFitsViewport(page: Page, dialog: ReturnType<Page["getByRole"]>) {
@@ -174,12 +207,16 @@ function dashboardPayload() {
         trendMonth("2026-03", "2536.30"),
         trendMonth("2026-04", "1840.25"),
         trendMonth("2026-05", "2210.15"),
-        trendMonth("2026-06", "2113.60")
+        trendMonth("2026-06", "0.00", {
+          total_income: "0.00",
+          total_expenses: "0.00",
+          transaction_count: 0
+        })
       ],
-      total_income: "15000.00",
-      total_expenses: "3000.00",
-      net_savings: "12000.00",
-      transaction_count: 12,
+      total_income: "12500.00",
+      total_expenses: "2500.00",
+      net_savings: "10842.95",
+      transaction_count: 25,
       top_expense_categories: { Food: "386.40", Travel: "185.00" }
     },
     savings_rate: "84.5",
@@ -188,7 +225,18 @@ function dashboardPayload() {
   };
 }
 
-function trendMonth(label: string, netSavings: string) {
+function trendMonth(
+  label: string,
+  netSavings: string,
+  overrides: Partial<ReturnType<typeof baseTrendMonth>> = {}
+) {
+  return {
+    ...baseTrendMonth(label, netSavings),
+    ...overrides
+  };
+}
+
+function baseTrendMonth(label: string, netSavings: string) {
   const [year, month] = label.split("-").map(Number);
   return {
     month,

@@ -7,6 +7,8 @@ type TrendMonth = DashboardData["trend"]["months"][number];
 
 type VariableStyle = CSSProperties & Record<`--${string}`, string | number>;
 
+const MIN_VISIBLE_TAPE_SIZE = 6;
+
 export function StatementTape({ months }: { months: TrendMonth[] }) {
   if (!months.length) {
     return <EmptyState title="No trend yet" message="Add transactions to build a cashflow strip." />;
@@ -15,9 +17,9 @@ export function StatementTape({ months }: { months: TrendMonth[] }) {
   const max = Math.max(
     1,
     ...months.flatMap((item) => [
-      Math.abs(Number(item.total_income)),
-      Math.abs(Number(item.total_expenses)),
-      Math.abs(Number(item.net_savings))
+      absoluteAmount(item.total_income),
+      absoluteAmount(item.total_expenses),
+      absoluteAmount(item.net_savings)
     ])
   );
 
@@ -29,9 +31,6 @@ export function StatementTape({ months }: { months: TrendMonth[] }) {
       </figcaption>
       <ol aria-label="Six-month cashflow summary">
         {months.map((item) => {
-          const income = (Math.abs(Number(item.total_income)) / max) * 100;
-          const expense = (Math.abs(Number(item.total_expenses)) / max) * 100;
-          const net = (Math.abs(Number(item.net_savings)) / max) * 100;
           const positive = Number(item.net_savings) >= 0;
           return (
             <li
@@ -39,9 +38,9 @@ export function StatementTape({ months }: { months: TrendMonth[] }) {
               className={positive ? "positive" : "negative"}
               style={
                 {
-                  "--income-size": `${income}%`,
-                  "--expense-size": `${expense}%`,
-                  "--net-size": `${Math.max(6, net)}%`
+                  "--income-size": tapeSize(item.total_income, max),
+                  "--expense-size": tapeSize(item.total_expenses, max),
+                  "--net-size": tapeSize(item.net_savings, max)
                 } as VariableStyle
               }
             >
@@ -61,6 +60,19 @@ export function StatementTape({ months }: { months: TrendMonth[] }) {
       </ol>
     </figure>
   );
+}
+
+function tapeSize(value: string | number, max: number): string {
+  const amount = absoluteAmount(value);
+  if (amount === 0) {
+    return "0%";
+  }
+  return `${Math.max(MIN_VISIBLE_TAPE_SIZE, (amount / max) * 100)}%`;
+}
+
+function absoluteAmount(value: string | number): number {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? Math.abs(amount) : 0;
 }
 
 export function TrendLines({ months }: { months: TrendMonth[] }) {
