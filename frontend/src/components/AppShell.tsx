@@ -62,6 +62,7 @@ export function AppShell({
                   <a
                     href={viewMeta[item].path}
                     aria-current={active ? "page" : undefined}
+                    aria-label={viewMeta[item].label}
                     onClick={(event) => {
                       event.preventDefault();
                       onNavigate(item);
@@ -83,12 +84,11 @@ export function AppShell({
 
       <div className="workspace">
         <main id="content" tabIndex={-1} ref={mainRef}>
-          <div className="workspace-meta" aria-label="Workspace context">
+          <div className="local-status" aria-label="Workspace storage">
             <span>
               <Database aria-hidden="true" size={14} />
-              SQLite
+              Local SQLite
             </span>
-            <span>{viewMeta[view].label}</span>
           </div>
           <Notice message={notice} />
           {children}

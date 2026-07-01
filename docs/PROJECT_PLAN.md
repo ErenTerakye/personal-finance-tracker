@@ -90,12 +90,12 @@ The Python app exposes JSON endpoints under `/api` and serves the compiled React
 
 Supported browser workflows:
 
-- Ledger Workbench dashboard with a six-month statement tape, monthly KPI cards, functional browser-rendered charts, recent transactions, budget pressure, and category mix.
+- Ledger Workbench dashboard with a six-month statement tape, compact period controls, monthly KPI cards, functional browser-rendered charts, recent transactions, budget pressure, and category mix.
 - Route-aware SPA navigation for `/`, `/transactions`, and `/budgets`.
 - Transaction add, edit, delete, and filtering through native dialog workflows.
 - Budget set/update, delete, filtering, and budget status comparison with pressure as the primary view.
 
-Browser support policy: target modern Baseline-capable browsers as of June 2026. Newly available platform features, such as native dialogs, SVG chart affordances, container queries, color-scheme-aware dark mode, and reduced-motion-aware animation, are allowed when they are progressive enhancements and the core local CRUD workflows remain usable without large polyfills.
+Browser support policy: target modern Baseline-capable browsers as of June 2026. Newly available platform features, such as native dialogs and popovers, SVG chart affordances, container queries, color-scheme-aware dark mode, same-document view transitions, and reduced-motion-aware animation, are allowed when they are progressive enhancements and the core local CRUD workflows remain usable without large polyfills.
 
 The live Web UI is not designed for GitHub Pages because Pages only serves static files. The repository can include a static showcase page for portfolio presentation, but live CRUD requires running the local Python server.
 

@@ -23,7 +23,7 @@ export function TransactionTable({
 
   return (
     <div className="table-wrap">
-      <table className="data-table">
+      <table className="data-table transaction-table">
         <caption>Transaction ledger</caption>
         <thead>
           <tr>
@@ -49,12 +49,18 @@ export function TransactionTable({
               </td>
               <td data-label="Actions">
                 <div className="row-actions">
-                  <IconButton icon={Pencil} variant="secondary" onClick={() => onEdit(transaction)}>
-                    Edit
-                  </IconButton>
-                  <IconButton icon={Trash2} variant="danger" onClick={() => onDelete(transaction)}>
-                    Delete
-                  </IconButton>
+                  <IconButton
+                    icon={Pencil}
+                    label={`Edit ${transaction.category} transaction`}
+                    variant="secondary"
+                    onClick={() => onEdit(transaction)}
+                  />
+                  <IconButton
+                    icon={Trash2}
+                    label={`Delete ${transaction.category} transaction`}
+                    variant="danger"
+                    onClick={() => onDelete(transaction)}
+                  />
                 </div>
               </td>
             </tr>
@@ -85,7 +91,7 @@ export function BudgetTable({
 
   return (
     <div className="table-wrap">
-      <table className="data-table">
+      <table className="data-table budget-table">
         <caption>Budget records</caption>
         <thead>
           <tr>
@@ -105,12 +111,18 @@ export function BudgetTable({
               </td>
               <td data-label="Actions">
                 <div className="row-actions">
-                  <IconButton icon={Pencil} variant="secondary" onClick={() => onEdit(budget)}>
-                    Update
-                  </IconButton>
-                  <IconButton icon={Trash2} variant="danger" onClick={() => onDelete(budget)}>
-                    Delete
-                  </IconButton>
+                  <IconButton
+                    icon={Pencil}
+                    label={`Update ${budget.category} budget`}
+                    variant="secondary"
+                    onClick={() => onEdit(budget)}
+                  />
+                  <IconButton
+                    icon={Trash2}
+                    label={`Delete ${budget.category} budget`}
+                    variant="danger"
+                    onClick={() => onDelete(budget)}
+                  />
                 </div>
               </td>
             </tr>

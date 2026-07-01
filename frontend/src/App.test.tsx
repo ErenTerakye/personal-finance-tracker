@@ -11,6 +11,7 @@ beforeEach(() => {
 afterEach(() => {
   window.localStorage?.clear();
   document.documentElement.removeAttribute("data-theme");
+  Reflect.deleteProperty(document, "startViewTransition");
   colorSchemeMeta().content = "light dark";
   window.history.pushState({}, "", "/");
   vi.restoreAllMocks();
@@ -36,7 +37,7 @@ describe("Ledger Workbench", () => {
     render(<App />);
 
     expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
-    expect(screen.getAllByText("June 2026")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: /Choose period/ })).toBeInTheDocument();
     expect(screen.getByText("Six-month cashflow strip")).toBeInTheDocument();
     expect(screen.getAllByText("$2,500.00").length).toBeGreaterThan(0);
     expect(screen.getByText("over budget")).toBeInTheDocument();
@@ -56,6 +57,68 @@ describe("Ledger Workbench", () => {
     expect(window.location.pathname).toBe("/budgets");
     expect(await screen.findByRole("heading", { name: "Budgets" })).toBeInTheDocument();
     expect(document.title).toBe("Budgets | Ledger Workbench");
+  });
+
+  it("changes the dashboard period from the compact period control", async () => {
+    const fetchMock = mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /^Next month,/ }));
+
+    await waitFor(() => {
+      const dashboardCalls = fetchMock.mock.calls.filter(([input]) =>
+        String(input).startsWith("/api/dashboard")
+      );
+      expect(dashboardCalls.length).toBeGreaterThan(1);
+    });
+  });
+
+  it("uses view transitions for route changes when motion is allowed", async () => {
+    mockColorScheme("light");
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/budgets": { budgets: [] },
+      "/api/budgets/status": { statuses: [] }
+    });
+    const startViewTransition = vi.fn(({ update }: { update: () => void }) => {
+      update();
+      return { finished: Promise.resolve() };
+    });
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: startViewTransition
+    });
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole("link", { name: "Budgets" }));
+
+    expect(startViewTransition).toHaveBeenCalledWith({
+      update: expect.any(Function),
+      types: ["forward"]
+    });
+    expect(window.location.pathname).toBe("/budgets");
+  });
+
+  it("skips view transitions when reduced motion is preferred", async () => {
+    mockReducedMotion();
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/budgets": { budgets: [] },
+      "/api/budgets/status": { statuses: [] }
+    });
+    const startViewTransition = vi.fn();
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: startViewTransition
+    });
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole("link", { name: "Budgets" }));
+
+    expect(startViewTransition).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe("/budgets");
   });
 
   it("creates a transaction from a dialog and announces success", async () => {
@@ -99,7 +162,7 @@ describe("Ledger Workbench", () => {
     render(<App />);
     await userEvent.click(await screen.findByRole("link", { name: /Transactions/i }));
     await screen.findByText("Groceries");
-    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete Food transaction" }));
     const dialog = screen.getByRole("dialog", { name: "Delete transaction" });
 
     expect(dialog).toHaveAttribute("open");
@@ -286,6 +349,19 @@ function mockColorScheme(initialScheme: "light" | "dark") {
       listeners.forEach((listener) => listener(event));
     }
   };
+}
+
+function mockReducedMotion() {
+  vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
+    media: query,
+    matches: query === "(prefers-reduced-motion: reduce)",
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn()
+  }) as unknown as MediaQueryList));
 }
 
 function transaction() {

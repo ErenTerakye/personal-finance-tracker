@@ -1,10 +1,11 @@
-import { FormEvent, useEffect, useState } from "react";
-import { ArrowRight, CalendarDays } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { api } from "../api";
 import { compactValue, CategoryBars, KpiCard, StatementTape, TrendLines } from "../components/Charts";
 import { ActivityList, BudgetPressureList } from "../components/Lists";
-import { ErrorBanner, IconButton, PageHeader, Panel } from "../components/ui";
-import { money, monthNames, percent, periodLabel } from "../format";
+import { PeriodControl } from "../components/PeriodControl";
+import { ActionButton, ErrorBanner, PageHeader, Panel } from "../components/ui";
+import { money, percent, periodLabel } from "../format";
 import type { DashboardData } from "../types";
 import type { View } from "../routes";
 
@@ -18,11 +19,9 @@ export function DashboardView({
   onNavigate: (view: View) => void;
 }) {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [draft, setDraft] = useState(selectedPeriod);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setDraft(selectedPeriod);
     setError("");
     setData(null);
     api
@@ -30,11 +29,6 @@ export function DashboardView({
       .then(setData)
       .catch((err: Error) => setError(readError(err)));
   }, [selectedPeriod]);
-
-  function submitPeriod(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSelectedPeriod({ month: Number(draft.month), year: Number(draft.year) });
-  }
 
   if (error) {
     return <ErrorBanner message={error} />;
@@ -62,48 +56,21 @@ export function DashboardView({
         summary="Review cashflow, budget pressure, and recent ledger activity for one period."
         className="dashboard-heading"
         actions={
-          <form className="period-form" onSubmit={submitPeriod} aria-label="Change dashboard period">
-            <output className="period-current" aria-label="Selected period">
-              {data.period_label}
-            </output>
-            <div className="field-group">
-              <label htmlFor="dashboard-month">Month</label>
-              <select
-                id="dashboard-month"
-                value={draft.month}
-                onChange={(event) => setDraft({ ...draft, month: Number(event.target.value) })}
-              >
-                {monthNames.slice(1).map((name, index) => (
-                  <option key={name} value={index + 1}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field-group">
-              <label htmlFor="dashboard-year">Year</label>
-              <input
-                id="dashboard-year"
-                min="1"
-                type="number"
-                value={draft.year}
-                onChange={(event) => setDraft({ ...draft, year: Number(event.target.value) })}
-              />
-            </div>
-            <button className="button secondary" type="submit">
-              <CalendarDays aria-hidden="true" size={18} />
-              <span>Review</span>
-            </button>
-          </form>
+          <PeriodControl
+            label="Change dashboard period"
+            value={selectedPeriod}
+            onChange={setSelectedPeriod}
+          />
         }
       />
 
-      <section className="dashboard-summary" aria-label="Dashboard totals">
+      <section className="dashboard-summary" aria-label={`Dashboard totals for ${data.period_label}`}>
         <KpiCard
           label="Net position"
           value={money(data.report.net_savings)}
           detail={`${data.report.transaction_count} entries`}
           tone={Number(data.report.net_savings) >= 0 ? "cash" : "outflow"}
+          featured
         />
         <KpiCard
           label="Savings rate"
@@ -118,12 +85,12 @@ export function DashboardView({
           tone={overBudget ? "warning" : "cash"}
         />
         <div className="quick-actions" aria-label="Next actions">
-          <IconButton icon={ArrowRight} variant="primary" onClick={() => onNavigate("transactions")}>
+          <ActionButton icon={ArrowRight} variant="primary" onClick={() => onNavigate("transactions")}>
             Add entry
-          </IconButton>
-          <IconButton icon={ArrowRight} variant="secondary" onClick={() => onNavigate("budgets")}>
+          </ActionButton>
+          <ActionButton icon={ArrowRight} variant="secondary" onClick={() => onNavigate("budgets")}>
             Set budget
-          </IconButton>
+          </ActionButton>
         </div>
       </section>
 

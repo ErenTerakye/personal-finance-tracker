@@ -1,5 +1,6 @@
 import {
   AlertCircle,
+  X,
   Loader2,
   Plus,
   type LucideIcon
@@ -176,7 +177,7 @@ export function ModalDialog({
           {description ? <p id={descriptionId}>{description}</p> : null}
         </div>
         <button className="icon-button" type="button" onClick={onClose} aria-label="Close dialog">
-          <span aria-hidden="true">x</span>
+          <X aria-hidden="true" size={18} />
         </button>
       </header>
       {children}
@@ -187,18 +188,40 @@ export function ModalDialog({
 export function IconButton({
   icon: Icon,
   label,
+  variant = "ghost",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  icon: LucideIcon;
+  label: string;
+  variant?: "primary" | "secondary" | "danger" | "ghost";
+}) {
+  return (
+    <button
+      className={`icon-button ${variant}`}
+      type="button"
+      aria-label={label}
+      title={label}
+      {...props}
+    >
+      <Icon aria-hidden="true" size={18} />
+      <span className="sr-only">{label}</span>
+    </button>
+  );
+}
+
+export function ActionButton({
+  icon: Icon,
   children,
   variant = "primary",
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   icon: LucideIcon;
-  label?: string;
   variant?: "primary" | "secondary" | "danger" | "ghost";
 }) {
   return (
     <button className={`button ${variant}`} type="button" {...props}>
       <Icon aria-hidden="true" size={18} />
-      <span>{children ?? label}</span>
+      <span>{children}</span>
     </button>
   );
 }
@@ -219,6 +242,29 @@ export function SubmitButton({
       {busy ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <Icon aria-hidden="true" size={18} />}
       <span>{children}</span>
     </button>
+  );
+}
+
+export function FilterBar({
+  title,
+  summary,
+  children
+}: {
+  title: string;
+  summary: string;
+  children: ReactNode;
+}) {
+  const titleId = useId();
+  return (
+    <section className="filter-bar" aria-labelledby={titleId}>
+      <header className="filter-bar-header">
+        <div>
+          <h2 id={titleId}>{title}</h2>
+          <p>{summary}</p>
+        </div>
+      </header>
+      {children}
+    </section>
   );
 }
 

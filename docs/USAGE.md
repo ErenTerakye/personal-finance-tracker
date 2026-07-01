@@ -61,6 +61,7 @@ The Web UI supports:
 
 - A Ledger Workbench dashboard with a six-month statement tape, KPI cards, trend/category charts, recent transactions, and budget pressure.
 - Route-aware browser navigation for `/`, `/transactions`, and `/budgets`.
+- Compact period controls for changing monthly scope without keeping month/year fields open all the time.
 - Transaction add, edit, delete, and filters through native dialog workflows.
 - Budget set/update, delete, filters, and monthly status comparison with pressure shown first.
 - A color theme action that follows the operating system by default and can pin a local light or dark preference.
@@ -74,7 +75,7 @@ finance-tracker web --db-path demo.sqlite3
 npm run dev
 ```
 
-Browser support policy: the Web UI targets modern Baseline-capable browsers as of June 2026. Newly available browser features are used only as progressive enhancements, so core navigation and CRUD workflows remain usable without large polyfills. The UI uses color-scheme-aware dark mode with a persistent local override, native dialogs, SVG charts, container queries, mobile-safe viewport units, and reduced-motion-aware animation.
+Browser support policy: the Web UI targets modern Baseline-capable browsers as of June 2026. Newly available browser features are used only as progressive enhancements, so core navigation and CRUD workflows remain usable without large polyfills. The UI uses color-scheme-aware dark mode with a persistent local override, native dialogs and popovers, SVG charts, container queries, mobile-safe viewport units, same-document view transitions, and reduced-motion-aware animation.
 
 The Web UI is a local Python app. GitHub Pages cannot run the live app because Pages does not run Python or SQLite; use [showcase/index.html](showcase/index.html) as a static portfolio preview and run `finance-tracker web` for live CRUD.
 

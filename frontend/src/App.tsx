@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "./components/AppShell";
 import { currentPeriod } from "./format";
-import { pathForView, viewFromPath, viewMeta, type View } from "./routes";
+import { pathForView, viewFromPath, viewMeta, viewOrder, type View } from "./routes";
 import { BudgetsView } from "./views/Budgets";
 import { DashboardView } from "./views/Dashboard";
 import { TransactionsView } from "./views/Transactions";
@@ -33,12 +33,31 @@ export default function App() {
   }, [view]);
 
   function navigate(nextView: View) {
-    const nextPath = pathForView(nextView);
-    if (window.location.pathname !== nextPath) {
-      window.history.pushState({}, "", nextPath);
+    if (nextView === view) {
+      return;
     }
-    setNotice("");
-    setView(nextView);
+    const nextPath = pathForView(nextView);
+    const direction = viewOrder.indexOf(nextView) > viewOrder.indexOf(view) ? "forward" : "backward";
+    const update = () => {
+      if (window.location.pathname !== nextPath) {
+        window.history.pushState({}, "", nextPath);
+      }
+      setNotice("");
+      setView(nextView);
+    };
+
+    const transition = (document as ViewTransitionDocument).startViewTransition;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    if (!transition || reduceMotion) {
+      update();
+      return;
+    }
+
+    transition.call(document, {
+      update,
+      types: [direction]
+    });
   }
 
   return (
@@ -68,3 +87,10 @@ export default function App() {
     </AppShell>
   );
 }
+
+type ViewTransitionDocument = Document & {
+  startViewTransition?: (options: {
+    update: () => void;
+    types?: string[];
+  }) => { finished: Promise<void> };
+};

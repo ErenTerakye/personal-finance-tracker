@@ -68,8 +68,9 @@ The browser workspace includes:
 
 - A compact dashboard led by a six-month statement tape, KPI cards, budget pressure, category mix, and recent activity.
 - Route-aware navigation for `/`, `/transactions`, and `/budgets`.
+- Compact period controls for month-to-month review without always exposing month/year fields.
 - Dialog-based transaction add/edit/delete and budget set/update/delete flows.
-- Read-only ledger tables that collapse into mobile-friendly record cards.
+- Read-only ledger tables that collapse into mobile-friendly record lists with compact row actions.
 - A header theme action that follows your system color setting by default and can pin the opposite light/dark mode locally.
 
 During frontend development, run the Python app and Vite separately:
@@ -79,7 +80,7 @@ finance-tracker web --db-path demo.sqlite3
 npm run dev
 ```
 
-The browser interface uses modern platform features progressively, including semantic landmarks, accessible forms, native dialogs, SVG charts, container queries, color-scheme-aware dark mode with a persistent local override, mobile-safe viewport units, and reduced-motion-aware animation. The support policy is modern Baseline-capable browsers as of June 2026; newer features must degrade without large polyfills.
+The browser interface uses modern platform features progressively, including semantic landmarks, accessible forms, native dialogs and popovers, SVG charts, container queries, color-scheme-aware dark mode with a persistent local override, mobile-safe viewport units, same-document view transitions, and reduced-motion-aware animation. The support policy is modern Baseline-capable browsers as of June 2026; newer features must degrade without large polyfills.
 
 GitHub Pages can host static files only, so it cannot run the live Python/SQLite app. A static showcase is available in [docs/showcase/index.html](docs/showcase/index.html) for portfolio hosting, while real CRUD requires `finance-tracker web`.
 

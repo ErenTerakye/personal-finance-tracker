@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const colorSchemeStorageKey = "ledger-workbench-color-scheme";
-const viewports = [320, 390, 430, 768, 1024, 1280, 1440];
+const viewports = [320, 390, 430, 768, 1024, 1280, 1440, 1800, 1920];
 const themeViewports = [390, 1280];
 
 for (const width of viewports) {
@@ -15,10 +15,16 @@ for (const width of viewports) {
       await page.goto("/");
 
       await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-      await expect(page.getByText("June 2026", { exact: true })).toHaveCount(1);
       await expect(page.getByText("Six-month cashflow strip")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Review" })).toBeVisible();
+      await expect(page.getByRole("button", { name: /Choose period/ })).toBeVisible();
       await assertNoHorizontalOverflow(page);
+      await assertCannotPanHorizontally(page);
+      await expectDashboardFitsViewport(page);
+      await expectQuickActionsStacked(page);
+      await expectThemeToggleIconCentered(page);
+      await expectMobileNavigationIsCompact(page, width);
+      await page.getByRole("button", { name: /Choose period/ }).click();
+      await expectElementsFitViewport(page, [".period-popover"]);
 
       const firstTapeCard = page.locator(".statement-tape li").first();
       await expect(firstTapeCard).toBeVisible();
@@ -34,6 +40,8 @@ for (const width of viewports) {
       await expect(page.getByText("Groceries")).toBeVisible();
       await assertNoHorizontalOverflow(page);
       await expectTableModeMatchesContainer(page);
+      await expect(page.getByRole("button", { name: "Edit Food transaction" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Delete Food transaction" })).toBeVisible();
 
       await page.getByRole("button", { name: "Add entry" }).click();
       const dialog = page.getByRole("dialog", { name: "Add transaction" });
@@ -48,6 +56,8 @@ for (const width of viewports) {
       await expect(page.locator(".records-panel .data-table td[data-label='Category']")).toHaveText("Travel");
       await assertNoHorizontalOverflow(page);
       await expectTableModeMatchesContainer(page);
+      await expect(page.getByRole("button", { name: "Update Travel budget" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Delete Travel budget" })).toBeVisible();
 
       await page.getByRole("button", { name: "Set budget" }).click();
       const dialog = page.getByRole("dialog", { name: "Set budget" });
@@ -176,6 +186,84 @@ async function assertNoHorizontalOverflow(page: Page) {
   expect(overflow).toBeLessThanOrEqual(1);
 }
 
+async function assertCannotPanHorizontally(page: Page) {
+  const scrollX = await page.evaluate(() => {
+    window.scrollTo({ left: 500, top: 0 });
+    return window.scrollX;
+  });
+  expect(scrollX).toBe(0);
+}
+
+async function expectDashboardFitsViewport(page: Page) {
+  await expectElementsFitViewport(page, [
+    ".app-header",
+    ".workspace",
+    ".page-heading",
+    ".page-actions",
+    ".period-control",
+    ".period-control > button",
+    ".dashboard-summary",
+    ".dashboard-lead",
+    ".statement-tape ol",
+    ".theme-toggle"
+  ]);
+}
+
+async function expectQuickActionsStacked(page: Page) {
+  const addEntry = page.getByRole("button", { name: "Add entry" });
+  const setBudget = page.getByRole("button", { name: "Set budget" });
+  const [addBox, budgetBox] = await Promise.all([addEntry.boundingBox(), setBudget.boundingBox()]);
+
+  expect(addBox).not.toBeNull();
+  expect(budgetBox).not.toBeNull();
+  expect(budgetBox!.y).toBeGreaterThan(addBox!.y + addBox!.height);
+  expect(Math.abs(budgetBox!.x - addBox!.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(budgetBox!.width - addBox!.width)).toBeLessThanOrEqual(1);
+}
+
+async function expectElementsFitViewport(page: Page, selectors: string[]) {
+  const overflowed = await page.evaluate((selectorList) => {
+    const viewportWidth = document.documentElement.clientWidth;
+
+    return selectorList.flatMap((selector) =>
+      Array.from(document.querySelectorAll(selector), (node, index) => {
+        const rect = node.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+          return null;
+        }
+        return {
+          selector,
+          index,
+          left: rect.left,
+          right: rect.right,
+          viewportWidth
+        };
+      }).filter((entry) => entry && (entry.left < -1 || entry.right > viewportWidth + 1))
+    );
+  }, selectors);
+
+  expect(overflowed).toEqual([]);
+}
+
+async function expectThemeToggleIconCentered(page: Page) {
+  const offset = await page.locator(".theme-toggle").evaluate((button) => {
+    const icon = button.querySelector("svg");
+    if (!icon) {
+      throw new Error("Expected theme toggle icon");
+    }
+
+    const buttonRect = button.getBoundingClientRect();
+    const iconRect = icon.getBoundingClientRect();
+    return {
+      x: Math.abs(buttonRect.left + buttonRect.width / 2 - (iconRect.left + iconRect.width / 2)),
+      y: Math.abs(buttonRect.top + buttonRect.height / 2 - (iconRect.top + iconRect.height / 2))
+    };
+  });
+
+  expect(offset.x).toBeLessThanOrEqual(1);
+  expect(offset.y).toBeLessThanOrEqual(1);
+}
+
 async function expectThemeState(
   page: Page,
   expected: {
@@ -219,6 +307,16 @@ async function expectTableModeMatchesContainer(page: Page) {
     return;
   }
   expect(headerDisplay).not.toBe("none");
+}
+
+async function expectMobileNavigationIsCompact(page: Page, width: number) {
+  if (width > 760) {
+    return;
+  }
+  const nav = page.getByRole("navigation", { name: "Primary" });
+  await expect(nav.getByRole("link", { name: "Transactions" })).toBeVisible();
+  const position = await nav.evaluate((node) => getComputedStyle(node).position);
+  expect(position).toBe("fixed");
 }
 
 async function measureTapeBars(card: ReturnType<Page["locator"]>) {

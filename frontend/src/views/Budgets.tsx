@@ -2,17 +2,20 @@ import { FormEvent, useEffect, useState } from "react";
 import { Filter, PiggyBank, RotateCcw, Save, Trash2 } from "lucide-react";
 import { api, type BudgetFilters } from "../api";
 import { BudgetPressureList } from "../components/Lists";
+import { PeriodControl } from "../components/PeriodControl";
 import { BudgetTable } from "../components/Tables";
 import {
+  ActionButton,
   ErrorBanner,
   Field,
+  FilterBar,
   IconButton,
   ModalDialog,
   PageHeader,
   Panel,
   SubmitButton
 } from "../components/ui";
-import { money, monthNames } from "../format";
+import { money, monthNames, periodLabel } from "../format";
 import type { BudgetInput, BudgetRecord, BudgetStatus } from "../types";
 
 type BudgetDialog = "create" | "edit" | null;
@@ -135,9 +138,9 @@ export function BudgetsView({
         title="Budgets"
         summary="Watch category limits first, then maintain the records behind them."
         actions={
-          <IconButton icon={PiggyBank} onClick={openCreate}>
+          <ActionButton icon={PiggyBank} onClick={openCreate}>
             Set budget
-          </IconButton>
+          </ActionButton>
         }
       />
 
@@ -148,9 +151,7 @@ export function BudgetsView({
           <BudgetPressureList statuses={statuses} />
         </Panel>
 
-        <Panel title="Filters" detail="Choose the period and category">
-          <BudgetFilterForm filters={filters} selectedPeriod={selectedPeriod} onChange={setFilters} />
-        </Panel>
+        <BudgetFilterForm filters={filters} selectedPeriod={selectedPeriod} onChange={setFilters} />
 
         <Panel title="Budget records" detail={`${budgets.length} records shown`} className="records-panel">
           <BudgetTable budgets={budgets} onEdit={openEdit} onDelete={setPendingDelete} />
@@ -178,7 +179,7 @@ export function BudgetsView({
         }}
       >
         {dialogError ? <ErrorBanner message={dialogError} /> : null}
-        <p className="dialog-copy">This removes the budget record from the local SQLite ledger.</p>
+        <p className="dialog-copy">This removes the budget record from your local ledger.</p>
         <div className="dialog-actions">
           <button className="button secondary" type="button" onClick={() => setPendingDelete(null)}>
             Cancel
@@ -208,38 +209,39 @@ function BudgetFilterForm({
     setDraft(filters);
   }, [filters]);
 
+  const period = {
+    month: Number(draft.month || selectedPeriod.month),
+    year: Number(draft.year || selectedPeriod.year)
+  };
+  const hasActiveFilters = Boolean(
+    draft.category || period.month !== selectedPeriod.month || period.year !== selectedPeriod.year
+  );
+
+  function resetFilters() {
+    const reset: BudgetFilters = {
+      month: selectedPeriod.month,
+      year: selectedPeriod.year,
+      category: ""
+    };
+    setDraft(reset);
+    onChange(reset);
+  }
+
   return (
-    <div role="search">
+    <FilterBar title="Filters" summary={`Showing ${periodLabel(period.month, period.year)}`}>
       <form
-        className="filter-form compact"
+        className="filter-form"
         aria-label="Filter budgets"
         onSubmit={(event) => {
           event.preventDefault();
           onChange(draft);
         }}
       >
-        <Field id="budget-filter-month" label="Month">
-          <select
-            id="budget-filter-month"
-            value={draft.month}
-            onChange={(event) => setDraft({ ...draft, month: Number(event.target.value) })}
-          >
-            {monthNames.slice(1).map((name, index) => (
-              <option key={name} value={index + 1}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field id="budget-filter-year" label="Year">
-          <input
-            id="budget-filter-year"
-            min="1"
-            type="number"
-            value={draft.year}
-            onChange={(event) => setDraft({ ...draft, year: Number(event.target.value) })}
-          />
-        </Field>
+        <PeriodControl
+          label="Budget filter period"
+          value={period}
+          onChange={(nextPeriod) => setDraft({ ...draft, ...nextPeriod })}
+        />
         <Field id="budget-filter-category" label="Category">
           <input
             id="budget-filter-category"
@@ -249,27 +251,20 @@ function BudgetFilterForm({
           />
         </Field>
         <div className="filter-actions">
-          <button className="button primary" type="submit">
-            <Filter aria-hidden="true" size={18} />
-            <span>Apply filters</span>
-          </button>
-          <button
-            className="button ghost"
-            type="button"
-            onClick={() =>
-              onChange({
-                month: selectedPeriod.month,
-                year: selectedPeriod.year,
-                category: ""
-              })
-            }
-          >
-            <RotateCcw aria-hidden="true" size={18} />
-            <span>Reset</span>
-          </button>
+          <ActionButton icon={Filter} type="submit">
+            Apply filters
+          </ActionButton>
+          {hasActiveFilters ? (
+            <IconButton
+              icon={RotateCcw}
+              label="Reset filters"
+              variant="ghost"
+              onClick={resetFilters}
+            />
+          ) : null}
         </div>
       </form>
-    </div>
+    </FilterBar>
   );
 }
 
@@ -296,7 +291,7 @@ function BudgetFormDialog({
     <ModalDialog
       open={open}
       title={mode === "edit" ? "Update budget" : "Set budget"}
-      description="One category can have one budget per month."
+      description="Set the category limit for a month."
       onClose={onClose}
     >
       {error ? <ErrorBanner message={error} /> : null}

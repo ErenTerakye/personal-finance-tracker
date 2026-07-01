@@ -1,18 +1,20 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Filter, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import { api, type TransactionFilters } from "../api";
+import { PeriodControl } from "../components/PeriodControl";
 import { TransactionTable } from "../components/Tables";
 import {
-  EmptyState,
+  ActionButton,
   ErrorBanner,
   Field,
+  FilterBar,
   IconButton,
   ModalDialog,
   PageHeader,
   Panel,
   SubmitButton
 } from "../components/ui";
-import { money, monthNames, todayIso } from "../format";
+import { money, periodLabel, todayIso } from "../format";
 import type { TransactionInput, TransactionRecord, TransactionType } from "../types";
 
 type TransactionDialog = "create" | "edit" | null;
@@ -131,22 +133,20 @@ export function TransactionsView({
         title="Transactions"
         summary="Post entries quickly, then review the ledger as stable records."
         actions={
-          <IconButton icon={Plus} onClick={openCreate}>
+          <ActionButton icon={Plus} onClick={openCreate}>
             Add entry
-          </IconButton>
+          </ActionButton>
         }
       />
 
       {error ? <ErrorBanner message={error} /> : null}
 
       <section className="workbench-grid">
-        <Panel title="Filters" detail="Scope the local ledger">
-          <TransactionFilterForm
-            filters={filters}
-            selectedPeriod={selectedPeriod}
-            onChange={setFilters}
-          />
-        </Panel>
+        <TransactionFilterForm
+          filters={filters}
+          selectedPeriod={selectedPeriod}
+          onChange={setFilters}
+        />
 
         <Panel title="Ledger records" detail={`${transactions.length} transactions shown`}>
           <TransactionTable
@@ -179,7 +179,7 @@ export function TransactionsView({
       >
         {dialogError ? <ErrorBanner message={dialogError} /> : null}
         <p className="dialog-copy">
-          This removes the record from the local SQLite ledger.
+          This removes the record from your local ledger.
         </p>
         <div className="dialog-actions">
           <button className="button secondary" type="button" onClick={() => setPendingDelete(null)}>
@@ -210,38 +210,46 @@ function TransactionFilterForm({
     setDraft(filters);
   }, [filters]);
 
+  const period = {
+    month: Number(draft.month || selectedPeriod.month),
+    year: Number(draft.year || selectedPeriod.year)
+  };
+  const hasActiveFilters = Boolean(
+    draft.category ||
+      draft.transaction_type ||
+      period.month !== selectedPeriod.month ||
+      period.year !== selectedPeriod.year
+  );
+
+  function resetFilters() {
+    const reset: TransactionFilters = {
+      month: selectedPeriod.month,
+      year: selectedPeriod.year,
+      transaction_type: "",
+      category: ""
+    };
+    setDraft(reset);
+    onChange(reset);
+  }
+
   return (
-    <div role="search">
+    <FilterBar
+      title="Filters"
+      summary={`Showing ${periodLabel(period.month, period.year)}`}
+    >
       <form
-        className="filter-form compact"
+        className="filter-form"
         aria-label="Filter transactions"
         onSubmit={(event) => {
           event.preventDefault();
           onChange(draft);
         }}
       >
-        <Field id="filter-month" label="Month">
-          <select
-            id="filter-month"
-            value={draft.month}
-            onChange={(event) => setDraft({ ...draft, month: Number(event.target.value) })}
-          >
-            {monthNames.slice(1).map((name, index) => (
-              <option key={name} value={index + 1}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field id="filter-year" label="Year">
-          <input
-            id="filter-year"
-            min="1"
-            type="number"
-            value={draft.year}
-            onChange={(event) => setDraft({ ...draft, year: Number(event.target.value) })}
-          />
-        </Field>
+        <PeriodControl
+          label="Transaction filter period"
+          value={period}
+          onChange={(nextPeriod) => setDraft({ ...draft, ...nextPeriod })}
+        />
         <Field id="filter-category" label="Category">
           <input
             id="filter-category"
@@ -264,28 +272,20 @@ function TransactionFilterForm({
           </select>
         </Field>
         <div className="filter-actions">
-          <button className="button primary" type="submit">
-            <Filter aria-hidden="true" size={18} />
-            <span>Apply filters</span>
-          </button>
-          <button
-            className="button ghost"
-            type="button"
-            onClick={() =>
-              onChange({
-                month: selectedPeriod.month,
-                year: selectedPeriod.year,
-                transaction_type: "",
-                category: ""
-              })
-            }
-          >
-            <RotateCcw aria-hidden="true" size={18} />
-            <span>Reset</span>
-          </button>
+          <ActionButton icon={Filter} type="submit">
+            Apply filters
+          </ActionButton>
+          {hasActiveFilters ? (
+            <IconButton
+              icon={RotateCcw}
+              label="Reset filters"
+              variant="ghost"
+              onClick={resetFilters}
+            />
+          ) : null}
         </div>
       </form>
-    </div>
+    </FilterBar>
   );
 }
 
@@ -312,7 +312,7 @@ function TransactionFormDialog({
     <ModalDialog
       open={open}
       title={mode === "edit" ? "Edit transaction" : "Add transaction"}
-      description="Amounts are saved as decimal strings in the local database."
+      description="Record the amount, category, and date."
       onClose={onClose}
     >
       {error ? <ErrorBanner message={error} /> : null}
