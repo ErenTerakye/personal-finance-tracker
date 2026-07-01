@@ -1,11 +1,20 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+import { COLOR_SCHEME_STORAGE_KEY } from "./theme";
+
+beforeEach(() => {
+  installLocalStorage();
+});
 
 afterEach(() => {
-  vi.restoreAllMocks();
+  window.localStorage?.clear();
+  document.documentElement.removeAttribute("data-theme");
+  colorSchemeMeta().content = "light dark";
   window.history.pushState({}, "", "/");
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("Ledger Workbench", () => {
@@ -26,7 +35,8 @@ describe("Ledger Workbench", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("heading", { name: "June 2026" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
+    expect(screen.getAllByText("June 2026")).toHaveLength(1);
     expect(screen.getByText("Six-month cashflow strip")).toBeInTheDocument();
     expect(screen.getAllByText("$2,500.00").length).toBeGreaterThan(0);
     expect(screen.getByText("over budget")).toBeInTheDocument();
@@ -97,6 +107,98 @@ describe("Ledger Workbench", () => {
 
     await waitFor(() => expect(dialog).not.toHaveAttribute("open"));
   });
+
+  it("defaults to system color mode with no stored preference", async () => {
+    mockColorScheme("light");
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+
+    expect(await screen.findByRole("button", { name: "Use dark mode" })).toBeInTheDocument();
+    expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBeNull();
+    expect(document.documentElement).not.toHaveAttribute("data-theme");
+    expect(colorSchemeMeta()).toHaveAttribute("content", "light dark");
+  });
+
+  it("pins the opposite system mode and restores system mode", async () => {
+    mockColorScheme("light");
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: "Use dark mode" }));
+
+    await waitFor(() => {
+      expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBe("dark");
+      expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+      expect(colorSchemeMeta()).toHaveAttribute("content", "dark");
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Use system color setting" }));
+
+    await waitFor(() => {
+      expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBeNull();
+      expect(document.documentElement).not.toHaveAttribute("data-theme");
+      expect(colorSchemeMeta()).toHaveAttribute("content", "light dark");
+    });
+  });
+
+  it("applies a stored manual mode on render", async () => {
+    mockColorScheme("light");
+    window.localStorage.setItem(COLOR_SCHEME_STORAGE_KEY, "dark");
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+
+    expect(await screen.findByRole("button", { name: "Use system color setting" })).toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+    expect(colorSchemeMeta()).toHaveAttribute("content", "dark");
+  });
+
+  it("updates the system-mode action when the OS color mode changes", async () => {
+    const colorScheme = mockColorScheme("light");
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+
+    expect(await screen.findByRole("button", { name: "Use dark mode" })).toBeInTheDocument();
+    colorScheme.set("dark");
+
+    expect(await screen.findByRole("button", { name: "Use light mode" })).toBeInTheDocument();
+    expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBeNull();
+    expect(document.documentElement).not.toHaveAttribute("data-theme");
+
+    await userEvent.click(screen.getByRole("button", { name: "Use light mode" }));
+    colorScheme.set("light");
+
+    expect(await screen.findByRole("button", { name: "Use system color setting" })).toBeInTheDocument();
+    expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBe("light");
+    expect(document.documentElement).toHaveAttribute("data-theme", "light");
+  });
+
+  it("falls back to system mode when stored theme data is invalid or unavailable", async () => {
+    mockColorScheme("light");
+    window.localStorage.setItem(COLOR_SCHEME_STORAGE_KEY, "sepia");
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    const { unmount } = render(<App />);
+
+    expect(await screen.findByRole("button", { name: "Use dark mode" })).toBeInTheDocument();
+    expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBeNull();
+    expect(document.documentElement).not.toHaveAttribute("data-theme");
+    expect(colorSchemeMeta()).toHaveAttribute("content", "light dark");
+    unmount();
+
+    vi.spyOn(window.localStorage, "getItem").mockImplementation(() => {
+      throw new Error("Storage unavailable");
+    });
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+
+    expect(await screen.findByRole("button", { name: "Use dark mode" })).toBeInTheDocument();
+    expect(document.documentElement).not.toHaveAttribute("data-theme");
+    expect(colorSchemeMeta()).toHaveAttribute("content", "light dark");
+  });
 });
 
 function mockFetch(routes: Record<string, unknown>) {
@@ -117,6 +219,73 @@ function response(body: unknown) {
     status: 200,
     json: async () => body
   } as Response);
+}
+
+function colorSchemeMeta() {
+  let meta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = "color-scheme";
+    document.head.append(meta);
+  }
+  return meta;
+}
+
+function installLocalStorage() {
+  const items = new Map<string, string>();
+  const storage = {
+    get length() {
+      return items.size;
+    },
+    clear() {
+      items.clear();
+    },
+    getItem(key: string) {
+      return items.get(key) ?? null;
+    },
+    key(index: number) {
+      return Array.from(items.keys())[index] ?? null;
+    },
+    removeItem(key: string) {
+      items.delete(key);
+    },
+    setItem(key: string, value: string) {
+      items.set(key, value);
+    }
+  } as Storage;
+
+  vi.stubGlobal("localStorage", storage);
+}
+
+function mockColorScheme(initialScheme: "light" | "dark") {
+  let matches = initialScheme === "dark";
+  const listeners = new Set<(event: MediaQueryListEvent) => void>();
+  const mediaQueryList = {
+    media: "(prefers-color-scheme: dark)",
+    get matches() {
+      return matches;
+    },
+    onchange: null,
+    addEventListener: vi.fn((_event: "change", listener: (event: MediaQueryListEvent) => void) => {
+      listeners.add(listener);
+    }),
+    removeEventListener: vi.fn((_event: "change", listener: (event: MediaQueryListEvent) => void) => {
+      listeners.delete(listener);
+    }),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn()
+  } as unknown as MediaQueryList;
+
+  vi.stubGlobal("matchMedia", vi.fn(() => mediaQueryList));
+
+  return {
+    set(nextScheme: "light" | "dark") {
+      matches = nextScheme === "dark";
+      const event = { matches, media: mediaQueryList.media } as MediaQueryListEvent;
+      listeners.forEach((listener) => listener(event));
+    }
+  };
 }
 
 function transaction() {

@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
+const colorSchemeStorageKey = "ledger-workbench-color-scheme";
 const viewports = [320, 390, 430, 768, 1024, 1280, 1440];
+const themeViewports = [390, 1280];
 
 for (const width of viewports) {
   test.describe(`responsive layout at ${width}px`, () => {
@@ -12,7 +14,8 @@ for (const width of viewports) {
     test("keeps the dashboard readable without horizontal overflow", async ({ page }) => {
       await page.goto("/");
 
-      await expect(page.getByRole("heading", { name: "June 2026" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+      await expect(page.getByText("June 2026", { exact: true })).toHaveCount(1);
       await expect(page.getByText("Six-month cashflow strip")).toBeVisible();
       await expect(page.getByRole("button", { name: "Review" })).toBeVisible();
       await assertNoHorizontalOverflow(page);
@@ -75,6 +78,95 @@ test.describe("statement tape graph rendering", () => {
   });
 });
 
+for (const width of themeViewports) {
+  test.describe(`theme preference at ${width}px`, () => {
+    test.beforeEach(async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: "light" });
+      await mockApi(page);
+    });
+
+    test("pins, persists, and clears a manual theme", async ({ page }) => {
+      await page.goto("/");
+
+      await expect(page.getByRole("button", { name: "Use dark mode" })).toBeVisible();
+      await expectThemeState(page, {
+        dataTheme: null,
+        meta: "light dark",
+        stored: null,
+        colorScheme: "light dark"
+      });
+
+      await page.getByRole("button", { name: "Use dark mode" }).click();
+
+      await expect(page.getByRole("button", { name: "Use system color setting" })).toBeVisible();
+      await expectThemeState(page, {
+        dataTheme: "dark",
+        meta: "dark",
+        stored: "dark",
+        colorScheme: "dark"
+      });
+      await assertNoHorizontalOverflow(page);
+
+      await page.reload();
+
+      await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Use system color setting" })).toBeVisible();
+      await expectThemeState(page, {
+        dataTheme: "dark",
+        meta: "dark",
+        stored: "dark",
+        colorScheme: "dark"
+      });
+
+      await page.getByRole("button", { name: "Use system color setting" }).click();
+
+      await expect(page.getByRole("button", { name: "Use dark mode" })).toBeVisible();
+      await expectThemeState(page, {
+        dataTheme: null,
+        meta: "light dark",
+        stored: null,
+        colorScheme: "light dark"
+      });
+      await assertNoHorizontalOverflow(page);
+    });
+  });
+}
+
+test.describe("theme system preference", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.emulateMedia({ colorScheme: "light" });
+    await mockApi(page);
+  });
+
+  test("updates the system-mode action when OS color scheme changes", async ({ page }) => {
+    await page.goto("/");
+
+    await expect(page.getByRole("button", { name: "Use dark mode" })).toBeVisible();
+    await page.emulateMedia({ colorScheme: "dark" });
+
+    await expect(page.getByRole("button", { name: "Use light mode" })).toBeVisible();
+    await expectThemeState(page, {
+      dataTheme: null,
+      meta: "light dark",
+      stored: null,
+      colorScheme: "light dark"
+    });
+
+    await page.getByRole("button", { name: "Use light mode" }).click();
+    await page.emulateMedia({ colorScheme: "light" });
+
+    await expect(page.getByRole("button", { name: "Use system color setting" })).toBeVisible();
+    await expectThemeState(page, {
+      dataTheme: "light",
+      meta: "light",
+      stored: "light",
+      colorScheme: "light"
+    });
+  });
+});
+
 async function assertNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(() => {
     const root = document.documentElement;
@@ -82,6 +174,31 @@ async function assertNoHorizontalOverflow(page: Page) {
     return Math.max(root.scrollWidth, body.scrollWidth) - root.clientWidth;
   });
   expect(overflow).toBeLessThanOrEqual(1);
+}
+
+async function expectThemeState(
+  page: Page,
+  expected: {
+    dataTheme: string | null;
+    meta: string | null;
+    stored: string | null;
+    colorScheme: string;
+  }
+) {
+  const state = await page.evaluate((key) => {
+    const root = document.documentElement;
+    return {
+      colorScheme: getComputedStyle(root).getPropertyValue("color-scheme"),
+      dataTheme: root.getAttribute("data-theme"),
+      meta: document.querySelector('meta[name="color-scheme"]')?.getAttribute("content") ?? null,
+      stored: localStorage.getItem(key)
+    };
+  }, colorSchemeStorageKey);
+
+  expect(state.dataTheme).toBe(expected.dataTheme);
+  expect(state.meta).toBe(expected.meta);
+  expect(state.stored).toBe(expected.stored);
+  expect(state.colorScheme).toBe(expected.colorScheme);
 }
 
 async function expectTableModeMatchesContainer(page: Page) {

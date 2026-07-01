@@ -3,12 +3,11 @@ import {
   Database,
   LayoutDashboard,
   PiggyBank,
-  ReceiptText,
-  WalletCards
+  ReceiptText
 } from "lucide-react";
 import { ReactNode } from "react";
-import { periodLabel } from "../format";
 import { View, viewMeta, viewOrder } from "../routes";
+import { ThemeToggle } from "./ThemeToggle";
 import { Notice } from "./ui";
 
 const navIcons = {
@@ -19,14 +18,12 @@ const navIcons = {
 
 export function AppShell({
   view,
-  selectedPeriod,
   notice,
   mainRef,
   onNavigate,
   children
 }: {
   view: View;
-  selectedPeriod: { month: number; year: number };
   notice: string;
   mainRef: React.RefObject<HTMLElement | null>;
   onNavigate: (view: View) => void;
@@ -79,32 +76,20 @@ export function AppShell({
           </ul>
         </nav>
 
-        <div className="period-pill">
-          <WalletCards aria-hidden="true" size={17} />
-          <span>{periodLabel(selectedPeriod.month, selectedPeriod.year)}</span>
+        <div className="header-tools">
+          <ThemeToggle />
         </div>
       </header>
 
       <div className="workspace">
-        <aside className="context-rail" aria-label="Workspace context">
-          <div>
-            <span>Period</span>
-            <strong>{periodLabel(selectedPeriod.month, selectedPeriod.year)}</strong>
-          </div>
-          <div>
-            <span>Storage</span>
-            <strong>
+        <main id="content" tabIndex={-1} ref={mainRef}>
+          <div className="workspace-meta" aria-label="Workspace context">
+            <span>
               <Database aria-hidden="true" size={14} />
               SQLite
-            </strong>
+            </span>
+            <span>{viewMeta[view].label}</span>
           </div>
-          <div>
-            <span>View</span>
-            <strong>{viewMeta[view].label}</strong>
-          </div>
-        </aside>
-
-        <main id="content" tabIndex={-1} ref={mainRef}>
           <Notice message={notice} />
           {children}
         </main>

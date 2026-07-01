@@ -58,10 +58,14 @@ export function DashboardView({
     <>
       <PageHeader
         eyebrow="Cashflow desk"
-        title={data.period_label}
-        summary="Trend first, pressure second, month close without the oversized ceremony."
+        title="Dashboard"
+        summary="Review cashflow, budget pressure, and recent ledger activity for one period."
+        className="dashboard-heading"
         actions={
           <form className="period-form" onSubmit={submitPeriod} aria-label="Change dashboard period">
+            <output className="period-current" aria-label="Selected period">
+              {data.period_label}
+            </output>
             <div className="field-group">
               <label htmlFor="dashboard-month">Month</label>
               <select
@@ -94,39 +98,39 @@ export function DashboardView({
         }
       />
 
+      <section className="dashboard-summary" aria-label="Dashboard totals">
+        <KpiCard
+          label="Net position"
+          value={money(data.report.net_savings)}
+          detail={`${data.report.transaction_count} entries`}
+          tone={Number(data.report.net_savings) >= 0 ? "cash" : "outflow"}
+        />
+        <KpiCard
+          label="Savings rate"
+          value={percent(data.savings_rate)}
+          detail={`${compactValue(data.report.total_income)} income`}
+          tone="neutral"
+        />
+        <KpiCard
+          label="Budget risk"
+          value={String(overBudget + nearLimit)}
+          detail={`${overBudget} over, ${nearLimit} near`}
+          tone={overBudget ? "warning" : "cash"}
+        />
+        <div className="quick-actions" aria-label="Next actions">
+          <IconButton icon={ArrowRight} variant="primary" onClick={() => onNavigate("transactions")}>
+            Add entry
+          </IconButton>
+          <IconButton icon={ArrowRight} variant="secondary" onClick={() => onNavigate("budgets")}>
+            Set budget
+          </IconButton>
+        </div>
+      </section>
+
       <section className="dashboard-lead" aria-label="Dashboard summary">
-        <Panel title="Statement tape" detail={`Six months through ${data.period_label}`} className="tape-panel">
+        <Panel title="Statement tape" className="tape-panel">
           <StatementTape months={data.trend.months} />
         </Panel>
-
-        <div className="command-stack">
-          <KpiCard
-            label="Net position"
-            value={money(data.report.net_savings)}
-            detail={`${data.report.transaction_count} entries`}
-            tone={Number(data.report.net_savings) >= 0 ? "cash" : "outflow"}
-          />
-          <KpiCard
-            label="Savings rate"
-            value={percent(data.savings_rate)}
-            detail={`${compactValue(data.report.total_income)} income`}
-            tone="neutral"
-          />
-          <KpiCard
-            label="Budget risk"
-            value={String(overBudget + nearLimit)}
-            detail={`${overBudget} over, ${nearLimit} near`}
-            tone={overBudget ? "warning" : "cash"}
-          />
-          <div className="quick-actions" aria-label="Next actions">
-            <IconButton icon={ArrowRight} variant="primary" onClick={() => onNavigate("transactions")}>
-              Add entry
-            </IconButton>
-            <IconButton icon={ArrowRight} variant="secondary" onClick={() => onNavigate("budgets")}>
-              Set budget
-            </IconButton>
-          </div>
-        </div>
       </section>
 
       <section className="kpi-grid" aria-label="Monthly totals">
@@ -144,7 +148,7 @@ export function DashboardView({
         <Panel title="Trend context" detail="Income, outflow, and net lines" deferred>
           <TrendLines months={data.trend.months} />
         </Panel>
-        <Panel title="Budget pressure" detail={data.period_label} deferred>
+        <Panel title="Budget pressure" deferred>
           <BudgetPressureList statuses={data.budget_statuses} />
         </Panel>
         <Panel title="Outflow mix" detail="Spending by category" deferred>

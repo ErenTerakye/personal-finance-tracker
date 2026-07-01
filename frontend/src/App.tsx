@@ -44,7 +44,6 @@ export default function App() {
   return (
     <AppShell
       view={view}
-      selectedPeriod={selectedPeriod}
       notice={notice}
       mainRef={mainRef}
       onNavigate={navigate}

@@ -17,15 +17,17 @@ export function PageHeader({
   eyebrow,
   title,
   summary,
-  actions
+  actions,
+  className = ""
 }: {
   eyebrow: string;
   title: string;
   summary: string;
   actions?: ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="page-heading" aria-labelledby="page-title">
+    <section className={`page-heading ${className}`.trim()} aria-labelledby="page-title">
       <div>
         <p className="eyebrow">{eyebrow}</p>
         <h1 id="page-title">{title}</h1>
