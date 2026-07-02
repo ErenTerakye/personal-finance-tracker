@@ -76,7 +76,7 @@ Supported commands:
 - `export-budgets-csv`: export monthly category budgets to CSV.
 - `web`: run the local FastAPI Web UI.
 
-Database path defaults to `./data/finance_tracker.sqlite3`. Users can override it with `--db-path` or `FINANCE_TRACKER_DB`.
+Database path defaults to `./data/finance_tracker.sqlite3`, which is local runtime state and ignored by git. Users can override it with `--db-path` or `FINANCE_TRACKER_DB`; reproducible demos should use the CSV examples imported into a separate `demo.sqlite3`.
 
 ## Web UI
 

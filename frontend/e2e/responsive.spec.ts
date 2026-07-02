@@ -86,6 +86,74 @@ test.describe("statement tape graph rendering", () => {
     expect(emptyBars.outflow).toBeLessThanOrEqual(1);
     expect(emptyBars.net).toBeLessThanOrEqual(1);
   });
+
+  test("shows exact values on desktop hover", async ({ page }) => {
+    await page.goto("/");
+
+    await page.locator(".statement-tape .tape-bar.outflow").first().hover();
+    const tooltip = page.locator(".chart-tooltip");
+
+    await expect(tooltip).toContainText("Outflow");
+    await expect(tooltip).toContainText("$500.00");
+    await expectElementsFitViewport(page, [".chart-tooltip"]);
+  });
+});
+
+test.describe("interactive trend chart", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await mockApi(page);
+  });
+
+  test("shows exact values on keyboard focus", async ({ page }) => {
+    await page.goto("/");
+
+    await page.locator(".line-chart .chart-point.cash").first().focus();
+    const tooltip = page.locator(".line-chart .chart-tooltip");
+
+    await expect(tooltip).toContainText("Income");
+    await expect(tooltip).toContainText("$2,500.00");
+    await expect(tooltip).toContainText("80.0% savings rate");
+    await expectElementsFitViewport(page, [".chart-tooltip"]);
+  });
+});
+
+test.describe("mobile chart interactions", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await mockApi(page);
+  });
+
+  test("pins a tapped bar tooltip inside the viewport and dismisses on outside tap", async ({ page }) => {
+    await page.goto("/");
+
+    await page.locator(".statement-tape .tape-bar.outflow").last().dispatchEvent("pointerdown", {
+      pointerType: "touch"
+    });
+    const tooltip = page.locator(".statement-tape .chart-tooltip");
+
+    await expect(tooltip).toContainText("$0.00");
+    await expectElementsFitViewport(page, [".chart-tooltip"]);
+
+    await page.getByRole("heading", { name: "Dashboard" }).click();
+    await expect(tooltip).toBeHidden();
+  });
+
+  test("pins a tapped trend point and dismisses on scroll", async ({ page }) => {
+    await page.goto("/");
+
+    await page.locator(".line-chart .chart-point.outflow").first().dispatchEvent("pointerdown", {
+      pointerType: "touch"
+    });
+    const tooltip = page.locator(".line-chart .chart-tooltip");
+
+    await expect(tooltip).toContainText("Outflow");
+    await expectElementsFitViewport(page, [".chart-tooltip"]);
+
+    await page.mouse.wheel(0, 320);
+    await expect(tooltip).toBeHidden();
+  });
 });
 
 for (const width of themeViewports) {

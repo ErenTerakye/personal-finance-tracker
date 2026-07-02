@@ -158,6 +158,10 @@ ENV/
 env.bak/
 venv.bak/
 
+# Local finance-tracker databases
+data/*.sqlite3
+data/*.sqlite3-*
+
 # Spyder project settings
 .spyderproject
 .spyproject

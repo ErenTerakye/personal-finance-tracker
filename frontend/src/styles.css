@@ -848,6 +848,7 @@
 
   .statement-tape {
     container: statement-tape / inline-size;
+    position: relative;
     display: grid;
     gap: 0.9rem;
   }
@@ -932,30 +933,59 @@
     min-inline-size: 0;
   }
 
-  .tape-bars span {
+  .tape-bar {
+    position: relative;
     display: block;
-    inline-size: var(--bar-size, 0%);
+    inline-size: 100%;
     block-size: 0.38rem;
+    min-inline-size: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
     border-radius: 999px;
+    touch-action: manipulation;
   }
 
-  .tape-bars .cash {
+  .tape-bar span {
+    position: absolute;
+    inset: 0;
+    inline-size: var(--bar-size, 0%);
+    border-radius: inherit;
+    background: currentColor;
+  }
+
+  .tape-bar::before {
+    content: "";
+    position: absolute;
+    inset-block: -0.45rem;
+    inset-inline: 0;
+    min-inline-size: 2.5rem;
+  }
+
+  .tape-bar.cash {
     --bar-size: var(--income-size);
-    background: var(--cash);
+    color: var(--cash);
   }
 
-  .tape-bars .outflow {
+  .tape-bar.outflow {
     --bar-size: var(--expense-size);
-    background: var(--outflow);
+    color: var(--outflow);
   }
 
-  .tape-bars .net {
+  .tape-bar.net {
     --bar-size: var(--net-size);
-    background: var(--action);
+    color: var(--action);
   }
 
-  .statement-tape li.negative .tape-bars .net {
-    background: var(--warning);
+  .tape-bar.warning {
+    --bar-size: var(--net-size);
+    color: var(--warning);
+  }
+
+  .tape-bar:hover span,
+  .tape-bar:focus-visible span {
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent);
+    filter: saturate(1.1);
   }
 
   .line-chart,
@@ -967,6 +997,7 @@
 
   .line-chart {
     container: line-chart / inline-size;
+    position: relative;
   }
 
   .line-chart svg {
@@ -974,6 +1005,7 @@
     inline-size: 100%;
     max-block-size: 24rem;
     overflow: hidden;
+    touch-action: pan-y;
   }
 
   .axis {
@@ -986,6 +1018,50 @@
     stroke-width: 4;
     stroke-linecap: round;
     stroke-linejoin: round;
+  }
+
+  .chart-guide {
+    stroke: color-mix(in srgb, var(--ink) 28%, transparent);
+    stroke-dasharray: 4 7;
+    stroke-linecap: round;
+  }
+
+  .chart-point {
+    color: var(--action);
+    fill: var(--surface);
+    stroke: currentColor;
+    stroke-width: 3;
+    cursor: pointer;
+    outline: none;
+    transition:
+      r 140ms ease-out,
+      fill 140ms ease-out,
+      stroke-width 140ms ease-out;
+  }
+
+  .chart-point.cash {
+    color: var(--cash);
+  }
+
+  .chart-point.outflow {
+    color: var(--outflow);
+  }
+
+  .chart-point.warning {
+    color: var(--warning);
+  }
+
+  .chart-point:hover,
+  .chart-point:focus-visible,
+  .chart-point.active {
+    r: 7;
+    fill: currentColor;
+    stroke-width: 4;
+  }
+
+  .chart-point:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
   }
 
   .cash-line {
@@ -1036,6 +1112,86 @@
 
   .legend.net {
     color: var(--action);
+  }
+
+  .chart-tooltip {
+    position: absolute;
+    z-index: 8;
+    inset-block-start: clamp(0.5rem, calc(var(--tooltip-y) - 0.75rem), calc(100% - 6.25rem));
+    inset-inline-start: clamp(0.5rem, calc(var(--tooltip-x) - 5.5rem), calc(100% - min(14rem, 90cqi)));
+    display: grid;
+    gap: 0.05rem;
+    inline-size: max-content;
+    max-inline-size: min(14rem, calc(100cqi - 1rem));
+    padding: 0.55rem 0.65rem;
+    pointer-events: none;
+    color: var(--text);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border: 1px solid color-mix(in srgb, currentColor 28%, var(--rule));
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-soft);
+    translate: 0 -100%;
+  }
+
+  .chart-tooltip::after {
+    content: "";
+    position: absolute;
+    inset-block-end: -0.38rem;
+    inset-inline-start: clamp(1rem, calc(var(--tooltip-x) - var(--tooltip-x) + 50%), calc(100% - 1rem));
+    inline-size: 0.7rem;
+    block-size: 0.7rem;
+    background: inherit;
+    border-inline-end: 1px solid color-mix(in srgb, currentColor 22%, var(--rule));
+    border-block-end: 1px solid color-mix(in srgb, currentColor 22%, var(--rule));
+    rotate: 45deg;
+  }
+
+  .chart-tooltip.cash {
+    color: var(--cash);
+  }
+
+  .chart-tooltip.outflow {
+    color: var(--outflow);
+  }
+
+  .chart-tooltip.net {
+    color: var(--action);
+  }
+
+  .chart-tooltip.warning {
+    color: var(--warning);
+  }
+
+  .chart-tooltip span,
+  .chart-tooltip em,
+  .chart-tooltip small {
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+    font-style: normal;
+  }
+
+  .chart-tooltip strong {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-base);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--line-tight);
+  }
+
+  @supports (transition-behavior: allow-discrete) {
+    .chart-tooltip {
+      opacity: 1;
+      transform: translateY(0);
+      transition:
+        opacity 140ms ease-out,
+        transform 140ms ease-out,
+        display 140ms allow-discrete;
+
+      @starting-style {
+        opacity: 0;
+        transform: translateY(0.25rem);
+      }
+    }
   }
 
   .category-bars {
@@ -1621,12 +1777,23 @@
       min-block-size: 0;
     }
 
-    .tape-bars span {
+    .tape-bar {
       flex: 1 1 0;
       inline-size: auto;
       block-size: var(--bar-size, 0%);
       align-self: end;
       border-radius: 999px 999px 3px 3px;
+    }
+
+    .tape-bar span {
+      inline-size: 100%;
+    }
+
+    .tape-bar::before {
+      inset-block: 0;
+      inset-inline: -0.4rem;
+      min-inline-size: 0;
+      min-block-size: 2.5rem;
     }
   }
 
@@ -1666,6 +1833,10 @@
   @container line-chart (max-width: 26rem) {
     .chart-line {
       stroke-width: 3;
+    }
+
+    .chart-point {
+      r: 4;
     }
 
     .line-chart text {
@@ -1846,6 +2017,20 @@
     :root {
       --tap-target: 3rem;
     }
+
+    .tape-bar::before {
+      inset-block: -0.65rem;
+      min-inline-size: 3rem;
+    }
+
+    .chart-point {
+      stroke-width: 5;
+    }
+
+    .chart-tooltip {
+      padding: 0.65rem 0.75rem;
+      translate: 0 calc(-100% - 0.25rem);
+    }
   }
 }
 
@@ -1889,6 +2074,10 @@
     }
 
     .modal {
+      transition: none;
+    }
+
+    .chart-point {
       transition: none;
     }
   }

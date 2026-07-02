@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { StatementTape } from "./Charts";
+import { StatementTape, TrendLines } from "./Charts";
 import type { DashboardData } from "../types";
 
 type TrendMonth = DashboardData["trend"]["months"][number];
@@ -33,6 +34,75 @@ describe("StatementTape", () => {
     expect(emptyMonth.style.getPropertyValue("--income-size")).toBe("0%");
     expect(emptyMonth.style.getPropertyValue("--expense-size")).toBe("0%");
     expect(emptyMonth.style.getPropertyValue("--net-size")).toBe("0%");
+  });
+
+  it("shows exact details when an expense bar receives focus", async () => {
+    const user = userEvent.setup();
+    render(
+      <StatementTape
+        months={[
+          trendMonth("2026-01", {
+            total_income: "100.00",
+            total_expenses: "12.34",
+            net_savings: "87.66"
+          })
+        ]}
+      />
+    );
+
+    await user.tab();
+    await user.tab();
+
+    const tooltip = screen.getByText("$12.34").closest("output") as HTMLElement;
+    expect(within(tooltip).getByText("Outflow")).toBeInTheDocument();
+    expect(within(tooltip).getByText("1 entries")).toBeInTheDocument();
+  });
+
+  it("pins details on touch and dismisses with Escape", () => {
+    render(
+      <StatementTape
+        months={[
+          trendMonth("2026-01", {
+            total_income: "100.00",
+            total_expenses: "12.34",
+            net_savings: "87.66"
+          })
+        ]}
+      />
+    );
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: /Outflow for January 2026/ }), {
+      pointerType: "touch"
+    });
+
+    expect(screen.getByText("$12.34")).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole("button", { name: /Outflow for January 2026/ }), { key: "Escape" });
+
+    expect(screen.queryByText("$12.34")).not.toBeInTheDocument();
+  });
+});
+
+describe("TrendLines", () => {
+  it("renders accessible points and shows exact trend details on focus", async () => {
+    const user = userEvent.setup();
+    render(
+      <TrendLines
+        months={[
+          trendMonth("2026-01", {
+            total_income: "100.00",
+            total_expenses: "12.34",
+            net_savings: "87.66"
+          })
+        ]}
+      />
+    );
+
+    screen.getByRole("button", { name: /Income for January 2026: \$100.00/ });
+    await user.tab();
+
+    const tooltip = screen.getByText("$100.00").closest("output") as HTMLElement;
+    expect(within(tooltip).getByText("Income")).toBeInTheDocument();
+    expect(within(tooltip).getByText("0.0% savings rate")).toBeInTheDocument();
   });
 });
 

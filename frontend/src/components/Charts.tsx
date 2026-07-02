@@ -1,15 +1,49 @@
-import { CSSProperties, useId } from "react";
-import { compactMoney, money, shortPeriodLabel, signedMoney } from "../format";
+import {
+  CSSProperties,
+  Dispatch,
+  FocusEvent,
+  KeyboardEvent,
+  PointerEvent,
+  RefObject,
+  SetStateAction,
+  useEffect,
+  useId,
+  useRef,
+  useState
+} from "react";
+import { compactMoney, money, percent, periodLabel, shortPeriodLabel, signedMoney } from "../format";
 import type { DashboardData } from "../types";
 import { EmptyState } from "./ui";
 
 type TrendMonth = DashboardData["trend"]["months"][number];
+type MetricKey = "total_income" | "total_expenses" | "net_savings";
+type MetricTone = "cash" | "outflow" | "net" | "warning";
+type TooltipData = {
+  id: string;
+  title: string;
+  label: string;
+  value: string;
+  detail: string;
+  tone: MetricTone;
+  x: number;
+  y: number;
+  guideX?: number;
+  pinned?: boolean;
+};
 
 type VariableStyle = CSSProperties & Record<`--${string}`, string | number>;
 
 const MIN_VISIBLE_TAPE_SIZE = 6;
+const metrics: { key: MetricKey; label: string; tone: MetricTone }[] = [
+  { key: "total_income", label: "Income", tone: "cash" },
+  { key: "total_expenses", label: "Outflow", tone: "outflow" },
+  { key: "net_savings", label: "Net", tone: "net" }
+];
 
 export function StatementTape({ months }: { months: TrendMonth[] }) {
+  const chartRef = useRef<HTMLElement>(null);
+  const [active, setActive] = useChartTooltip(chartRef, [months]);
+
   if (!months.length) {
     return <EmptyState title="No trend yet" message="Add transactions to build a cashflow strip." />;
   }
@@ -24,7 +58,7 @@ export function StatementTape({ months }: { months: TrendMonth[] }) {
   );
 
   return (
-    <figure className="statement-tape">
+    <figure className="statement-tape" ref={chartRef}>
       <figcaption>
         <strong>Six-month cashflow strip</strong>
         <span>Income, outflow, and net movement by close period.</span>
@@ -47,10 +81,39 @@ export function StatementTape({ months }: { months: TrendMonth[] }) {
               <time dateTime={`${item.year}-${String(item.month).padStart(2, "0")}`}>
                 {shortPeriodLabel(item.month, item.year)}
               </time>
-              <div className="tape-bars" aria-hidden="true">
-                <span className="cash" />
-                <span className="outflow" />
-                <span className="net" />
+              <div className="tape-bars">
+                {metrics.map((metric) => {
+                  const tone =
+                    metric.key === "net_savings" && !positive ? "warning" : metric.tone;
+                  return (
+                    <button
+                      key={metric.key}
+                      className={`tape-bar ${tone}`}
+                      type="button"
+                      aria-label={`${metric.label} for ${periodLabel(item.month, item.year)}: ${formatMetricValue(item, metric.key)}`}
+                      onBlur={handleTooltipBlur(setActive)}
+                      onFocus={(event) =>
+                        setActive(tapeTooltip(event.currentTarget, item, metric, tone))
+                      }
+                      onKeyDown={(event) => handleTooltipKeyDown(event, setActive)}
+                      onPointerDown={(event) =>
+                        setActive(tapeTooltip(event.currentTarget, item, metric, tone, event.pointerType === "touch"))
+                      }
+                      onPointerEnter={(event) => {
+                        if (event.pointerType !== "touch") {
+                          setActive(tapeTooltip(event.currentTarget, item, metric, tone));
+                        }
+                      }}
+                      onPointerLeave={(event) => {
+                        if (event.pointerType !== "touch") {
+                          setActive((current) => (current?.pinned ? current : null));
+                        }
+                      }}
+                    >
+                      <span aria-hidden="true" />
+                    </button>
+                  );
+                })}
               </div>
               <strong>{signedMoney(item.net_savings)}</strong>
               <span>{item.transaction_count} entries</span>
@@ -58,6 +121,7 @@ export function StatementTape({ months }: { months: TrendMonth[] }) {
           );
         })}
       </ol>
+      <ChartTooltip active={active} />
     </figure>
   );
 }
@@ -78,6 +142,9 @@ function absoluteAmount(value: string | number): number {
 export function TrendLines({ months }: { months: TrendMonth[] }) {
   const titleId = useId();
   const descId = useId();
+  const chartRef = useRef<HTMLElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [active, setActive] = useChartTooltip(chartRef, [months]);
 
   if (!months.length) {
     return <EmptyState title="No trend data" message="The trend appears after transactions are posted." />;
@@ -93,16 +160,53 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
   const span = max - min || 1;
   const x = (index: number) => 56 + (index * 612) / Math.max(months.length - 1, 1);
   const y = (value: number) => 250 - ((value - min) / span) * 190;
-  const points = (key: "total_income" | "total_expenses" | "net_savings") =>
+  const points = (key: MetricKey) =>
     months.map((item, index) => `${x(index)},${y(Number(item[key]))}`).join(" ");
 
+  function activateTrendPoint(item: TrendMonth, index: number, metric: (typeof metrics)[number], pinned = false) {
+    const tone = metric.key === "net_savings" && Number(item.net_savings) < 0 ? "warning" : metric.tone;
+    setActive(
+      svgTooltip(chartRef, svgRef, x(index), y(Number(item[metric.key])), {
+        id: `trend-${item.label}-${metric.key}`,
+        title: periodLabel(item.month, item.year),
+        label: metric.label,
+        value: formatMetricValue(item, metric.key),
+        detail: `${percent(item.savings_rate)} savings rate`,
+        tone,
+        guideX: x(index),
+        pinned
+      })
+    );
+  }
+
+  function activateNearestPoint(event: PointerEvent<SVGSVGElement>, pinned = false) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const ratio = (event.clientX - rect.left) / Math.max(rect.width, 1);
+    const viewBoxX = ratio * 720;
+    const index = clamp(Math.round(((viewBoxX - 56) / 612) * Math.max(months.length - 1, 1)), 0, months.length - 1);
+    const item = months[index];
+    const nearestMetric = metrics.reduce((nearest, metric) => {
+      const distance = Math.abs(y(Number(item[metric.key])) - pointerSvgY(event, rect));
+      return distance < nearest.distance ? { metric, distance } : nearest;
+    }, { metric: metrics[0], distance: Number.POSITIVE_INFINITY });
+
+    activateTrendPoint(item, index, nearestMetric.metric, pinned);
+  }
+
   return (
-    <figure className="line-chart">
+    <figure className="line-chart" ref={chartRef}>
       <svg
+        ref={svgRef}
         role="img"
         aria-labelledby={`${titleId} ${descId}`}
         viewBox="0 0 720 300"
         preserveAspectRatio="xMidYMid meet"
+        onPointerDown={(event) => activateNearestPoint(event, event.pointerType === "touch")}
+        onPointerMove={(event) => {
+          if (event.pointerType === "touch" && active?.pinned) {
+            activateNearestPoint(event, true);
+          }
+        }}
       >
         <title id={titleId}>Six-month income, expense, and net savings trend</title>
         <desc id={descId}>
@@ -110,9 +214,50 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
         </desc>
         <line className="axis" x1="56" x2="680" y1="250" y2="250" />
         <line className="axis" x1="56" x2="56" y1="42" y2="250" />
+        {typeof active?.guideX === "number" ? (
+          <line className="chart-guide" x1={active.guideX} x2={active.guideX} y1="42" y2="250" />
+        ) : null}
         <polyline className="chart-line cash-line" points={points("total_income")} />
         <polyline className="chart-line outflow-line" points={points("total_expenses")} />
         <polyline className="chart-line net-line" points={points("net_savings")} />
+        {metrics.map((metric) =>
+          months.map((item, index) => {
+            const tone = metric.key === "net_savings" && Number(item.net_savings) < 0 ? "warning" : metric.tone;
+            const pointId = `trend-${item.label}-${metric.key}`;
+            const isActive = active?.id === pointId;
+            return (
+              <circle
+                key={pointId}
+                className={`chart-point ${tone} ${isActive ? "active" : ""}`.trim()}
+                cx={x(index)}
+                cy={y(Number(item[metric.key]))}
+                r="5"
+                tabIndex={0}
+                role="button"
+                aria-label={`${metric.label} for ${periodLabel(item.month, item.year)}: ${formatMetricValue(item, metric.key)}`}
+                onBlur={handleTooltipBlur(setActive)}
+                onFocus={() => activateTrendPoint(item, index, metric)}
+                onKeyDown={(event) => handleTooltipKeyDown(event, setActive)}
+                onPointerEnter={(event) => {
+                  if (event.pointerType !== "touch") {
+                    activateTrendPoint(item, index, metric);
+                  }
+                }}
+                onPointerDown={(event) => {
+                  if (event.pointerType === "touch") {
+                    event.stopPropagation();
+                    activateTrendPoint(item, index, metric, true);
+                  }
+                }}
+                onPointerLeave={(event) => {
+                  if (event.pointerType !== "touch") {
+                    setActive((current) => (current?.pinned ? current : null));
+                  }
+                }}
+              />
+            );
+          })
+        )}
         {months.map((item, index) => (
           <g key={item.label}>
             <text x={x(index)} y="282" textAnchor="middle">
@@ -126,6 +271,7 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
         <span className="legend outflow">Outflow</span>
         <span className="legend net">Net</span>
       </figcaption>
+      <ChartTooltip active={active} />
     </figure>
   );
 }
@@ -185,4 +331,138 @@ export function KpiCard({
 
 export function compactValue(value: string | number): string {
   return compactMoney(value);
+}
+
+function useChartTooltip(
+  chartRef: RefObject<HTMLElement | null>,
+  dependencies: unknown[]
+): [TooltipData | null, Dispatch<SetStateAction<TooltipData | null>>] {
+  const [active, setActive] = useState<TooltipData | null>(null);
+
+  useEffect(() => {
+    setActive(null);
+  }, dependencies);
+
+  useEffect(() => {
+    if (!active?.pinned) {
+      return;
+    }
+
+    function closeFromOutside(event: globalThis.PointerEvent) {
+      if (!chartRef.current?.contains(event.target as Node)) {
+        setActive(null);
+      }
+    }
+
+    function closeOnScroll() {
+      setActive(null);
+    }
+
+    document.addEventListener("pointerdown", closeFromOutside, { capture: true });
+    window.addEventListener("scroll", closeOnScroll, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener("pointerdown", closeFromOutside, { capture: true });
+      window.removeEventListener("scroll", closeOnScroll, { capture: true });
+    };
+  }, [active?.pinned, chartRef]);
+
+  return [active, setActive];
+}
+
+function ChartTooltip({ active }: { active: TooltipData | null }) {
+  if (!active) {
+    return null;
+  }
+
+  return (
+    <output
+      className={`chart-tooltip ${active.tone}`}
+      style={{ "--tooltip-x": `${active.x}px`, "--tooltip-y": `${active.y}px` } as VariableStyle}
+    >
+      <span>{active.title}</span>
+      <strong>{active.value}</strong>
+      <em>{active.label}</em>
+      <small>{active.detail}</small>
+    </output>
+  );
+}
+
+function tapeTooltip(
+  node: HTMLElement,
+  item: TrendMonth,
+  metric: (typeof metrics)[number],
+  tone: MetricTone,
+  pinned = false
+): TooltipData {
+  const nodeRect = node.getBoundingClientRect();
+  const chartRect = node.closest(".statement-tape")?.getBoundingClientRect();
+  const x = chartRect ? nodeRect.left + nodeRect.width / 2 - chartRect.left : nodeRect.width / 2;
+  const y = chartRect ? nodeRect.top - chartRect.top : 0;
+
+  return {
+    id: `tape-${item.label}-${metric.key}`,
+    title: periodLabel(item.month, item.year),
+    label: metric.label,
+    value: formatMetricValue(item, metric.key),
+    detail: `${item.transaction_count} entries`,
+    tone,
+    x,
+    y,
+    pinned
+  };
+}
+
+function svgTooltip(
+  chartRef: RefObject<HTMLElement | null>,
+  svgRef: RefObject<SVGSVGElement | null>,
+  svgX: number,
+  svgY: number,
+  data: Omit<TooltipData, "x" | "y">
+): TooltipData {
+  const chartRect = chartRef.current?.getBoundingClientRect();
+  const svgRect = svgRef.current?.getBoundingClientRect();
+  if (!chartRect || !svgRect) {
+    return { ...data, x: svgX, y: svgY };
+  }
+
+  return {
+    ...data,
+    x: svgRect.left + (svgX / 720) * svgRect.width - chartRect.left,
+    y: svgRect.top + (svgY / 300) * svgRect.height - chartRect.top
+  };
+}
+
+function handleTooltipBlur(
+  setActive: Dispatch<SetStateAction<TooltipData | null>>
+) {
+  return (event: FocusEvent<HTMLElement | SVGCircleElement>) => {
+    if (!event.currentTarget.parentElement?.contains(event.relatedTarget as Node | null)) {
+      setActive((current) => (current?.pinned ? current : null));
+    }
+  };
+}
+
+function handleTooltipKeyDown(
+  event: KeyboardEvent<HTMLElement | SVGCircleElement>,
+  setActive: Dispatch<SetStateAction<TooltipData | null>>
+) {
+  if (event.key === "Escape") {
+    setActive(null);
+    event.currentTarget.blur();
+  }
+}
+
+function formatMetricValue(item: TrendMonth, key: MetricKey): string {
+  if (key === "net_savings") {
+    return signedMoney(item[key]);
+  }
+  return money(item[key]);
+}
+
+function pointerSvgY(event: PointerEvent<SVGSVGElement>, rect: DOMRect): number {
+  return ((event.clientY - rect.top) / Math.max(rect.height, 1)) * 300;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }

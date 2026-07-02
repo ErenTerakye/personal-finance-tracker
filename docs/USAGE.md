@@ -18,6 +18,8 @@ finance-tracker init
 
 By default this creates `data/finance_tracker.sqlite3`.
 
+The default database is local runtime state and is ignored by git. Use `--db-path demo.sqlite3` for the reproducible reviewer demo built from the included synthetic sample CSVs.
+
 Use a custom path:
 
 ```bash
@@ -32,10 +34,10 @@ This sequence imports the included examples, prints budget and report output, cr
 finance-tracker init --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
 finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
-finance-tracker list --month 6 --year 2026 --db-path demo.sqlite3
-finance-tracker budget-status --month 6 --year 2026 --db-path demo.sqlite3
-finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png --db-path demo.sqlite3
-finance-tracker trends --months 3 --end-month 6 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker list --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
+finance-tracker trends --months 6 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
 finance-tracker web --db-path demo.sqlite3
 finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
 finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
@@ -49,7 +51,7 @@ Start the browser dashboard:
 finance-tracker web
 ```
 
-Open `http://127.0.0.1:8000`.
+Open `http://127.0.0.1:8000`. Without `--db-path`, this uses `./data/finance_tracker.sqlite3`, which is your local working database and may not match the reviewer demo.
 
 Use a custom database path:
 
@@ -82,8 +84,8 @@ The Web UI is a local Python app. GitHub Pages cannot run the live app because P
 ## Add Transactions
 
 ```bash
-finance-tracker add income 2500 --category Salary --description "June salary" --date 2026-06-01
-finance-tracker add expense 386.40 --category Food --description "Groceries and farmers market" --date 2026-06-10
+finance-tracker add income 2500 --category Salary --description "July salary" --date 2026-07-01
+finance-tracker add expense 428.75 --category Food --description "Groceries and summer market" --date 2026-07-09
 ```
 
 ## Edit Transactions
@@ -92,41 +94,41 @@ Update only the fields that need to change:
 
 ```bash
 finance-tracker edit 2 --amount 52.25 --category Household
-finance-tracker edit 2 --type income --description "Reclassified refund" --date 2026-06-13
+finance-tracker edit 2 --type income --description "Reclassified refund" --date 2026-07-13
 ```
 
 ## List Transactions
 
 ```bash
 finance-tracker list
-finance-tracker list --month 6 --year 2026
+finance-tracker list --month 7 --year 2026
 finance-tracker list --type expense --category Food
 ```
 
 ## Monthly Summary
 
 ```bash
-finance-tracker summary --month 6 --year 2026
+finance-tracker summary --month 7 --year 2026
 ```
 
 ## Monthly Report with Chart
 
 ```bash
-finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png
+finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png
 ```
 
 ## Multi-Month Trends
 
-Print a six-month trend report ending in June 2026:
+Print a six-month trend report ending in July 2026:
 
 ```bash
-finance-tracker trends --end-month 6 --end-year 2026
+finance-tracker trends --end-month 7 --end-year 2026
 ```
 
 Choose a custom period and save a PNG chart:
 
 ```bash
-finance-tracker trends --months 3 --end-month 6 --end-year 2026 --chart reports/trends.png
+finance-tracker trends --months 3 --end-month 7 --end-year 2026 --chart reports/trends.png
 ```
 
 Trend reports include monthly income, expenses, net savings, savings rate, transaction counts, and top expense categories across the selected period.
@@ -136,35 +138,37 @@ Trend reports include monthly income, expenses, net savings, savings rate, trans
 Set or update a monthly category budget:
 
 ```bash
-finance-tracker budget-set Food 500 --month 6 --year 2026
+finance-tracker budget-set Food 480 --month 7 --year 2026
 ```
 
 List budgets:
 
 ```bash
-finance-tracker budget-list --month 6 --year 2026
+finance-tracker budget-list --month 7 --year 2026
 ```
 
 Compare budgets to actual expenses:
 
 ```bash
-finance-tracker budget-status --month 6 --year 2026
+finance-tracker budget-status --month 7 --year 2026
 ```
 
 Example status output:
 
 ```text
-Budget status for 2026-06
+Budget status for 2026-07
 
 Category       Budget     Actual     Remaining  Used    Status
 -------------  ---------  ---------  ---------  ------  -----------
-Dining         $190.00    $171.00    $19.00     90.0%   near limit
-Food           $500.00    $386.40    $113.60    77.3%   ok
+Dining         $170.00    $164.30    $5.70      96.6%   near limit
+Food           $480.00    $428.75    $51.25     89.3%   ok
+Health         $100.00    $92.00     $8.00      92.0%   near limit
+Household      $180.00    $186.40    $-6.40     103.6%  over budget
 Rent           $1,600.00  $1,500.00  $100.00    93.8%   near limit
 Subscriptions  $50.00     $44.99     $5.01      90.0%   near limit
-Transport      $120.00    $96.80     $23.20     80.7%   ok
-Travel         $150.00    $185.00    $-35.00    123.3%  over budget
-Utilities      $225.00    $192.35    $32.65     85.5%   ok
+Transport      $120.00    $104.60    $15.40     87.2%   ok
+Travel         $550.00    $640.00    $-90.00    116.4%  over budget
+Utilities      $225.00    $205.20    $19.80     91.2%   near limit
 ```
 
 Delete a budget:
@@ -201,9 +205,9 @@ category,amount,month,year
 
 ```bash
 finance-tracker export-csv exports/transactions.csv
-finance-tracker export-csv exports/june.csv --month 6 --year 2026
+finance-tracker export-csv exports/july.csv --month 7 --year 2026
 finance-tracker export-budgets-csv exports/budgets.csv
-finance-tracker export-budgets-csv exports/june-budgets.csv --month 6 --year 2026
+finance-tracker export-budgets-csv exports/july-budgets.csv --month 7 --year 2026
 ```
 
 ## Quality Checks

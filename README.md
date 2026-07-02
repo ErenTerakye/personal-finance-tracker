@@ -26,17 +26,19 @@ npm run build
 ## Quick Start
 
 ```bash
-finance-tracker init
-finance-tracker import-csv examples/sample_transactions.csv
-finance-tracker import-budgets-csv examples/sample_budgets.csv
-finance-tracker list
-finance-tracker summary --month 6 --year 2026
-finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png
-finance-tracker trends --months 6 --end-month 6 --end-year 2026 --chart reports/trends.png
-finance-tracker web
+finance-tracker init --db-path demo.sqlite3
+finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
+finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
+finance-tracker list --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker summary --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
+finance-tracker trends --months 6 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker web --db-path demo.sqlite3
 ```
 
-Open the Web UI at `http://127.0.0.1:8000`. It uses the same default SQLite database as the CLI. To run it against a demo database:
+Open the Web UI at `http://127.0.0.1:8000`. The included sample CSVs are synthetic portfolio demo data, and `demo.sqlite3` is the reproducible database created from them.
+
+The default database path is `./data/finance_tracker.sqlite3`. That file is local runtime state for your own machine and may not match the documented demo. To run the Web UI against the reproducible demo database:
 
 ```bash
 finance-tracker web --db-path demo.sqlite3
@@ -50,9 +52,9 @@ Run a fresh local demo without touching the default database:
 finance-tracker init --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
 finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
-finance-tracker budget-status --month 6 --year 2026 --db-path demo.sqlite3
-finance-tracker report --month 6 --year 2026 --chart reports/june-2026.png --db-path demo.sqlite3
-finance-tracker trends --months 3 --end-month 6 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
+finance-tracker trends --months 6 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
 finance-tracker web --db-path demo.sqlite3
 finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
 finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
@@ -87,19 +89,19 @@ GitHub Pages can host static files only, so it cannot run the live Python/SQLite
 ## Common Commands
 
 ```bash
-finance-tracker add income 2500 --category Salary --description "June salary" --date 2026-06-01
-finance-tracker add expense 386.40 --category Food --description "Groceries and farmers market" --date 2026-06-10
+finance-tracker add income 2500 --category Salary --description "July salary" --date 2026-07-01
+finance-tracker add expense 428.75 --category Food --description "Groceries and summer market" --date 2026-07-09
 finance-tracker edit 2 --amount 52.25 --category Household
-finance-tracker budget-set Food 500 --month 6 --year 2026
-finance-tracker budget-status --month 6 --year 2026
-finance-tracker trends --months 6 --end-month 6 --end-year 2026
-finance-tracker list --month 6 --year 2026
+finance-tracker budget-set Food 480 --month 7 --year 2026
+finance-tracker budget-status --month 7 --year 2026
+finance-tracker trends --months 6 --end-month 7 --end-year 2026
+finance-tracker list --month 7 --year 2026
 finance-tracker export-csv exports/transactions.csv
 finance-tracker export-budgets-csv exports/budgets.csv
 finance-tracker delete 1
 ```
 
-The default database path is `./data/finance_tracker.sqlite3`. Override it with `--db-path` or the `FINANCE_TRACKER_DB` environment variable.
+Override the default database path with `--db-path` or the `FINANCE_TRACKER_DB` environment variable.
 
 ## CSV Formats
 
@@ -107,16 +109,16 @@ Transaction import and export use:
 
 ```csv
 type,amount,category,description,date
-income,4200.00,Salary,June salary,2026-06-01
-expense,386.40,Food,Groceries and farmers market,2026-06-10
+income,4200.00,Salary,July salary,2026-07-01
+expense,428.75,Food,Groceries and summer market,2026-07-09
 ```
 
 Budget import and export use:
 
 ```csv
 category,amount,month,year
-Food,500.00,6,2026
-Rent,1600.00,6,2026
+Food,480.00,7,2026
+Rent,1600.00,7,2026
 ```
 
 ## Project Structure
