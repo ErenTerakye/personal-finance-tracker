@@ -32,7 +32,7 @@ export function AppShell({
   return (
     <div className="app">
       <a className="skip-link" href="#content">
-        Skip to workspace
+        Skip to main content
       </a>
       <header className="app-header">
         <a
@@ -47,8 +47,8 @@ export function AppShell({
             <BarChart3 size={20} />
           </span>
           <span>
-            <strong>Ledger Workbench</strong>
-            <em>Local finance desk</em>
+            <strong>Finance Tracker</strong>
+            <em>Local Finance</em>
           </span>
         </a>
 
@@ -84,7 +84,7 @@ export function AppShell({
 
       <div className="workspace">
         <main id="content" tabIndex={-1} ref={mainRef}>
-          <div className="local-status" aria-label="Workspace storage">
+          <div className="local-status" aria-label="Database storage">
             <span>
               <Database aria-hidden="true" size={14} />
               Local SQLite

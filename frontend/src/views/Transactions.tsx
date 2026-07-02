@@ -129,9 +129,9 @@ export function TransactionsView({
   return (
     <>
       <PageHeader
-        eyebrow="Ledger"
+        eyebrow="Transactions"
         title="Transactions"
-        summary="Post entries quickly, then review the ledger as stable records."
+        summary="Log transactions quickly and review history."
         actions={
           <ActionButton icon={Plus} onClick={openCreate}>
             Add entry
@@ -141,14 +141,14 @@ export function TransactionsView({
 
       {error ? <ErrorBanner message={error} /> : null}
 
-      <section className="workbench-grid">
+      <section className="tracker-grid">
         <TransactionFilterForm
           filters={filters}
           selectedPeriod={selectedPeriod}
           onChange={setFilters}
         />
 
-        <Panel title="Ledger records" detail={`${transactions.length} transactions shown`}>
+        <Panel title="Transaction History" detail={`${transactions.length} transactions shown`}>
           <TransactionTable
             transactions={transactions}
             onEdit={openEdit}
@@ -179,7 +179,7 @@ export function TransactionsView({
       >
         {dialogError ? <ErrorBanner message={dialogError} /> : null}
         <p className="dialog-copy">
-          This removes the record from your local ledger.
+          This removes the record from your local history.
         </p>
         <div className="dialog-actions">
           <button className="button secondary" type="button" onClick={() => setPendingDelete(null)}>

@@ -1,15 +1,15 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { StatementTape, TrendLines } from "./Charts";
+import { CashflowTrend, TrendLines } from "./Charts";
 import type { DashboardData } from "../types";
 
 type TrendMonth = DashboardData["trend"]["months"][number];
 
-describe("StatementTape", () => {
+describe("CashflowTrend", () => {
   it("scales bars while keeping true zero values empty", () => {
     render(
-      <StatementTape
+      <CashflowTrend
         months={[
           trendMonth("2026-01", {
             total_income: "100.00",
@@ -39,7 +39,7 @@ describe("StatementTape", () => {
   it("shows exact details when an expense bar receives focus", async () => {
     const user = userEvent.setup();
     render(
-      <StatementTape
+      <CashflowTrend
         months={[
           trendMonth("2026-01", {
             total_income: "100.00",
@@ -54,13 +54,13 @@ describe("StatementTape", () => {
     await user.tab();
 
     const tooltip = screen.getByText("$12.34").closest("output") as HTMLElement;
-    expect(within(tooltip).getByText("Outflow")).toBeInTheDocument();
+    expect(within(tooltip).getByText("Expenses")).toBeInTheDocument();
     expect(within(tooltip).getByText("1 entries")).toBeInTheDocument();
   });
 
   it("pins details on touch and dismisses with Escape", () => {
     render(
-      <StatementTape
+      <CashflowTrend
         months={[
           trendMonth("2026-01", {
             total_income: "100.00",
@@ -71,12 +71,12 @@ describe("StatementTape", () => {
       />
     );
 
-    fireEvent.pointerDown(screen.getByRole("button", { name: /Outflow for January 2026/ }), {
+    fireEvent.pointerDown(screen.getByRole("button", { name: /Expenses for January 2026/ }), {
       pointerType: "touch"
     });
 
     expect(screen.getByText("$12.34")).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByRole("button", { name: /Outflow for January 2026/ }), { key: "Escape" });
+    fireEvent.keyDown(screen.getByRole("button", { name: /Expenses for January 2026/ }), { key: "Escape" });
 
     expect(screen.queryByText("$12.34")).not.toBeInTheDocument();
   });

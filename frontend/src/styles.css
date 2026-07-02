@@ -51,8 +51,8 @@
     --rule-strong-dark: #505b6b;
     --cash-light: #08795f;
     --cash-dark: #50d0ad;
-    --outflow-light: #bd4941;
-    --outflow-dark: #ff8f86;
+    --expenses-light: #bd4941;
+    --expenses-dark: #ff8f86;
     --warning-light: #b77912;
     --warning-dark: #e8b24e;
     --action-light: #365ad8;
@@ -76,7 +76,7 @@
     --rule: light-dark(var(--rule-light), var(--rule-dark));
     --rule-strong: light-dark(var(--rule-strong-light), var(--rule-strong-dark));
     --cash: light-dark(var(--cash-light), var(--cash-dark));
-    --outflow: light-dark(var(--outflow-light), var(--outflow-dark));
+    --expenses: light-dark(var(--expenses-light), var(--expenses-dark));
     --warning: light-dark(var(--warning-light), var(--warning-dark));
     --action: light-dark(var(--action-light), var(--action-dark));
     --focus: light-dark(var(--focus-light), var(--focus-dark));
@@ -458,8 +458,8 @@
 
   .button.danger {
     color: #ffffff;
-    background: var(--outflow);
-    border-color: var(--outflow);
+    background: var(--expenses);
+    border-color: var(--expenses);
   }
 
   .button.ghost {
@@ -488,8 +488,8 @@
 
   .button.danger:hover:not(:disabled),
   .icon-button.danger:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--outflow) 86%, var(--button-hover-mix));
-    border-color: color-mix(in srgb, var(--outflow) 86%, var(--button-hover-mix));
+    background: color-mix(in srgb, var(--expenses) 86%, var(--button-hover-mix));
+    border-color: color-mix(in srgb, var(--expenses) 86%, var(--button-hover-mix));
   }
 
   .button.ghost:hover:not(:disabled),
@@ -526,8 +526,8 @@
 
   .icon-button.danger {
     color: #ffffff;
-    background: var(--outflow);
-    border-color: var(--outflow);
+    background: var(--expenses);
+    border-color: var(--expenses);
   }
 
   .theme-toggle {
@@ -617,7 +617,7 @@
   }
 
   .alert {
-    border-inline-start: 4px solid var(--outflow);
+    border-inline-start: 4px solid var(--expenses);
   }
 
   .panel,
@@ -667,7 +667,7 @@
   .dashboard-summary,
   .kpi-grid,
   .analysis-grid,
-  .workbench-grid,
+  .tracker-grid,
   .budget-layout {
     display: grid;
     gap: 1rem;
@@ -709,7 +709,7 @@
     grid-column: 1 / -1;
   }
 
-  .workbench-grid,
+  .tracker-grid,
   .budget-layout {
     grid-template-columns: 1fr;
   }
@@ -842,18 +842,18 @@
 
   input:user-invalid,
   select:user-invalid {
-    border-color: var(--outflow);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--outflow) 16%, transparent);
+    border-color: var(--expenses);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--expenses) 16%, transparent);
   }
 
-  .statement-tape {
-    container: statement-tape / inline-size;
+  .cashflow-trend {
+    container: cashflow-trend / inline-size;
     position: relative;
     display: grid;
     gap: 0.9rem;
   }
 
-  .statement-tape figcaption {
+  .cashflow-trend figcaption {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
@@ -862,15 +862,15 @@
     color: var(--muted);
   }
 
-  .statement-tape figcaption strong {
+  .cashflow-trend figcaption strong {
     color: var(--ink);
   }
 
-  .statement-tape figcaption span {
+  .cashflow-trend figcaption span {
     font-size: var(--font-size-sm);
   }
 
-  .statement-tape ol {
+  .cashflow-trend ol {
     display: grid;
     grid-template-columns: 1fr;
     margin: 0;
@@ -882,8 +882,8 @@
     border-radius: var(--radius);
   }
 
-  .statement-tape li {
-    container: tape-card / inline-size;
+  .cashflow-trend li {
+    container: trend-card / inline-size;
     display: grid;
     grid-template-columns: minmax(4rem, auto) minmax(0, 1fr) minmax(6.5rem, auto);
     grid-template-areas:
@@ -894,24 +894,24 @@
     border-radius: var(--radius-sm);
   }
 
-  .statement-tape li:not(:last-child) {
+  .cashflow-trend li:not(:last-child) {
     border-block-end: 1px solid var(--rule);
   }
 
-  .statement-tape time {
+  .cashflow-trend time {
     grid-area: time;
     color: var(--muted);
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
   }
 
-  .statement-tape li > span {
+  .cashflow-trend li > span {
     grid-area: entries;
     color: var(--muted);
     font-size: var(--font-size-xs);
   }
 
-  .statement-tape strong {
+  .cashflow-trend strong {
     grid-area: value;
     align-self: center;
     justify-self: end;
@@ -923,7 +923,7 @@
     text-align: end;
   }
 
-  .tape-bars {
+  .trend-bars {
     grid-area: bars;
     display: grid;
     align-content: center;
@@ -933,7 +933,7 @@
     min-inline-size: 0;
   }
 
-  .tape-bar {
+  .trend-bar {
     position: relative;
     display: block;
     inline-size: 100%;
@@ -946,7 +946,7 @@
     touch-action: manipulation;
   }
 
-  .tape-bar span {
+  .trend-bar span {
     position: absolute;
     inset: 0;
     inline-size: var(--bar-size, 0%);
@@ -954,7 +954,7 @@
     background: currentColor;
   }
 
-  .tape-bar::before {
+  .trend-bar::before {
     content: "";
     position: absolute;
     inset-block: -0.45rem;
@@ -962,28 +962,28 @@
     min-inline-size: 2.5rem;
   }
 
-  .tape-bar.cash {
+  .trend-bar.cash {
     --bar-size: var(--income-size);
     color: var(--cash);
   }
 
-  .tape-bar.outflow {
+  .trend-bar.expenses {
     --bar-size: var(--expense-size);
-    color: var(--outflow);
+    color: var(--expenses);
   }
 
-  .tape-bar.net {
+  .trend-bar.net {
     --bar-size: var(--net-size);
     color: var(--action);
   }
 
-  .tape-bar.warning {
+  .trend-bar.warning {
     --bar-size: var(--net-size);
     color: var(--warning);
   }
 
-  .tape-bar:hover span,
-  .tape-bar:focus-visible span {
+  .trend-bar:hover span,
+  .trend-bar:focus-visible span {
     box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent);
     filter: saturate(1.1);
   }
@@ -1043,8 +1043,8 @@
     color: var(--cash);
   }
 
-  .chart-point.outflow {
-    color: var(--outflow);
+  .chart-point.expenses {
+    color: var(--expenses);
   }
 
   .chart-point.warning {
@@ -1068,8 +1068,8 @@
     stroke: var(--cash);
   }
 
-  .outflow-line {
-    stroke: var(--outflow);
+  .expenses-line {
+    stroke: var(--expenses);
   }
 
   .net-line {
@@ -1105,9 +1105,9 @@
     color: var(--cash);
   }
 
-  .legend.outflow,
+  .legend.expenses,
   .expense {
-    color: var(--outflow);
+    color: var(--expenses);
   }
 
   .legend.net {
@@ -1150,8 +1150,8 @@
     color: var(--cash);
   }
 
-  .chart-tooltip.outflow {
-    color: var(--outflow);
+  .chart-tooltip.expenses {
+    color: var(--expenses);
   }
 
   .chart-tooltip.net {
@@ -1225,7 +1225,7 @@
     display: block;
     inline-size: var(--bar-size);
     block-size: 100%;
-    background: var(--outflow);
+    background: var(--expenses);
     border-radius: inherit;
   }
 
@@ -1291,11 +1291,11 @@
   }
 
   .pressure-row.over-budget progress::-webkit-progress-value {
-    background-color: var(--outflow);
+    background-color: var(--expenses);
   }
 
   .pressure-row.over-budget progress::-moz-progress-bar {
-    background-color: var(--outflow);
+    background-color: var(--expenses);
   }
 
   .pressure-row.near-limit progress::-webkit-progress-value {
@@ -1324,8 +1324,8 @@
 
   .pressure-row.over-budget em {
     color: #ffffff;
-    background: var(--outflow);
-    border-color: var(--outflow);
+    background: var(--expenses);
+    border-color: var(--expenses);
   }
 
   .pressure-row.near-limit em {
@@ -1686,7 +1686,7 @@
   }
 
   @container workspace-main (min-width: 62rem) {
-    .workbench-grid {
+    .tracker-grid {
       grid-template-columns: 1fr;
     }
 
@@ -1744,12 +1744,12 @@
     }
   }
 
-  @container statement-tape (min-width: 34rem) {
-    .statement-tape ol {
+  @container cashflow-trend (min-width: 34rem) {
+    .cashflow-trend ol {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .statement-tape li {
+    .cashflow-trend li {
       grid-template-columns: 1fr;
       grid-template-areas:
         "time"
@@ -1759,17 +1759,17 @@
       min-block-size: 8.5rem;
     }
 
-    .statement-tape li:not(:last-child) {
+    .cashflow-trend li:not(:last-child) {
       border-block-end: 0;
     }
 
-    .statement-tape strong {
+    .cashflow-trend strong {
       align-self: end;
       justify-self: start;
       text-align: start;
     }
 
-    .tape-bars {
+    .trend-bars {
       display: flex;
       align-items: end;
       gap: 0.35rem;
@@ -1777,7 +1777,7 @@
       min-block-size: 0;
     }
 
-    .tape-bar {
+    .trend-bar {
       flex: 1 1 0;
       inline-size: auto;
       block-size: var(--bar-size, 0%);
@@ -1785,11 +1785,11 @@
       border-radius: 999px 999px 3px 3px;
     }
 
-    .tape-bar span {
+    .trend-bar span {
       inline-size: 100%;
     }
 
-    .tape-bar::before {
+    .trend-bar::before {
       inset-block: 0;
       inset-inline: -0.4rem;
       min-inline-size: 0;
@@ -1797,8 +1797,8 @@
     }
   }
 
-  @container statement-tape (min-width: 42rem) {
-    .statement-tape ol {
+  @container cashflow-trend (min-width: 42rem) {
+    .cashflow-trend ol {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
@@ -1820,12 +1820,12 @@
     }
   }
 
-  @container statement-tape (min-width: 54rem) {
-    .statement-tape ol {
+  @container cashflow-trend (min-width: 54rem) {
+    .cashflow-trend ol {
       grid-template-columns: repeat(6, minmax(0, 1fr));
     }
 
-    .statement-tape li {
+    .cashflow-trend li {
       min-block-size: 10.5rem;
     }
   }
@@ -2018,7 +2018,7 @@
       --tap-target: 3rem;
     }
 
-    .tape-bar::before {
+    .trend-bar::before {
       inset-block: -0.65rem;
       min-inline-size: 3rem;
     }

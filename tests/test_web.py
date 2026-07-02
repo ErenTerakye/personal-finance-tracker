@@ -140,7 +140,7 @@ def test_spa_fallback_serves_html_for_browser_routes(tmp_path):
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "Ledger Workbench" in response.text
+    assert "Personal Finance Tracker" in response.text
 
 
 def test_cli_web_command_still_accepts_custom_db_path(monkeypatch, tmp_path):

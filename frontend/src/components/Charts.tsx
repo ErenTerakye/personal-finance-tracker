@@ -17,7 +17,7 @@ import { EmptyState } from "./ui";
 
 type TrendMonth = DashboardData["trend"]["months"][number];
 type MetricKey = "total_income" | "total_expenses" | "net_savings";
-type MetricTone = "cash" | "outflow" | "net" | "warning";
+type MetricTone = "cash" | "expenses" | "net" | "warning";
 type TooltipData = {
   id: string;
   title: string;
@@ -33,19 +33,19 @@ type TooltipData = {
 
 type VariableStyle = CSSProperties & Record<`--${string}`, string | number>;
 
-const MIN_VISIBLE_TAPE_SIZE = 6;
+const MIN_VISIBLE_TREND_SIZE = 6;
 const metrics: { key: MetricKey; label: string; tone: MetricTone }[] = [
   { key: "total_income", label: "Income", tone: "cash" },
-  { key: "total_expenses", label: "Outflow", tone: "outflow" },
+  { key: "total_expenses", label: "Expenses", tone: "expenses" },
   { key: "net_savings", label: "Net", tone: "net" }
 ];
 
-export function StatementTape({ months }: { months: TrendMonth[] }) {
+export function CashflowTrend({ months }: { months: TrendMonth[] }) {
   const chartRef = useRef<HTMLElement>(null);
   const [active, setActive] = useChartTooltip(chartRef, [months]);
 
   if (!months.length) {
-    return <EmptyState title="No trend yet" message="Add transactions to build a cashflow strip." />;
+    return <EmptyState title="No trend yet" message="Add transactions to build a cashflow trend." />;
   }
 
   const max = Math.max(
@@ -58,12 +58,12 @@ export function StatementTape({ months }: { months: TrendMonth[] }) {
   );
 
   return (
-    <figure className="statement-tape" ref={chartRef}>
+    <figure className="cashflow-trend" ref={chartRef}>
       <figcaption>
-        <strong>Six-month cashflow strip</strong>
-        <span>Income, outflow, and net movement by close period.</span>
+        <strong>Six-month cashflow trend</strong>
+        <span>Income, expenses, and net savings by period.</span>
       </figcaption>
-      <ol aria-label="Six-month cashflow summary">
+      <ol aria-label="Six-month cashflow trend">
         {months.map((item) => {
           const positive = Number(item.net_savings) >= 0;
           return (
@@ -72,36 +72,36 @@ export function StatementTape({ months }: { months: TrendMonth[] }) {
               className={positive ? "positive" : "negative"}
               style={
                 {
-                  "--income-size": tapeSize(item.total_income, max),
-                  "--expense-size": tapeSize(item.total_expenses, max),
-                  "--net-size": tapeSize(item.net_savings, max)
+                  "--income-size": trendSize(item.total_income, max),
+                  "--expense-size": trendSize(item.total_expenses, max),
+                  "--net-size": trendSize(item.net_savings, max)
                 } as VariableStyle
               }
             >
               <time dateTime={`${item.year}-${String(item.month).padStart(2, "0")}`}>
                 {shortPeriodLabel(item.month, item.year)}
               </time>
-              <div className="tape-bars">
+              <div className="trend-bars">
                 {metrics.map((metric) => {
                   const tone =
                     metric.key === "net_savings" && !positive ? "warning" : metric.tone;
                   return (
                     <button
                       key={metric.key}
-                      className={`tape-bar ${tone}`}
+                      className={`trend-bar ${tone}`}
                       type="button"
                       aria-label={`${metric.label} for ${periodLabel(item.month, item.year)}: ${formatMetricValue(item, metric.key)}`}
                       onBlur={handleTooltipBlur(setActive)}
                       onFocus={(event) =>
-                        setActive(tapeTooltip(event.currentTarget, item, metric, tone))
+                        setActive(trendTooltip(event.currentTarget, item, metric, tone))
                       }
                       onKeyDown={(event) => handleTooltipKeyDown(event, setActive)}
                       onPointerDown={(event) =>
-                        setActive(tapeTooltip(event.currentTarget, item, metric, tone, event.pointerType === "touch"))
+                        setActive(trendTooltip(event.currentTarget, item, metric, tone, event.pointerType === "touch"))
                       }
                       onPointerEnter={(event) => {
                         if (event.pointerType !== "touch") {
-                          setActive(tapeTooltip(event.currentTarget, item, metric, tone));
+                          setActive(trendTooltip(event.currentTarget, item, metric, tone));
                         }
                       }}
                       onPointerLeave={(event) => {
@@ -126,12 +126,12 @@ export function StatementTape({ months }: { months: TrendMonth[] }) {
   );
 }
 
-function tapeSize(value: string | number, max: number): string {
+function trendSize(value: string | number, max: number): string {
   const amount = absoluteAmount(value);
   if (amount === 0) {
     return "0%";
   }
-  return `${Math.max(MIN_VISIBLE_TAPE_SIZE, (amount / max) * 100)}%`;
+  return `${Math.max(MIN_VISIBLE_TREND_SIZE, (amount / max) * 100)}%`;
 }
 
 function absoluteAmount(value: string | number): number {
@@ -147,7 +147,7 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
   const [active, setActive] = useChartTooltip(chartRef, [months]);
 
   if (!months.length) {
-    return <EmptyState title="No trend data" message="The trend appears after transactions are posted." />;
+    return <EmptyState title="No trend data" message="The trend appears after transactions are added." />;
   }
 
   const values = months.flatMap((item) => [
@@ -210,7 +210,7 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
       >
         <title id={titleId}>Six-month income, expense, and net savings trend</title>
         <desc id={descId}>
-          Line chart comparing income, outflow, and net savings across the selected period.
+          Line chart comparing income, expenses, and net savings across the selected period.
         </desc>
         <line className="axis" x1="56" x2="680" y1="250" y2="250" />
         <line className="axis" x1="56" x2="56" y1="42" y2="250" />
@@ -218,7 +218,7 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
           <line className="chart-guide" x1={active.guideX} x2={active.guideX} y1="42" y2="250" />
         ) : null}
         <polyline className="chart-line cash-line" points={points("total_income")} />
-        <polyline className="chart-line outflow-line" points={points("total_expenses")} />
+        <polyline className="chart-line expenses-line" points={points("total_expenses")} />
         <polyline className="chart-line net-line" points={points("net_savings")} />
         {metrics.map((metric) =>
           months.map((item, index) => {
@@ -268,7 +268,7 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
       </svg>
       <figcaption>
         <span className="legend cash">Income</span>
-        <span className="legend outflow">Outflow</span>
+        <span className="legend expenses">Expenses</span>
         <span className="legend net">Net</span>
       </figcaption>
       <ChartTooltip active={active} />
@@ -317,7 +317,7 @@ export function KpiCard({
   label: string;
   value: string;
   detail?: string;
-  tone?: "cash" | "outflow" | "warning" | "neutral";
+  tone?: "cash" | "expenses" | "warning" | "neutral";
   featured?: boolean;
 }) {
   return (
@@ -387,7 +387,7 @@ function ChartTooltip({ active }: { active: TooltipData | null }) {
   );
 }
 
-function tapeTooltip(
+function trendTooltip(
   node: HTMLElement,
   item: TrendMonth,
   metric: (typeof metrics)[number],
@@ -395,12 +395,12 @@ function tapeTooltip(
   pinned = false
 ): TooltipData {
   const nodeRect = node.getBoundingClientRect();
-  const chartRect = node.closest(".statement-tape")?.getBoundingClientRect();
+  const chartRect = node.closest(".cashflow-trend")?.getBoundingClientRect();
   const x = chartRect ? nodeRect.left + nodeRect.width / 2 - chartRect.left : nodeRect.width / 2;
   const y = chartRect ? nodeRect.top - chartRect.top : 0;
 
   return {
-    id: `tape-${item.label}-${metric.key}`,
+    id: `trend-${item.label}-${metric.key}`,
     title: periodLabel(item.month, item.year),
     label: metric.label,
     value: formatMetricValue(item, metric.key),

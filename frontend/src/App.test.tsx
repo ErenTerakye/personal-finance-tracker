@@ -18,7 +18,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("Ledger Workbench", () => {
+describe("Personal Finance Tracker", () => {
   it("renders dashboard totals and over-budget pressure", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({
@@ -38,7 +38,7 @@ describe("Ledger Workbench", () => {
 
     expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Choose period/ })).toBeInTheDocument();
-    expect(screen.getByText("Six-month cashflow strip")).toBeInTheDocument();
+    expect(screen.getByText("Six-month cashflow trend")).toBeInTheDocument();
     expect(screen.getAllByText("$2,500.00").length).toBeGreaterThan(0);
     expect(screen.getByText("over budget")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /six-month income/i })).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe("Ledger Workbench", () => {
 
     expect(window.location.pathname).toBe("/budgets");
     expect(await screen.findByRole("heading", { name: "Budgets" })).toBeInTheDocument();
-    expect(document.title).toBe("Budgets | Ledger Workbench");
+    expect(document.title).toBe("Budgets | Personal Finance Tracker");
   });
 
   it("changes the dashboard period from the compact period control", async () => {

@@ -62,17 +62,17 @@ finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 
 ## Web UI
 
-The local Web UI is an intentional portfolio-scale scope expansion: a Ledger Workbench for trend-first monthly review, transaction entry, and budget pressure checks. It remains local-first: the Python server reads and writes your SQLite database on your machine.
+The local Web UI is an intentional portfolio-scale scope expansion: a Personal Finance Tracker for trend-first monthly review, transaction entry, and budget pressure checks. It remains local-first: the Python server reads and writes your SQLite database on your machine.
 
 Architecture: FastAPI exposes JSON endpoints under `/api`, and a React + Vite + TypeScript SPA is served from the same local server after `npm run build`. Money values are sent as decimal strings so the browser never depends on floating-point rounding for stored amounts.
 
-The browser workspace includes:
+The browser application includes:
 
-- A compact dashboard led by a six-month statement tape, KPI cards, budget pressure, category mix, and recent activity.
+- A compact dashboard led by a six-month cashflow trend, KPI cards, budget pressure, category mix, and recent activity.
 - Route-aware navigation for `/`, `/transactions`, and `/budgets`.
 - Compact period controls for month-to-month review without always exposing month/year fields.
 - Dialog-based transaction add/edit/delete and budget set/update/delete flows.
-- Read-only ledger tables that collapse into mobile-friendly record lists with compact row actions.
+- Read-only transaction tables that collapse into mobile-friendly record lists with compact row actions.
 - A header theme action that follows your system color setting by default and can pin the opposite light/dark mode locally.
 
 During frontend development, run the Python app and Vite separately:
@@ -138,7 +138,7 @@ src/finance_tracker/
 
 ```text
 frontend/
-  src/              # React + TypeScript Ledger Workbench SPA
+  src/              # React + TypeScript Personal Finance Tracker SPA
 ```
 
 ## Development

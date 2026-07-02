@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { api } from "../api";
-import { compactValue, CategoryBars, KpiCard, StatementTape, TrendLines } from "../components/Charts";
+import { compactValue, CategoryBars, KpiCard, CashflowTrend, TrendLines } from "../components/Charts";
 import { ActivityList, BudgetPressureList } from "../components/Lists";
 import { PeriodControl } from "../components/PeriodControl";
 import { ActionButton, ErrorBanner, PageHeader, Panel } from "../components/ui";
@@ -36,8 +36,8 @@ export function DashboardView({
 
   if (!data) {
     return (
-      <Panel title="Loading workspace" detail="Fetching local ledger data">
-        <p className="loading-state">Preparing the cashflow desk.</p>
+      <Panel title="Loading dashboard" detail="Fetching transaction records">
+        <p className="loading-state">Preparing the cashflow trend.</p>
       </Panel>
     );
   }
@@ -51,9 +51,9 @@ export function DashboardView({
   return (
     <>
       <PageHeader
-        eyebrow="Cashflow desk"
+        eyebrow="Cashflow Overview"
         title="Dashboard"
-        summary="Review cashflow, budget pressure, and recent ledger activity for one period."
+        summary="Review cashflow, budget pressure, and recent activity."
         className="dashboard-heading"
         actions={
           <PeriodControl
@@ -69,7 +69,7 @@ export function DashboardView({
           label="Net position"
           value={money(data.report.net_savings)}
           detail={`${data.report.transaction_count} entries`}
-          tone={Number(data.report.net_savings) >= 0 ? "cash" : "outflow"}
+          tone={Number(data.report.net_savings) >= 0 ? "cash" : "expenses"}
           featured
         />
         <KpiCard
@@ -95,14 +95,14 @@ export function DashboardView({
       </section>
 
       <section className="dashboard-lead" aria-label="Dashboard summary">
-        <Panel title="Statement tape" className="tape-panel">
-          <StatementTape months={data.trend.months} />
+        <Panel title="Cashflow Trend" className="tape-panel">
+          <CashflowTrend months={data.trend.months} />
         </Panel>
       </section>
 
       <section className="kpi-grid" aria-label="Monthly totals">
-        <KpiCard label="Income cleared" value={money(data.report.total_income)} tone="cash" />
-        <KpiCard label="Outflow posted" value={money(data.report.total_expenses)} tone="outflow" />
+        <KpiCard label="Income" value={money(data.report.total_income)} tone="cash" />
+        <KpiCard label="Expenses" value={money(data.report.total_expenses)} tone="expenses" />
         <KpiCard label="Trend net" value={money(data.trend.net_savings)} detail="Six-month total" />
         <KpiCard
           label="Trend entries"
@@ -112,16 +112,16 @@ export function DashboardView({
       </section>
 
       <section className="analysis-grid" aria-label="Dashboard analysis">
-        <Panel title="Trend context" detail="Income, outflow, and net lines" deferred>
+        <Panel title="Trend context" detail="Income, expenses, and net savings" deferred>
           <TrendLines months={data.trend.months} />
         </Panel>
         <Panel title="Budget pressure" deferred>
           <BudgetPressureList statuses={data.budget_statuses} />
         </Panel>
-        <Panel title="Outflow mix" detail="Spending by category" deferred>
+        <Panel title="Expense mix" detail="Spending by category" deferred>
           <CategoryBars title="Expense categories" items={categories} />
         </Panel>
-        <Panel title="Recent ledger" detail="Latest local activity" deferred>
+        <Panel title="Recent activity" detail="Latest activity" deferred>
           <ActivityList transactions={data.recent_transactions} />
         </Panel>
       </section>

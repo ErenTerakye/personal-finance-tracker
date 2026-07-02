@@ -90,7 +90,7 @@ The Python app exposes JSON endpoints under `/api` and serves the compiled React
 
 Supported browser workflows:
 
-- Ledger Workbench dashboard with a six-month statement tape, compact period controls, monthly KPI cards, functional browser-rendered charts, recent transactions, budget pressure, and category mix.
+- Personal Finance Tracker dashboard with a six-month cashflow trend, compact period controls, monthly KPI cards, functional browser-rendered charts, recent transactions, budget pressure, and category mix.
 - Route-aware SPA navigation for `/`, `/transactions`, and `/budgets`.
 - Transaction add, edit, delete, and filtering through native dialog workflows.
 - Budget set/update, delete, filtering, and budget status comparison with pressure as the primary view.

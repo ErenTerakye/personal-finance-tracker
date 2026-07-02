@@ -61,7 +61,7 @@ finance-tracker web --host 127.0.0.1 --port 8000 --db-path demo.sqlite3
 
 The Web UI supports:
 
-- A Ledger Workbench dashboard with a six-month statement tape, KPI cards, trend/category charts, recent transactions, and budget pressure.
+- A Personal Finance Tracker dashboard with a six-month cashflow trend, KPI cards, trend/category charts, recent transactions, and budget pressure.
 - Route-aware browser navigation for `/`, `/transactions`, and `/budgets`.
 - Compact period controls for changing monthly scope without keeping month/year fields open all the time.
 - Transaction add, edit, delete, and filters through native dialog workflows.

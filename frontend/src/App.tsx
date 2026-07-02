@@ -25,7 +25,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    document.title = `${viewMeta[view].title} | Ledger Workbench`;
+    document.title = `${viewMeta[view].title} | Personal Finance Tracker`;
     if (didMount.current) {
       window.requestAnimationFrame(() => mainRef.current?.focus());
     }

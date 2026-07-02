@@ -1,7 +1,7 @@
 export type ColorScheme = "light" | "dark";
 export type ColorSchemePreference = "system" | ColorScheme;
 
-export const COLOR_SCHEME_STORAGE_KEY = "ledger-workbench-color-scheme";
+export const COLOR_SCHEME_STORAGE_KEY = "finance-tracker-color-scheme";
 
 const COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)";
 const SYSTEM_COLOR_SCHEME = "light dark";

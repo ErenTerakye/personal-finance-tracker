@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const colorSchemeStorageKey = "ledger-workbench-color-scheme";
+const colorSchemeStorageKey = "finance-tracker-color-scheme";
 const viewports = [320, 390, 430, 768, 1024, 1280, 1440, 1800, 1920];
 const themeViewports = [390, 1280];
 
@@ -15,7 +15,7 @@ for (const width of viewports) {
       await page.goto("/");
 
       await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-      await expect(page.getByText("Six-month cashflow strip")).toBeVisible();
+      await expect(page.getByText("Six-month cashflow trend")).toBeVisible();
       await expect(page.getByRole("button", { name: /Choose period/ })).toBeVisible();
       await assertNoHorizontalOverflow(page);
       await assertCannotPanHorizontally(page);
@@ -26,7 +26,7 @@ for (const width of viewports) {
       await page.getByRole("button", { name: /Choose period/ }).click();
       await expectElementsFitViewport(page, [".period-popover"]);
 
-      const firstTapeCard = page.locator(".statement-tape li").first();
+      const firstTapeCard = page.locator(".cashflow-trend li").first();
       await expect(firstTapeCard).toBeVisible();
       const cardBox = await firstTapeCard.boundingBox();
       expect(cardBox?.width).toBeLessThanOrEqual(width);
@@ -67,7 +67,7 @@ for (const width of viewports) {
   });
 }
 
-test.describe("statement tape graph rendering", () => {
+test.describe("cashflow trend graph rendering", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await mockApi(page);
@@ -76,24 +76,24 @@ test.describe("statement tape graph rendering", () => {
   test("scales desktop bars and leaves empty months blank", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByText("Six-month cashflow strip")).toBeVisible();
-    const activeBars = await measureTapeBars(page.locator(".statement-tape li").first());
-    const emptyBars = await measureTapeBars(page.locator(".statement-tape li").last());
+    await expect(page.getByText("Six-month cashflow trend")).toBeVisible();
+    const activeBars = await measureTrendBars(page.locator(".cashflow-trend li").first());
+    const emptyBars = await measureTrendBars(page.locator(".cashflow-trend li").last());
 
-    expect(activeBars.cash).toBeGreaterThan(activeBars.outflow);
-    expect(activeBars.net).toBeGreaterThan(activeBars.outflow);
+    expect(activeBars.cash).toBeGreaterThan(activeBars.expenses);
+    expect(activeBars.net).toBeGreaterThan(activeBars.expenses);
     expect(emptyBars.cash).toBeLessThanOrEqual(1);
-    expect(emptyBars.outflow).toBeLessThanOrEqual(1);
+    expect(emptyBars.expenses).toBeLessThanOrEqual(1);
     expect(emptyBars.net).toBeLessThanOrEqual(1);
   });
 
   test("shows exact values on desktop hover", async ({ page }) => {
     await page.goto("/");
 
-    await page.locator(".statement-tape .tape-bar.outflow").first().hover();
+    await page.locator(".cashflow-trend .trend-bar.expenses").first().hover();
     const tooltip = page.locator(".chart-tooltip");
 
-    await expect(tooltip).toContainText("Outflow");
+    await expect(tooltip).toContainText("Expenses");
     await expect(tooltip).toContainText("$500.00");
     await expectElementsFitViewport(page, [".chart-tooltip"]);
   });
@@ -128,10 +128,10 @@ test.describe("mobile chart interactions", () => {
   test("pins a tapped bar tooltip inside the viewport and dismisses on outside tap", async ({ page }) => {
     await page.goto("/");
 
-    await page.locator(".statement-tape .tape-bar.outflow").last().dispatchEvent("pointerdown", {
+    await page.locator(".cashflow-trend .trend-bar.expenses").last().dispatchEvent("pointerdown", {
       pointerType: "touch"
     });
-    const tooltip = page.locator(".statement-tape .chart-tooltip");
+    const tooltip = page.locator(".cashflow-trend .chart-tooltip");
 
     await expect(tooltip).toContainText("$0.00");
     await expectElementsFitViewport(page, [".chart-tooltip"]);
@@ -143,12 +143,12 @@ test.describe("mobile chart interactions", () => {
   test("pins a tapped trend point and dismisses on scroll", async ({ page }) => {
     await page.goto("/");
 
-    await page.locator(".line-chart .chart-point.outflow").first().dispatchEvent("pointerdown", {
+    await page.locator(".line-chart .chart-point.expenses").first().dispatchEvent("pointerdown", {
       pointerType: "touch"
     });
     const tooltip = page.locator(".line-chart .chart-tooltip");
 
-    await expect(tooltip).toContainText("Outflow");
+    await expect(tooltip).toContainText("Expenses");
     await expectElementsFitViewport(page, [".chart-tooltip"]);
 
     await page.mouse.wheel(0, 320);
@@ -272,7 +272,7 @@ async function expectDashboardFitsViewport(page: Page) {
     ".period-control > button",
     ".dashboard-summary",
     ".dashboard-lead",
-    ".statement-tape ol",
+    ".cashflow-trend ol",
     ".theme-toggle"
   ]);
 }
@@ -387,14 +387,14 @@ async function expectMobileNavigationIsCompact(page: Page, width: number) {
   expect(position).toBe("fixed");
 }
 
-async function measureTapeBars(card: ReturnType<Page["locator"]>) {
+async function measureTrendBars(card: ReturnType<Page["locator"]>) {
   return card.evaluate((node) => {
     const barHeight = (selector: string) =>
       node.querySelector(selector)?.getBoundingClientRect().height ?? 0;
     return {
-      cash: barHeight(".tape-bars .cash"),
-      outflow: barHeight(".tape-bars .outflow"),
-      net: barHeight(".tape-bars .net")
+      cash: barHeight(".trend-bars .cash"),
+      expenses: barHeight(".trend-bars .expenses"),
+      net: barHeight(".trend-bars .net")
     };
   });
 }

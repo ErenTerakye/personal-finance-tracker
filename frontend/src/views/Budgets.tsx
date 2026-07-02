@@ -134,9 +134,9 @@ export function BudgetsView({
   return (
     <>
       <PageHeader
-        eyebrow="Pressure"
+        eyebrow="Budgets"
         title="Budgets"
-        summary="Watch category limits first, then maintain the records behind them."
+        summary="Monitor spending limits and manage budget records."
         actions={
           <ActionButton icon={PiggyBank} onClick={openCreate}>
             Set budget
@@ -179,7 +179,7 @@ export function BudgetsView({
         }}
       >
         {dialogError ? <ErrorBanner message={dialogError} /> : null}
-        <p className="dialog-copy">This removes the budget record from your local ledger.</p>
+        <p className="dialog-copy">This removes the budget record from your local budgets.</p>
         <div className="dialog-actions">
           <button className="button secondary" type="button" onClick={() => setPendingDelete(null)}>
             Cancel
