@@ -130,7 +130,9 @@ Invalid data rows are skipped during import and reported to the user. Missing re
 
 ## Current Development Direction
 
-The current milestone direction is finance insight depth after v0.3 browser workflow parity. The CLI and local FastAPI/React Web UI should remain aligned, the reviewer demo should stay easy to reproduce, and the project should remain portfolio-scale: no authentication, cloud sync, background workers, or hosted database unless the project scope changes again.
+The current milestone direction is finance insight depth after v0.3 browser workflow parity, followed by single-ledger currency readiness and Turkish Web UI localization before v1.0. Currency support should start as one configurable ledger currency per local database, defaulting existing and demo data to `USD`; mixed-currency accounting, exchange-rate lookup, and per-transaction currency fields are later-scope ideas. Turkish language support should start in the browser with local translation dictionaries, a local language preference, and locale-aware formatting that reuses the active ledger currency; CLI output, generated text reports, and docs stay English unless the project scope expands.
+
+The CLI and local FastAPI/React Web UI should remain aligned, the reviewer demo should stay easy to reproduce, and the project should remain portfolio-scale: no authentication, cloud sync, background workers, or hosted database unless the project scope changes again.
 
 Use [../ROADMAP.md](../ROADMAP.md) as the source of truth for upcoming milestones and future-work ordering.
 
@@ -149,5 +151,7 @@ Use pytest with temporary SQLite databases. Cover:
 - Chart output for monthly and trend reports.
 - Web API dashboard data, form validation feedback, CRUD flows, filters, CSV import/export, and downloadable report/chart artifacts.
 - React dashboard, route navigation, transaction/budget dialog workflows, CSV import dialogs, delete-dialog, API-client, downloadable artifact links, and SVG chart behavior.
+- Future currency tests should cover ledger currency validation/defaults, settings persistence if added, report and chart formatting, CSV compatibility, API exposure, and frontend `USD`/`TRY` formatting.
+- Future Turkish Web UI tests should cover translation lookup and fallback behavior, Turkish month labels, `tr-TR` date/number/currency formatting, local language preference, and responsive Turkish text in key browser workflows.
 - CLI smoke flows through Typer's test runner.
 - GitHub Actions runs pytest and Ruff on Python 3.14, plus frontend unit tests, production build, and Playwright responsive E2E tests on Node 24.
