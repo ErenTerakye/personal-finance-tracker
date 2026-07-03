@@ -10,31 +10,34 @@ would make it stronger without bloating the scope.
 
 ## Current Snapshot
 
-- Python CLI supports transaction add/edit/list/delete, monthly budgets, CSV
-  import/export, monthly summaries, multi-month trends, and optional PNG charts.
+- Python CLI supports transaction add/edit/list/delete, monthly budgets, category
+  alias rules, recurring transaction templates, CSV import/export with
+  transaction preview and duplicate safeguards, monthly summaries, multi-month
+  trends, and optional PNG charts.
 - SQLite is the only persistence layer. Money is represented with `Decimal` in
   Python and stored as text for predictable round-tripping.
 - FastAPI exposes local JSON endpoints under `/api` and serves the packaged
   React + Vite + TypeScript SPA.
-- The Web UI includes dashboard, transaction, and budget workflows with
+- The Web UI includes dashboard, transaction, budget, and rules workflows with
   responsive layouts, accessible dialogs, SVG charts, period controls, route
-  navigation, browser CSV import/export, dashboard report/chart downloads, and
-  persistent light/dark/system theme behavior.
+  navigation, browser CSV import/export, transaction CSV preview, dashboard
+  report/chart downloads, and persistent light/dark/system theme behavior.
 - A static showcase exists for portfolio hosting, while real CRUD remains a
   local Python/SQLite workflow.
 - GitHub Actions mirrors the documented check set with Python tests, Ruff,
   frontend unit tests, production build, and Playwright responsive E2E tests.
-- v0.3 adds browser CSV import/export, downloadable monthly/trend text and PNG
-  artifacts, stronger loading/empty/import result states, and focused API,
-  frontend, and responsive tests around those workflows.
-- Local quality checks last verified for v0.3 on July 3, 2026:
-  - `.venv/bin/python -m pytest` - 52 passed.
+- v0.4 adds category alias normalization, manually applied recurring monthly
+  transaction templates, transaction CSV preview and duplicate safeguards,
+  year-to-date and month-over-month report context, and focused API, frontend,
+  and responsive tests around those workflows.
+- Local quality checks last verified for v0.4 on July 3, 2026:
+  - `.venv/bin/python -m pytest` - 60 passed.
   - `.venv/bin/python -m ruff check .` - passed.
-  - `npm test` - 21 frontend unit tests passed.
+  - `npm test` - 22 frontend unit tests passed.
   - `npm run build` - passed.
-  - `npm run test:e2e` - 35 Playwright responsive E2E tests passed.
+  - `npm run test:e2e` - 44 Playwright responsive E2E tests passed.
   - `.venv/bin/python -m build` - built the source distribution and universal
-    wheel for `personal-finance-tracker` 0.3.0.
+    wheel for `personal-finance-tracker` 0.4.0.
 
 ## Guiding Principles
 
@@ -82,20 +85,22 @@ the CLI-backed app.
 - Added focused API, React unit, and Playwright responsive coverage for the new
   browser workflows.
 
-## Next Milestones
-
 ### v0.4 Finance Insight Depth
 
-Add higher-value finance features only after the core portfolio surface is
-stable.
+The app now has higher-value insight features while staying explicit and
+local-first.
 
-- Add recurring transaction templates for predictable income and expenses.
-- Add category normalization or category rules to reduce report fragmentation.
-- Add richer month-over-month and year-to-date summaries.
-- Add CSV import preview and duplicate-detection safeguards before write-heavy
-  imports.
-- Keep all new behavior available through the service layer before exposing it
-  in CLI or Web UI commands.
+- Added category alias rules that canonicalize transaction and budget writes.
+- Added manually applied monthly recurring transaction templates for predictable
+  income and expenses.
+- Added year-to-date totals and month-over-month deltas to monthly and trend
+  reports.
+- Added transaction CSV preview and duplicate-detection safeguards before
+  write-heavy imports.
+- Exposed the behavior through the service layer, CLI commands, FastAPI
+  endpoints, and a compact Web UI Rules workflow.
+
+## Next Milestones
 
 ### v0.5 Local Currency Readiness
 

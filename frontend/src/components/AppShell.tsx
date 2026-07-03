@@ -3,7 +3,8 @@ import {
   Database,
   LayoutDashboard,
   PiggyBank,
-  ReceiptText
+  ReceiptText,
+  SlidersHorizontal
 } from "lucide-react";
 import { ReactNode } from "react";
 import { View, viewMeta, viewOrder } from "../routes";
@@ -13,7 +14,8 @@ import { Notice } from "./ui";
 const navIcons = {
   dashboard: LayoutDashboard,
   transactions: ReceiptText,
-  budgets: PiggyBank
+  budgets: PiggyBank,
+  rules: SlidersHorizontal
 };
 
 export function AppShell({

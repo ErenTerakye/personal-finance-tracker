@@ -4,10 +4,18 @@ import type {
   BudgetMutationResponse,
   BudgetRecord,
   BudgetStatus,
+  CategoryRule,
+  CategoryRuleInput,
+  CategoryRuleMutationResponse,
   DashboardData,
   ImportSummary,
   NoticeResponse,
+  RecurringApplyResponse,
+  RecurringTemplate,
+  RecurringTemplateInput,
+  RecurringTemplateMutationResponse,
   TransactionInput,
+  TransactionImportPreview,
   TransactionMutationResponse,
   TransactionPatch,
   TransactionRecord,
@@ -51,6 +59,23 @@ export const api = {
       headers: { "Content-Type": "text/csv; charset=utf-8" }
     }),
 
+  previewTransactionsCsv: (csvText: string) =>
+    request<TransactionImportPreview>("/api/transactions/import-csv/preview", {
+      method: "POST",
+      body: csvText,
+      headers: { "Content-Type": "text/csv; charset=utf-8" }
+    }),
+
+  importTransactionsCsvWithOptions: (csvText: string, allowDuplicates = false) =>
+    request<ImportSummary>(
+      `/api/transactions/import-csv?${query({ allow_duplicates: allowDuplicates })}`,
+      {
+        method: "POST",
+        body: csvText,
+        headers: { "Content-Type": "text/csv; charset=utf-8" }
+      }
+    ),
+
   transactionCsvExportUrl: (filters: TransactionFilters = {}) =>
     `/api/transactions/export-csv?${query(filters)}`,
 
@@ -91,7 +116,36 @@ export const api = {
   budgetStatuses: (month: number, year: number) =>
     request<{ statuses: BudgetStatus[] }>(`/api/budgets/status?${query({ month, year })}`),
 
-  deleteBudget: (id: number) => request<NoticeResponse>(`/api/budgets/${id}`, { method: "DELETE" })
+  deleteBudget: (id: number) =>
+    request<NoticeResponse>(`/api/budgets/${id}`, { method: "DELETE" }),
+
+  categoryRules: () => request<{ rules: CategoryRule[] }>("/api/category-rules"),
+
+  setCategoryRule: (payload: CategoryRuleInput) =>
+    request<CategoryRuleMutationResponse>("/api/category-rules", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+
+  deleteCategoryRule: (id: number) =>
+    request<NoticeResponse>(`/api/category-rules/${id}`, { method: "DELETE" }),
+
+  recurringTemplates: () =>
+    request<{ templates: RecurringTemplate[] }>("/api/recurring-templates"),
+
+  createRecurringTemplate: (payload: RecurringTemplateInput) =>
+    request<RecurringTemplateMutationResponse>("/api/recurring-templates", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+
+  deleteRecurringTemplate: (id: number) =>
+    request<NoticeResponse>(`/api/recurring-templates/${id}`, { method: "DELETE" }),
+
+  applyRecurringTemplates: (month: number, year: number) =>
+    request<RecurringApplyResponse>(`/api/recurring-templates/apply?${query({ month, year })}`, {
+      method: "POST"
+    })
 };
 
 export const artifactUrls = {
@@ -107,7 +161,7 @@ export const artifactUrls = {
 
 export function query(values: object): string {
   const params = new URLSearchParams();
-  Object.entries(values as Record<string, string | number | undefined | null>).forEach(([key, value]) => {
+  Object.entries(values as Record<string, string | number | boolean | undefined | null>).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
       params.set(key, String(value));
     }

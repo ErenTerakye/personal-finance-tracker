@@ -75,6 +75,17 @@ for (const width of viewports) {
       await expect(dialog).toBeVisible();
       await expectDialogFitsViewport(page, dialog);
     });
+
+    test("adapts rules and recurring template controls", async ({ page }) => {
+      await page.goto("/rules");
+
+      await expect(page.getByRole("heading", { name: "Rules" })).toBeVisible();
+      await expect(page.locator(".rule-list strong", { hasText: "groceries" })).toBeVisible();
+      await expect(page.getByText("Rent $1,200.00")).toBeVisible();
+      await expect(page.getByRole("button", { name: /Apply for/ })).toBeVisible();
+      await assertNoHorizontalOverflow(page);
+      await expectElementsFitViewport(page, [".rules-layout", ".template-form", ".rule-list li"]);
+    });
   });
 }
 
@@ -501,6 +512,31 @@ async function mockApi(page: Page) {
       await route.fulfill({ json: { budgets: [budget()] } });
       return;
     }
+    if (url.pathname === "/api/category-rules") {
+      await route.fulfill({
+        json: { rules: [{ id: 1, alias: "groceries", category: "Food", created_at: null }] }
+      });
+      return;
+    }
+    if (url.pathname === "/api/recurring-templates") {
+      await route.fulfill({
+        json: {
+          templates: [
+            {
+              id: 1,
+              type: "expense",
+              amount: "1200.00",
+              category: "Rent",
+              description: "Monthly rent",
+              day_of_month: 1,
+              active: true,
+              created_at: null
+            }
+          ]
+        }
+      });
+      return;
+    }
     await route.fulfill({ status: 404, json: { detail: { error: "Unhandled mock route" } } });
   });
 }
@@ -587,7 +623,13 @@ function dashboardPayload() {
       net_savings: "2113.60",
       transaction_count: 2,
       income_by_category: { Salary: "2500.00" },
-      expenses_by_category: { Food: "386.40", Travel: "185.00" }
+      expenses_by_category: { Food: "386.40", Travel: "185.00" },
+      ytd_income: "15000.00",
+      ytd_expenses: "3000.00",
+      ytd_net_savings: "12000.00",
+      income_delta: "100.00",
+      expenses_delta: "-25.00",
+      net_savings_delta: "125.00"
     },
     trend: {
       months: [
@@ -635,6 +677,9 @@ function baseTrendMonth(label: string, netSavings: string) {
     total_expenses: "500.00",
     net_savings: netSavings,
     transaction_count: 5,
-    savings_rate: "80.0"
+    savings_rate: "80.0",
+    income_delta: "0.00",
+    expenses_delta: "0.00",
+    net_savings_delta: "0.00"
   };
 }

@@ -13,6 +13,7 @@ from finance_tracker.csv_io import (
     export_transactions_csv,
     import_budgets_csv,
     import_transactions_csv,
+    preview_transactions_csv_file,
 )
 from finance_tracker.database import initialize_database
 from finance_tracker.exceptions import CsvFormatError, FinanceTrackerError
@@ -23,7 +24,13 @@ from finance_tracker.reports import (
     format_monthly_report,
     format_trend_report,
 )
-from finance_tracker.services import BudgetService, BudgetStatus, TransactionService
+from finance_tracker.services import (
+    BudgetService,
+    BudgetStatus,
+    CategoryRuleService,
+    RecurringTemplateService,
+    TransactionService,
+)
 
 app = typer.Typer(help="Track income and expenses from the command line.")
 
@@ -42,6 +49,14 @@ def _service(db_path: Path | None) -> TransactionService:
 
 def _budget_service(db_path: Path | None) -> BudgetService:
     return BudgetService(resolve_db_path(db_path))
+
+
+def _category_rule_service(db_path: Path | None) -> CategoryRuleService:
+    return CategoryRuleService(resolve_db_path(db_path))
+
+
+def _recurring_service(db_path: Path | None) -> RecurringTemplateService:
+    return RecurringTemplateService(resolve_db_path(db_path))
 
 
 def _handle_error(error: FinanceTrackerError) -> None:
@@ -281,6 +296,137 @@ def budget_delete(
     typer.echo(f"Deleted budget #{budget_id}")
 
 
+@app.command("category-rule-set")
+def category_rule_set(
+    alias: Annotated[str, typer.Argument(help="Category alias to normalize")],
+    category: Annotated[str, typer.Argument(help="Canonical category name")],
+    db_path: DbPathOption = None,
+) -> None:
+    """Set or update a category alias rule."""
+    try:
+        rule = _category_rule_service(db_path).set_rule(alias=alias, category=category)
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+    typer.echo(f"Set category rule #{rule.id}: {rule.alias} -> {rule.category}")
+
+
+@app.command("category-rule-list")
+def category_rule_list(db_path: DbPathOption = None) -> None:
+    """List category alias rules."""
+    try:
+        rules = _category_rule_service(db_path).list_rules()
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+    if not rules:
+        typer.echo("No category rules found.")
+        return
+    rows = [[str(rule.id), rule.alias, rule.category] for rule in rules]
+    for line in _format_table(["ID", "Alias", "Category"], rows):
+        typer.echo(line)
+
+
+@app.command("category-rule-delete")
+def category_rule_delete(
+    rule_id: Annotated[int, typer.Argument(help="Category rule ID to delete")],
+    db_path: DbPathOption = None,
+) -> None:
+    """Delete a category alias rule."""
+    try:
+        _category_rule_service(db_path).delete_rule(rule_id)
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+    typer.echo(f"Deleted category rule #{rule_id}")
+
+
+@app.command("recurring-add")
+def recurring_add(
+    transaction_type: Annotated[str, typer.Argument(help="income or expense")],
+    amount: Annotated[str, typer.Argument(help="Positive transaction amount")],
+    category: Annotated[str, typer.Option("--category", "-c", help="Template category")],
+    day_of_month: Annotated[int, typer.Option("--day", help="Day of month 1-31")],
+    description: Annotated[str, typer.Option("--description", "-d", help="Template note")] = "",
+    db_path: DbPathOption = None,
+) -> None:
+    """Add a monthly recurring transaction template."""
+    try:
+        template = _recurring_service(db_path).add_template(
+            transaction_type=transaction_type,
+            amount=amount,
+            category=category,
+            description=description,
+            day_of_month=day_of_month,
+        )
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+    typer.echo(
+        f"Added recurring template #{template.id}: {template.type.value} "
+        f"{format_money(template.amount)} in {template.category} on day {template.day_of_month}"
+    )
+
+
+@app.command("recurring-list")
+def recurring_list(
+    active_only: Annotated[
+        bool,
+        typer.Option("--active-only", help="Only show active templates"),
+    ] = False,
+    db_path: DbPathOption = None,
+) -> None:
+    """List recurring transaction templates."""
+    try:
+        templates = _recurring_service(db_path).list_templates(active_only=active_only)
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+    if not templates:
+        typer.echo("No recurring templates found.")
+        return
+    rows = [
+        [
+            str(template.id),
+            template.type.value,
+            format_money(template.amount),
+            template.category,
+            str(template.day_of_month),
+            "yes" if template.active else "no",
+            template.description,
+        ]
+        for template in templates
+    ]
+    headers = ["ID", "Type", "Amount", "Category", "Day", "Active", "Description"]
+    for line in _format_table(headers, rows):
+        typer.echo(line)
+
+
+@app.command("recurring-delete")
+def recurring_delete(
+    template_id: Annotated[int, typer.Argument(help="Recurring template ID to delete")],
+    db_path: DbPathOption = None,
+) -> None:
+    """Delete a recurring transaction template."""
+    try:
+        _recurring_service(db_path).delete_template(template_id)
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+    typer.echo(f"Deleted recurring template #{template_id}")
+
+
+@app.command("recurring-apply")
+def recurring_apply(
+    month: Annotated[int, typer.Option("--month", "-m", help="Target month 1-12")],
+    year: Annotated[int, typer.Option("--year", "-y", help="Target year")],
+    db_path: DbPathOption = None,
+) -> None:
+    """Create transactions from active recurring templates for a month."""
+    try:
+        result = _recurring_service(db_path).apply_templates(month=month, year=year)
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+    typer.echo(
+        f"Created {len(result.created)} recurring transaction(s); "
+        f"skipped {result.skipped_duplicates} duplicate(s)."
+    )
+
+
 @app.command("budget-status")
 def budget_status(
     month: Annotated[int, typer.Option("--month", "-m", help="Budget month 1-12")],
@@ -367,8 +513,14 @@ def summary(
 ) -> None:
     """Print a monthly income, expense, and net savings summary."""
     try:
-        transactions = _service(db_path).list_transactions(month=month, year=year)
-        report = build_monthly_report(transactions, month=month, year=year)
+        service = _service(db_path)
+        transactions = service.list_transactions(month=month, year=year)
+        report = build_monthly_report(
+            transactions,
+            month=month,
+            year=year,
+            context_transactions=service.list_transactions(),
+        )
     except FinanceTrackerError as exc:
         _handle_error(exc)
     typer.echo(format_monthly_report(report))
@@ -383,8 +535,14 @@ def report(
 ) -> None:
     """Print a monthly report and optionally save a PNG chart."""
     try:
-        transactions = _service(db_path).list_transactions(month=month, year=year)
-        monthly_report = build_monthly_report(transactions, month=month, year=year)
+        service = _service(db_path)
+        transactions = service.list_transactions(month=month, year=year)
+        monthly_report = build_monthly_report(
+            transactions,
+            month=month,
+            year=year,
+            context_transactions=service.list_transactions(),
+        )
     except FinanceTrackerError as exc:
         _handle_error(exc)
 
@@ -423,11 +581,41 @@ def trends(
 @app.command("import-csv")
 def import_csv(
     path: Annotated[Path, typer.Argument(help="CSV file to import")],
+    preview: Annotated[
+        bool,
+        typer.Option(
+            "--preview",
+            help="Preview valid, duplicate, and invalid rows without writing",
+        ),
+    ] = False,
+    allow_duplicates: Annotated[
+        bool,
+        typer.Option("--allow-duplicates", help="Import duplicate rows instead of skipping them"),
+    ] = False,
     db_path: DbPathOption = None,
 ) -> None:
     """Import transactions from a CSV file."""
     try:
-        result = import_transactions_csv(path, _service(db_path))
+        service = _service(db_path)
+        if preview:
+            with path.open(newline="", encoding="utf-8") as csv_file:
+                preview_result = preview_transactions_csv_file(csv_file, service)
+            typer.echo(
+                f"Previewed {len(preview_result.rows)} row(s): "
+                f"{preview_result.valid_count} valid, "
+                f"{preview_result.duplicate_count} duplicate, "
+                f"{preview_result.invalid_count} invalid."
+            )
+            for row in preview_result.rows:
+                detail = row.error or (
+                    f"{row.transaction.type.value} {format_money(row.transaction.amount)} "
+                    f"in {row.transaction.category} on {row.transaction.date.isoformat()}"
+                    if row.transaction is not None
+                    else ""
+                )
+                typer.echo(f"  - Line {row.line_number}: {row.status} {detail}".rstrip())
+            return
+        result = import_transactions_csv(path, service, allow_duplicates=allow_duplicates)
     except (CsvFormatError, FinanceTrackerError) as exc:
         _handle_error(exc)
 

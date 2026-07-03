@@ -67,6 +67,53 @@ class Budget:
 
 
 @dataclass(frozen=True)
+class CategoryRule:
+    alias: str
+    category: str
+    id: int | None = None
+    created_at: datetime | None = None
+
+    @classmethod
+    def create(cls, alias: str, category: str) -> CategoryRule:
+        alias_text = validate_text(alias, "alias")
+        category_text = validate_text(category, "category")
+        if alias_text.lower() == category_text.lower():
+            raise ValidationError("Alias and category must be different.")
+        return cls(alias=alias_text, category=category_text)
+
+
+@dataclass(frozen=True)
+class RecurringTemplate:
+    type: TransactionType
+    amount: Decimal
+    category: str
+    description: str
+    day_of_month: int
+    active: bool = True
+    id: int | None = None
+    created_at: datetime | None = None
+
+    @classmethod
+    def create(
+        cls,
+        transaction_type: str,
+        amount: str | int | float | Decimal,
+        category: str,
+        description: str,
+        day_of_month: int,
+        active: bool = True,
+    ) -> RecurringTemplate:
+        return cls(
+            type=parse_transaction_type(transaction_type),
+            amount=parse_amount(amount),
+            category=validate_text(category, "category"),
+            description=(description or "").strip(),
+            day_of_month=validate_day_of_month(day_of_month),
+            active=bool(active),
+        )
+
+
+@dataclass(frozen=True)
 class TransactionFilters:
     month: int | None = None
     year: int | None = None
@@ -120,6 +167,12 @@ def validate_month(value: int) -> int:
 def validate_year(value: int) -> int:
     if value < 1:
         raise ValidationError("Year must be a positive integer.")
+    return value
+
+
+def validate_day_of_month(value: int) -> int:
+    if not 1 <= value <= 31:
+        raise ValidationError("Day of month must be between 1 and 31.")
     return value
 
 

@@ -36,6 +36,12 @@ export interface MonthlyReport {
   transaction_count: number;
   income_by_category: Record<string, string>;
   expenses_by_category: Record<string, string>;
+  ytd_income: string;
+  ytd_expenses: string;
+  ytd_net_savings: string;
+  income_delta: string;
+  expenses_delta: string;
+  net_savings_delta: string;
 }
 
 export interface TrendMonth {
@@ -47,6 +53,9 @@ export interface TrendMonth {
   net_savings: string;
   transaction_count: number;
   savings_rate: string;
+  income_delta: string;
+  expenses_delta: string;
+  net_savings_delta: string;
 }
 
 export interface TrendReport {
@@ -92,6 +101,37 @@ export interface BudgetInput {
   year: number;
 }
 
+export interface CategoryRule {
+  id: number;
+  alias: string;
+  category: string;
+  created_at: string | null;
+}
+
+export interface CategoryRuleInput {
+  alias: string;
+  category: string;
+}
+
+export interface RecurringTemplate {
+  id: number;
+  type: TransactionType;
+  amount: string;
+  category: string;
+  description: string;
+  day_of_month: number;
+  active: boolean;
+  created_at: string | null;
+}
+
+export interface RecurringTemplateInput {
+  type: TransactionType;
+  amount: string;
+  category: string;
+  description: string;
+  day_of_month: number;
+}
+
 export interface NoticeResponse {
   notice: string;
 }
@@ -108,6 +148,35 @@ export interface TransactionMutationResponse extends NoticeResponse {
 
 export interface BudgetMutationResponse extends NoticeResponse {
   budget: BudgetRecord;
+}
+
+export interface CategoryRuleMutationResponse extends NoticeResponse {
+  rule: CategoryRule;
+}
+
+export interface RecurringTemplateMutationResponse extends NoticeResponse {
+  template: RecurringTemplate;
+}
+
+export interface RecurringApplyResponse extends NoticeResponse {
+  created_count: number;
+  skipped_duplicates: number;
+  transactions: TransactionRecord[];
+}
+
+export interface TransactionImportPreviewRow {
+  line_number: number;
+  status: "valid" | "duplicate" | "invalid";
+  transaction: Omit<TransactionRecord, "id" | "created_at"> | null;
+  original_category: string | null;
+  error: string | null;
+}
+
+export interface TransactionImportPreview {
+  valid_count: number;
+  duplicate_count: number;
+  invalid_count: number;
+  rows: TransactionImportPreviewRow[];
 }
 
 export interface ApiErrorBody {

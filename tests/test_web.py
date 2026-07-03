@@ -139,6 +139,39 @@ def test_api_transaction_csv_import_reports_skipped_rows_and_export_filters(tmp_
     assert "missing required columns" in missing_column_response.json()["error"]
 
 
+def test_api_transaction_csv_preview_reports_duplicates_and_aliases(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    client = TestClient(create_app(db_path))
+    client.post("/api/category-rules", json={"alias": "groceries", "category": "Food"})
+    TransactionService(db_path).add_transaction(
+        "expense",
+        "45.90",
+        "Food",
+        "Groceries",
+        "2026-06-12",
+    )
+    csv_text = "\n".join(
+        [
+            "type,amount,category,description,date",
+            "expense,45.90,groceries,Groceries,2026-06-12",
+            "expense,30,groceries,Market,2026-06-13",
+        ]
+    )
+
+    response = client.post(
+        "/api/transactions/import-csv/preview",
+        content=csv_text,
+        headers={"content-type": "text/csv"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["duplicate_count"] == 1
+    assert body["valid_count"] == 1
+    assert body["rows"][0]["status"] == "duplicate"
+    assert body["rows"][0]["transaction"]["category"] == "Food"
+
+
 def test_api_budget_set_filter_status_delete_flow(tmp_path):
     db_path = tmp_path / "finance.sqlite3"
     TransactionService(db_path).add_transaction("expense", "90", "Food", "Groceries", "2026-06-12")
@@ -265,6 +298,41 @@ def test_api_report_and_chart_downloads_return_attachments(tmp_path):
         'attachment; filename="trend-chart-2026-06.png"'
     )
     assert trend_chart.content.startswith(b"\x89PNG")
+
+
+def test_api_category_rules_and_recurring_templates_flow(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    client = TestClient(create_app(db_path))
+
+    rule_response = client.post(
+        "/api/category-rules",
+        json={"alias": "groceries", "category": "Food"},
+    )
+    rules_response = client.get("/api/category-rules")
+    template_response = client.post(
+        "/api/recurring-templates",
+        json={
+            "type": "expense",
+            "amount": "1200",
+            "category": "Rent",
+            "description": "Monthly rent",
+            "day_of_month": 31,
+        },
+    )
+    templates_response = client.get("/api/recurring-templates")
+    apply_response = client.post(
+        "/api/recurring-templates/apply",
+        params={"month": 2, "year": 2026},
+    )
+
+    assert rule_response.status_code == 201
+    assert rule_response.json()["rule"]["category"] == "Food"
+    assert rules_response.json()["rules"][0]["alias"] == "groceries"
+    assert template_response.status_code == 201
+    assert templates_response.json()["templates"][0]["day_of_month"] == 31
+    assert apply_response.status_code == 200
+    assert apply_response.json()["created_count"] == 1
+    assert apply_response.json()["transactions"][0]["date"] == "2026-02-28"
 
 
 def test_spa_fallback_serves_html_for_browser_routes(tmp_path):

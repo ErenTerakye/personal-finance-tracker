@@ -15,17 +15,22 @@ from pydantic import BaseModel, ConfigDict
 from finance_tracker.charts import render_monthly_chart_png, render_trend_chart_png
 from finance_tracker.csv_io import (
     ImportResult,
+    TransactionImportPreview,
+    TransactionImportPreviewRow,
     export_budgets_csv_text,
     export_transactions_csv_text,
     import_budgets_csv_text,
     import_transactions_csv_text,
+    preview_transactions_csv_text,
 )
 from finance_tracker.exceptions import (
     BudgetNotFoundError,
+    CategoryRuleNotFoundError,
     FinanceTrackerError,
+    RecurringTemplateNotFoundError,
     TransactionNotFoundError,
 )
-from finance_tracker.models import Budget, Transaction
+from finance_tracker.models import Budget, CategoryRule, RecurringTemplate, Transaction
 from finance_tracker.reports import (
     MonthlyReport,
     TrendReport,
@@ -34,7 +39,14 @@ from finance_tracker.reports import (
     format_monthly_report,
     format_trend_report,
 )
-from finance_tracker.services import BudgetService, BudgetStatus, TransactionService
+from finance_tracker.services import (
+    BudgetService,
+    BudgetStatus,
+    CategoryRuleService,
+    RecurringApplyResult,
+    RecurringTemplateService,
+    TransactionService,
+)
 
 WEB_DIR = Path(__file__).parent
 STATIC_DIR = WEB_DIR / "static"
@@ -100,6 +112,19 @@ class BudgetRequest(ApiModel):
     year: int
 
 
+class CategoryRuleRequest(ApiModel):
+    alias: str
+    category: str
+
+
+class RecurringTemplateRequest(ApiModel):
+    type: Literal["income", "expense"]
+    amount: str
+    category: str
+    description: str = ""
+    day_of_month: int
+
+
 class TransactionResponse(ApiModel):
     id: int
     type: str
@@ -110,12 +135,38 @@ class TransactionResponse(ApiModel):
     created_at: str | None
 
 
+class TransactionPreviewRecordResponse(ApiModel):
+    type: str
+    amount: str
+    category: str
+    description: str
+    date: str
+
+
 class BudgetResponse(ApiModel):
     id: int
     category: str
     amount: str
     month: int
     year: int
+    created_at: str | None
+
+
+class CategoryRuleResponse(ApiModel):
+    id: int
+    alias: str
+    category: str
+    created_at: str | None
+
+
+class RecurringTemplateResponse(ApiModel):
+    id: int
+    type: str
+    amount: str
+    category: str
+    description: str
+    day_of_month: int
+    active: bool
     created_at: str | None
 
 
@@ -136,6 +187,12 @@ class MonthlyReportResponse(ApiModel):
     transaction_count: int
     income_by_category: dict[str, str]
     expenses_by_category: dict[str, str]
+    ytd_income: str
+    ytd_expenses: str
+    ytd_net_savings: str
+    income_delta: str
+    expenses_delta: str
+    net_savings_delta: str
 
 
 class TrendMonthResponse(ApiModel):
@@ -147,6 +204,9 @@ class TrendMonthResponse(ApiModel):
     net_savings: str
     transaction_count: int
     savings_rate: str
+    income_delta: str
+    expenses_delta: str
+    net_savings_delta: str
 
 
 class TrendReportResponse(ApiModel):
@@ -187,6 +247,46 @@ class BudgetMutationResponse(ApiModel):
     budget: BudgetResponse
 
 
+class CategoryRuleListResponse(ApiModel):
+    rules: list[CategoryRuleResponse]
+
+
+class CategoryRuleMutationResponse(ApiModel):
+    notice: str
+    rule: CategoryRuleResponse
+
+
+class RecurringTemplateListResponse(ApiModel):
+    templates: list[RecurringTemplateResponse]
+
+
+class RecurringTemplateMutationResponse(ApiModel):
+    notice: str
+    template: RecurringTemplateResponse
+
+
+class RecurringApplyResponse(ApiModel):
+    notice: str
+    created_count: int
+    skipped_duplicates: int
+    transactions: list[TransactionResponse]
+
+
+class TransactionImportPreviewRowResponse(ApiModel):
+    line_number: int
+    status: str
+    transaction: TransactionPreviewRecordResponse | None
+    original_category: str | None
+    error: str | None
+
+
+class TransactionImportPreviewResponse(ApiModel):
+    valid_count: int
+    duplicate_count: int
+    invalid_count: int
+    rows: list[TransactionImportPreviewRowResponse]
+
+
 class BudgetStatusListResponse(ApiModel):
     statuses: list[BudgetStatusResponse]
 
@@ -202,7 +302,15 @@ def create_app(db_path: Path | str) -> FastAPI:
     async def handle_finance_error(_request: Request, exc: FinanceTrackerError) -> JSONResponse:
         status_code = (
             status.HTTP_404_NOT_FOUND
-            if isinstance(exc, (BudgetNotFoundError, TransactionNotFoundError))
+            if isinstance(
+                exc,
+                (
+                    BudgetNotFoundError,
+                    CategoryRuleNotFoundError,
+                    RecurringTemplateNotFoundError,
+                    TransactionNotFoundError,
+                ),
+            )
             else status.HTTP_400_BAD_REQUEST
         )
         return JSONResponse(status_code=status_code, content={"error": str(exc)})
@@ -227,7 +335,12 @@ def create_app(db_path: Path | str) -> FastAPI:
             year=period["year"],
         )
         all_transactions = _transaction_service(request).list_transactions()
-        report = build_monthly_report(transactions, month=period["month"], year=period["year"])
+        report = build_monthly_report(
+            transactions,
+            month=period["month"],
+            year=period["year"],
+            context_transactions=all_transactions,
+        )
         trend = build_trend_report(
             all_transactions,
             months=6,
@@ -277,10 +390,27 @@ def create_app(db_path: Path | str) -> FastAPI:
         response_model=ImportSummaryResponse,
         responses={400: {"model": ErrorResponse}},
     )
-    async def import_transactions(request: Request) -> ImportSummaryResponse:
+    async def import_transactions(
+        request: Request,
+        allow_duplicates: bool = False,
+    ) -> ImportSummaryResponse:
         csv_text = await _request_text(request)
-        result = import_transactions_csv_text(csv_text, _transaction_service(request))
+        result = import_transactions_csv_text(
+            csv_text,
+            _transaction_service(request),
+            allow_duplicates=allow_duplicates,
+        )
         return _import_summary_response("Transaction CSV import finished.", result)
+
+    @app.post(
+        "/api/transactions/import-csv/preview",
+        response_model=TransactionImportPreviewResponse,
+        responses={400: {"model": ErrorResponse}},
+    )
+    async def preview_transaction_import(request: Request) -> TransactionImportPreviewResponse:
+        csv_text = await _request_text(request)
+        result = preview_transactions_csv_text(csv_text, _transaction_service(request))
+        return _transaction_import_preview_response(result)
 
     @app.get(
         "/api/transactions/export-csv",
@@ -449,6 +579,96 @@ def create_app(db_path: Path | str) -> FastAPI:
         return NoticeResponse(notice="Budget removed from the local ledger.")
 
     @app.get(
+        "/api/category-rules",
+        response_model=CategoryRuleListResponse,
+    )
+    def list_category_rules(request: Request) -> CategoryRuleListResponse:
+        rules = _category_rule_service(request).list_rules()
+        return CategoryRuleListResponse(rules=[_category_rule_response(rule) for rule in rules])
+
+    @app.post(
+        "/api/category-rules",
+        response_model=CategoryRuleMutationResponse,
+        status_code=status.HTTP_201_CREATED,
+        responses={400: {"model": ErrorResponse}},
+    )
+    def set_category_rule(
+        request: Request,
+        payload: CategoryRuleRequest,
+    ) -> CategoryRuleMutationResponse:
+        rule = _category_rule_service(request).set_rule(
+            alias=payload.alias,
+            category=payload.category,
+        )
+        return CategoryRuleMutationResponse(
+            notice="Category rule saved.",
+            rule=_category_rule_response(rule),
+        )
+
+    @app.delete(
+        "/api/category-rules/{rule_id}",
+        response_model=NoticeResponse,
+        responses={404: {"model": ErrorResponse}},
+    )
+    def delete_category_rule(request: Request, rule_id: int) -> NoticeResponse:
+        _category_rule_service(request).delete_rule(rule_id)
+        return NoticeResponse(notice="Category rule removed.")
+
+    @app.get(
+        "/api/recurring-templates",
+        response_model=RecurringTemplateListResponse,
+    )
+    def list_recurring_templates(request: Request) -> RecurringTemplateListResponse:
+        templates = _recurring_template_service(request).list_templates()
+        return RecurringTemplateListResponse(
+            templates=[_recurring_template_response(template) for template in templates]
+        )
+
+    @app.post(
+        "/api/recurring-templates",
+        response_model=RecurringTemplateMutationResponse,
+        status_code=status.HTTP_201_CREATED,
+        responses={400: {"model": ErrorResponse}},
+    )
+    def create_recurring_template(
+        request: Request,
+        payload: RecurringTemplateRequest,
+    ) -> RecurringTemplateMutationResponse:
+        template = _recurring_template_service(request).add_template(
+            transaction_type=payload.type,
+            amount=payload.amount,
+            category=payload.category,
+            description=payload.description,
+            day_of_month=payload.day_of_month,
+        )
+        return RecurringTemplateMutationResponse(
+            notice="Recurring template saved.",
+            template=_recurring_template_response(template),
+        )
+
+    @app.delete(
+        "/api/recurring-templates/{template_id}",
+        response_model=NoticeResponse,
+        responses={404: {"model": ErrorResponse}},
+    )
+    def delete_recurring_template(request: Request, template_id: int) -> NoticeResponse:
+        _recurring_template_service(request).delete_template(template_id)
+        return NoticeResponse(notice="Recurring template removed.")
+
+    @app.post(
+        "/api/recurring-templates/apply",
+        response_model=RecurringApplyResponse,
+        responses={400: {"model": ErrorResponse}},
+    )
+    def apply_recurring_templates(
+        request: Request,
+        month: int,
+        year: int,
+    ) -> RecurringApplyResponse:
+        result = _recurring_template_service(request).apply_templates(month=month, year=year)
+        return _recurring_apply_response(result)
+
+    @app.get(
         "/api/reports/monthly.txt",
         responses={400: {"model": ErrorResponse}},
     )
@@ -542,6 +762,14 @@ def _budget_service(request: Request) -> BudgetService:
     return BudgetService(request.app.state.db_path)
 
 
+def _category_rule_service(request: Request) -> CategoryRuleService:
+    return CategoryRuleService(request.app.state.db_path)
+
+
+def _recurring_template_service(request: Request) -> RecurringTemplateService:
+    return RecurringTemplateService(request.app.state.db_path)
+
+
 async def _request_text(request: Request) -> str:
     body = await request.body()
     try:
@@ -564,7 +792,13 @@ def _period_label(period: dict[str, int]) -> str:
 
 def _monthly_report(request: Request, month: int, year: int) -> MonthlyReport:
     transactions = _transaction_service(request).list_transactions(month=month, year=year)
-    return build_monthly_report(transactions, month=month, year=year)
+    all_transactions = _transaction_service(request).list_transactions()
+    return build_monthly_report(
+        transactions,
+        month=month,
+        year=year,
+        context_transactions=all_transactions,
+    )
 
 
 def _trend_report(request: Request, months: int, end_month: int, end_year: int) -> TrendReport:
@@ -623,6 +857,28 @@ def _budget_response(budget: Budget) -> BudgetResponse:
     )
 
 
+def _category_rule_response(rule: CategoryRule) -> CategoryRuleResponse:
+    return CategoryRuleResponse(
+        id=_require_id(rule.id),
+        alias=rule.alias,
+        category=rule.category,
+        created_at=_datetime_response(rule.created_at),
+    )
+
+
+def _recurring_template_response(template: RecurringTemplate) -> RecurringTemplateResponse:
+    return RecurringTemplateResponse(
+        id=_require_id(template.id),
+        type=template.type.value,
+        amount=_money_decimal(template.amount),
+        category=template.category,
+        description=template.description,
+        day_of_month=template.day_of_month,
+        active=template.active,
+        created_at=_datetime_response(template.created_at),
+    )
+
+
 def _budget_status_response(status_item: BudgetStatus) -> BudgetStatusResponse:
     return BudgetStatusResponse(
         budget=_budget_response(status_item.budget),
@@ -643,6 +899,12 @@ def _monthly_report_response(report: MonthlyReport) -> MonthlyReportResponse:
         transaction_count=report.transaction_count,
         income_by_category=_decimal_map(report.income_by_category),
         expenses_by_category=_decimal_map(report.expenses_by_category),
+        ytd_income=_money_decimal(report.ytd_income),
+        ytd_expenses=_money_decimal(report.ytd_expenses),
+        ytd_net_savings=_money_decimal(report.ytd_net_savings),
+        income_delta=_money_decimal(report.income_delta),
+        expenses_delta=_money_decimal(report.expenses_delta),
+        net_savings_delta=_money_decimal(report.net_savings_delta),
     )
 
 
@@ -658,6 +920,9 @@ def _trend_report_response(report: TrendReport) -> TrendReportResponse:
                 net_savings=_money_decimal(item.net_savings),
                 transaction_count=item.transaction_count,
                 savings_rate=_moneyless_decimal(item.savings_rate),
+                income_delta=_money_decimal(item.income_delta),
+                expenses_delta=_money_decimal(item.expenses_delta),
+                net_savings_delta=_money_decimal(item.net_savings_delta),
             )
             for item in report.months
         ],
@@ -666,6 +931,57 @@ def _trend_report_response(report: TrendReport) -> TrendReportResponse:
         net_savings=_money_decimal(report.net_savings),
         transaction_count=report.transaction_count,
         top_expense_categories=_decimal_map(report.top_expense_categories),
+    )
+
+
+def _recurring_apply_response(result: RecurringApplyResult) -> RecurringApplyResponse:
+    return RecurringApplyResponse(
+        notice=(
+            f"Created {len(result.created)} recurring transaction(s); "
+            f"skipped {result.skipped_duplicates} duplicate(s)."
+        ),
+        created_count=len(result.created),
+        skipped_duplicates=result.skipped_duplicates,
+        transactions=[_transaction_response(transaction) for transaction in result.created],
+    )
+
+
+def _transaction_import_preview_response(
+    preview: TransactionImportPreview,
+) -> TransactionImportPreviewResponse:
+    return TransactionImportPreviewResponse(
+        valid_count=preview.valid_count,
+        duplicate_count=preview.duplicate_count,
+        invalid_count=preview.invalid_count,
+        rows=[_transaction_import_preview_row_response(row) for row in preview.rows],
+    )
+
+
+def _transaction_import_preview_row_response(
+    row: TransactionImportPreviewRow,
+) -> TransactionImportPreviewRowResponse:
+    return TransactionImportPreviewRowResponse(
+        line_number=row.line_number,
+        status=row.status,
+        transaction=(
+            _transaction_preview_record_response(row.transaction)
+            if row.transaction is not None
+            else None
+        ),
+        original_category=row.original_category,
+        error=row.error,
+    )
+
+
+def _transaction_preview_record_response(
+    transaction: Transaction,
+) -> TransactionPreviewRecordResponse:
+    return TransactionPreviewRecordResponse(
+        type=transaction.type.value,
+        amount=_money_decimal(transaction.amount),
+        category=transaction.category,
+        description=transaction.description,
+        date=transaction.date.isoformat(),
     )
 
 

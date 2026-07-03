@@ -21,22 +21,91 @@ class ImportResult:
     errors: list[str]
 
 
-def import_transactions_csv(path: Path | str, service: TransactionService) -> ImportResult:
+@dataclass(frozen=True)
+class TransactionImportPreviewRow:
+    line_number: int
+    status: str
+    transaction: Transaction | None = None
+    original_category: str | None = None
+    error: str | None = None
+
+
+@dataclass(frozen=True)
+class TransactionImportPreview:
+    valid_count: int
+    duplicate_count: int
+    invalid_count: int
+    rows: list[TransactionImportPreviewRow]
+
+
+def import_transactions_csv(
+    path: Path | str,
+    service: TransactionService,
+    allow_duplicates: bool = False,
+) -> ImportResult:
     csv_path = Path(path)
 
     with csv_path.open(newline="", encoding="utf-8") as csv_file:
-        return import_transactions_csv_file(csv_file, service)
+        return import_transactions_csv_file(csv_file, service, allow_duplicates)
 
 
-def import_transactions_csv_text(csv_text: str, service: TransactionService) -> ImportResult:
-    return import_transactions_csv_file(StringIO(csv_text), service)
+def import_transactions_csv_text(
+    csv_text: str,
+    service: TransactionService,
+    allow_duplicates: bool = False,
+) -> ImportResult:
+    return import_transactions_csv_file(StringIO(csv_text), service, allow_duplicates)
 
 
-def import_transactions_csv_file(csv_file: TextIO, service: TransactionService) -> ImportResult:
+def import_transactions_csv_file(
+    csv_file: TextIO,
+    service: TransactionService,
+    allow_duplicates: bool = False,
+) -> ImportResult:
     imported_count = 0
     skipped_count = 0
     errors: list[str] = []
 
+    preview = preview_transactions_csv_file(csv_file, service)
+    for row in preview.rows:
+        if row.status == "invalid":
+            skipped_count += 1
+            errors.append(f"Line {row.line_number}: {row.error}")
+            continue
+        if row.status == "duplicate" and not allow_duplicates:
+            skipped_count += 1
+            errors.append(f"Line {row.line_number}: Duplicate transaction skipped.")
+            continue
+        if row.transaction is None:
+            continue
+        if allow_duplicates:
+            service.add_transaction(
+                transaction_type=row.transaction.type.value,
+                amount=str(row.transaction.amount),
+                category=row.transaction.category,
+                description=row.transaction.description,
+                transaction_date=row.transaction.date.isoformat(),
+            )
+        else:
+            service.add_transaction_if_new(row.transaction)
+        imported_count += 1
+
+    return ImportResult(imported_count=imported_count, skipped_count=skipped_count, errors=errors)
+
+
+def preview_transactions_csv_text(
+    csv_text: str,
+    service: TransactionService,
+) -> TransactionImportPreview:
+    return preview_transactions_csv_file(StringIO(csv_text), service)
+
+
+def preview_transactions_csv_file(
+    csv_file: TextIO,
+    service: TransactionService,
+) -> TransactionImportPreview:
+    rows: list[TransactionImportPreviewRow] = []
+    seen_keys: set[tuple[str, str, str, str, str]] = set()
     reader = csv.DictReader(csv_file)
     if reader.fieldnames is None:
         raise CsvFormatError("CSV file must include a header row.")
@@ -45,21 +114,54 @@ def import_transactions_csv_file(csv_file: TextIO, service: TransactionService) 
         missing = ", ".join(sorted(missing_fields))
         raise CsvFormatError(f"CSV file is missing required columns: {missing}.")
 
-    for line_number, row in enumerate(reader, start=2):
+    for line_number, csv_row in enumerate(reader, start=2):
         try:
-            service.add_transaction(
-                transaction_type=row["type"],
-                amount=row["amount"],
-                category=row["category"],
-                description=row.get("description", ""),
-                transaction_date=row["date"],
+            original_category = csv_row["category"]
+            transaction = Transaction.create(
+                transaction_type=csv_row["type"],
+                amount=csv_row["amount"],
+                category=original_category,
+                description=csv_row.get("description", ""),
+                transaction_date=csv_row["date"],
             )
-            imported_count += 1
+            transaction = service.prepare_transaction(transaction)
+            key = _transaction_duplicate_key(transaction)
+            is_duplicate = key in seen_keys or service.transaction_exists(transaction)
+            if not is_duplicate:
+                seen_keys.add(key)
+            rows.append(
+                TransactionImportPreviewRow(
+                    line_number=line_number,
+                    status="duplicate" if is_duplicate else "valid",
+                    transaction=transaction,
+                    original_category=original_category,
+                )
+            )
         except ValidationError as exc:
-            skipped_count += 1
-            errors.append(f"Line {line_number}: {exc}")
+            rows.append(
+                TransactionImportPreviewRow(
+                    line_number=line_number,
+                    status="invalid",
+                    error=str(exc),
+                )
+            )
 
-    return ImportResult(imported_count=imported_count, skipped_count=skipped_count, errors=errors)
+    return TransactionImportPreview(
+        valid_count=sum(row.status == "valid" for row in rows),
+        duplicate_count=sum(row.status == "duplicate" for row in rows),
+        invalid_count=sum(row.status == "invalid" for row in rows),
+        rows=rows,
+    )
+
+
+def _transaction_duplicate_key(transaction: Transaction) -> tuple[str, str, str, str, str]:
+    return (
+        transaction.type.value,
+        str(transaction.amount),
+        transaction.category.lower(),
+        transaction.description,
+        transaction.date.isoformat(),
+    )
 
 
 def import_budgets_csv(path: Path | str, service: BudgetService) -> ImportResult:

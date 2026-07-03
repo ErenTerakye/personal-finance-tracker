@@ -1,8 +1,8 @@
 # Release Checklist
 
-Use this checklist for the v0.3 browser workflow parity release and later reviewer-demo refreshes.
+Use this checklist for the v0.4 finance insight depth release and later reviewer-demo refreshes.
 
-## v0.3.0
+## v0.4.0
 
 - [ ] Create a fresh environment and install the app:
 
@@ -19,6 +19,9 @@ npm install
 finance-tracker init --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
 finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
+finance-tracker category-rule-set groceries Food --db-path demo.sqlite3
+finance-tracker recurring-add expense 1600 --category Rent --description "Monthly rent" --day 1 --db-path demo.sqlite3
+finance-tracker recurring-apply --month 7 --year 2026 --db-path demo.sqlite3
 ```
 
 - [ ] Regenerate demo charts and exports:
@@ -27,6 +30,7 @@ finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sq
 mkdir -p reports exports
 finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
 finance-tracker trends --months 6 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker import-csv examples/sample_transactions.csv --preview --db-path demo.sqlite3
 finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
 finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 ```

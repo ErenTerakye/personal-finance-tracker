@@ -29,6 +29,32 @@ def test_monthly_report_calculates_totals_and_categories(tmp_path):
     assert "Net savings:  $3,100.00" in format_monthly_report(report)
 
 
+def test_monthly_report_calculates_ytd_and_month_over_month_context(tmp_path):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+    service.add_transaction("income", "2800", "Salary", "May paycheck", "2026-05-01")
+    service.add_transaction("expense", "800", "Rent", "May rent", "2026-05-02")
+    service.add_transaction("income", "3000", "Salary", "June paycheck", "2026-06-01")
+    service.add_transaction("expense", "900", "Rent", "June rent", "2026-06-02")
+    service.add_transaction("income", "999", "Future", "Ignored", "2026-07-01")
+
+    report = build_monthly_report(
+        service.list_transactions(month=6, year=2026),
+        month=6,
+        year=2026,
+        context_transactions=service.list_transactions(),
+    )
+    formatted = format_monthly_report(report)
+
+    assert report.ytd_income == Decimal("5800.00")
+    assert report.ytd_expenses == Decimal("1700.00")
+    assert report.ytd_net_savings == Decimal("4100.00")
+    assert report.income_delta == Decimal("200.00")
+    assert report.expenses_delta == Decimal("100.00")
+    assert report.net_savings_delta == Decimal("100.00")
+    assert "YTD net:       $4,100.00" in formatted
+    assert "MoM net:       +$100.00" in formatted
+
+
 def test_trend_report_calculates_monthly_totals_empty_months_and_top_categories(tmp_path):
     service = TransactionService(tmp_path / "finance.sqlite3")
     service.add_transaction("income", "3000", "Salary", "Paycheck", "2026-04-01")

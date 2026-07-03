@@ -17,7 +17,13 @@ import {
   SubmitButton
 } from "../components/ui";
 import { money, periodLabel, todayIso } from "../format";
-import type { ImportSummary, TransactionInput, TransactionRecord, TransactionType } from "../types";
+import type {
+  ImportSummary,
+  TransactionImportPreview,
+  TransactionInput,
+  TransactionRecord,
+  TransactionType
+} from "../types";
 
 type TransactionDialog = "create" | "edit" | null;
 
@@ -53,6 +59,8 @@ export function TransactionsView({
   const [loading, setLoading] = useState(true);
   const [importOpen, setImportOpen] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [importPreview, setImportPreview] = useState<TransactionImportPreview | null>(null);
   const [importResult, setImportResult] = useState<ImportSummary | null>(null);
   const [importError, setImportError] = useState("");
 
@@ -135,14 +143,30 @@ export function TransactionsView({
     }
   }
 
-  async function importTransactions(csvText: string) {
+  async function previewTransactions(csvText: string) {
+    setImportError("");
+    setImportResult(null);
+    setImportPreview(null);
+    setPreviewing(true);
+    try {
+      const response = await api.previewTransactionsCsv(csvText);
+      setImportPreview(response);
+    } catch (err) {
+      setImportError(readError(err));
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
+  async function importTransactions(csvText: string, allowDuplicates = false) {
     setImportError("");
     setImportResult(null);
     setImporting(true);
     try {
-      const response = await api.importTransactionsCsv(csvText);
+      const response = await api.importTransactionsCsvWithOptions(csvText, allowDuplicates);
       setImportResult(response);
       setNotice(response.notice);
+      setImportPreview(null);
       load();
     } catch (err) {
       setImportError(readError(err));
@@ -207,15 +231,19 @@ export function TransactionsView({
       <CsvImportDialog
         open={importOpen}
         title="Import transaction CSV"
-        description="Add transaction rows to the local ledger."
+        description="Preview rows before writing to the local ledger."
+        preview={importPreview}
         result={importResult}
         error={importError}
         uploading={importing}
+        previewing={previewing}
         onClose={() => setImportOpen(false)}
+        onPreview={previewTransactions}
         onImport={importTransactions}
         onReset={() => {
           setImportError("");
           setImportResult(null);
+          setImportPreview(null);
         }}
       />
 
@@ -412,7 +440,7 @@ function TransactionFormDialog({
             onChange={(event) => onChange({ ...form, amount: event.target.value })}
           />
         </Field>
-        <Field id="transaction-category" label="Category" hint="Match category spelling for clean reports.">
+        <Field id="transaction-category" label="Category" hint="Aliases are saved as their rule category.">
           <input
             id="transaction-category"
             aria-describedby="transaction-category-hint"

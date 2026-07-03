@@ -4,6 +4,7 @@ import { currentPeriod } from "./format";
 import { pathForView, viewFromPath, viewMeta, viewOrder, type View } from "./routes";
 import { BudgetsView } from "./views/Budgets";
 import { DashboardView } from "./views/Dashboard";
+import { RulesView } from "./views/Rules";
 import { TransactionsView } from "./views/Transactions";
 
 const initialPeriod = currentPeriod();
@@ -83,6 +84,9 @@ export default function App() {
           setSelectedPeriod={setSelectedPeriod}
           setNotice={setNotice}
         />
+      ) : null}
+      {view === "rules" ? (
+        <RulesView selectedPeriod={selectedPeriod} setNotice={setNotice} />
       ) : null}
     </AppShell>
   );

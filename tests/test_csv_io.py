@@ -6,6 +6,7 @@ from finance_tracker.csv_io import (
     export_transactions_csv,
     import_budgets_csv,
     import_transactions_csv,
+    preview_transactions_csv_text,
 )
 from finance_tracker.exceptions import CsvFormatError
 from finance_tracker.services import BudgetService, TransactionService
@@ -31,6 +32,51 @@ def test_import_transactions_csv_skips_invalid_rows(tmp_path):
     assert result.imported_count == 2
     assert result.skipped_count == 1
     assert "greater than zero" in result.errors[0]
+    assert service.count_transactions() == 2
+
+
+def test_import_transactions_csv_previews_and_skips_duplicates(tmp_path):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+    service.add_transaction("expense", "25", "Food", "Dinner", "2026-06-03")
+    csv_path = tmp_path / "transactions.csv"
+    csv_text = "\n".join(
+        [
+            "type,amount,category,description,date",
+            "expense,25,Food,Dinner,2026-06-03",
+            "expense,25,food,Dinner,2026-06-03",
+            "expense,30,Food,Groceries,2026-06-04",
+        ]
+    )
+    csv_path.write_text(csv_text, encoding="utf-8")
+
+    preview = preview_transactions_csv_text(csv_text, service)
+    result = import_transactions_csv(csv_path, service)
+
+    assert preview.valid_count == 1
+    assert preview.duplicate_count == 2
+    assert preview.invalid_count == 0
+    assert result.imported_count == 1
+    assert result.skipped_count == 2
+    assert service.count_transactions() == 2
+
+
+def test_import_transactions_csv_can_allow_duplicates(tmp_path):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+    service.add_transaction("expense", "25", "Food", "Dinner", "2026-06-03")
+    csv_path = tmp_path / "transactions.csv"
+    csv_path.write_text(
+        "\n".join(
+            [
+                "type,amount,category,description,date",
+                "expense,25,Food,Dinner,2026-06-03",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = import_transactions_csv(csv_path, service, allow_duplicates=True)
+
+    assert result.imported_count == 1
     assert service.count_transactions() == 2
 
 

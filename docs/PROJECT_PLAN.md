@@ -48,6 +48,30 @@ Monthly category budgets are stored separately with:
 
 Each category can have one budget per month and year. Setting the same category/month/year again updates the existing budget.
 
+Category alias rules are stored with:
+
+- `id`: SQLite autoincrement primary key
+- `alias`: required category spelling to normalize
+- `category`: required canonical category name
+- `created_at`: SQLite timestamp
+
+Aliases are unique case-insensitively. Transaction and budget writes resolve the
+alias before storing records.
+
+Recurring transaction templates are stored with:
+
+- `id`: SQLite autoincrement primary key
+- `type`: `income` or `expense`
+- `amount`: positive decimal value stored as text
+- `category`: required text label, resolved through category rules when saved
+- `description`: optional text note
+- `day_of_month`: integer day, `1-31`
+- `active`: integer boolean flag
+- `created_at`: SQLite timestamp
+
+Templates are manually applied for a selected month and year. Applying templates
+creates real transactions and skips duplicates.
+
 ## CLI Commands
 
 Primary command:
@@ -67,6 +91,13 @@ Supported commands:
 - `budget-list`: list stored budgets with optional filters.
 - `budget-delete`: remove a budget by ID.
 - `budget-status`: compare monthly category budgets with actual expenses.
+- `category-rule-set`: create or update a category alias rule.
+- `category-rule-list`: list category alias rules.
+- `category-rule-delete`: remove a category alias rule by ID.
+- `recurring-add`: create a monthly recurring transaction template.
+- `recurring-list`: list recurring transaction templates.
+- `recurring-delete`: remove a recurring template by ID.
+- `recurring-apply`: manually create a month of transactions from active templates.
 - `summary`: print monthly totals.
 - `report`: print monthly totals and optionally save a PNG chart.
 - `trends`: print multi-month trend totals and optionally save a PNG chart.
@@ -91,10 +122,12 @@ The Python app exposes JSON endpoints under `/api` and serves the compiled React
 Supported browser workflows:
 
 - Personal Finance Tracker dashboard with a six-month cashflow trend, compact period controls, monthly KPI cards, functional browser-rendered charts, recent transactions, budget pressure, and category mix.
-- Route-aware SPA navigation for `/`, `/transactions`, and `/budgets`.
+- Route-aware SPA navigation for `/`, `/transactions`, `/budgets`, and `/rules`.
 - Transaction add, edit, delete, and filtering through native dialog workflows.
 - Budget set/update, delete, filtering, and budget status comparison with pressure as the primary view.
 - Browser CSV import/export for transactions and budgets, reusing the same CSV validation and formatting rules as the CLI.
+- Browser transaction CSV preview before import, showing valid rows, invalid rows, duplicate rows, and category alias changes.
+- Rules view for category aliases and recurring monthly transaction templates.
 - Dashboard downloads for monthly and trend text reports plus PNG charts generated through the Python report/chart layers.
 
 Browser support policy: target modern Baseline-capable browsers as of June 2026. Newly available platform features, such as native dialogs and popovers, SVG chart affordances, container queries, color-scheme-aware dark mode, same-document view transitions, and reduced-motion-aware animation, are allowed when they are progressive enhancements and the core local CRUD workflows remain usable without large polyfills.
@@ -115,7 +148,7 @@ Budget CSV files use this header:
 category,amount,month,year
 ```
 
-Invalid data rows are skipped during import and reported to the user. Missing required columns stop the import.
+Invalid data rows are skipped during import and reported to the user. Missing required columns stop the import. Transaction imports skip duplicates by default using the same type, amount, canonical category, trimmed description, and date; users can preview rows first and can opt into duplicate imports when intentional.
 
 ## Suggested Commit Order
 
@@ -130,7 +163,7 @@ Invalid data rows are skipped during import and reported to the user. Missing re
 
 ## Current Development Direction
 
-The current milestone direction is finance insight depth after v0.3 browser workflow parity, followed by single-ledger currency readiness and Turkish Web UI localization before v1.0. Currency support should start as one configurable ledger currency per local database, defaulting existing and demo data to `USD`; mixed-currency accounting, exchange-rate lookup, and per-transaction currency fields are later-scope ideas. Turkish language support should start in the browser with local translation dictionaries, a local language preference, and locale-aware formatting that reuses the active ledger currency; CLI output, generated text reports, and docs stay English unless the project scope expands.
+The current milestone direction is single-ledger currency readiness after v0.4 finance insight depth, followed by Turkish Web UI localization before v1.0. Currency support should start as one configurable ledger currency per local database, defaulting existing and demo data to `USD`; mixed-currency accounting, exchange-rate lookup, and per-transaction currency fields are later-scope ideas. Turkish language support should start in the browser with local translation dictionaries, a local language preference, and locale-aware formatting that reuses the active ledger currency; CLI output, generated text reports, and docs stay English unless the project scope expands.
 
 The CLI and local FastAPI/React Web UI should remain aligned, the reviewer demo should stay easy to reproduce, and the project should remain portfolio-scale: no authentication, cloud sync, background workers, or hosted database unless the project scope changes again.
 
@@ -148,9 +181,12 @@ Use pytest with temporary SQLite databases. Cover:
 - Monthly budget create/update/delete flows.
 - Budget status calculations by category.
 - Monthly and trend report calculations.
+- Category alias canonicalization.
+- Recurring template creation and manual application.
+- Transaction CSV preview and duplicate safeguards.
 - Chart output for monthly and trend reports.
-- Web API dashboard data, form validation feedback, CRUD flows, filters, CSV import/export, and downloadable report/chart artifacts.
-- React dashboard, route navigation, transaction/budget dialog workflows, CSV import dialogs, delete-dialog, API-client, downloadable artifact links, and SVG chart behavior.
+- Web API dashboard data, form validation feedback, CRUD flows, filters, category rules, recurring templates, CSV import/export, and downloadable report/chart artifacts.
+- React dashboard, route navigation, transaction/budget/rules workflows, CSV import preview dialogs, delete-dialog, API-client, downloadable artifact links, and SVG chart behavior.
 - Future currency tests should cover ledger currency validation/defaults, settings persistence if added, report and chart formatting, CSV compatibility, API exposure, and frontend `USD`/`TRY` formatting.
 - Future Turkish Web UI tests should cover translation lookup and fallback behavior, Turkish month labels, `tr-TR` date/number/currency formatting, local language preference, and responsive Turkish text in key browser workflows.
 - CLI smoke flows through Typer's test runner.

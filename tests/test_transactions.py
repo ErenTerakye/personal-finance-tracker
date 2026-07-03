@@ -5,7 +5,11 @@ from typer.testing import CliRunner
 
 from finance_tracker.cli import app
 from finance_tracker.exceptions import TransactionNotFoundError, ValidationError
-from finance_tracker.services import TransactionService
+from finance_tracker.services import (
+    CategoryRuleService,
+    RecurringTemplateService,
+    TransactionService,
+)
 
 
 def test_add_and_filter_transactions(tmp_path):
@@ -79,6 +83,41 @@ def test_edit_transaction_validates_updates(tmp_path):
 
     with pytest.raises(ValidationError, match="greater than zero"):
         service.edit_transaction(transaction.id, amount="-1")
+
+
+def test_category_rules_canonicalize_transaction_writes(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    rules = CategoryRuleService(db_path)
+    transactions = TransactionService(db_path)
+
+    rule = rules.set_rule("groceries", "Food")
+    transaction = transactions.add_transaction(
+        "expense",
+        "42.50",
+        "groceries",
+        "Market",
+        "2026-06-12",
+    )
+
+    assert rule.category == "Food"
+    assert transaction.category == "Food"
+    assert transactions.list_transactions(category="Food")[0].description == "Market"
+
+
+def test_recurring_templates_apply_manually_and_skip_duplicates(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    recurring = RecurringTemplateService(db_path)
+    transactions = TransactionService(db_path)
+
+    recurring.add_template("expense", "1200", "Rent", "Monthly rent", 31)
+    first_apply = recurring.apply_templates(month=2, year=2026)
+    second_apply = recurring.apply_templates(month=2, year=2026)
+    stored = transactions.list_transactions(month=2, year=2026)
+
+    assert len(first_apply.created) == 1
+    assert first_apply.created[0].date.isoformat() == "2026-02-28"
+    assert second_apply.skipped_duplicates == 1
+    assert len(stored) == 1
 
 
 def test_cli_list_aligns_long_category_names(tmp_path):

@@ -10,12 +10,14 @@ A Python CLI application for tracking income and expenses using SQLite, CSV proc
 
 - Add, edit, list, delete, import, and export financial transactions.
 - Set monthly category budgets and compare them to actual expenses.
+- Normalize category aliases so imports and manual entries roll into clean categories.
+- Create monthly recurring transaction templates and apply them explicitly when needed.
 - Import and export transactions and budgets with CSV files.
 - Store records locally in SQLite.
-- Generate monthly and multi-month income, expense, net savings, and category reports.
+- Generate monthly and multi-month income, expense, net savings, category, YTD, and month-over-month reports.
 - Save optional PNG charts for monthly reports and trend reports.
-- Run a polished local FastAPI JSON API and React Web UI with route-aware dashboard, transaction, and budget workflows.
-- Import/export transaction and budget CSV files from the browser, and download report/chart artifacts from the dashboard.
+- Run a polished local FastAPI JSON API and React Web UI with route-aware dashboard, transaction, budget, and rules workflows.
+- Preview transaction CSV imports before writing, skip duplicates by default, import/export budget CSV files, and download report/chart artifacts from the dashboard.
 - Use a clean `src/` package layout with Typer, pytest, and Ruff.
 
 ## Install
@@ -34,6 +36,9 @@ npm run build
 finance-tracker init --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
 finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
+finance-tracker category-rule-set groceries Food --db-path demo.sqlite3
+finance-tracker recurring-add expense 1600 --category Rent --description "Monthly rent" --day 1 --db-path demo.sqlite3
+finance-tracker recurring-apply --month 7 --year 2026 --db-path demo.sqlite3
 mkdir -p reports exports
 finance-tracker list --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker summary --month 7 --year 2026 --db-path demo.sqlite3
@@ -60,6 +65,7 @@ finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlit
 finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
 mkdir -p reports exports
 finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker import-csv examples/sample_transactions.csv --preview --db-path demo.sqlite3
 finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
 finance-tracker trends --months 6 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
 finance-tracker web --db-path demo.sqlite3
@@ -86,10 +92,11 @@ Architecture: FastAPI exposes JSON endpoints under `/api`, and a React + Vite + 
 The browser application includes:
 
 - A compact dashboard led by a six-month cashflow trend, KPI cards, budget pressure, category mix, and recent activity.
-- Route-aware navigation for `/`, `/transactions`, and `/budgets`.
+- Route-aware navigation for `/`, `/transactions`, `/budgets`, and `/rules`.
+- A rules workspace for category aliases and recurring monthly transaction templates.
 - Compact period controls for month-to-month review without always exposing month/year fields.
 - Dialog-based transaction add/edit/delete and budget set/update/delete flows.
-- Browser CSV import/export for transactions and budgets using the same CSV rules as the CLI.
+- Browser transaction CSV preview with duplicate detection and category alias display before import, plus CSV export for transactions and budgets.
 - Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
 - Read-only transaction tables that collapse into mobile-friendly record lists with compact row actions.
 - A header theme action that follows your system color setting by default and can pin the opposite light/dark mode locally.
@@ -111,6 +118,9 @@ GitHub Pages can host static files only, so it cannot run the live Python/SQLite
 finance-tracker add income 2500 --category Salary --description "July salary" --date 2026-07-01
 finance-tracker add expense 428.75 --category Food --description "Groceries and summer market" --date 2026-07-09
 finance-tracker edit 2 --amount 52.25 --category Household
+finance-tracker category-rule-set groceries Food
+finance-tracker recurring-add expense 1600 --category Rent --description "Monthly rent" --day 1
+finance-tracker recurring-apply --month 7 --year 2026
 finance-tracker budget-set Food 480 --month 7 --year 2026
 finance-tracker budget-status --month 7 --year 2026
 finance-tracker trends --months 6 --end-month 7 --end-year 2026

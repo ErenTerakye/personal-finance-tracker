@@ -18,6 +18,12 @@ class MonthlyReport:
     transaction_count: int
     income_by_category: dict[str, Decimal] = field(default_factory=dict)
     expenses_by_category: dict[str, Decimal] = field(default_factory=dict)
+    ytd_income: Decimal = Decimal("0.00")
+    ytd_expenses: Decimal = Decimal("0.00")
+    ytd_net_savings: Decimal = Decimal("0.00")
+    income_delta: Decimal = Decimal("0.00")
+    expenses_delta: Decimal = Decimal("0.00")
+    net_savings_delta: Decimal = Decimal("0.00")
 
 
 @dataclass(frozen=True)
@@ -29,6 +35,9 @@ class TrendMonth:
     net_savings: Decimal
     transaction_count: int
     savings_rate: Decimal
+    income_delta: Decimal = Decimal("0.00")
+    expenses_delta: Decimal = Decimal("0.00")
+    net_savings_delta: Decimal = Decimal("0.00")
 
 
 @dataclass(frozen=True)
@@ -41,7 +50,12 @@ class TrendReport:
     top_expense_categories: dict[str, Decimal] = field(default_factory=dict)
 
 
-def build_monthly_report(transactions: list[Transaction], month: int, year: int) -> MonthlyReport:
+def build_monthly_report(
+    transactions: list[Transaction],
+    month: int,
+    year: int,
+    context_transactions: list[Transaction] | None = None,
+) -> MonthlyReport:
     total_income = Decimal("0.00")
     total_expenses = Decimal("0.00")
     income_by_category: dict[str, Decimal] = {}
@@ -59,6 +73,11 @@ def build_monthly_report(transactions: list[Transaction], month: int, year: int)
                 expenses_by_category.get(transaction.category, Decimal("0.00")) + transaction.amount
             )
 
+    context = context_transactions if context_transactions is not None else transactions
+    previous_year, previous_month = _previous_month(year=year, month=month)
+    previous_report = _totals_for_period(context, month=previous_month, year=previous_year)
+    ytd_report = _totals_for_year_to_month(context, month=month, year=year)
+
     return MonthlyReport(
         month=month,
         year=year,
@@ -68,6 +87,13 @@ def build_monthly_report(transactions: list[Transaction], month: int, year: int)
         transaction_count=len(transactions),
         income_by_category=dict(sorted(income_by_category.items())),
         expenses_by_category=dict(sorted(expenses_by_category.items())),
+        ytd_income=ytd_report["income"],
+        ytd_expenses=ytd_report["expenses"],
+        ytd_net_savings=ytd_report["income"] - ytd_report["expenses"],
+        income_delta=total_income - previous_report["income"],
+        expenses_delta=total_expenses - previous_report["expenses"],
+        net_savings_delta=(total_income - total_expenses)
+        - (previous_report["income"] - previous_report["expenses"]),
     )
 
 
@@ -91,14 +117,21 @@ def build_trend_report(
         if period in transactions_by_period:
             transactions_by_period[period].append(transaction)
 
-    trend_months = [
-        _build_trend_month(
+    trend_months: list[TrendMonth] = []
+    previous_totals: dict[str, Decimal] | None = None
+    for year, month in periods:
+        trend_month = _build_trend_month(
             transactions=transactions_by_period[(year, month)],
             month=month,
             year=year,
+            previous_totals=previous_totals,
         )
-        for year, month in periods
-    ]
+        trend_months.append(trend_month)
+        previous_totals = {
+            "income": trend_month.total_income,
+            "expenses": trend_month.total_expenses,
+            "net": trend_month.net_savings,
+        }
 
     total_income = sum((period.total_income for period in trend_months), Decimal("0.00"))
     total_expenses = sum((period.total_expenses for period in trend_months), Decimal("0.00"))
@@ -153,6 +186,13 @@ def format_monthly_report(report: MonthlyReport) -> str:
         f"Expenses:     {format_money(report.total_expenses)}",
         f"Net savings:  {format_money(report.net_savings)}",
         f"Transactions: {report.transaction_count}",
+        "",
+        f"YTD income:    {format_money(report.ytd_income)}",
+        f"YTD expenses:  {format_money(report.ytd_expenses)}",
+        f"YTD net:       {format_money(report.ytd_net_savings)}",
+        f"MoM income:    {_format_delta(report.income_delta)}",
+        f"MoM expenses:  {_format_delta(report.expenses_delta)}",
+        f"MoM net:       {_format_delta(report.net_savings_delta)}",
     ]
 
     if report.income_by_category:
@@ -184,6 +224,7 @@ def format_trend_report(report: TrendReport) -> str:
             format_money(period.total_income),
             format_money(period.total_expenses),
             format_money(period.net_savings),
+            _format_delta(period.net_savings_delta),
             f"{period.savings_rate:.1f}%",
             str(period.transaction_count),
         ]
@@ -193,7 +234,7 @@ def format_trend_report(report: TrendReport) -> str:
         f"Trend report for {start.year}-{start.month:02d} through {end.year}-{end.month:02d}",
         "",
     ]
-    headers = ["Month", "Income", "Expenses", "Net savings", "Savings", "Transactions"]
+    headers = ["Month", "Income", "Expenses", "Net savings", "MoM net", "Savings", "Transactions"]
     lines.extend(_format_table(headers, rows))
 
     lines.extend(
@@ -216,8 +257,18 @@ def format_trend_report(report: TrendReport) -> str:
     return "\n".join(lines)
 
 
-def _build_trend_month(transactions: list[Transaction], month: int, year: int) -> TrendMonth:
+def _build_trend_month(
+    transactions: list[Transaction],
+    month: int,
+    year: int,
+    previous_totals: dict[str, Decimal] | None = None,
+) -> TrendMonth:
     monthly_report = build_monthly_report(transactions, month=month, year=year)
+    previous_totals = previous_totals or {
+        "income": Decimal("0.00"),
+        "expenses": Decimal("0.00"),
+        "net": Decimal("0.00"),
+    }
     return TrendMonth(
         month=month,
         year=year,
@@ -226,6 +277,9 @@ def _build_trend_month(transactions: list[Transaction], month: int, year: int) -
         net_savings=monthly_report.net_savings,
         transaction_count=monthly_report.transaction_count,
         savings_rate=_savings_rate(monthly_report.total_income, monthly_report.net_savings),
+        income_delta=monthly_report.total_income - previous_totals["income"],
+        expenses_delta=monthly_report.total_expenses - previous_totals["expenses"],
+        net_savings_delta=monthly_report.net_savings - previous_totals["net"],
     )
 
 
@@ -251,6 +305,51 @@ def _savings_rate(total_income: Decimal, net_savings: Decimal) -> Decimal:
     if total_income <= 0:
         return Decimal("0.0")
     return (net_savings / total_income * Decimal("100")).quantize(Decimal("0.1"))
+
+
+def _format_delta(value: Decimal) -> str:
+    sign = "+" if value >= 0 else "-"
+    return f"{sign}{format_money(abs(value))}"
+
+
+def _previous_month(year: int, month: int) -> tuple[int, int]:
+    if month == 1:
+        return year - 1, 12
+    return year, month - 1
+
+
+def _totals_for_period(
+    transactions: list[Transaction],
+    month: int,
+    year: int,
+) -> dict[str, Decimal]:
+    income = Decimal("0.00")
+    expenses = Decimal("0.00")
+    for transaction in transactions:
+        if transaction.date.month != month or transaction.date.year != year:
+            continue
+        if transaction.type == TransactionType.INCOME:
+            income += transaction.amount
+        else:
+            expenses += transaction.amount
+    return {"income": income, "expenses": expenses}
+
+
+def _totals_for_year_to_month(
+    transactions: list[Transaction],
+    month: int,
+    year: int,
+) -> dict[str, Decimal]:
+    income = Decimal("0.00")
+    expenses = Decimal("0.00")
+    for transaction in transactions:
+        if transaction.date.year != year or transaction.date.month > month:
+            continue
+        if transaction.type == TransactionType.INCOME:
+            income += transaction.amount
+        else:
+            expenses += transaction.amount
+    return {"income": income, "expenses": expenses}
 
 
 def _top_expense_categories(

@@ -88,3 +88,48 @@ def test_database_enforces_budget_month_and_year_constraints(tmp_path):
                 assert "CHECK constraint failed" in str(exc)
             else:
                 raise AssertionError("Expected SQLite CHECK constraint to reject invalid budget.")
+
+
+def test_database_creates_rules_and_recurring_tables_with_constraints(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    initialize_database(db_path)
+
+    with connect(db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO category_rules (alias, category)
+            VALUES ('groceries', 'Food')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO recurring_templates
+                (type, amount, category, description, day_of_month, active)
+            VALUES ('expense', '1200.00', 'Rent', 'Monthly rent', 31, 1)
+            """
+        )
+
+        try:
+            connection.execute(
+                """
+                INSERT INTO category_rules (alias, category)
+                VALUES ('GROCERIES', 'Food')
+                """
+            )
+        except Exception as exc:
+            assert "UNIQUE constraint failed" in str(exc)
+        else:
+            raise AssertionError("Expected SQLite UNIQUE constraint to reject duplicate alias.")
+
+        try:
+            connection.execute(
+                """
+                INSERT INTO recurring_templates
+                    (type, amount, category, description, day_of_month, active)
+                VALUES ('expense', '1200.00', 'Rent', '', 32, 1)
+                """
+            )
+        except Exception as exc:
+            assert "CHECK constraint failed" in str(exc)
+        else:
+            raise AssertionError("Expected SQLite CHECK constraint to reject invalid day.")

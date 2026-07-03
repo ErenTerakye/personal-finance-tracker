@@ -180,7 +180,36 @@ describe("Personal Finance Tracker", () => {
   it("imports transaction CSV from a dialog and shows row results", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url === "/api/transactions/import-csv" && init?.method === "POST") {
+      if (url === "/api/transactions/import-csv/preview" && init?.method === "POST") {
+        return response({
+          valid_count: 2,
+          duplicate_count: 0,
+          invalid_count: 1,
+          rows: [
+            {
+              line_number: 2,
+              status: "valid",
+              transaction: {
+                type: "income",
+                amount: "1000.00",
+                category: "Salary",
+                description: "Paycheck",
+                date: "2026-06-01"
+              },
+              original_category: "Salary",
+              error: null
+            },
+            {
+              line_number: 3,
+              status: "invalid",
+              transaction: null,
+              original_category: null,
+              error: "Amount must be greater than zero."
+            }
+          ]
+        });
+      }
+      if (url.startsWith("/api/transactions/import-csv?") && init?.method === "POST") {
         return response({
           notice: "Transaction CSV import finished.",
           imported_count: 2,
@@ -206,6 +235,11 @@ describe("Personal Finance Tracker", () => {
     );
 
     await userEvent.upload(within(dialog).getByLabelText("CSV file"), file);
+    await userEvent.click(within(dialog).getByRole("button", { name: "Preview CSV" }));
+
+    expect(await within(dialog).findByRole("status")).toHaveTextContent(
+      "2 valid, 0 duplicate, 1 invalid."
+    );
     await userEvent.click(within(dialog).getByRole("button", { name: "Import CSV" }));
 
     expect(await within(dialog).findByRole("status")).toHaveTextContent(
@@ -213,9 +247,52 @@ describe("Personal Finance Tracker", () => {
     );
     expect(within(dialog).getByText("Line 3: Amount must be greater than zero.")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/transactions/import-csv",
+      "/api/transactions/import-csv?allow_duplicates=false",
       expect.objectContaining({ body: expect.stringContaining("income,1000") })
     );
+  });
+
+  it("manages category rules and recurring templates", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === "/api/category-rules" && init?.method === "POST") {
+        return response({
+          notice: "Category rule saved.",
+          rule: { id: 1, alias: "groceries", category: "Food", created_at: null }
+        });
+      }
+      if (url === "/api/recurring-templates" && init?.method === "POST") {
+        return response({
+          notice: "Recurring template saved.",
+          template: {
+            id: 1,
+            type: "expense",
+            amount: "1200.00",
+            category: "Rent",
+            description: "",
+            day_of_month: 1,
+            active: true,
+            created_at: null
+          }
+        });
+      }
+      if (url.startsWith("/api/category-rules")) {
+        return response({ rules: [] });
+      }
+      if (url.startsWith("/api/recurring-templates")) {
+        return response({ templates: [] });
+      }
+      return response(dashboardPayload({}));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole("link", { name: /Rules/i }));
+    await userEvent.type(await screen.findByLabelText("Alias"), "groceries");
+    await userEvent.type(document.querySelector("#rule-category") as HTMLInputElement, "Food");
+    await userEvent.click(screen.getByRole("button", { name: "Save rule" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Category rule saved.");
   });
 
   it("imports budget CSV from a dialog and shows row results", async () => {
@@ -368,6 +445,49 @@ describe("Personal Finance Tracker", () => {
     expect(document.documentElement).not.toHaveAttribute("data-theme");
     expect(colorSchemeMeta()).toHaveAttribute("content", "light dark");
   });
+
+  it("renders rules info cards, presets, and playground correctly", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.startsWith("/api/category-rules")) {
+        return response({ rules: [{ id: 1, alias: "uber", category: "Transport", created_at: null }] });
+      }
+      if (url.startsWith("/api/recurring-templates")) {
+        return response({ templates: [] });
+      }
+      return response(dashboardPayload({}));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole("link", { name: /Rules/i }));
+
+    // Verifies info cards
+    expect(screen.getByText("Category Aliases")).toBeInTheDocument();
+    expect(screen.getByText("Recurring Templates")).toBeInTheDocument();
+
+    // Verifies template presets show by default (since templates is empty)
+    expect(screen.getByText(/Quick-add standard templates:/i)).toBeInTheDocument();
+
+    // Verifies alias presets do not show by default (since rules is not empty), but toggle button shows
+    expect(screen.queryByText(/Quick-add popular aliases:/i)).not.toBeInTheDocument();
+    const toggleButton = screen.getByRole("button", { name: /Show Quick-Add Presets/i });
+    await userEvent.click(toggleButton);
+    expect(screen.getByText(/Quick-add popular aliases:/i)).toBeInTheDocument();
+
+    // Verifies playground sandbox behaves correctly
+    const sandboxInput = screen.getByPlaceholderText(/Type a CSV category/i);
+    expect(sandboxInput).toBeInTheDocument();
+
+    // Typing mismatch
+    await userEvent.type(sandboxInput, "lyft");
+    expect(await screen.findByText(/No active alias matches/i)).toBeInTheDocument();
+
+    // Typing match
+    await userEvent.clear(sandboxInput);
+    await userEvent.type(sandboxInput, "uber");
+    expect(await screen.findByText(/Maps/i)).toBeInTheDocument();
+  });
 });
 
 function mockFetch(routes: Record<string, unknown>) {
@@ -506,7 +626,13 @@ function dashboardPayload(overrides: Record<string, unknown>) {
       net_savings: "2113.60",
       transaction_count: 2,
       income_by_category: { Salary: "2500.00" },
-      expenses_by_category: { Food: "386.40" }
+      expenses_by_category: { Food: "386.40" },
+      ytd_income: "15000.00",
+      ytd_expenses: "3000.00",
+      ytd_net_savings: "12000.00",
+      income_delta: "100.00",
+      expenses_delta: "-25.00",
+      net_savings_delta: "125.00"
     },
     trend: {
       months: [
@@ -540,6 +666,9 @@ function trendMonth(label: string) {
     total_expenses: "500.00",
     net_savings: "2000.00",
     transaction_count: 2,
-    savings_rate: "80.0"
+    savings_rate: "80.0",
+    income_delta: "0.00",
+    expenses_delta: "0.00",
+    net_savings_delta: "0.00"
   };
 }

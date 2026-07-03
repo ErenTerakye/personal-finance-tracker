@@ -135,6 +135,18 @@ export function DashboardView({
       <section className="kpi-grid" aria-label="Monthly totals">
         <KpiCard label="Income" value={money(data.report.total_income)} tone="cash" />
         <KpiCard label="Expenses" value={money(data.report.total_expenses)} tone="expenses" />
+        <KpiCard
+          label="MoM net"
+          value={money(data.report.net_savings_delta)}
+          detail="Compared with prior month"
+          tone={Number(data.report.net_savings_delta) >= 0 ? "cash" : "warning"}
+        />
+        <KpiCard
+          label="YTD net"
+          value={money(data.report.ytd_net_savings)}
+          detail={`${compactValue(data.report.ytd_income)} income`}
+          tone={Number(data.report.ytd_net_savings) >= 0 ? "cash" : "expenses"}
+        />
         <KpiCard label="Trend net" value={money(data.trend.net_savings)} detail="Six-month total" />
         <KpiCard
           label="Trend entries"

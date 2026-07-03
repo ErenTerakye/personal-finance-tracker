@@ -117,6 +117,9 @@ function trendMonth(
     label,
     transaction_count: 1,
     savings_rate: "0.0",
+    income_delta: "0.00",
+    expenses_delta: "0.00",
+    net_savings_delta: "0.00",
     ...values
   };
 }

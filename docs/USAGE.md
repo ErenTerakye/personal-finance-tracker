@@ -34,6 +34,9 @@ This sequence imports the included examples, prints budget and report output, cr
 finance-tracker init --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
 finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
+finance-tracker category-rule-set groceries Food --db-path demo.sqlite3
+finance-tracker recurring-add expense 1600 --category Rent --description "Monthly rent" --day 1 --db-path demo.sqlite3
+finance-tracker recurring-apply --month 7 --year 2026 --db-path demo.sqlite3
 mkdir -p reports exports
 finance-tracker list --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
@@ -62,12 +65,14 @@ finance-tracker web --host 127.0.0.1 --port 8000 --db-path demo.sqlite3
 
 The Web UI supports:
 
-- A Personal Finance Tracker dashboard with a six-month cashflow trend, KPI cards, trend/category charts, recent transactions, and budget pressure.
-- Route-aware browser navigation for `/`, `/transactions`, and `/budgets`.
+- A Personal Finance Tracker dashboard with a six-month cashflow trend, KPI cards, YTD/month-over-month context, trend/category charts, recent transactions, and budget pressure.
+- Route-aware browser navigation for `/`, `/transactions`, `/budgets`, and `/rules`.
 - Compact period controls for changing monthly scope without keeping month/year fields open all the time.
 - Transaction add, edit, delete, and filters through native dialog workflows.
 - Budget set/update, delete, filters, and monthly status comparison with pressure shown first.
 - Transaction and budget CSV import/export from the browser, using the same columns and validation rules as the CLI.
+- Transaction CSV preview before import, including invalid rows, duplicates, and category alias changes.
+- Category alias and recurring monthly transaction template management from the Rules view.
 - Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
 - A color theme action that follows the operating system by default and can pin a local light or dark preference.
 
@@ -122,6 +127,38 @@ finance-tracker list --month 7 --year 2026
 finance-tracker list --type expense --category Food
 ```
 
+## Category Rules
+
+Category rules normalize aliases to a canonical category before transactions,
+budgets, reports, and imports store records:
+
+```bash
+finance-tracker category-rule-set groceries Food
+finance-tracker category-rule-set grocery Food
+finance-tracker category-rule-list
+finance-tracker category-rule-delete 1
+```
+
+After setting `groceries -> Food`, adding or importing a transaction with
+category `groceries` stores it as `Food`.
+
+## Recurring Templates
+
+Recurring templates are monthly templates. They never write automatically; apply
+them explicitly for a month:
+
+```bash
+finance-tracker recurring-add expense 1600 --category Rent --description "Monthly rent" --day 1
+finance-tracker recurring-add income 4200 --category Salary --description "Monthly salary" --day 1
+finance-tracker recurring-list
+finance-tracker recurring-apply --month 7 --year 2026
+finance-tracker recurring-delete 1
+```
+
+If a template day is past the end of a month, the generated transaction uses the
+last day of that month. Applying templates skips duplicate transactions by
+default.
+
 ## Monthly Summary
 
 ```bash
@@ -148,7 +185,10 @@ Choose a custom period and save a PNG chart:
 finance-tracker trends --months 3 --end-month 7 --end-year 2026 --chart reports/trends.png
 ```
 
-Trend reports include monthly income, expenses, net savings, savings rate, transaction counts, and top expense categories across the selected period.
+Monthly reports include YTD totals and month-over-month deltas when enough
+ledger context is available. Trend reports include monthly income, expenses, net
+savings, month-over-month net changes, savings rate, transaction counts, and top
+expense categories across the selected period.
 
 ## Budgets
 
@@ -198,6 +238,8 @@ finance-tracker budget-delete 1
 
 ```bash
 finance-tracker import-csv examples/sample_transactions.csv
+finance-tracker import-csv examples/sample_transactions.csv --preview
+finance-tracker import-csv examples/sample_transactions.csv --allow-duplicates
 ```
 
 Expected transaction CSV columns:
@@ -237,7 +279,16 @@ In the local Web UI:
 - Use `Budgets -> Export CSV` to download the currently filtered budget view.
 - Use the dashboard download actions to save the selected month report/chart and the six-month trend report/chart.
 
-CSV imports write immediately to the selected local SQLite database, matching the CLI import behavior. Invalid rows are skipped and shown in the import result; missing required columns stop the import.
+Transaction CSV imports skip duplicates by default. Duplicate identity is the
+same type, amount, canonical category, trimmed description, and date, checked
+against existing transactions and earlier accepted rows in the same CSV. Use
+`--preview` in the CLI, or the browser preview step, to inspect rows before
+writing. Use `--allow-duplicates` only when repeated identical rows are
+intentional.
+
+Budget CSV imports still write immediately to the selected local SQLite
+database. Invalid rows are skipped and shown in the import result; missing
+required columns stop the import.
 
 ## Quality Checks
 
