@@ -219,6 +219,9 @@ After activating `.venv`, run:
 .venv/bin/python -m ruff check .
 npm test
 npm run build
+npm run test:e2e
 ```
 
-The GitHub Actions workflow runs these checks on Python 3.14.
+For the first Playwright run on a new machine, install Chromium with `npx playwright install --with-deps chromium`.
+
+The GitHub Actions workflow runs the Python checks on Python 3.14 and the frontend checks on Node 24.

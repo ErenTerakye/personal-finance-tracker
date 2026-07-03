@@ -3,6 +3,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./frontend/e2e",
   fullyParallel: true,
+  workers: process.env.CI ? 1 : undefined,
   reporter: "list",
   use: {
     baseURL: "http://127.0.0.1:5173",

@@ -150,8 +150,11 @@ After activating the virtual environment, run:
 .venv/bin/python -m ruff check .
 npm test
 npm run build
+npm run test:e2e
 ```
 
-GitHub Actions runs the same checks on Python 3.14.
+For the first Playwright run on a new machine, install Chromium with `npx playwright install --with-deps chromium`.
 
-See [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md), [docs/USAGE.md](docs/USAGE.md), and [AGENTS.md](AGENTS.md) for deeper project notes.
+GitHub Actions runs the Python checks on Python 3.14 and the frontend checks on Node 24.
+
+See [ROADMAP.md](ROADMAP.md), [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md), [docs/USAGE.md](docs/USAGE.md), and [AGENTS.md](AGENTS.md) for deeper project notes.

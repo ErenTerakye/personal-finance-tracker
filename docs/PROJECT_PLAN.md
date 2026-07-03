@@ -128,9 +128,9 @@ Invalid data rows are skipped during import and reported to the user. Missing re
 
 ## Current Development Direction
 
-The current milestone is a 2026-quality local Web UI over the existing SQLite/service/report foundation. It should remain a portfolio-scale app: no authentication, cloud sync, background workers, or hosted database unless the project scope changes again.
+The current milestone is portfolio v1 hardening: keep the CLI and local FastAPI/React Web UI aligned, make the reviewer demo easy to reproduce, and preserve the local-first architecture. It should remain a portfolio-scale app: no authentication, cloud sync, background workers, or hosted database unless the project scope changes again.
 
-Future improvements can build from this foundation with recurring transaction templates, richer category analysis, CSV import/export from the browser, or downloadable chart artifacts.
+Use [../ROADMAP.md](../ROADMAP.md) as the source of truth for upcoming milestones and future-work ordering.
 
 ## Testing Strategy
 
@@ -148,4 +148,4 @@ Use pytest with temporary SQLite databases. Cover:
 - Web API dashboard data, form validation feedback, CRUD flows, and filters.
 - React dashboard, route navigation, transaction/budget dialog workflows, delete-dialog, API-client, and SVG chart behavior.
 - CLI smoke flows through Typer's test runner.
-- GitHub Actions should run pytest and Ruff on Python 3.14.
+- GitHub Actions runs pytest and Ruff on Python 3.14, plus frontend unit tests, production build, and Playwright responsive E2E tests on Node 24.
