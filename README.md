@@ -1,5 +1,9 @@
 # Personal Finance Tracker
 
+[![CI](https://github.com/ErenTerakye/personal-finance-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/ErenTerakye/personal-finance-tracker/actions/workflows/ci.yml)
+![Python 3.14](https://img.shields.io/badge/python-3.14-blue)
+![Node 24](https://img.shields.io/badge/node-24-43853d)
+
 A Python CLI application for tracking income and expenses using SQLite, CSV processing, OOP, and data visualization.
 
 ## Highlights
@@ -29,6 +33,7 @@ npm run build
 finance-tracker init --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
 finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
+mkdir -p reports exports
 finance-tracker list --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker summary --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
@@ -36,9 +41,9 @@ finance-tracker trends --months 6 --end-month 7 --end-year 2026 --chart reports/
 finance-tracker web --db-path demo.sqlite3
 ```
 
-Open the Web UI at `http://127.0.0.1:8000`. The included sample CSVs are synthetic portfolio demo data, and `demo.sqlite3` is the reproducible database created from them.
+Open the Web UI at `http://127.0.0.1:8000`. The included sample CSVs are synthetic portfolio demo data, and `demo.sqlite3` is generated local demo state created from them. It is intentionally ignored by git and can be rebuilt at any time.
 
-The default database path is `./data/finance_tracker.sqlite3`. That file is local runtime state for your own machine and may not match the documented demo. To run the Web UI against the reproducible demo database:
+The default database path is `./data/finance_tracker.sqlite3`. That file is local runtime state for your own machine and may not match the documented demo. For the reviewer demo, start the local Web UI against the generated demo database:
 
 ```bash
 finance-tracker web --db-path demo.sqlite3
@@ -52,6 +57,7 @@ Run a fresh local demo without touching the default database:
 finance-tracker init --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
 finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
+mkdir -p reports exports
 finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
 finance-tracker trends --months 6 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
@@ -59,6 +65,16 @@ finance-tracker web --db-path demo.sqlite3
 finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
 finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 ```
+
+## Reviewer Screenshots
+
+These screenshots are generated from the July 2026 sample CSV demo using `finance-tracker web --db-path demo.sqlite3`.
+
+![Dashboard desktop screenshot](docs/assets/screenshots/dashboard-desktop.png)
+
+![Transactions mobile screenshot](docs/assets/screenshots/transactions-mobile.png)
+
+![Budgets desktop screenshot](docs/assets/screenshots/budgets-desktop.png)
 
 ## Web UI
 
@@ -158,3 +174,5 @@ For the first Playwright run on a new machine, install Chromium with `npx playwr
 GitHub Actions runs the Python checks on Python 3.14 and the frontend checks on Node 24.
 
 See [ROADMAP.md](ROADMAP.md), [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md), [docs/USAGE.md](docs/USAGE.md), and [AGENTS.md](AGENTS.md) for deeper project notes.
+
+Use [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) when refreshing the demo, screenshots, packaged SPA assets, and release checks.

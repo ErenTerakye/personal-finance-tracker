@@ -161,6 +161,10 @@ venv.bak/
 # Local finance-tracker databases
 data/*.sqlite3
 data/*.sqlite3-*
+/demo.sqlite3
+/reports/
+/exports/
+/test-results/
 
 # Spyder project settings
 .spyderproject

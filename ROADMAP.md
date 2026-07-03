@@ -23,7 +23,10 @@ would make it stronger without bloating the scope.
   local Python/SQLite workflow.
 - GitHub Actions mirrors the documented check set with Python tests, Ruff,
   frontend unit tests, production build, and Playwright responsive E2E tests.
-- Local quality checks last verified on July 3, 2026:
+- v0.2.0 adds reviewer-facing README badges, tracked Web UI screenshots, a
+  release checklist, and a reproducible demo flow built from sample CSV files
+  into generated local artifacts.
+- Local quality checks last verified for v0.2.0 on July 3, 2026:
   - `.venv/bin/python -m pytest` - 49 passed, with the FastAPI/Starlette
     `TestClient` deprecation warning resolved by using Starlette's `httpx2`
     test-client backend.
@@ -31,6 +34,8 @@ would make it stronger without bloating the scope.
   - `npm test` - 18 frontend unit tests passed.
   - `npm run build` - passed.
   - `npm run test:e2e` - 35 Playwright responsive E2E tests passed.
+  - `.venv/bin/python -m build` - built the source distribution and universal
+    wheel for `personal-finance-tracker` 0.2.0.
 
 ## Guiding Principles
 
@@ -45,19 +50,22 @@ would make it stronger without bloating the scope.
 - Avoid authentication, hosted accounts, cloud sync, background workers, and
   multi-user concerns unless the project scope intentionally changes.
 
-## Milestones
+## Completed
 
-### v0.2 Portfolio V1 Hardening
+### v0.2.0 Portfolio V1 Hardening
 
-Make the existing app feel complete, reviewable, and trustworthy.
+The existing app now feels complete, reviewable, and trustworthy for portfolio
+reviewers.
 
-- Add reviewer-facing badges for the CI-backed documented check set.
-- Tighten the reproducible demo flow around `demo.sqlite3`, sample CSV imports,
-  generated charts, and `finance-tracker web --db-path demo.sqlite3`.
-- Align README, usage docs, project plan, static showcase, and screenshots so
+- Added reviewer-facing badges for the CI-backed documented check set.
+- Tightened the reproducible demo flow around generated `demo.sqlite3`, sample
+  CSV imports, generated charts, and `finance-tracker web --db-path demo.sqlite3`.
+- Aligned README, usage docs, static showcase copy, and tracked screenshots so
   they tell the same story.
-- Add a small release checklist covering install, demo, checks, package build,
-  static showcase refresh, and generated SPA asset refresh.
+- Added a small release checklist covering install, demo, checks, package build,
+  static showcase refresh, screenshots, and generated SPA asset refresh.
+
+## Next Milestones
 
 ### v0.3 Browser Workflow Parity
 

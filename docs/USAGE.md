@@ -18,7 +18,7 @@ finance-tracker init
 
 By default this creates `data/finance_tracker.sqlite3`.
 
-The default database is local runtime state and is ignored by git. Use `--db-path demo.sqlite3` for the reproducible reviewer demo built from the included synthetic sample CSVs.
+The default database is local runtime state and is ignored by git. Use `--db-path demo.sqlite3` for the reproducible reviewer demo built from the included synthetic sample CSVs. The `demo.sqlite3` file itself is generated local state, not source data, and can be rebuilt from the CSV files.
 
 Use a custom path:
 
@@ -34,6 +34,7 @@ This sequence imports the included examples, prints budget and report output, cr
 finance-tracker init --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
 finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
+mkdir -p reports exports
 finance-tracker list --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
@@ -53,7 +54,7 @@ finance-tracker web
 
 Open `http://127.0.0.1:8000`. Without `--db-path`, this uses `./data/finance_tracker.sqlite3`, which is your local working database and may not match the reviewer demo.
 
-Use a custom database path:
+For the reviewer demo, use the generated sample database:
 
 ```bash
 finance-tracker web --host 127.0.0.1 --port 8000 --db-path demo.sqlite3
@@ -80,6 +81,20 @@ npm run dev
 Browser support policy: the Web UI targets modern Baseline-capable browsers as of June 2026. Newly available browser features are used only as progressive enhancements, so core navigation and CRUD workflows remain usable without large polyfills. The UI uses color-scheme-aware dark mode with a persistent local override, native dialogs and popovers, SVG charts, container queries, mobile-safe viewport units, same-document view transitions, and reduced-motion-aware animation.
 
 The Web UI is a local Python app. GitHub Pages cannot run the live app because Pages does not run Python or SQLite; use [showcase/index.html](showcase/index.html) as a static portfolio preview and run `finance-tracker web` for live CRUD.
+
+## Reviewer Screenshots
+
+Tracked screenshots live in [assets/screenshots](assets/screenshots) and are captured from the generated July 2026 demo database:
+
+- `dashboard-desktop.png` from `/`
+- `transactions-mobile.png` from `/transactions`
+- `budgets-desktop.png` from `/budgets`
+
+Refresh them after rebuilding `demo.sqlite3` and starting the app with:
+
+```bash
+finance-tracker web --db-path demo.sqlite3
+```
 
 ## Add Transactions
 
@@ -220,6 +235,7 @@ After activating `.venv`, run:
 npm test
 npm run build
 npm run test:e2e
+.venv/bin/python -m build
 ```
 
 For the first Playwright run on a new machine, install Chromium with `npx playwright install --with-deps chromium`.
