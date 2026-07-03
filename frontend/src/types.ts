@@ -96,6 +96,12 @@ export interface NoticeResponse {
   notice: string;
 }
 
+export interface ImportSummary extends NoticeResponse {
+  imported_count: number;
+  skipped_count: number;
+  errors: string[];
+}
+
 export interface TransactionMutationResponse extends NoticeResponse {
   transaction: TransactionRecord;
 }

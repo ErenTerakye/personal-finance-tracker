@@ -93,6 +93,52 @@ def test_api_transaction_validation_and_not_found_errors_are_json(tmp_path):
     assert not_found_response.json() == {"error": "Transaction 404 was not found."}
 
 
+def test_api_transaction_csv_import_reports_skipped_rows_and_export_filters(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    client = TestClient(create_app(db_path))
+    csv_text = "\n".join(
+        [
+            "type,amount,category,description,date",
+            "income,3000,Salary,Paycheck,2026-06-01",
+            "expense,-12,Food,Invalid,2026-06-02",
+            "expense,45.90,Food,Groceries,2026-06-12",
+        ]
+    )
+
+    import_response = client.post(
+        "/api/transactions/import-csv",
+        content=csv_text,
+        headers={"content-type": "text/csv"},
+    )
+    export_response = client.get(
+        "/api/transactions/export-csv",
+        params={"month": 6, "year": 2026, "transaction_type": "expense"},
+    )
+    missing_column_response = client.post(
+        "/api/transactions/import-csv",
+        content="type,amount,date\nincome,10,2026-06-01\n",
+        headers={"content-type": "text/csv"},
+    )
+
+    assert import_response.status_code == 200
+    assert import_response.json() == {
+        "notice": "Transaction CSV import finished.",
+        "imported_count": 2,
+        "skipped_count": 1,
+        "errors": ["Line 3: Amount must be greater than zero."],
+    }
+    assert export_response.status_code == 200
+    assert export_response.headers["content-disposition"] == (
+        'attachment; filename="transactions-2026-06.csv"'
+    )
+    assert export_response.text.splitlines() == [
+        "type,amount,category,description,date",
+        "expense,45.90,Food,Groceries,2026-06-12",
+    ]
+    assert missing_column_response.status_code == 400
+    assert "missing required columns" in missing_column_response.json()["error"]
+
+
 def test_api_budget_set_filter_status_delete_flow(tmp_path):
     db_path = tmp_path / "finance.sqlite3"
     TransactionService(db_path).add_transaction("expense", "90", "Food", "Groceries", "2026-06-12")
@@ -131,6 +177,94 @@ def test_api_budget_validation_and_not_found_errors_are_json(tmp_path):
     assert validation_response.json() == {"error": "Month must be between 1 and 12."}
     assert not_found_response.status_code == 404
     assert not_found_response.json() == {"error": "Budget 404 was not found."}
+
+
+def test_api_budget_csv_import_reports_skipped_rows_and_export_filters(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    client = TestClient(create_app(db_path))
+    csv_text = "\n".join(
+        [
+            "category,amount,month,year",
+            "Food,400,6,2026",
+            "Rent,-10,6,2026",
+            "Travel,300,7,2026",
+        ]
+    )
+
+    import_response = client.post(
+        "/api/budgets/import-csv",
+        content=csv_text,
+        headers={"content-type": "text/csv"},
+    )
+    export_response = client.get(
+        "/api/budgets/export-csv",
+        params={"month": 6, "year": 2026},
+    )
+    missing_column_response = client.post(
+        "/api/budgets/import-csv",
+        content="category,amount,year\nFood,400,2026\n",
+        headers={"content-type": "text/csv"},
+    )
+
+    assert import_response.status_code == 200
+    assert import_response.json() == {
+        "notice": "Budget CSV import finished.",
+        "imported_count": 2,
+        "skipped_count": 1,
+        "errors": ["Line 3: Amount must be greater than zero."],
+    }
+    assert export_response.status_code == 200
+    assert export_response.headers["content-disposition"] == (
+        'attachment; filename="budgets-2026-06.csv"'
+    )
+    assert export_response.text.splitlines() == [
+        "category,amount,month,year",
+        "Food,400.00,6,2026",
+    ]
+    assert missing_column_response.status_code == 400
+    assert "missing required columns" in missing_column_response.json()["error"]
+
+
+def test_api_report_and_chart_downloads_return_attachments(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    transactions = TransactionService(db_path)
+    transactions.add_transaction("income", "3000", "Salary", "Paycheck", "2026-06-01")
+    transactions.add_transaction("expense", "125.50", "Food", "Groceries", "2026-06-12")
+    client = TestClient(create_app(db_path))
+
+    monthly_report = client.get("/api/reports/monthly.txt", params={"month": 6, "year": 2026})
+    trend_report = client.get(
+        "/api/reports/trends.txt",
+        params={"months": 6, "end_month": 6, "end_year": 2026},
+    )
+    monthly_chart = client.get("/api/charts/monthly.png", params={"month": 6, "year": 2026})
+    trend_chart = client.get(
+        "/api/charts/trends.png",
+        params={"months": 6, "end_month": 6, "end_year": 2026},
+    )
+
+    assert monthly_report.status_code == 200
+    assert "Monthly report for 2026-06" in monthly_report.text
+    assert monthly_report.headers["content-disposition"] == (
+        'attachment; filename="monthly-report-2026-06.txt"'
+    )
+    assert trend_report.status_code == 200
+    assert "Trend report for 2026-01 through 2026-06" in trend_report.text
+    assert trend_report.headers["content-disposition"] == (
+        'attachment; filename="trend-report-2026-06.txt"'
+    )
+    assert monthly_chart.status_code == 200
+    assert monthly_chart.headers["content-type"] == "image/png"
+    assert monthly_chart.headers["content-disposition"] == (
+        'attachment; filename="monthly-chart-2026-06.png"'
+    )
+    assert monthly_chart.content.startswith(b"\x89PNG")
+    assert trend_chart.status_code == 200
+    assert trend_chart.headers["content-type"] == "image/png"
+    assert trend_chart.headers["content-disposition"] == (
+        'attachment; filename="trend-chart-2026-06.png"'
+    )
+    assert trend_chart.content.startswith(b"\x89PNG")
 
 
 def test_spa_fallback_serves_html_for_browser_routes(tmp_path):

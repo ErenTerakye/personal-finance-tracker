@@ -44,6 +44,30 @@ describe("Personal Finance Tracker", () => {
     expect(screen.getByRole("img", { name: /six-month income/i })).toBeInTheDocument();
   });
 
+  it("exposes downloadable dashboard artifacts for the selected period", async () => {
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Month report" })).toHaveAttribute(
+      "href",
+      "/api/reports/monthly.txt?month=7&year=2026"
+    );
+    expect(screen.getByRole("link", { name: "Month chart" })).toHaveAttribute(
+      "href",
+      "/api/charts/monthly.png?month=7&year=2026"
+    );
+    expect(screen.getByRole("link", { name: "Trend report" })).toHaveAttribute(
+      "href",
+      "/api/reports/trends.txt?months=6&end_month=7&end_year=2026"
+    );
+    expect(screen.getByRole("link", { name: "Trend chart" })).toHaveAttribute(
+      "href",
+      "/api/charts/trends.png?months=6&end_month=7&end_year=2026"
+    );
+  });
+
   it("navigates with browser routes", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
@@ -150,6 +174,88 @@ describe("Personal Finance Tracker", () => {
 
     expect(await screen.findByRole("status")).toHaveTextContent(
       "Transaction added to the local ledger."
+    );
+  });
+
+  it("imports transaction CSV from a dialog and shows row results", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === "/api/transactions/import-csv" && init?.method === "POST") {
+        return response({
+          notice: "Transaction CSV import finished.",
+          imported_count: 2,
+          skipped_count: 1,
+          errors: ["Line 3: Amount must be greater than zero."]
+        });
+      }
+      if (url.startsWith("/api/transactions")) {
+        return response({ transactions: [] });
+      }
+      return response(dashboardPayload({}));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole("link", { name: /Transactions/i }));
+    await userEvent.click(await screen.findByRole("button", { name: "Import CSV" }));
+    const dialog = screen.getByRole("dialog", { name: "Import transaction CSV" });
+    const file = new File(
+      ["type,amount,category,description,date\nincome,1000,Salary,Paycheck,2026-06-01\n"],
+      "transactions.csv",
+      { type: "text/csv" }
+    );
+
+    await userEvent.upload(within(dialog).getByLabelText("CSV file"), file);
+    await userEvent.click(within(dialog).getByRole("button", { name: "Import CSV" }));
+
+    expect(await within(dialog).findByRole("status")).toHaveTextContent(
+      "Imported 2, skipped 1."
+    );
+    expect(within(dialog).getByText("Line 3: Amount must be greater than zero.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/transactions/import-csv",
+      expect.objectContaining({ body: expect.stringContaining("income,1000") })
+    );
+  });
+
+  it("imports budget CSV from a dialog and shows row results", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === "/api/budgets/import-csv" && init?.method === "POST") {
+        return response({
+          notice: "Budget CSV import finished.",
+          imported_count: 1,
+          skipped_count: 0,
+          errors: []
+        });
+      }
+      if (url.startsWith("/api/budgets/status")) {
+        return response({ statuses: [] });
+      }
+      if (url.startsWith("/api/budgets")) {
+        return response({ budgets: [] });
+      }
+      return response(dashboardPayload({}));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole("link", { name: /Budgets/i }));
+    await userEvent.click(await screen.findByRole("button", { name: "Import CSV" }));
+    const dialog = screen.getByRole("dialog", { name: "Import budget CSV" });
+    const file = new File(["category,amount,month,year\nFood,400,6,2026\n"], "budgets.csv", {
+      type: "text/csv"
+    });
+
+    await userEvent.upload(within(dialog).getByLabelText("CSV file"), file);
+    await userEvent.click(within(dialog).getByRole("button", { name: "Import CSV" }));
+
+    expect(await within(dialog).findByRole("status")).toHaveTextContent(
+      "Imported 1, skipped 0."
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/budgets/import-csv",
+      expect.objectContaining({ body: expect.stringContaining("Food,400") })
     );
   });
 

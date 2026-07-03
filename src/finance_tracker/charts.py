@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from io import BytesIO
 from pathlib import Path
 
 from finance_tracker.reports import MonthlyReport, TrendReport
@@ -15,13 +16,18 @@ def _configure_matplotlib() -> None:
 
 
 def save_monthly_chart(report: MonthlyReport, output_path: Path | str) -> Path:
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(render_monthly_chart_png(report))
+    return path
+
+
+def render_monthly_chart_png(report: MonthlyReport) -> bytes:
     _configure_matplotlib()
 
     import matplotlib.pyplot as plt
 
-    path = Path(output_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-
+    buffer = BytesIO()
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     fig.suptitle(f"Financial Report {report.year}-{report.month:02d}")
 
@@ -43,18 +49,22 @@ def save_monthly_chart(report: MonthlyReport, output_path: Path | str) -> Path:
         axes[1].set_axis_off()
 
     fig.tight_layout()
-    fig.savefig(path)
+    fig.savefig(buffer, format="png")
     plt.close(fig)
-    return path
+    return buffer.getvalue()
 
 
 def save_trend_chart(report: TrendReport, output_path: Path | str) -> Path:
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(render_trend_chart_png(report))
+    return path
+
+
+def render_trend_chart_png(report: TrendReport) -> bytes:
     _configure_matplotlib()
 
     import matplotlib.pyplot as plt
-
-    path = Path(output_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
 
     labels = [f"{period.year}-{period.month:02d}" for period in report.months]
     income = [float(period.total_income) for period in report.months]
@@ -73,6 +83,7 @@ def save_trend_chart(report: TrendReport, output_path: Path | str) -> Path:
     plt.xticks(rotation=35, ha="right")
 
     fig.tight_layout()
-    fig.savefig(path)
+    buffer = BytesIO()
+    fig.savefig(buffer, format="png")
     plt.close(fig)
-    return path
+    return buffer.getvalue()

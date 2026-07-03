@@ -1,8 +1,8 @@
 # Release Checklist
 
-Use this checklist for the v0.2 portfolio hardening release and later reviewer-demo refreshes.
+Use this checklist for the v0.3 browser workflow parity release and later reviewer-demo refreshes.
 
-## v0.2.0
+## v0.3.0
 
 - [ ] Create a fresh environment and install the app:
 

@@ -17,9 +17,12 @@ for (const width of viewports) {
       await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
       await expect(page.getByText("Six-month cashflow trend")).toBeVisible();
       await expect(page.getByRole("button", { name: /Choose period/ })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Month report" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Trend chart" })).toBeVisible();
       await assertNoHorizontalOverflow(page);
       await assertCannotPanHorizontally(page);
       await expectDashboardFitsViewport(page);
+      await expectElementsFitViewport(page, [".dashboard-actions", ".artifact-actions .button"]);
       await expectQuickActionsStacked(page);
       await expectThemeToggleIconCentered(page);
       await expectMobileNavigationIsCompact(page, width);
@@ -38,7 +41,10 @@ for (const width of viewports) {
 
       await expect(page.getByRole("heading", { name: "Transactions" })).toBeVisible();
       await expect(page.getByText("Groceries")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Import CSV" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Export CSV" })).toBeVisible();
       await assertNoHorizontalOverflow(page);
+      await expectElementsFitViewport(page, [".action-cluster", ".panel-actions"]);
       await expectTableModeMatchesContainer(page);
       await expect(page.getByRole("button", { name: "Edit Food transaction" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Delete Food transaction" })).toBeVisible();
@@ -54,7 +60,12 @@ for (const width of viewports) {
 
       await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
       await expect(page.locator(".records-panel .data-table td[data-label='Category']")).toHaveText("Travel");
+      await expect(page.getByRole("button", { name: "Import CSV" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Export CSV" })).toBeVisible();
       await assertNoHorizontalOverflow(page);
+      await expectBudgetPressureBarsAligned(page);
+      await expectOverBudgetBadgeContrast(page);
+      await expectElementsFitViewport(page, [".action-cluster", ".panel-actions"]);
       await expectTableModeMatchesContainer(page);
       await expect(page.getByRole("button", { name: "Update Travel budget" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Delete Travel budget" })).toBeVisible();
@@ -185,6 +196,7 @@ for (const width of themeViewports) {
         colorScheme: "dark"
       });
       await assertNoHorizontalOverflow(page);
+      await expectOverBudgetBadgeContrast(page);
 
       await page.reload();
 
@@ -313,6 +325,64 @@ async function expectElementsFitViewport(page: Page, selectors: string[]) {
   expect(overflowed).toEqual([]);
 }
 
+async function expectBudgetPressureBarsAligned(page: Page) {
+  const bars = await page.locator(".pressure-row progress").evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const rect = node.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        width: rect.width
+      };
+    })
+  );
+
+  expect(bars.length).toBeGreaterThanOrEqual(3);
+  const [first] = bars;
+  for (const bar of bars.slice(1)) {
+    expect(Math.abs(bar.left - first.left)).toBeLessThanOrEqual(1);
+    expect(Math.abs(bar.right - first.right)).toBeLessThanOrEqual(1);
+    expect(Math.abs(bar.width - first.width)).toBeLessThanOrEqual(1);
+  }
+}
+
+async function expectOverBudgetBadgeContrast(page: Page) {
+  const ratio = await page.locator(".pressure-row.over-budget em").first().evaluate((badge) => {
+    const label = badge.querySelector("span") ?? badge;
+    const textColor = getComputedStyle(label).color;
+    const backgroundColor = getComputedStyle(badge).backgroundColor;
+
+    function parseRgb(color: string) {
+      const channels = color.match(/\d+(\.\d+)?/g)?.map(Number) ?? [];
+      if (channels.length < 3) {
+        throw new Error(`Expected RGB color, got ${color}`);
+      }
+      return channels.slice(0, 3);
+    }
+
+    function relativeLuminance(channel: number) {
+      const value = channel / 255;
+      return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    }
+
+    function luminance([red, green, blue]: number[]) {
+      return (
+        0.2126 * relativeLuminance(red) +
+        0.7152 * relativeLuminance(green) +
+        0.0722 * relativeLuminance(blue)
+      );
+    }
+
+    const foreground = luminance(parseRgb(textColor));
+    const background = luminance(parseRgb(backgroundColor));
+    const lighter = Math.max(foreground, background);
+    const darker = Math.min(foreground, background);
+    return (lighter + 0.05) / (darker + 0.05);
+  });
+
+  expect(ratio).toBeGreaterThanOrEqual(4.5);
+}
+
 async function expectThemeToggleIconCentered(page: Page) {
   const offset = await page.locator(".theme-toggle").evaluate((button) => {
     const icon = button.querySelector("svg");
@@ -424,7 +494,7 @@ async function mockApi(page: Page) {
       return;
     }
     if (url.pathname === "/api/budgets/status") {
-      await route.fulfill({ json: { statuses: [budgetStatus()] } });
+      await route.fulfill({ json: { statuses: budgetStatuses() } });
       return;
     }
     if (url.pathname === "/api/budgets") {
@@ -447,7 +517,14 @@ function transaction() {
   };
 }
 
-function budget() {
+function budget(overrides: Partial<ReturnType<typeof budgetPayload>> = {}) {
+  return {
+    ...budgetPayload(),
+    ...overrides
+  };
+}
+
+function budgetPayload() {
   return {
     id: 1,
     category: "Travel",
@@ -458,7 +535,36 @@ function budget() {
   };
 }
 
-function budgetStatus() {
+function budgetStatuses() {
+  return [
+    budgetStatus({
+      budget: budget({ id: 2, category: "Food", amount: "480.00" }),
+      actual_expenses: "428.75",
+      remaining: "51.25",
+      percent_used: "89.3",
+      status: "ok"
+    }),
+    budgetStatus({
+      budget: budget({ id: 3, category: "Dining", amount: "170.00" }),
+      actual_expenses: "164.30",
+      remaining: "5.70",
+      percent_used: "96.6",
+      status: "near limit"
+    }),
+    budgetStatus()
+  ];
+}
+
+function budgetStatus(
+  overrides: Partial<ReturnType<typeof budgetStatusPayload>> = {}
+) {
+  return {
+    ...budgetStatusPayload(),
+    ...overrides
+  };
+}
+
+function budgetStatusPayload() {
   return {
     budget: budget(),
     actual_expenses: "185.00",

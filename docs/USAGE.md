@@ -67,6 +67,8 @@ The Web UI supports:
 - Compact period controls for changing monthly scope without keeping month/year fields open all the time.
 - Transaction add, edit, delete, and filters through native dialog workflows.
 - Budget set/update, delete, filters, and monthly status comparison with pressure shown first.
+- Transaction and budget CSV import/export from the browser, using the same columns and validation rules as the CLI.
+- Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
 - A color theme action that follows the operating system by default and can pin a local light or dark preference.
 
 The Python server exposes JSON under `/api` and serves the compiled React + Vite app from the same local origin. Money values in API responses are decimal strings, preserving the SQLite/`Decimal` behavior used by the CLI.
@@ -224,6 +226,18 @@ finance-tracker export-csv exports/july.csv --month 7 --year 2026
 finance-tracker export-budgets-csv exports/budgets.csv
 finance-tracker export-budgets-csv exports/july-budgets.csv --month 7 --year 2026
 ```
+
+## Browser CSV and Artifact Downloads
+
+In the local Web UI:
+
+- Use `Transactions -> Import CSV` to add transaction rows from a CSV file with `type,amount,category,description,date`.
+- Use `Transactions -> Export CSV` to download the currently filtered transaction view.
+- Use `Budgets -> Import CSV` to set or update monthly budgets from `category,amount,month,year`.
+- Use `Budgets -> Export CSV` to download the currently filtered budget view.
+- Use the dashboard download actions to save the selected month report/chart and the six-month trend report/chart.
+
+CSV imports write immediately to the selected local SQLite database, matching the CLI import behavior. Invalid rows are skipped and shown in the import result; missing required columns stop the import.
 
 ## Quality Checks
 

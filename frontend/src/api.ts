@@ -5,6 +5,7 @@ import type {
   BudgetRecord,
   BudgetStatus,
   DashboardData,
+  ImportSummary,
   NoticeResponse,
   TransactionInput,
   TransactionMutationResponse,
@@ -43,6 +44,16 @@ export const api = {
   transactions: (filters: TransactionFilters = {}) =>
     request<{ transactions: TransactionRecord[] }>(`/api/transactions?${query(filters)}`),
 
+  importTransactionsCsv: (csvText: string) =>
+    request<ImportSummary>("/api/transactions/import-csv", {
+      method: "POST",
+      body: csvText,
+      headers: { "Content-Type": "text/csv; charset=utf-8" }
+    }),
+
+  transactionCsvExportUrl: (filters: TransactionFilters = {}) =>
+    `/api/transactions/export-csv?${query(filters)}`,
+
   createTransaction: (payload: TransactionInput) =>
     request<TransactionMutationResponse>("/api/transactions", {
       method: "POST",
@@ -61,6 +72,16 @@ export const api = {
   budgets: (filters: BudgetFilters = {}) =>
     request<{ budgets: BudgetRecord[] }>(`/api/budgets?${query(filters)}`),
 
+  importBudgetsCsv: (csvText: string) =>
+    request<ImportSummary>("/api/budgets/import-csv", {
+      method: "POST",
+      body: csvText,
+      headers: { "Content-Type": "text/csv; charset=utf-8" }
+    }),
+
+  budgetCsvExportUrl: (filters: BudgetFilters = {}) =>
+    `/api/budgets/export-csv?${query(filters)}`,
+
   setBudget: (payload: BudgetInput) =>
     request<BudgetMutationResponse>("/api/budgets", {
       method: "POST",
@@ -71,6 +92,17 @@ export const api = {
     request<{ statuses: BudgetStatus[] }>(`/api/budgets/status?${query({ month, year })}`),
 
   deleteBudget: (id: number) => request<NoticeResponse>(`/api/budgets/${id}`, { method: "DELETE" })
+};
+
+export const artifactUrls = {
+  monthlyReport: (month: number, year: number) =>
+    `/api/reports/monthly.txt?${query({ month, year })}`,
+  trendReport: (month: number, year: number, months = 6) =>
+    `/api/reports/trends.txt?${query({ months, end_month: month, end_year: year })}`,
+  monthlyChart: (month: number, year: number) =>
+    `/api/charts/monthly.png?${query({ month, year })}`,
+  trendChart: (month: number, year: number, months = 6) =>
+    `/api/charts/trends.png?${query({ months, end_month: month, end_year: year })}`
 };
 
 export function query(values: object): string {

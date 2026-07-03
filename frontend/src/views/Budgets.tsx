@@ -1,11 +1,13 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Filter, PiggyBank, RotateCcw, Save, Trash2 } from "lucide-react";
+import { Download, Filter, PiggyBank, RotateCcw, Save, Trash2, Upload } from "lucide-react";
 import { api, type BudgetFilters } from "../api";
+import { CsvImportDialog } from "../components/CsvImportDialog";
 import { BudgetPressureList } from "../components/Lists";
 import { PeriodControl } from "../components/PeriodControl";
 import { BudgetTable } from "../components/Tables";
 import {
   ActionButton,
+  DownloadLink,
   ErrorBanner,
   Field,
   FilterBar,
@@ -16,7 +18,7 @@ import {
   SubmitButton
 } from "../components/ui";
 import { money, monthNames, periodLabel } from "../format";
-import type { BudgetInput, BudgetRecord, BudgetStatus } from "../types";
+import type { BudgetInput, BudgetRecord, BudgetStatus, ImportSummary } from "../types";
 
 type BudgetDialog = "create" | "edit" | null;
 
@@ -51,17 +53,24 @@ export function BudgetsView({
   const [error, setError] = useState("");
   const [dialogError, setDialogError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<ImportSummary | null>(null);
+  const [importError, setImportError] = useState("");
 
   const load = () => {
     const month = Number(filters.month || selectedPeriod.month);
     const year = Number(filters.year || selectedPeriod.year);
     setError("");
+    setLoading(true);
     Promise.all([api.budgets(filters), api.budgetStatuses(month, year)])
       .then(([budgetResponse, statusResponse]) => {
         setBudgets(budgetResponse.budgets);
         setStatuses(statusResponse.statuses);
       })
-      .catch((err: Error) => setError(readError(err)));
+      .catch((err: Error) => setError(readError(err)))
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, [filters, selectedPeriod]);
@@ -131,6 +140,22 @@ export function BudgetsView({
     }
   }
 
+  async function importBudgets(csvText: string) {
+    setImportError("");
+    setImportResult(null);
+    setImporting(true);
+    try {
+      const response = await api.importBudgetsCsv(csvText);
+      setImportResult(response);
+      setNotice(response.notice);
+      load();
+    } catch (err) {
+      setImportError(readError(err));
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -138,25 +163,67 @@ export function BudgetsView({
         title="Budgets"
         summary="Monitor spending limits and manage budget records."
         actions={
-          <ActionButton icon={PiggyBank} onClick={openCreate}>
-            Set budget
-          </ActionButton>
+          <div className="action-cluster">
+            <ActionButton icon={PiggyBank} onClick={openCreate}>
+              Set budget
+            </ActionButton>
+            <ActionButton icon={Upload} variant="secondary" onClick={() => setImportOpen(true)}>
+              Import CSV
+            </ActionButton>
+          </div>
         }
       />
 
       {error ? <ErrorBanner message={error} /> : null}
 
       <section className="budget-layout">
-        <Panel title="Budget pressure" detail={`${filters.month}/${filters.year}`}>
-          <BudgetPressureList statuses={statuses} />
+        <Panel title="Budget pressure" detail={loading ? "Loading status" : `${filters.month}/${filters.year}`}>
+          {loading ? (
+            <p className="loading-state">Loading budget pressure.</p>
+          ) : (
+            <BudgetPressureList statuses={statuses} />
+          )}
         </Panel>
 
         <BudgetFilterForm filters={filters} selectedPeriod={selectedPeriod} onChange={setFilters} />
 
-        <Panel title="Budget records" detail={`${budgets.length} records shown`} className="records-panel">
-          <BudgetTable budgets={budgets} onEdit={openEdit} onDelete={setPendingDelete} />
+        <Panel
+          title="Budget records"
+          detail={loading ? "Loading budgets" : `${budgets.length} records shown`}
+          className="records-panel"
+          actions={
+            <DownloadLink
+              icon={Download}
+              href={api.budgetCsvExportUrl(filters)}
+              download
+              variant="secondary"
+            >
+              Export CSV
+            </DownloadLink>
+          }
+        >
+          {loading ? (
+            <p className="loading-state">Loading budget records.</p>
+          ) : (
+            <BudgetTable budgets={budgets} onEdit={openEdit} onDelete={setPendingDelete} />
+          )}
         </Panel>
       </section>
+
+      <CsvImportDialog
+        open={importOpen}
+        title="Import budget CSV"
+        description="Set or update monthly category budgets from CSV rows."
+        result={importResult}
+        error={importError}
+        uploading={importing}
+        onClose={() => setImportOpen(false)}
+        onImport={importBudgets}
+        onReset={() => {
+          setImportError("");
+          setImportResult(null);
+        }}
+      />
 
       <BudgetFormDialog
         open={dialog !== null}

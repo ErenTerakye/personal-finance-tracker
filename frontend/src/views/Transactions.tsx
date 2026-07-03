@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Filter, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
+import { Download, Filter, Plus, RotateCcw, Save, Trash2, Upload } from "lucide-react";
 import { api, type TransactionFilters } from "../api";
+import { CsvImportDialog } from "../components/CsvImportDialog";
 import { PeriodControl } from "../components/PeriodControl";
 import { TransactionTable } from "../components/Tables";
 import {
   ActionButton,
+  DownloadLink,
   ErrorBanner,
   Field,
   FilterBar,
@@ -15,7 +17,7 @@ import {
   SubmitButton
 } from "../components/ui";
 import { money, periodLabel, todayIso } from "../format";
-import type { TransactionInput, TransactionRecord, TransactionType } from "../types";
+import type { ImportSummary, TransactionInput, TransactionRecord, TransactionType } from "../types";
 
 type TransactionDialog = "create" | "edit" | null;
 
@@ -48,13 +50,20 @@ export function TransactionsView({
   const [error, setError] = useState("");
   const [dialogError, setDialogError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<ImportSummary | null>(null);
+  const [importError, setImportError] = useState("");
 
   const load = () => {
     setError("");
+    setLoading(true);
     api
       .transactions(filters)
       .then((response) => setTransactions(response.transactions))
-      .catch((err: Error) => setError(readError(err)));
+      .catch((err: Error) => setError(readError(err)))
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, [filters]);
@@ -126,6 +135,22 @@ export function TransactionsView({
     }
   }
 
+  async function importTransactions(csvText: string) {
+    setImportError("");
+    setImportResult(null);
+    setImporting(true);
+    try {
+      const response = await api.importTransactionsCsv(csvText);
+      setImportResult(response);
+      setNotice(response.notice);
+      load();
+    } catch (err) {
+      setImportError(readError(err));
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -133,9 +158,14 @@ export function TransactionsView({
         title="Transactions"
         summary="Log transactions quickly and review history."
         actions={
-          <ActionButton icon={Plus} onClick={openCreate}>
-            Add entry
-          </ActionButton>
+          <div className="action-cluster">
+            <ActionButton icon={Plus} onClick={openCreate}>
+              Add entry
+            </ActionButton>
+            <ActionButton icon={Upload} variant="secondary" onClick={() => setImportOpen(true)}>
+              Import CSV
+            </ActionButton>
+          </div>
         }
       />
 
@@ -148,14 +178,46 @@ export function TransactionsView({
           onChange={setFilters}
         />
 
-        <Panel title="Transaction History" detail={`${transactions.length} transactions shown`}>
-          <TransactionTable
-            transactions={transactions}
-            onEdit={openEdit}
-            onDelete={setPendingDelete}
-          />
+        <Panel
+          title="Transaction History"
+          detail={loading ? "Loading transactions" : `${transactions.length} transactions shown`}
+          actions={
+            <DownloadLink
+              icon={Download}
+              href={api.transactionCsvExportUrl(filters)}
+              download
+              variant="secondary"
+            >
+              Export CSV
+            </DownloadLink>
+          }
+        >
+          {loading ? (
+            <p className="loading-state">Loading transaction history.</p>
+          ) : (
+            <TransactionTable
+              transactions={transactions}
+              onEdit={openEdit}
+              onDelete={setPendingDelete}
+            />
+          )}
         </Panel>
       </section>
+
+      <CsvImportDialog
+        open={importOpen}
+        title="Import transaction CSV"
+        description="Add transaction rows to the local ledger."
+        result={importResult}
+        error={importError}
+        uploading={importing}
+        onClose={() => setImportOpen(false)}
+        onImport={importTransactions}
+        onReset={() => {
+          setImportError("");
+          setImportResult(null);
+        }}
+      />
 
       <TransactionFormDialog
         open={dialog !== null}

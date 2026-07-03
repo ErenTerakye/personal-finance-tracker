@@ -94,6 +94,8 @@ Supported browser workflows:
 - Route-aware SPA navigation for `/`, `/transactions`, and `/budgets`.
 - Transaction add, edit, delete, and filtering through native dialog workflows.
 - Budget set/update, delete, filtering, and budget status comparison with pressure as the primary view.
+- Browser CSV import/export for transactions and budgets, reusing the same CSV validation and formatting rules as the CLI.
+- Dashboard downloads for monthly and trend text reports plus PNG charts generated through the Python report/chart layers.
 
 Browser support policy: target modern Baseline-capable browsers as of June 2026. Newly available platform features, such as native dialogs and popovers, SVG chart affordances, container queries, color-scheme-aware dark mode, same-document view transitions, and reduced-motion-aware animation, are allowed when they are progressive enhancements and the core local CRUD workflows remain usable without large polyfills.
 
@@ -128,7 +130,7 @@ Invalid data rows are skipped during import and reported to the user. Missing re
 
 ## Current Development Direction
 
-The current milestone is portfolio v1 hardening: keep the CLI and local FastAPI/React Web UI aligned, make the reviewer demo easy to reproduce, and preserve the local-first architecture. It should remain a portfolio-scale app: no authentication, cloud sync, background workers, or hosted database unless the project scope changes again.
+The current milestone direction is finance insight depth after v0.3 browser workflow parity. The CLI and local FastAPI/React Web UI should remain aligned, the reviewer demo should stay easy to reproduce, and the project should remain portfolio-scale: no authentication, cloud sync, background workers, or hosted database unless the project scope changes again.
 
 Use [../ROADMAP.md](../ROADMAP.md) as the source of truth for upcoming milestones and future-work ordering.
 
@@ -145,7 +147,7 @@ Use pytest with temporary SQLite databases. Cover:
 - Budget status calculations by category.
 - Monthly and trend report calculations.
 - Chart output for monthly and trend reports.
-- Web API dashboard data, form validation feedback, CRUD flows, and filters.
-- React dashboard, route navigation, transaction/budget dialog workflows, delete-dialog, API-client, and SVG chart behavior.
+- Web API dashboard data, form validation feedback, CRUD flows, filters, CSV import/export, and downloadable report/chart artifacts.
+- React dashboard, route navigation, transaction/budget dialog workflows, CSV import dialogs, delete-dialog, API-client, downloadable artifact links, and SVG chart behavior.
 - CLI smoke flows through Typer's test runner.
 - GitHub Actions runs pytest and Ruff on Python 3.14, plus frontend unit tests, production build, and Playwright responsive E2E tests on Node 24.

@@ -18,24 +18,23 @@ would make it stronger without bloating the scope.
   React + Vite + TypeScript SPA.
 - The Web UI includes dashboard, transaction, and budget workflows with
   responsive layouts, accessible dialogs, SVG charts, period controls, route
-  navigation, and persistent light/dark/system theme behavior.
+  navigation, browser CSV import/export, dashboard report/chart downloads, and
+  persistent light/dark/system theme behavior.
 - A static showcase exists for portfolio hosting, while real CRUD remains a
   local Python/SQLite workflow.
 - GitHub Actions mirrors the documented check set with Python tests, Ruff,
   frontend unit tests, production build, and Playwright responsive E2E tests.
-- v0.2.0 adds reviewer-facing README badges, tracked Web UI screenshots, a
-  release checklist, and a reproducible demo flow built from sample CSV files
-  into generated local artifacts.
-- Local quality checks last verified for v0.2.0 on July 3, 2026:
-  - `.venv/bin/python -m pytest` - 49 passed, with the FastAPI/Starlette
-    `TestClient` deprecation warning resolved by using Starlette's `httpx2`
-    test-client backend.
+- v0.3 adds browser CSV import/export, downloadable monthly/trend text and PNG
+  artifacts, stronger loading/empty/import result states, and focused API,
+  frontend, and responsive tests around those workflows.
+- Local quality checks last verified for v0.3 on July 3, 2026:
+  - `.venv/bin/python -m pytest` - 52 passed.
   - `.venv/bin/python -m ruff check .` - passed.
-  - `npm test` - 18 frontend unit tests passed.
+  - `npm test` - 21 frontend unit tests passed.
   - `npm run build` - passed.
   - `npm run test:e2e` - 35 Playwright responsive E2E tests passed.
   - `.venv/bin/python -m build` - built the source distribution and universal
-    wheel for `personal-finance-tracker` 0.2.0.
+    wheel for `personal-finance-tracker` 0.3.0.
 
 ## Guiding Principles
 
@@ -65,19 +64,21 @@ reviewers.
 - Added a small release checklist covering install, demo, checks, package build,
   static showcase refresh, screenshots, and generated SPA asset refresh.
 
-## Next Milestones
-
 ### v0.3 Browser Workflow Parity
 
-Bring the browser closer to the CLI for common local workflows.
+The browser now covers the common local workflows reviewers would expect from
+the CLI-backed app.
 
-- Add browser CSV import/export for transactions and budgets using the existing
-  CSV behavior where possible.
-- Add downloadable chart or report artifacts from the Web UI.
-- Improve empty, loading, validation, and API error states across dashboard,
-  transactions, and budgets.
-- Keep browser workflow tests focused on visible user behavior and responsive
-  layout stability.
+- Added transaction and budget CSV import/export from the Web UI using the same
+  CSV parsing and formatting rules as the CLI.
+- Added dashboard downloads for monthly text reports, monthly PNG charts,
+  six-month trend text reports, and six-month trend PNG charts.
+- Improved visible loading, empty, import summary, validation, and API error
+  states across dashboard, transactions, and budgets.
+- Added focused API, React unit, and Playwright responsive coverage for the new
+  browser workflows.
+
+## Next Milestones
 
 ### v0.4 Finance Insight Depth
 

@@ -15,6 +15,7 @@ A Python CLI application for tracking income and expenses using SQLite, CSV proc
 - Generate monthly and multi-month income, expense, net savings, and category reports.
 - Save optional PNG charts for monthly reports and trend reports.
 - Run a polished local FastAPI JSON API and React Web UI with route-aware dashboard, transaction, and budget workflows.
+- Import/export transaction and budget CSV files from the browser, and download report/chart artifacts from the dashboard.
 - Use a clean `src/` package layout with Typer, pytest, and Ruff.
 
 ## Install
@@ -88,6 +89,8 @@ The browser application includes:
 - Route-aware navigation for `/`, `/transactions`, and `/budgets`.
 - Compact period controls for month-to-month review without always exposing month/year fields.
 - Dialog-based transaction add/edit/delete and budget set/update/delete flows.
+- Browser CSV import/export for transactions and budgets using the same CSV rules as the CLI.
+- Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
 - Read-only transaction tables that collapse into mobile-friendly record lists with compact row actions.
 - A header theme action that follows your system color setting by default and can pin the opposite light/dark mode locally.
 

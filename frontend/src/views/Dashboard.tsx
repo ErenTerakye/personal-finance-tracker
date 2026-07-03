@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { ArrowRight } from "lucide-react";
-import { api } from "../api";
+import { ArrowRight, FileText, ImageDown } from "lucide-react";
+import { api, artifactUrls } from "../api";
 import { compactValue, CategoryBars, KpiCard, CashflowTrend, TrendLines } from "../components/Charts";
 import { ActivityList, BudgetPressureList } from "../components/Lists";
 import { PeriodControl } from "../components/PeriodControl";
-import { ActionButton, ErrorBanner, PageHeader, Panel } from "../components/ui";
+import { ActionButton, DownloadLink, ErrorBanner, PageHeader, Panel } from "../components/ui";
 import { money, percent, periodLabel } from "../format";
 import type { DashboardData } from "../types";
 import type { View } from "../routes";
@@ -56,11 +56,43 @@ export function DashboardView({
         summary="Review cashflow, budget pressure, and recent activity."
         className="dashboard-heading"
         actions={
-          <PeriodControl
-            label="Change dashboard period"
-            value={selectedPeriod}
-            onChange={setSelectedPeriod}
-          />
+          <div className="dashboard-actions">
+            <PeriodControl
+              label="Change dashboard period"
+              value={selectedPeriod}
+              onChange={setSelectedPeriod}
+            />
+            <div className="artifact-actions" aria-label="Download dashboard artifacts">
+              <DownloadLink
+                icon={FileText}
+                href={artifactUrls.monthlyReport(selectedPeriod.month, selectedPeriod.year)}
+                download
+              >
+                Month report
+              </DownloadLink>
+              <DownloadLink
+                icon={ImageDown}
+                href={artifactUrls.monthlyChart(selectedPeriod.month, selectedPeriod.year)}
+                download
+              >
+                Month chart
+              </DownloadLink>
+              <DownloadLink
+                icon={FileText}
+                href={artifactUrls.trendReport(selectedPeriod.month, selectedPeriod.year)}
+                download
+              >
+                Trend report
+              </DownloadLink>
+              <DownloadLink
+                icon={ImageDown}
+                href={artifactUrls.trendChart(selectedPeriod.month, selectedPeriod.year)}
+                download
+              >
+                Trend chart
+              </DownloadLink>
+            </div>
+          </div>
         }
       />
 

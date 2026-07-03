@@ -6,6 +6,7 @@ import {
   type LucideIcon
 } from "lucide-react";
 import {
+  AnchorHTMLAttributes,
   ButtonHTMLAttributes,
   FormEvent,
   ReactNode,
@@ -223,6 +224,23 @@ export function ActionButton({
       <Icon aria-hidden="true" size={18} />
       <span>{children}</span>
     </button>
+  );
+}
+
+export function DownloadLink({
+  icon: Icon,
+  children,
+  variant = "secondary",
+  ...props
+}: AnchorHTMLAttributes<HTMLAnchorElement> & {
+  icon: LucideIcon;
+  variant?: "primary" | "secondary" | "danger" | "ghost";
+}) {
+  return (
+    <a className={`button ${variant}`} {...props}>
+      <Icon aria-hidden="true" size={18} />
+      <span>{children}</span>
+    </a>
   );
 }
 

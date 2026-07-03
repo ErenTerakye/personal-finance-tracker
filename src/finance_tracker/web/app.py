@@ -8,10 +8,18 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 
+from finance_tracker.charts import render_monthly_chart_png, render_trend_chart_png
+from finance_tracker.csv_io import (
+    ImportResult,
+    export_budgets_csv_text,
+    export_transactions_csv_text,
+    import_budgets_csv_text,
+    import_transactions_csv_text,
+)
 from finance_tracker.exceptions import (
     BudgetNotFoundError,
     FinanceTrackerError,
@@ -23,6 +31,8 @@ from finance_tracker.reports import (
     TrendReport,
     build_monthly_report,
     build_trend_report,
+    format_monthly_report,
+    format_trend_report,
 )
 from finance_tracker.services import BudgetService, BudgetStatus, TransactionService
 
@@ -58,6 +68,13 @@ class ErrorResponse(ApiModel):
 
 class NoticeResponse(ApiModel):
     notice: str
+
+
+class ImportSummaryResponse(ApiModel):
+    notice: str
+    imported_count: int
+    skipped_count: int
+    errors: list[str]
 
 
 class TransactionRequest(ApiModel):
@@ -256,6 +273,40 @@ def create_app(db_path: Path | str) -> FastAPI:
         )
 
     @app.post(
+        "/api/transactions/import-csv",
+        response_model=ImportSummaryResponse,
+        responses={400: {"model": ErrorResponse}},
+    )
+    async def import_transactions(request: Request) -> ImportSummaryResponse:
+        csv_text = await _request_text(request)
+        result = import_transactions_csv_text(csv_text, _transaction_service(request))
+        return _import_summary_response("Transaction CSV import finished.", result)
+
+    @app.get(
+        "/api/transactions/export-csv",
+        responses={400: {"model": ErrorResponse}},
+    )
+    def export_transactions(
+        request: Request,
+        month: int | None = None,
+        year: int | None = None,
+        category: str | None = None,
+        transaction_type: Literal["income", "expense"] | None = None,
+    ) -> Response:
+        transactions = _transaction_service(request).list_transactions(
+            month=month,
+            year=year,
+            category=category or None,
+            transaction_type=transaction_type,
+        )
+        filename = _period_filename("transactions", month, year, "csv")
+        return _download_response(
+            export_transactions_csv_text(transactions),
+            filename=filename,
+            media_type="text/csv; charset=utf-8",
+        )
+
+    @app.post(
         "/api/transactions",
         response_model=TransactionMutationResponse,
         status_code=status.HTTP_201_CREATED,
@@ -328,6 +379,38 @@ def create_app(db_path: Path | str) -> FastAPI:
         return BudgetListResponse(budgets=[_budget_response(budget) for budget in budgets])
 
     @app.post(
+        "/api/budgets/import-csv",
+        response_model=ImportSummaryResponse,
+        responses={400: {"model": ErrorResponse}},
+    )
+    async def import_budgets(request: Request) -> ImportSummaryResponse:
+        csv_text = await _request_text(request)
+        result = import_budgets_csv_text(csv_text, _budget_service(request))
+        return _import_summary_response("Budget CSV import finished.", result)
+
+    @app.get(
+        "/api/budgets/export-csv",
+        responses={400: {"model": ErrorResponse}},
+    )
+    def export_budgets(
+        request: Request,
+        month: int | None = None,
+        year: int | None = None,
+        category: str | None = None,
+    ) -> Response:
+        budgets = _budget_service(request).list_budgets(
+            month=month,
+            year=year,
+            category=category or None,
+        )
+        filename = _period_filename("budgets", month, year, "csv")
+        return _download_response(
+            export_budgets_csv_text(budgets),
+            filename=filename,
+            media_type="text/csv; charset=utf-8",
+        )
+
+    @app.post(
         "/api/budgets",
         response_model=BudgetMutationResponse,
         status_code=status.HTTP_201_CREATED,
@@ -365,6 +448,76 @@ def create_app(db_path: Path | str) -> FastAPI:
         _budget_service(request).delete_budget(budget_id)
         return NoticeResponse(notice="Budget removed from the local ledger.")
 
+    @app.get(
+        "/api/reports/monthly.txt",
+        responses={400: {"model": ErrorResponse}},
+    )
+    def download_monthly_report(request: Request, month: int, year: int) -> Response:
+        report = _monthly_report(request, month, year)
+        return _download_response(
+            format_monthly_report(report),
+            filename=f"monthly-report-{year}-{month:02d}.txt",
+            media_type="text/plain; charset=utf-8",
+        )
+
+    @app.get(
+        "/api/reports/trends.txt",
+        responses={400: {"model": ErrorResponse}},
+    )
+    def download_trend_report(
+        request: Request,
+        months: int = 6,
+        end_month: int | None = None,
+        end_year: int | None = None,
+    ) -> Response:
+        period = _period(end_month, end_year)
+        trend = _trend_report(
+            request,
+            months=months,
+            end_month=period["month"],
+            end_year=period["year"],
+        )
+        return _download_response(
+            format_trend_report(trend),
+            filename=f"trend-report-{period['year']}-{period['month']:02d}.txt",
+            media_type="text/plain; charset=utf-8",
+        )
+
+    @app.get(
+        "/api/charts/monthly.png",
+        responses={400: {"model": ErrorResponse}},
+    )
+    def download_monthly_chart(request: Request, month: int, year: int) -> Response:
+        report = _monthly_report(request, month, year)
+        return _download_response(
+            render_monthly_chart_png(report),
+            filename=f"monthly-chart-{year}-{month:02d}.png",
+            media_type="image/png",
+        )
+
+    @app.get(
+        "/api/charts/trends.png",
+        responses={400: {"model": ErrorResponse}},
+    )
+    def download_trend_chart(
+        request: Request,
+        months: int = 6,
+        end_month: int | None = None,
+        end_year: int | None = None,
+    ) -> Response:
+        period = _period(end_month, end_year)
+        trend = _trend_report(
+            request,
+            months=months,
+            end_month=period["month"],
+            end_year=period["year"],
+        )
+        return _download_response(
+            render_trend_chart_png(trend),
+            filename=f"trend-chart-{period['year']}-{period['month']:02d}.png",
+            media_type="image/png",
+        )
+
     @app.get("/", include_in_schema=False)
     def spa_index() -> FileResponse:
         return _spa_response()
@@ -389,6 +542,17 @@ def _budget_service(request: Request) -> BudgetService:
     return BudgetService(request.app.state.db_path)
 
 
+async def _request_text(request: Request) -> str:
+    body = await request.body()
+    try:
+        return body.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "CSV upload must be UTF-8 text."},
+        ) from exc
+
+
 def _period(month: int | None, year: int | None) -> dict[str, int]:
     today = date.today()
     return {"month": month or today.month, "year": year or today.year}
@@ -396,6 +560,44 @@ def _period(month: int | None, year: int | None) -> dict[str, int]:
 
 def _period_label(period: dict[str, int]) -> str:
     return f"{MONTH_NAMES[period['month']]} {period['year']}"
+
+
+def _monthly_report(request: Request, month: int, year: int) -> MonthlyReport:
+    transactions = _transaction_service(request).list_transactions(month=month, year=year)
+    return build_monthly_report(transactions, month=month, year=year)
+
+
+def _trend_report(request: Request, months: int, end_month: int, end_year: int) -> TrendReport:
+    transactions = _transaction_service(request).list_transactions()
+    return build_trend_report(
+        transactions,
+        months=months,
+        end_month=end_month,
+        end_year=end_year,
+    )
+
+
+def _download_response(content: str | bytes, filename: str, media_type: str) -> Response:
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def _period_filename(prefix: str, month: int | None, year: int | None, extension: str) -> str:
+    if month is not None and year is not None:
+        return f"{prefix}-{year}-{month:02d}.{extension}"
+    return f"{prefix}.{extension}"
+
+
+def _import_summary_response(notice: str, result: ImportResult) -> ImportSummaryResponse:
+    return ImportSummaryResponse(
+        notice=notice,
+        imported_count=result.imported_count,
+        skipped_count=result.skipped_count,
+        errors=result.errors,
+    )
 
 
 def _transaction_response(transaction: Transaction) -> TransactionResponse:
