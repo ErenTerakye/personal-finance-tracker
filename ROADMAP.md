@@ -24,8 +24,9 @@ would make it stronger without bloating the scope.
 - GitHub Actions mirrors the documented check set with Python tests, Ruff,
   frontend unit tests, production build, and Playwright responsive E2E tests.
 - Local quality checks last verified on July 3, 2026:
-  - `.venv/bin/python -m pytest` - 49 passed, with one FastAPI/Starlette
-    `TestClient` deprecation warning to watch.
+  - `.venv/bin/python -m pytest` - 49 passed, with the FastAPI/Starlette
+    `TestClient` deprecation warning resolved by using Starlette's `httpx2`
+    test-client backend.
   - `.venv/bin/python -m ruff check .` - passed.
   - `npm test` - 18 frontend unit tests passed.
   - `npm run build` - passed.
@@ -50,7 +51,6 @@ would make it stronger without bloating the scope.
 
 Make the existing app feel complete, reviewable, and trustworthy.
 
-- Resolve or document the FastAPI/Starlette `TestClient` deprecation warning.
 - Add reviewer-facing badges for the CI-backed documented check set.
 - Tighten the reproducible demo flow around `demo.sqlite3`, sample CSV imports,
   generated charts, and `finance-tracker web --db-path demo.sqlite3`.
