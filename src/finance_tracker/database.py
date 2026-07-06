@@ -51,6 +51,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_category_rules_alias
 ON category_rules(LOWER(alias));
 CREATE INDEX IF NOT EXISTS idx_recurring_templates_active
 ON recurring_templates(active);
+
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 """
 
 
@@ -66,3 +71,7 @@ def connect(db_path: Path | str) -> sqlite3.Connection:
 def initialize_database(db_path: Path | str) -> None:
     with connect(db_path) as connection:
         connection.executescript(SCHEMA_SQL)
+        cursor = connection.execute("SELECT 1 FROM settings WHERE key = 'currency'")
+        if cursor.fetchone() is None:
+            connection.execute("INSERT INTO settings (key, value) VALUES ('currency', 'USD')")
+            connection.commit()

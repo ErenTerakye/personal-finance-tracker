@@ -145,6 +145,14 @@ export const api = {
   applyRecurringTemplates: (month: number, year: number) =>
     request<RecurringApplyResponse>(`/api/recurring-templates/apply?${query({ month, year })}`, {
       method: "POST"
+    }),
+
+  getSettings: () => request<{ currency: string }>("/api/settings"),
+
+  updateSettings: (payload: { currency: string }) =>
+    request<NoticeResponse>("/api/settings", {
+      method: "PUT",
+      body: JSON.stringify(payload)
     })
 };
 

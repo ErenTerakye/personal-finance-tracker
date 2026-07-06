@@ -7,6 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from finance_tracker.database import connect, initialize_database
+from finance_tracker.exceptions import ValidationError
 from finance_tracker.models import (
     Budget,
     BudgetFilters,
@@ -23,6 +24,7 @@ from finance_tracker.repositories import (
     BudgetRepository,
     CategoryRuleRepository,
     RecurringTemplateRepository,
+    SettingsRepository,
     TransactionRepository,
 )
 
@@ -323,3 +325,21 @@ def _canonical_template(connection, template: RecurringTemplate) -> RecurringTem
         active=template.active,
         created_at=template.created_at,
     )
+
+
+class SettingsService:
+    def __init__(self, db_path: Path | str) -> None:
+        self.db_path = Path(db_path)
+        initialize_database(self.db_path)
+
+    def get_currency(self) -> str:
+        with connect(self.db_path) as connection:
+            return SettingsRepository(connection).get("currency", "USD")
+
+    def set_currency(self, currency_code: str) -> str:
+        currency = currency_code.strip().upper()
+        if len(currency) != 3 or not currency.isalpha():
+            raise ValidationError("Currency must be a valid 3-letter ISO code.")
+        with connect(self.db_path) as connection:
+            SettingsRepository(connection).set("currency", currency)
+            return currency

@@ -29,6 +29,7 @@ from finance_tracker.services import (
     BudgetStatus,
     CategoryRuleService,
     RecurringTemplateService,
+    SettingsService,
     TransactionService,
 )
 
@@ -57,6 +58,17 @@ def _category_rule_service(db_path: Path | None) -> CategoryRuleService:
 
 def _recurring_service(db_path: Path | None) -> RecurringTemplateService:
     return RecurringTemplateService(resolve_db_path(db_path))
+
+
+def _settings_service(db_path: Path | None) -> SettingsService:
+    return SettingsService(resolve_db_path(db_path))
+
+
+def _currency(db_path: Path | None) -> str:
+    try:
+        return _settings_service(db_path).get_currency()
+    except Exception:
+        return "USD"
 
 
 def _handle_error(error: FinanceTrackerError) -> None:
@@ -158,8 +170,10 @@ def add(
     except FinanceTrackerError as exc:
         _handle_error(exc)
 
+    currency_code = _currency(db_path)
+    amount_str = format_money(transaction.amount, currency_code)
     typer.echo(
-        f"Added #{transaction.id}: {transaction.type.value} {format_money(transaction.amount)} "
+        f"Added #{transaction.id}: {transaction.type.value} {amount_str} "
         f"in {transaction.category} on {transaction.date.isoformat()}"
     )
 
@@ -193,12 +207,13 @@ def list_transactions(
         typer.echo("No transactions found.")
         return
 
+    currency_code = _currency(db_path)
     rows = [
         [
             str(transaction.id),
             transaction.date.isoformat(),
             transaction.type.value,
-            format_money(transaction.amount),
+            format_money(transaction.amount, currency_code),
             transaction.category,
             transaction.description,
         ]
@@ -240,8 +255,9 @@ def budget_set(
     except FinanceTrackerError as exc:
         _handle_error(exc)
 
+    currency_code = _currency(db_path)
     typer.echo(
-        f"Set budget #{budget.id}: {budget.category} {format_money(budget.amount)} "
+        f"Set budget #{budget.id}: {budget.category} {format_money(budget.amount, currency_code)} "
         f"for {budget.year}-{budget.month:02d}"
     )
 
@@ -270,12 +286,13 @@ def budget_list(
         typer.echo("No budgets found.")
         return
 
+    currency_code = _currency(db_path)
     rows = [
         [
             str(budget.id),
             f"{budget.year}-{budget.month:02d}",
             budget.category,
-            format_money(budget.amount),
+            format_money(budget.amount, currency_code),
         ]
         for budget in budgets
     ]
@@ -358,9 +375,11 @@ def recurring_add(
         )
     except FinanceTrackerError as exc:
         _handle_error(exc)
+    currency_code = _currency(db_path)
+    amount_str = format_money(template.amount, currency_code)
     typer.echo(
         f"Added recurring template #{template.id}: {template.type.value} "
-        f"{format_money(template.amount)} in {template.category} on day {template.day_of_month}"
+        f"{amount_str} in {template.category} on day {template.day_of_month}"
     )
 
 
@@ -380,11 +399,12 @@ def recurring_list(
     if not templates:
         typer.echo("No recurring templates found.")
         return
+    currency_code = _currency(db_path)
     rows = [
         [
             str(template.id),
             template.type.value,
-            format_money(template.amount),
+            format_money(template.amount, currency_code),
             template.category,
             str(template.day_of_month),
             "yes" if template.active else "no",
@@ -443,14 +463,15 @@ def budget_status(
         typer.echo("No budgets found.")
         return
 
+    currency_code = _currency(db_path)
     typer.echo(f"Budget status for {year}-{month:02d}")
     typer.echo("")
     rows = [
         [
             status.budget.category,
-            format_money(status.budget.amount),
-            format_money(status.actual_expenses),
-            format_money(status.remaining),
+            format_money(status.budget.amount, currency_code),
+            format_money(status.actual_expenses, currency_code),
+            format_money(status.remaining, currency_code),
             _format_percent(status),
             status.status,
         ]
@@ -499,8 +520,10 @@ def edit(
     except FinanceTrackerError as exc:
         _handle_error(exc)
 
+    currency_code = _currency(db_path)
+    amount_str = format_money(transaction.amount, currency_code)
     typer.echo(
-        f"Updated #{transaction.id}: {transaction.type.value} {format_money(transaction.amount)} "
+        f"Updated #{transaction.id}: {transaction.type.value} {amount_str} "
         f"in {transaction.category} on {transaction.date.isoformat()}"
     )
 
@@ -521,9 +544,10 @@ def summary(
             year=year,
             context_transactions=service.list_transactions(),
         )
+        currency_code = _currency(db_path)
     except FinanceTrackerError as exc:
         _handle_error(exc)
-    typer.echo(format_monthly_report(report))
+    typer.echo(format_monthly_report(report, currency_code))
 
 
 @app.command()
@@ -543,10 +567,11 @@ def report(
             year=year,
             context_transactions=service.list_transactions(),
         )
+        currency_code = _currency(db_path)
     except FinanceTrackerError as exc:
         _handle_error(exc)
 
-    typer.echo(format_monthly_report(monthly_report))
+    typer.echo(format_monthly_report(monthly_report, currency_code))
     if chart is not None:
         chart_path = save_monthly_chart(monthly_report, chart)
         typer.echo(f"\nSaved chart to {chart_path}")
@@ -569,10 +594,11 @@ def trends(
             end_month=end_month,
             end_year=end_year,
         )
+        currency_code = _currency(db_path)
     except FinanceTrackerError as exc:
         _handle_error(exc)
 
-    typer.echo(format_trend_report(trend_report))
+    typer.echo(format_trend_report(trend_report, currency_code))
     if chart is not None:
         chart_path = save_trend_chart(trend_report, chart)
         typer.echo(f"\nSaved chart to {chart_path}")
@@ -598,6 +624,7 @@ def import_csv(
     try:
         service = _service(db_path)
         if preview:
+            currency_code = _currency(db_path)
             with path.open(newline="", encoding="utf-8") as csv_file:
                 preview_result = preview_transactions_csv_file(csv_file, service)
             typer.echo(
@@ -607,12 +634,14 @@ def import_csv(
                 f"{preview_result.invalid_count} invalid."
             )
             for row in preview_result.rows:
-                detail = row.error or (
-                    f"{row.transaction.type.value} {format_money(row.transaction.amount)} "
-                    f"in {row.transaction.category} on {row.transaction.date.isoformat()}"
-                    if row.transaction is not None
-                    else ""
-                )
+                if row.transaction is not None:
+                    amount_str = format_money(row.transaction.amount, currency_code)
+                    detail = (
+                        f"{row.transaction.type.value} {amount_str} "
+                        f"in {row.transaction.category} on {row.transaction.date.isoformat()}"
+                    )
+                else:
+                    detail = row.error or ""
                 typer.echo(f"  - Line {row.line_number}: {row.status} {detail}".rstrip())
             return
         result = import_transactions_csv(path, service, allow_duplicates=allow_duplicates)
@@ -697,3 +726,48 @@ def export_budgets(
         _handle_error(exc)
 
     typer.echo(f"Exported {len(budgets)} budget(s) to {output_path}")
+
+
+@app.command("settings-get")
+def settings_get(
+    key: Annotated[str, typer.Argument(help="Setting key to fetch (e.g. currency)")],
+    db_path: DbPathOption = None,
+) -> None:
+    """Get a database setting value."""
+    try:
+        service = _settings_service(db_path)
+        if key == "currency":
+            val = service.get_currency()
+        else:
+            typer.secho(
+                f"Error: Unknown setting key '{key}'. Supported key: currency",
+                fg=typer.colors.RED,
+                err=True,
+            )
+            raise typer.Exit(code=1)
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+    typer.echo(val)
+
+
+@app.command("settings-set")
+def settings_set(
+    key: Annotated[str, typer.Argument(help="Setting key to update (e.g. currency)")],
+    value: Annotated[str, typer.Argument(help="New value for the setting")],
+    db_path: DbPathOption = None,
+) -> None:
+    """Set a database setting value."""
+    try:
+        service = _settings_service(db_path)
+        if key == "currency":
+            val = service.set_currency(value)
+        else:
+            typer.secho(
+                f"Error: Unknown setting key '{key}'. Supported key: currency",
+                fg=typer.colors.RED,
+                err=True,
+            )
+            raise typer.Exit(code=1)
+    except FinanceTrackerError as exc:
+        _handle_error(exc)
+    typer.echo(f"Set setting '{key}' to '{val}'.")

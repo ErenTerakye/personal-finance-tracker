@@ -152,8 +152,17 @@ def build_trend_report(
     )
 
 
-def format_money(value: Decimal) -> str:
-    return f"${value:,.2f}"
+CURRENCY_SYMBOLS = {
+    "USD": "$",
+    "EUR": "€",
+    "GBP": "£",
+    "TRY": "₺",
+}
+
+
+def format_money(value: Decimal, currency_code: str = "USD") -> str:
+    symbol = CURRENCY_SYMBOLS.get(currency_code.upper(), f"{currency_code.upper()} ")
+    return f"{symbol}{value:,.2f}"
 
 
 def _format_table(headers: list[str], rows: list[list[str]]) -> list[str]:
@@ -178,41 +187,41 @@ def _format_table(headers: list[str], rows: list[list[str]]) -> list[str]:
     return lines
 
 
-def format_monthly_report(report: MonthlyReport) -> str:
+def format_monthly_report(report: MonthlyReport, currency_code: str = "USD") -> str:
     lines = [
         f"Monthly report for {report.year}-{report.month:02d}",
         "",
-        f"Income:       {format_money(report.total_income)}",
-        f"Expenses:     {format_money(report.total_expenses)}",
-        f"Net savings:  {format_money(report.net_savings)}",
+        f"Income:       {format_money(report.total_income, currency_code)}",
+        f"Expenses:     {format_money(report.total_expenses, currency_code)}",
+        f"Net savings:  {format_money(report.net_savings, currency_code)}",
         f"Transactions: {report.transaction_count}",
         "",
-        f"YTD income:    {format_money(report.ytd_income)}",
-        f"YTD expenses:  {format_money(report.ytd_expenses)}",
-        f"YTD net:       {format_money(report.ytd_net_savings)}",
-        f"MoM income:    {_format_delta(report.income_delta)}",
-        f"MoM expenses:  {_format_delta(report.expenses_delta)}",
-        f"MoM net:       {_format_delta(report.net_savings_delta)}",
+        f"YTD income:    {format_money(report.ytd_income, currency_code)}",
+        f"YTD expenses:  {format_money(report.ytd_expenses, currency_code)}",
+        f"YTD net:       {format_money(report.ytd_net_savings, currency_code)}",
+        f"MoM income:    {_format_delta(report.income_delta, currency_code)}",
+        f"MoM expenses:  {_format_delta(report.expenses_delta, currency_code)}",
+        f"MoM net:       {_format_delta(report.net_savings_delta, currency_code)}",
     ]
 
     if report.income_by_category:
         lines.extend(["", "Income by category:"])
         lines.extend(
-            f"  - {category}: {format_money(amount)}"
+            f"  - {category}: {format_money(amount, currency_code)}"
             for category, amount in report.income_by_category.items()
         )
 
     if report.expenses_by_category:
         lines.extend(["", "Expenses by category:"])
         lines.extend(
-            f"  - {category}: {format_money(amount)}"
+            f"  - {category}: {format_money(amount, currency_code)}"
             for category, amount in report.expenses_by_category.items()
         )
 
     return "\n".join(lines)
 
 
-def format_trend_report(report: TrendReport) -> str:
+def format_trend_report(report: TrendReport, currency_code: str = "USD") -> str:
     if not report.months:
         return "No trend periods found."
 
@@ -221,10 +230,10 @@ def format_trend_report(report: TrendReport) -> str:
     rows = [
         [
             f"{period.year}-{period.month:02d}",
-            format_money(period.total_income),
-            format_money(period.total_expenses),
-            format_money(period.net_savings),
-            _format_delta(period.net_savings_delta),
+            format_money(period.total_income, currency_code),
+            format_money(period.total_expenses, currency_code),
+            format_money(period.net_savings, currency_code),
+            _format_delta(period.net_savings_delta, currency_code),
             f"{period.savings_rate:.1f}%",
             str(period.transaction_count),
         ]
@@ -240,9 +249,9 @@ def format_trend_report(report: TrendReport) -> str:
     lines.extend(
         [
             "",
-            f"Total income:       {format_money(report.total_income)}",
-            f"Total expenses:     {format_money(report.total_expenses)}",
-            f"Total net savings:  {format_money(report.net_savings)}",
+            f"Total income:       {format_money(report.total_income, currency_code)}",
+            f"Total expenses:     {format_money(report.total_expenses, currency_code)}",
+            f"Total net savings:  {format_money(report.net_savings, currency_code)}",
             f"Transactions:       {report.transaction_count}",
         ]
     )
@@ -250,7 +259,7 @@ def format_trend_report(report: TrendReport) -> str:
     if report.top_expense_categories:
         lines.extend(["", "Top expense categories:"])
         lines.extend(
-            f"  - {category}: {format_money(amount)}"
+            f"  - {category}: {format_money(amount, currency_code)}"
             for category, amount in report.top_expense_categories.items()
         )
 
@@ -307,9 +316,9 @@ def _savings_rate(total_income: Decimal, net_savings: Decimal) -> Decimal:
     return (net_savings / total_income * Decimal("100")).quantize(Decimal("0.1"))
 
 
-def _format_delta(value: Decimal) -> str:
+def _format_delta(value: Decimal, currency_code: str = "USD") -> str:
     sign = "+" if value >= 0 else "-"
-    return f"{sign}{format_money(abs(value))}"
+    return f"{sign}{format_money(abs(value), currency_code)}"
 
 
 def _previous_month(year: int, month: int) -> tuple[int, int]:

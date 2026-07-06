@@ -133,3 +133,19 @@ def test_database_creates_rules_and_recurring_tables_with_constraints(tmp_path):
             assert "CHECK constraint failed" in str(exc)
         else:
             raise AssertionError("Expected SQLite CHECK constraint to reject invalid day.")
+
+
+def test_initialize_database_creates_settings_table_and_defaults_currency(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    initialize_database(db_path)
+
+    with connect(db_path) as connection:
+        table_row = connection.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'settings'"
+        ).fetchone()
+        setting_row = connection.execute(
+            "SELECT value FROM settings WHERE key = 'currency'"
+        ).fetchone()
+
+    assert table_row["name"] == "settings"
+    assert setting_row["value"] == "USD"

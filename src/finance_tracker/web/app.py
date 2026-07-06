@@ -45,6 +45,7 @@ from finance_tracker.services import (
     CategoryRuleService,
     RecurringApplyResult,
     RecurringTemplateService,
+    SettingsService,
     TransactionService,
 )
 
@@ -123,6 +124,14 @@ class RecurringTemplateRequest(ApiModel):
     category: str
     description: str = ""
     day_of_month: int
+
+
+class SettingsResponse(ApiModel):
+    currency: str
+
+
+class SettingsRequest(ApiModel):
+    currency: str
 
 
 class TransactionResponse(ApiModel):
@@ -227,6 +236,7 @@ class DashboardResponse(ApiModel):
     savings_rate: str
     recent_transactions: list[TransactionResponse]
     budget_statuses: list[BudgetStatusResponse]
+    currency: str
 
 
 class TransactionListResponse(ApiModel):
@@ -348,6 +358,7 @@ def create_app(db_path: Path | str) -> FastAPI:
             end_year=period["year"],
         )
         statuses = _budget_service(request).budget_statuses(period["month"], period["year"])
+        currency = _settings_service(request).get_currency()
 
         return DashboardResponse(
             month=period["month"],
@@ -361,6 +372,7 @@ def create_app(db_path: Path | str) -> FastAPI:
                 for transaction in all_transactions[:5]
             ],
             budget_statuses=[_budget_status_response(item) for item in statuses],
+            currency=currency,
         )
 
     @app.get(
@@ -738,6 +750,26 @@ def create_app(db_path: Path | str) -> FastAPI:
             media_type="image/png",
         )
 
+    @app.get(
+        "/api/settings",
+        response_model=SettingsResponse,
+    )
+    def get_settings(request: Request) -> SettingsResponse:
+        currency = _settings_service(request).get_currency()
+        return SettingsResponse(currency=currency)
+
+    @app.put(
+        "/api/settings",
+        response_model=NoticeResponse,
+        responses={400: {"model": ErrorResponse}},
+    )
+    def update_settings(
+        request: Request,
+        payload: SettingsRequest,
+    ) -> NoticeResponse:
+        _settings_service(request).set_currency(payload.currency)
+        return NoticeResponse(notice="Ledger currency updated successfully.")
+
     @app.get("/", include_in_schema=False)
     def spa_index() -> FileResponse:
         return _spa_response()
@@ -768,6 +800,10 @@ def _category_rule_service(request: Request) -> CategoryRuleService:
 
 def _recurring_template_service(request: Request) -> RecurringTemplateService:
     return RecurringTemplateService(request.app.state.db_path)
+
+
+def _settings_service(request: Request) -> SettingsService:
+    return SettingsService(request.app.state.db_path)
 
 
 async def _request_text(request: Request) -> str:

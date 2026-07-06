@@ -2086,6 +2086,10 @@
     .rules-layout {
       grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
     }
+
+    .rules-layout .settings-panel {
+      grid-column: 1 / -1;
+    }
   }
 
   @container workspace-main (max-width: 43.99rem) {

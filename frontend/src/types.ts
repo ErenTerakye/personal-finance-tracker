@@ -76,6 +76,11 @@ export interface DashboardData {
   savings_rate: string;
   recent_transactions: TransactionRecord[];
   budget_statuses: BudgetStatus[];
+  currency: string;
+}
+
+export interface Settings {
+  currency: string;
 }
 
 export interface TransactionInput {

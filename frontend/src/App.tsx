@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "./components/AppShell";
-import { currentPeriod } from "./format";
+import { currentPeriod, setCurrency } from "./format";
 import { pathForView, viewFromPath, viewMeta, viewOrder, type View } from "./routes";
+import { api } from "./api";
 import { BudgetsView } from "./views/Budgets";
 import { DashboardView } from "./views/Dashboard";
 import { RulesView } from "./views/Rules";
@@ -13,8 +14,22 @@ export default function App() {
   const [view, setView] = useState<View>(() => viewFromPath(window.location.pathname));
   const [selectedPeriod, setSelectedPeriod] = useState(initialPeriod);
   const [notice, setNotice] = useState("");
+  const [currency, setAppCurrency] = useState("USD");
+  const [ready, setReady] = useState(false);
   const mainRef = useRef<HTMLElement | null>(null);
   const didMount = useRef(false);
+
+  useEffect(() => {
+    api.getSettings()
+      .then((settings) => {
+        setCurrency(settings.currency);
+        setAppCurrency(settings.currency);
+        setReady(true);
+      })
+      .catch(() => {
+        setReady(true);
+      });
+  }, []);
 
   useEffect(() => {
     function handlePopState() {
@@ -61,6 +76,14 @@ export default function App() {
     });
   }
 
+  if (!ready) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", fontFamily: "sans-serif", color: "#666" }}>
+        Loading ledger settings...
+      </div>
+    );
+  }
+
   return (
     <AppShell
       view={view}
@@ -86,7 +109,14 @@ export default function App() {
         />
       ) : null}
       {view === "rules" ? (
-        <RulesView selectedPeriod={selectedPeriod} setNotice={setNotice} />
+        <RulesView
+          selectedPeriod={selectedPeriod}
+          setNotice={setNotice}
+          onCurrencyChange={(code) => {
+            setCurrency(code);
+            setAppCurrency(code);
+          }}
+        />
       ) : null}
     </AppShell>
   );

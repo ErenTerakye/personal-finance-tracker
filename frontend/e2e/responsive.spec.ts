@@ -500,6 +500,10 @@ async function mockApi(page: Page) {
       await route.fulfill({ json: dashboardPayload() });
       return;
     }
+    if (url.pathname === "/api/settings") {
+      await route.fulfill({ json: { currency: "USD" } });
+      return;
+    }
     if (url.pathname === "/api/transactions") {
       await route.fulfill({ json: { transactions: [transaction()] } });
       return;

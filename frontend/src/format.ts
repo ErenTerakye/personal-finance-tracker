@@ -1,7 +1,27 @@
-const currency = new Intl.NumberFormat("en-US", {
+let currency = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD"
 });
+
+let compactCurrency = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  notation: "compact",
+  maximumFractionDigits: 1
+});
+
+export function setCurrency(code: string) {
+  currency = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: code
+  });
+  compactCurrency = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: code,
+    notation: "compact",
+    maximumFractionDigits: 1
+  });
+}
 
 export function money(value: string | number): string {
   return currency.format(Number(value));
@@ -53,10 +73,3 @@ export const monthNames = [
   "November",
   "December"
 ];
-
-const compactCurrency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  notation: "compact",
-  maximumFractionDigits: 1
-});

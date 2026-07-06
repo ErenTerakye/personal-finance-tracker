@@ -100,8 +100,6 @@ local-first.
 - Exposed the behavior through the service layer, CLI commands, FastAPI
   endpoints, and a compact Web UI Rules workflow.
 
-## Next Milestones
-
 ### v0.5 Local Currency Readiness
 
 Make the single-ledger money model explicit before adding localization polish.
@@ -116,6 +114,8 @@ Make the single-ledger money model explicit before adding localization polish.
   without currency columns using the active ledger currency.
 - Add focused Python, React, and Playwright coverage for currency validation,
   defaults, formatting, API exposure, and `USD`/`TRY` display.
+
+## Next Milestones
 
 ### v0.6 Web UI Localization
 

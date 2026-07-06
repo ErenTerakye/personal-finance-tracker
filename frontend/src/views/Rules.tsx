@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { CalendarCheck, GitMerge, Plus, Trash2, Sparkles, CheckCircle2, Info } from "lucide-react";
+import { CalendarCheck, GitMerge, Plus, Trash2, Sparkles, CheckCircle2, Info, Settings } from "lucide-react";
 import { api } from "../api";
 import { money, periodLabel } from "../format";
 import type {
@@ -47,10 +47,12 @@ const TEMPLATE_PRESETS = [
 
 export function RulesView({
   selectedPeriod,
-  setNotice
+  setNotice,
+  onCurrencyChange
 }: {
   selectedPeriod: { month: number; year: number };
   setNotice: (notice: string) => void;
+  onCurrencyChange: (currency: string) => void;
 }) {
   const [rules, setRules] = useState<CategoryRule[]>([]);
   const [templates, setTemplates] = useState<RecurringTemplate[]>([]);
@@ -59,9 +61,11 @@ export function RulesView({
   const [error, setError] = useState("");
   const [ruleError, setRuleError] = useState("");
   const [templateError, setTemplateError] = useState("");
+  const [currency, setLocalCurrency] = useState("USD");
   const [loading, setLoading] = useState(true);
   const [savingRule, setSavingRule] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [savingCurrency, setSavingCurrency] = useState(false);
   const [applying, setApplying] = useState(false);
 
   // Redesign additions: presets toggle and playground input states
@@ -72,10 +76,11 @@ export function RulesView({
   const load = () => {
     setError("");
     setLoading(true);
-    Promise.all([api.categoryRules(), api.recurringTemplates()])
-      .then(([ruleResponse, templateResponse]) => {
+    Promise.all([api.categoryRules(), api.recurringTemplates(), api.getSettings()])
+      .then(([ruleResponse, templateResponse, settingsResponse]) => {
         setRules(ruleResponse.rules);
         setTemplates(templateResponse.templates);
+        setLocalCurrency(settingsResponse.currency);
       })
       .catch((err: Error) => setError(readError(err)))
       .finally(() => setLoading(false));
@@ -140,6 +145,21 @@ export function RulesView({
       setTemplateError(readError(err));
     } finally {
       setSavingTemplate(false);
+    }
+  }
+
+  async function saveCurrency(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setSavingCurrency(true);
+    try {
+      const response = await api.updateSettings({ currency });
+      setNotice(response.notice);
+      onCurrencyChange(currency);
+    } catch (err) {
+      setError(readError(err));
+    } finally {
+      setSavingCurrency(false);
     }
   }
 
@@ -422,6 +442,28 @@ export function RulesView({
           )}
 
           <TemplateList templates={templates} onDelete={deleteTemplate} />
+        </Panel>
+
+        <Panel title="Ledger settings" className="settings-panel">
+          {error ? <ErrorBanner message={error} /> : null}
+          <form className="inline-form" onSubmit={saveCurrency}>
+            <Field id="settings-currency" label="Ledger currency" hint="Changing currency updates formatting across all screens.">
+              <select
+                id="settings-currency"
+                required
+                value={currency}
+                onChange={(event) => setLocalCurrency(event.target.value)}
+              >
+                <option value="USD">USD ($)</option>
+                <option value="TRY">TRY (₺)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+              </select>
+            </Field>
+            <SubmitButton busy={savingCurrency} icon={Settings}>
+              Save settings
+            </SubmitButton>
+          </form>
         </Panel>
       </section>
     </>
