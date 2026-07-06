@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { FormEvent, useEffect, useId, useState } from "react";
 import { monthNames, periodLabel } from "../format";
 import { IconButton, SubmitButton } from "./ui";
+import { useI18n } from "../i18n";
 
 export interface PeriodValue {
   month: number;
@@ -23,6 +24,7 @@ export function PeriodControl({
   const [draft, setDraft] = useState(value);
   const previous = shiftPeriod(value, -1);
   const next = shiftPeriod(value, 1);
+  const { t } = useI18n();
 
   useEffect(() => {
     setDraft(value);
@@ -38,7 +40,7 @@ export function PeriodControl({
     <div className="period-control" aria-label={label}>
       <IconButton
         icon={ChevronLeft}
-        label={`Previous month, ${periodLabel(previous.month, previous.year)}`}
+        label={t("periodControl.prevMonth", { period: periodLabel(previous.month, previous.year) })}
         variant="secondary"
         onClick={() => onChange(previous)}
       />
@@ -46,21 +48,21 @@ export function PeriodControl({
         className="period-chip"
         type="button"
         popoverTarget={popoverId}
-        aria-label={`Choose period, current period is ${periodLabel(value.month, value.year)}`}
+        aria-label={t("periodControl.choosePeriod", { period: periodLabel(value.month, value.year) })}
       >
         <CalendarDays aria-hidden="true" size={17} />
         <span>{periodLabel(value.month, value.year)}</span>
       </button>
       <IconButton
         icon={ChevronRight}
-        label={`Next month, ${periodLabel(next.month, next.year)}`}
+        label={t("periodControl.nextMonth", { period: periodLabel(next.month, next.year) })}
         variant="secondary"
         onClick={() => onChange(next)}
       />
       <div className="period-popover" id={popoverId} popover="auto">
         <form className="period-picker" onSubmit={submit}>
           <div className="field compact-field">
-            <label htmlFor={monthId}>Month</label>
+            <label htmlFor={monthId}>{t("periodControl.monthLabel")}</label>
             <select
               id={monthId}
               value={draft.month}
@@ -74,7 +76,7 @@ export function PeriodControl({
             </select>
           </div>
           <div className="field compact-field">
-            <label htmlFor={yearId}>Year</label>
+            <label htmlFor={yearId}>{t("periodControl.yearLabel")}</label>
             <input
               id={yearId}
               min="1"
@@ -83,7 +85,7 @@ export function PeriodControl({
               onChange={(event) => setDraft({ ...draft, year: Number(event.target.value) })}
             />
           </div>
-          <SubmitButton icon={CalendarDays}>Apply</SubmitButton>
+          <SubmitButton icon={CalendarDays}>{t("periodControl.applyBtn")}</SubmitButton>
         </form>
       </div>
     </div>
@@ -102,3 +104,4 @@ function closePopover(id: string) {
   const popover = document.getElementById(id) as (HTMLElement & { hidePopover?: () => void }) | null;
   popover?.hidePopover?.();
 }
+

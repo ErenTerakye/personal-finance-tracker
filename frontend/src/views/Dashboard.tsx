@@ -8,6 +8,7 @@ import { ActionButton, DownloadLink, ErrorBanner, PageHeader, Panel } from "../c
 import { money, percent, periodLabel } from "../format";
 import type { DashboardData } from "../types";
 import type { View } from "../routes";
+import { useI18n } from "../i18n";
 
 export function DashboardView({
   selectedPeriod,
@@ -20,6 +21,7 @@ export function DashboardView({
 }) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
+  const { t, locale } = useI18n();
 
   useEffect(() => {
     setError("");
@@ -36,8 +38,8 @@ export function DashboardView({
 
   if (!data) {
     return (
-      <Panel title="Loading dashboard" detail="Fetching transaction records">
-        <p className="loading-state">Preparing the cashflow trend.</p>
+      <Panel title={t("dashboard.empty.loadingTitle")} detail={t("dashboard.empty.fetching")}>
+        <p className="loading-state">{t("dashboard.empty.preparing")}</p>
       </Panel>
     );
   }
@@ -48,124 +50,129 @@ export function DashboardView({
     .map(([label, value]) => ({ label, value }))
     .sort((a, b) => Number(b.value) - Number(a.value));
 
+  // Determine localized period label from month number if Turkish
+  const displayPeriodLabel = locale === "tr" 
+    ? periodLabel(data.month, data.year)
+    : data.period_label;
+
   return (
     <>
       <PageHeader
-        eyebrow="Cashflow Overview"
-        title="Dashboard"
-        summary="Review cashflow, budget pressure, and recent activity."
+        eyebrow={t("dashboard.eyebrow")}
+        title={t("dashboard.title")}
+        summary={t("dashboard.summary")}
         className="dashboard-heading"
         actions={
           <div className="dashboard-actions">
             <PeriodControl
-              label="Change dashboard period"
+              label={t("dashboard.changePeriod")}
               value={selectedPeriod}
               onChange={setSelectedPeriod}
             />
-            <div className="artifact-actions" aria-label="Download dashboard artifacts">
+            <div className="artifact-actions" aria-label={t("dashboard.downloadLabel")}>
               <DownloadLink
                 icon={FileText}
                 href={artifactUrls.monthlyReport(selectedPeriod.month, selectedPeriod.year)}
                 download
               >
-                Month report
+                {t("dashboard.monthReport")}
               </DownloadLink>
               <DownloadLink
                 icon={ImageDown}
                 href={artifactUrls.monthlyChart(selectedPeriod.month, selectedPeriod.year)}
                 download
               >
-                Month chart
+                {t("dashboard.monthChart")}
               </DownloadLink>
               <DownloadLink
                 icon={FileText}
                 href={artifactUrls.trendReport(selectedPeriod.month, selectedPeriod.year)}
                 download
               >
-                Trend report
+                {t("dashboard.trendReport")}
               </DownloadLink>
               <DownloadLink
                 icon={ImageDown}
                 href={artifactUrls.trendChart(selectedPeriod.month, selectedPeriod.year)}
                 download
               >
-                Trend chart
+                {t("dashboard.trendChart")}
               </DownloadLink>
             </div>
           </div>
         }
       />
 
-      <section className="dashboard-summary" aria-label={`Dashboard totals for ${data.period_label}`}>
+      <section className="dashboard-summary" aria-label={t("dashboard.summaryAria", { period: displayPeriodLabel })}>
         <KpiCard
-          label="Net position"
+          label={t("dashboard.kpi.netPosition")}
           value={money(data.report.net_savings)}
-          detail={`${data.report.transaction_count} entries`}
+          detail={t("dashboard.detail.entries", { count: data.report.transaction_count })}
           tone={Number(data.report.net_savings) >= 0 ? "cash" : "expenses"}
           featured
         />
         <KpiCard
-          label="Savings rate"
+          label={t("dashboard.kpi.savingsRate")}
           value={percent(data.savings_rate)}
-          detail={`${compactValue(data.report.total_income)} income`}
+          detail={t("dashboard.detail.income", { amount: compactValue(data.report.total_income) })}
           tone="neutral"
         />
         <KpiCard
-          label="Budget risk"
+          label={t("dashboard.kpi.budgetRisk")}
           value={String(overBudget + nearLimit)}
-          detail={`${overBudget} over, ${nearLimit} near`}
+          detail={t("dashboard.detail.risk", { over: overBudget, near: nearLimit })}
           tone={overBudget ? "warning" : "cash"}
         />
-        <div className="quick-actions" aria-label="Next actions">
+        <div className="quick-actions" aria-label={t("dashboard.detail.actions")}>
           <ActionButton icon={ArrowRight} variant="primary" onClick={() => onNavigate("transactions")}>
-            Add entry
+            {t("common.addEntry")}
           </ActionButton>
           <ActionButton icon={ArrowRight} variant="secondary" onClick={() => onNavigate("budgets")}>
-            Set budget
+            {t("common.setBudget")}
           </ActionButton>
         </div>
       </section>
 
-      <section className="dashboard-lead" aria-label="Dashboard summary">
-        <Panel title="Cashflow Trend" className="tape-panel">
+      <section className="dashboard-lead" aria-label={t("dashboard.title")}>
+        <Panel title={t("dashboard.sections.trendTitle")} className="tape-panel">
           <CashflowTrend months={data.trend.months} />
         </Panel>
       </section>
 
-      <section className="kpi-grid" aria-label="Monthly totals">
-        <KpiCard label="Income" value={money(data.report.total_income)} tone="cash" />
-        <KpiCard label="Expenses" value={money(data.report.total_expenses)} tone="expenses" />
+      <section className="kpi-grid" aria-label={t("dashboard.sections.mixDetail")}>
+        <KpiCard label={t("dashboard.kpi.income")} value={money(data.report.total_income)} tone="cash" />
+        <KpiCard label={t("dashboard.kpi.expenses")} value={money(data.report.total_expenses)} tone="expenses" />
         <KpiCard
-          label="MoM net"
+          label={t("dashboard.kpi.momNet")}
           value={money(data.report.net_savings_delta)}
-          detail="Compared with prior month"
+          detail={t("dashboard.detail.momCompare")}
           tone={Number(data.report.net_savings_delta) >= 0 ? "cash" : "warning"}
         />
         <KpiCard
-          label="YTD net"
+          label={t("dashboard.kpi.ytdNet")}
           value={money(data.report.ytd_net_savings)}
-          detail={`${compactValue(data.report.ytd_income)} income`}
+          detail={t("dashboard.detail.ytdIncome", { amount: compactValue(data.report.ytd_income) })}
           tone={Number(data.report.ytd_net_savings) >= 0 ? "cash" : "expenses"}
         />
-        <KpiCard label="Trend net" value={money(data.trend.net_savings)} detail="Six-month total" />
+        <KpiCard label={t("dashboard.kpi.trendNet")} value={money(data.trend.net_savings)} detail={t("dashboard.detail.trendTotal")} />
         <KpiCard
-          label="Trend entries"
+          label={t("dashboard.kpi.trendEntries")}
           value={String(data.trend.transaction_count)}
           detail={periodLabel(data.trend.months[0]?.month ?? data.month, data.trend.months[0]?.year ?? data.year)}
         />
       </section>
 
-      <section className="analysis-grid" aria-label="Dashboard analysis">
-        <Panel title="Trend context" detail="Income, expenses, and net savings" deferred>
+      <section className="analysis-grid" aria-label={t("dashboard.title")}>
+        <Panel title={t("dashboard.sections.contextTitle")} detail={t("dashboard.sections.contextDetail")} deferred>
           <TrendLines months={data.trend.months} />
         </Panel>
-        <Panel title="Budget pressure" deferred>
+        <Panel title={t("dashboard.sections.pressureTitle")} deferred>
           <BudgetPressureList statuses={data.budget_statuses} />
         </Panel>
-        <Panel title="Expense mix" detail="Spending by category" deferred>
-          <CategoryBars title="Expense categories" items={categories} />
+        <Panel title={t("dashboard.sections.mixTitle")} detail={t("dashboard.sections.mixDetail")} deferred>
+          <CategoryBars title={t("dashboard.sections.mixTitle")} items={categories} />
         </Panel>
-        <Panel title="Recent activity" detail="Latest activity" deferred>
+        <Panel title={t("dashboard.sections.activityTitle")} detail={t("dashboard.sections.activityDetail")} deferred>
           <ActivityList transactions={data.recent_transactions} />
         </Panel>
       </section>
@@ -179,3 +186,4 @@ function readError(error: unknown): string {
   }
   return "The request could not be completed.";
 }
+

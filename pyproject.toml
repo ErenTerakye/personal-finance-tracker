@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "personal-finance-tracker"
-version = "0.4.0"
+version = "0.6.0"
 description = "A Python CLI application for tracking income and expenses using SQLite, CSV processing, OOP, and data visualization."
 readme = "README.md"
 requires-python = ">=3.14"

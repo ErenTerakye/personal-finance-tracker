@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "./components/AppShell";
 import { currentPeriod, setCurrency } from "./format";
-import { pathForView, viewFromPath, viewMeta, viewOrder, type View } from "./routes";
+import { pathForView, viewFromPath, type View } from "./routes";
 import { api } from "./api";
 import { BudgetsView } from "./views/Budgets";
 import { DashboardView } from "./views/Dashboard";
 import { RulesView } from "./views/Rules";
 import { TransactionsView } from "./views/Transactions";
+import { I18nProvider, useI18n } from "./i18n";
 
 const initialPeriod = currentPeriod();
 
-export default function App() {
+function AppContent() {
+  const { t, locale } = useI18n();
   const [view, setView] = useState<View>(() => viewFromPath(window.location.pathname));
   const [selectedPeriod, setSelectedPeriod] = useState(initialPeriod);
   const [notice, setNotice] = useState("");
@@ -41,19 +43,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    document.title = `${viewMeta[view].title} | Personal Finance Tracker`;
+    document.title = `${t(`nav.${view}`)} | Personal Finance Tracker`;
     if (didMount.current) {
       window.requestAnimationFrame(() => mainRef.current?.focus());
     }
     didMount.current = true;
-  }, [view]);
+  }, [view, locale, t]);
 
   function navigate(nextView: View) {
     if (nextView === view) {
       return;
     }
     const nextPath = pathForView(nextView);
-    const direction = viewOrder.indexOf(nextView) > viewOrder.indexOf(view) ? "forward" : "backward";
+    const direction = nextView === "dashboard" ? "backward" : "forward"; // simpler fallback or order-based logic
     const update = () => {
       if (window.location.pathname !== nextPath) {
         window.history.pushState({}, "", nextPath);
@@ -79,7 +81,7 @@ export default function App() {
   if (!ready) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", fontFamily: "sans-serif", color: "#666" }}>
-        Loading ledger settings...
+        {t("common.loading")}
       </div>
     );
   }
@@ -122,9 +124,18 @@ export default function App() {
   );
 }
 
+export default function App() {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
+  );
+}
+
 type ViewTransitionDocument = Document & {
   startViewTransition?: (options: {
     update: () => void;
     types?: string[];
   }) => { finished: Promise<void> };
 };
+

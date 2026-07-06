@@ -7,7 +7,6 @@ import type {
   CategoryRuleInput,
   RecurringTemplate,
   RecurringTemplateInput,
-  TransactionType
 } from "../types";
 import {
   ActionButton,
@@ -18,6 +17,7 @@ import {
   Panel,
   SubmitButton
 } from "../components/ui";
+import { useI18n } from "../i18n";
 
 const defaultRule: CategoryRuleInput = { alias: "", category: "" };
 
@@ -68,10 +68,10 @@ export function RulesView({
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [applying, setApplying] = useState(false);
 
-  // Redesign additions: presets toggle and playground input states
   const [showAliasPresets, setShowAliasPresets] = useState(false);
   const [showTemplatePresets, setShowTemplatePresets] = useState(false);
   const [playgroundInput, setPlaygroundInput] = useState("");
+  const { t } = useI18n();
 
   const load = () => {
     setError("");
@@ -82,7 +82,7 @@ export function RulesView({
         setTemplates(templateResponse.templates);
         setLocalCurrency(settingsResponse.currency);
       })
-      .catch((err: Error) => setError(readError(err)))
+      .catch((err: Error) => setError(readError(err, t)))
       .finally(() => setLoading(false));
   };
 
@@ -98,7 +98,7 @@ export function RulesView({
       setRuleForm(defaultRule);
       load();
     } catch (err) {
-      setRuleError(readError(err));
+      setRuleError(readError(err, t));
     } finally {
       setSavingRule(false);
     }
@@ -112,7 +112,7 @@ export function RulesView({
       setNotice(response.notice);
       load();
     } catch (err) {
-      setRuleError(readError(err));
+      setRuleError(readError(err, t));
     } finally {
       setSavingRule(false);
     }
@@ -128,7 +128,7 @@ export function RulesView({
       setTemplateForm(defaultTemplate);
       load();
     } catch (err) {
-      setTemplateError(readError(err));
+      setTemplateError(readError(err, t));
     } finally {
       setSavingTemplate(false);
     }
@@ -142,7 +142,7 @@ export function RulesView({
       setNotice(response.notice);
       load();
     } catch (err) {
-      setTemplateError(readError(err));
+      setTemplateError(readError(err, t));
     } finally {
       setSavingTemplate(false);
     }
@@ -157,7 +157,7 @@ export function RulesView({
       setNotice(response.notice);
       onCurrencyChange(currency);
     } catch (err) {
-      setError(readError(err));
+      setError(readError(err, t));
     } finally {
       setSavingCurrency(false);
     }
@@ -182,44 +182,47 @@ export function RulesView({
       const response = await api.applyRecurringTemplates(selectedPeriod.month, selectedPeriod.year);
       setNotice(response.notice);
     } catch (err) {
-      setError(readError(err));
+      setError(readError(err, t));
     } finally {
       setApplying(false);
     }
   }
 
-  // Interactive playground evaluation
   const matchedRule = playgroundInput.trim()
     ? rules.find((r) => r.alias.toLowerCase() === playgroundInput.trim().toLowerCase())
     : null;
 
+  const aliasesDetail = loading 
+    ? t("rules.aliasesLoading") 
+    : t("rules.aliasesCount", { count: rules.length });
+
+  const templatesDetail = loading 
+    ? t("rules.templatesLoading") 
+    : t("rules.templatesCount", { count: templates.length });
+
   return (
     <>
       <PageHeader
-        eyebrow="Rules"
-        title="Rules"
-        summary="Normalize categories and apply predictable monthly entries."
+        eyebrow={t("rules.title")}
+        title={t("rules.title")}
+        summary={t("rules.summary")}
         actions={
           <ActionButton icon={CalendarCheck} onClick={applyTemplates} disabled={applying}>
-            Apply for {periodLabel(selectedPeriod.month, selectedPeriod.year)}
+            {t("rules.applyFor", { period: periodLabel(selectedPeriod.month, selectedPeriod.year) })}
           </ActionButton>
         }
       />
 
       {error ? <ErrorBanner message={error} /> : null}
 
-      {/* Educational banners */}
       <div className="rules-intro-grid">
         <article className="info-card">
           <div className="info-card-icon" aria-hidden="true">
             <GitMerge size={20} />
           </div>
           <div className="info-card-content">
-            <h3>Category Aliases</h3>
-            <p>
-              Automatically clean up imported CSV category names. For example, if your bank imports
-              "uber" or "netflix", aliases will map them to "Transport" or "Entertainment" to keep your charts uniform.
-            </p>
+            <h3>{t("rules.infoCard1Title")}</h3>
+            <p>{t("rules.infoCard1Desc")}</p>
           </div>
         </article>
 
@@ -228,19 +231,17 @@ export function RulesView({
             <CalendarCheck size={20} />
           </div>
           <div className="info-card-content">
-            <h3>Recurring Templates</h3>
-            <p>
-              Pre-define repeat expenses or income (like rent, gym dues, or salary). Click "Apply for [Month]" at the top right to post all active templates as transactions for that month instantly.
-            </p>
+            <h3>{t("rules.infoCard2Title")}</h3>
+            <p>{t("rules.infoCard2Desc")}</p>
           </div>
         </article>
       </div>
 
       <section className="rules-layout">
-        <Panel title="Category aliases" detail={loading ? "Loading rules" : `${rules.length} rules`}>
+        <Panel title={t("rules.aliasesTitle")} detail={aliasesDetail}>
           {ruleError ? <ErrorBanner message={ruleError} /> : null}
           <form className="inline-form" onSubmit={saveRule}>
-            <Field id="rule-alias" label="Alias" hint="Example: groceries">
+            <Field id="rule-alias" label={t("rules.aliasField")} hint={t("rules.aliasHint")}>
               <input
                 id="rule-alias"
                 required
@@ -248,7 +249,7 @@ export function RulesView({
                 onChange={(event) => setRuleForm({ ...ruleForm, alias: event.target.value })}
               />
             </Field>
-            <Field id="rule-category" label="Category" hint="Example: Food">
+            <Field id="rule-category" label={t("common.category")} hint={t("rules.categoryHint")}>
               <input
                 id="rule-category"
                 required
@@ -257,31 +258,31 @@ export function RulesView({
               />
             </Field>
             <SubmitButton busy={savingRule} icon={GitMerge}>
-              Save rule
+              {t("rules.saveRuleBtn")}
             </SubmitButton>
           </form>
 
-          {/* Quick-add popular aliases suggestions */}
           {rules.length === 0 || showAliasPresets ? (
             <div className="presets-box">
-              <span className="presets-title">Quick-add popular aliases:</span>
+              <span className="presets-title">{t("rules.presetsTitle")}</span>
               <div className="preset-chips">
                 {ALIAS_PRESETS.map((preset) => {
                   const alreadyExists = rules.some(
                     (r) => r.alias.toLowerCase() === preset.alias.toLowerCase()
                   );
+                  const translatedCategory = t(`categories.${preset.category}`) || preset.category;
                   return (
                     <button
                       key={preset.alias}
                       type="button"
                       className="preset-chip"
                       disabled={alreadyExists || savingRule}
-                      onClick={() => quickAddAlias(preset.alias, preset.category)}
-                      title={alreadyExists ? "Already added" : `Add ${preset.alias} -> ${preset.category}`}
+                      onClick={() => quickAddAlias(preset.alias, translatedCategory)}
+                      title={alreadyExists ? t("rules.alreadyAdded") : t("rules.addPreset", { name: `${preset.alias} -> ${translatedCategory}` })}
                     >
                       <Sparkles size={12} />
                       <span>
-                        {preset.alias} &rarr; {preset.category}
+                        {preset.alias} &rarr; {translatedCategory}
                       </span>
                     </button>
                   );
@@ -294,19 +295,18 @@ export function RulesView({
               className="presets-toggle-btn"
               onClick={() => setShowAliasPresets(true)}
             >
-              <Sparkles size={12} /> Show Quick-Add Presets
+              <Sparkles size={12} /> {t("rules.presetsToggle")}
             </button>
           )}
 
           <RuleList rules={rules} onDelete={deleteRule} />
 
-          {/* Testing Playground Sandbox */}
           <div className="playground-box">
-            <h3>Test category mapping</h3>
+            <h3>{t("rules.playgroundTitle")}</h3>
             <div className="playground-input-group">
               <input
                 type="text"
-                placeholder="Type a CSV category (e.g. uber, netflix)..."
+                placeholder={t("rules.playgroundPlaceholder")}
                 value={playgroundInput}
                 onChange={(e) => setPlaygroundInput(e.target.value)}
               />
@@ -316,15 +316,18 @@ export function RulesView({
                 <div className="playground-result success" role="status">
                   <CheckCircle2 size={16} />
                   <span>
-                    Maps <strong>"{playgroundInput}"</strong> to canonical category{" "}
-                    <strong>"{matchedRule.category}"</strong> (via alias "{matchedRule.alias}")
+                    {t("rules.playgroundSuccess", {
+                      input: playgroundInput,
+                      category: matchedRule.category,
+                      alias: matchedRule.alias
+                    })}
                   </span>
                 </div>
               ) : (
                 <div className="playground-result neutral" role="status">
                   <Info size={16} />
                   <span>
-                    No active alias matches <strong>"{playgroundInput}"</strong>. It will import unchanged.
+                    {t("rules.playgroundNeutral", { input: playgroundInput })}
                   </span>
                 </div>
               )
@@ -332,11 +335,11 @@ export function RulesView({
           </div>
         </Panel>
 
-        <Panel title="Recurring templates" detail={loading ? "Loading templates" : `${templates.length} templates`}>
+        <Panel title={t("rules.templatesTitle")} detail={templatesDetail}>
           {templateError ? <ErrorBanner message={templateError} /> : null}
           <form className="template-form" onSubmit={saveTemplate}>
             <fieldset className="segmented-field">
-              <legend>Type</legend>
+              <legend>{t("common.type")}</legend>
               <label>
                 <input
                   name="recurring-type"
@@ -345,7 +348,7 @@ export function RulesView({
                   checked={templateForm.type === "expense"}
                   onChange={() => setTemplateForm({ ...templateForm, type: "expense" })}
                 />
-                  <span>Expense</span>
+                <span>{t("common.expense")}</span>
               </label>
               <label>
                 <input
@@ -355,10 +358,10 @@ export function RulesView({
                   checked={templateForm.type === "income"}
                   onChange={() => setTemplateForm({ ...templateForm, type: "income" })}
                 />
-                <span>Income</span>
+                <span>{t("common.income")}</span>
               </label>
             </fieldset>
-            <Field id="template-amount" label="Amount">
+            <Field id="template-amount" label={t("common.amount")}>
               <input
                 id="template-amount"
                 inputMode="decimal"
@@ -367,7 +370,7 @@ export function RulesView({
                 onChange={(event) => setTemplateForm({ ...templateForm, amount: event.target.value })}
               />
             </Field>
-            <Field id="template-category" label="Category">
+            <Field id="template-category" label={t("common.category")}>
               <input
                 id="template-category"
                 required
@@ -375,7 +378,7 @@ export function RulesView({
                 onChange={(event) => setTemplateForm({ ...templateForm, category: event.target.value })}
               />
             </Field>
-            <Field id="template-day" label="Day">
+            <Field id="template-day" label={t("rules.dayField")}>
               <input
                 id="template-day"
                 min="1"
@@ -388,7 +391,7 @@ export function RulesView({
                 }
               />
             </Field>
-            <Field id="template-description" label="Description">
+            <Field id="template-description" label={t("common.description")}>
               <input
                 id="template-description"
                 value={templateForm.description}
@@ -398,14 +401,13 @@ export function RulesView({
               />
             </Field>
             <SubmitButton busy={savingTemplate} icon={Plus}>
-              Save template
+              {t("rules.saveTemplateBtn")}
             </SubmitButton>
           </form>
 
-          {/* Quick-add popular templates suggestions */}
           {templates.length === 0 || showTemplatePresets ? (
             <div className="presets-box">
-              <span className="presets-title">Quick-add standard templates:</span>
+              <span className="presets-title">{t("rules.presetsTemplatesTitle")}</span>
               <div className="preset-grid">
                 {TEMPLATE_PRESETS.map((preset) => {
                   const alreadyExists = templates.some(
@@ -413,18 +415,24 @@ export function RulesView({
                       t.category.toLowerCase() === preset.category.toLowerCase() &&
                       t.type === preset.type
                   );
+                  const translatedCategory = t(`categories.${preset.category}`) || preset.category;
+                  const translatedDesc = t(`presets.${preset.description}`) || preset.description;
                   return (
                     <button
                       key={`${preset.type}-${preset.category}`}
                       type="button"
                       className="preset-grid-card"
                       disabled={alreadyExists || savingTemplate}
-                      onClick={() => quickAddTemplate(preset)}
-                      title={alreadyExists ? "Already added" : `Add ${preset.category}`}
+                      onClick={() => quickAddTemplate({
+                        ...preset,
+                        category: translatedCategory,
+                        description: translatedDesc
+                      })}
+                      title={alreadyExists ? t("rules.alreadyAdded") : t("rules.addPreset", { name: translatedCategory })}
                     >
-                      <strong>{preset.category}</strong>
+                      <strong>{translatedCategory}</strong>
                       <span>
-                        {preset.type === "expense" ? "-" : "+"}{money(preset.amount)} (Day {preset.day_of_month})
+                        {preset.type === "expense" ? "-" : "+"}{money(preset.amount)} ({t("rules.onDayText", { day: preset.day_of_month })})
                       </span>
                     </button>
                   );
@@ -437,17 +445,17 @@ export function RulesView({
               className="presets-toggle-btn"
               onClick={() => setShowTemplatePresets(true)}
             >
-              <Sparkles size={12} /> Show Quick-Add Presets
+              <Sparkles size={12} /> {t("rules.presetsTemplatesToggle")}
             </button>
           )}
 
           <TemplateList templates={templates} onDelete={deleteTemplate} />
         </Panel>
 
-        <Panel title="Ledger settings" className="settings-panel">
+        <Panel title={t("rules.settingsTitle")} className="settings-panel">
           {error ? <ErrorBanner message={error} /> : null}
           <form className="inline-form" onSubmit={saveCurrency}>
-            <Field id="settings-currency" label="Ledger currency" hint="Changing currency updates formatting across all screens.">
+            <Field id="settings-currency" label={t("rules.settingsCurrency")} hint={t("rules.settingsHint")}>
               <select
                 id="settings-currency"
                 required
@@ -461,7 +469,7 @@ export function RulesView({
               </select>
             </Field>
             <SubmitButton busy={savingCurrency} icon={Settings}>
-              Save settings
+              {t("rules.settingsSaveBtn")}
             </SubmitButton>
           </form>
         </Panel>
@@ -477,18 +485,20 @@ function RuleList({
   rules: CategoryRule[];
   onDelete: (rule: CategoryRule) => void;
 }) {
+  const { t } = useI18n();
+
   if (!rules.length) {
-    return <p className="empty-inline">No category aliases yet.</p>;
+    return <p className="empty-inline">{t("rules.emptyRules")}</p>;
   }
   return (
-    <ul className="rule-list" aria-label="Category alias rules">
+    <ul className="rule-list" aria-label={t("rules.aliasesTitle")}>
       {rules.map((rule) => (
         <li key={rule.id}>
           <span>
             <strong>{rule.alias}</strong>
             <em>&rarr; {rule.category}</em>
           </span>
-          <IconButton icon={Trash2} label={`Delete ${rule.alias} rule`} onClick={() => onDelete(rule)} />
+          <IconButton icon={Trash2} label={`${t("common.delete")} ${rule.alias} ${t("rules.aliasesTitle").toLowerCase()}`} onClick={() => onDelete(rule)} />
         </li>
       ))}
     </ul>
@@ -502,26 +512,30 @@ function TemplateList({
   templates: RecurringTemplate[];
   onDelete: (template: RecurringTemplate) => void;
 }) {
+  const { t } = useI18n();
+
   if (!templates.length) {
-    return <p className="empty-inline">No recurring templates yet.</p>;
+    return <p className="empty-inline">{t("rules.emptyTemplates")}</p>;
   }
   return (
-    <ul className="template-list" aria-label="Recurring templates">
+    <ul className="template-list" aria-label={t("rules.templatesTitle")}>
       {templates.map((template) => (
         <li key={template.id}>
           <span>
             <strong>
-              <span className={`template-badge ${template.type}`}>{template.type}</span>
+              <span className={`template-badge ${template.type}`}>
+                {t(`common.${template.type}`) || template.type}
+              </span>
               {template.category} {money(template.amount)}
             </strong>
             <em>
-              on day {template.day_of_month}
+              {t("rules.onDayText", { day: template.day_of_month })}
               {template.description ? ` - ${template.description}` : ""}
             </em>
           </span>
           <IconButton
             icon={Trash2}
-            label={`Delete ${template.category} template`}
+            label={`${t("common.delete")} ${template.category} ${t("rules.templatesTitle").toLowerCase()}`}
             onClick={() => onDelete(template)}
           />
         </li>
@@ -530,9 +544,10 @@ function TemplateList({
   );
 }
 
-function readError(error: unknown): string {
+function readError(error: unknown, t: (key: string) => string): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return "The request could not be completed.";
+  return t("common.errorFallback");
 }
+

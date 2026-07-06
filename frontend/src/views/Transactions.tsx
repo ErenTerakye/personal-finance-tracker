@@ -24,6 +24,7 @@ import type {
   TransactionRecord,
   TransactionType
 } from "../types";
+import { useI18n } from "../i18n";
 
 type TransactionDialog = "create" | "edit" | null;
 
@@ -63,6 +64,7 @@ export function TransactionsView({
   const [importPreview, setImportPreview] = useState<TransactionImportPreview | null>(null);
   const [importResult, setImportResult] = useState<ImportSummary | null>(null);
   const [importError, setImportError] = useState("");
+  const { t } = useI18n();
 
   const load = () => {
     setError("");
@@ -70,7 +72,7 @@ export function TransactionsView({
     api
       .transactions(filters)
       .then((response) => setTransactions(response.transactions))
-      .catch((err: Error) => setError(readError(err)))
+      .catch((err: Error) => setError(readError(err, t)))
       .finally(() => setLoading(false));
   };
 
@@ -119,7 +121,7 @@ export function TransactionsView({
       setEditingId(null);
       load();
     } catch (err) {
-      setDialogError(readError(err));
+      setDialogError(readError(err, t));
     } finally {
       setSaving(false);
     }
@@ -137,7 +139,7 @@ export function TransactionsView({
       setPendingDelete(null);
       load();
     } catch (err) {
-      setDialogError(readError(err));
+      setDialogError(readError(err, t));
     } finally {
       setSaving(false);
     }
@@ -152,7 +154,7 @@ export function TransactionsView({
       const response = await api.previewTransactionsCsv(csvText);
       setImportPreview(response);
     } catch (err) {
-      setImportError(readError(err));
+      setImportError(readError(err, t));
     } finally {
       setPreviewing(false);
     }
@@ -169,25 +171,29 @@ export function TransactionsView({
       setImportPreview(null);
       load();
     } catch (err) {
-      setImportError(readError(err));
+      setImportError(readError(err, t));
     } finally {
       setImporting(false);
     }
   }
 
+  const detailLabel = loading 
+    ? t("transactions.historyDetail.loading") 
+    : t("transactions.historyDetail.count", { count: transactions.length });
+
   return (
     <>
       <PageHeader
-        eyebrow="Transactions"
-        title="Transactions"
-        summary="Log transactions quickly and review history."
+        eyebrow={t("transactions.title")}
+        title={t("transactions.title")}
+        summary={t("transactions.summary")}
         actions={
           <div className="action-cluster">
             <ActionButton icon={Plus} onClick={openCreate}>
-              Add entry
+              {t("common.addEntry")}
             </ActionButton>
             <ActionButton icon={Upload} variant="secondary" onClick={() => setImportOpen(true)}>
-              Import CSV
+              {t("common.importCsv")}
             </ActionButton>
           </div>
         }
@@ -203,8 +209,8 @@ export function TransactionsView({
         />
 
         <Panel
-          title="Transaction History"
-          detail={loading ? "Loading transactions" : `${transactions.length} transactions shown`}
+          title={t("transactions.historyTitle")}
+          detail={detailLabel}
           actions={
             <DownloadLink
               icon={Download}
@@ -212,12 +218,12 @@ export function TransactionsView({
               download
               variant="secondary"
             >
-              Export CSV
+              {t("common.exportCsv")}
             </DownloadLink>
           }
         >
           {loading ? (
-            <p className="loading-state">Loading transaction history.</p>
+            <p className="loading-state">{t("transactions.empty.loading")}</p>
           ) : (
             <TransactionTable
               transactions={transactions}
@@ -230,8 +236,8 @@ export function TransactionsView({
 
       <CsvImportDialog
         open={importOpen}
-        title="Import transaction CSV"
-        description="Preview rows before writing to the local ledger."
+        title={t("csv.importTitle")}
+        description={t("csv.importDesc")}
         preview={importPreview}
         result={importResult}
         error={importError}
@@ -260,8 +266,8 @@ export function TransactionsView({
 
       <ModalDialog
         open={pendingDelete !== null}
-        title="Delete transaction"
-        description={pendingDelete ? `${pendingDelete.category} ${money(pendingDelete.amount)}` : undefined}
+        title={t("transactions.dialog.deleteTitle")}
+        description={pendingDelete ? t("transactions.dialog.deleteDescription", { category: pendingDelete.category, amount: money(pendingDelete.amount) }) : undefined}
         onClose={() => {
           setPendingDelete(null);
           setDialogError("");
@@ -269,15 +275,15 @@ export function TransactionsView({
       >
         {dialogError ? <ErrorBanner message={dialogError} /> : null}
         <p className="dialog-copy">
-          This removes the record from your local history.
+          {t("transactions.dialog.deleteConfirmText")}
         </p>
         <div className="dialog-actions">
           <button className="button secondary" type="button" onClick={() => setPendingDelete(null)}>
-            Cancel
+            {t("common.cancel")}
           </button>
           <button className="button danger" type="button" disabled={saving} onClick={confirmDelete}>
             <Trash2 aria-hidden="true" size={18} />
-            <span>Delete transaction</span>
+            <span>{t("transactions.dialog.deleteBtn")}</span>
           </button>
         </div>
       </ModalDialog>
@@ -295,6 +301,7 @@ function TransactionFilterForm({
   onChange: (filters: TransactionFilters) => void;
 }) {
   const [draft, setDraft] = useState(filters);
+  const { t } = useI18n();
 
   useEffect(() => {
     setDraft(filters);
@@ -324,12 +331,12 @@ function TransactionFilterForm({
 
   return (
     <FilterBar
-      title="Filters"
-      summary={`Showing ${periodLabel(period.month, period.year)}`}
+      title={t("budgets.filterTitle")}
+      summary={t("budgets.filterSummary", { period: periodLabel(period.month, period.year) })}
     >
       <form
         className="filter-form"
-        aria-label="Filter transactions"
+        aria-label={t("transactions.dialog.deleteBtn")}
         onSubmit={(event) => {
           event.preventDefault();
           onChange(draft);
@@ -340,7 +347,7 @@ function TransactionFilterForm({
           value={period}
           onChange={(nextPeriod) => setDraft({ ...draft, ...nextPeriod })}
         />
-        <Field id="filter-category" label="Category">
+        <Field id="filter-category" label={t("common.category")}>
           <input
             id="filter-category"
             type="search"
@@ -348,7 +355,7 @@ function TransactionFilterForm({
             onChange={(event) => setDraft({ ...draft, category: event.target.value })}
           />
         </Field>
-        <Field id="filter-type" label="Type">
+        <Field id="filter-type" label={t("common.type")}>
           <select
             id="filter-type"
             value={draft.transaction_type}
@@ -356,19 +363,19 @@ function TransactionFilterForm({
               setDraft({ ...draft, transaction_type: event.target.value as TransactionType | "" })
             }
           >
-            <option value="">All</option>
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
+            <option value="">{t("common.all")}</option>
+            <option value="expense">{t("common.expense")}</option>
+            <option value="income">{t("common.income")}</option>
           </select>
         </Field>
         <div className="filter-actions">
           <ActionButton icon={Filter} type="submit">
-            Apply filters
+            {t("common.applyFilters")}
           </ActionButton>
           {hasActiveFilters ? (
             <IconButton
               icon={RotateCcw}
-              label="Reset filters"
+              label={t("common.resetFilters")}
               variant="ghost"
               onClick={resetFilters}
             />
@@ -398,17 +405,19 @@ function TransactionFormDialog({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onChange: (form: TransactionInput) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <ModalDialog
       open={open}
-      title={mode === "edit" ? "Edit transaction" : "Add transaction"}
-      description="Record the amount, category, and date."
+      title={mode === "edit" ? t("transactions.dialog.editTitle") : t("transactions.dialog.addTitle")}
+      description={t("transactions.dialog.addDescription")}
       onClose={onClose}
     >
       {error ? <ErrorBanner message={error} /> : null}
       <form className="dialog-form" onSubmit={onSubmit}>
         <fieldset className="segmented-field">
-          <legend>Type</legend>
+          <legend>{t("common.type")}</legend>
           <label>
             <input
               name="transaction-type"
@@ -417,7 +426,7 @@ function TransactionFormDialog({
               checked={form.type === "expense"}
               onChange={() => onChange({ ...form, type: "expense" })}
             />
-            <span>Expense</span>
+            <span>{t("common.expense")}</span>
           </label>
           <label>
             <input
@@ -427,10 +436,10 @@ function TransactionFormDialog({
               checked={form.type === "income"}
               onChange={() => onChange({ ...form, type: "income" })}
             />
-            <span>Income</span>
+            <span>{t("common.income")}</span>
           </label>
         </fieldset>
-        <Field id="transaction-amount" label="Amount" hint="Use a positive amount, such as 45.90.">
+        <Field id="transaction-amount" label={t("common.amount")} hint={t("transactions.dialog.amountHint")}>
           <input
             id="transaction-amount"
             aria-describedby="transaction-amount-hint"
@@ -440,7 +449,7 @@ function TransactionFormDialog({
             onChange={(event) => onChange({ ...form, amount: event.target.value })}
           />
         </Field>
-        <Field id="transaction-category" label="Category" hint="Aliases are saved as their rule category.">
+        <Field id="transaction-category" label={t("common.category")} hint={t("transactions.dialog.categoryHint")}>
           <input
             id="transaction-category"
             aria-describedby="transaction-category-hint"
@@ -449,7 +458,7 @@ function TransactionFormDialog({
             onChange={(event) => onChange({ ...form, category: event.target.value })}
           />
         </Field>
-        <Field id="transaction-date" label="Date">
+        <Field id="transaction-date" label={t("common.date")}>
           <input
             id="transaction-date"
             type="date"
@@ -458,7 +467,7 @@ function TransactionFormDialog({
             onChange={(event) => onChange({ ...form, date: event.target.value })}
           />
         </Field>
-        <Field id="transaction-description" label="Description">
+        <Field id="transaction-description" label={t("common.description")}>
           <input
             id="transaction-description"
             value={form.description}
@@ -467,10 +476,10 @@ function TransactionFormDialog({
         </Field>
         <div className="dialog-actions">
           <button className="button secondary" type="button" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </button>
           <SubmitButton busy={saving} icon={Save}>
-            {mode === "edit" ? "Save changes" : "Add entry"}
+            {mode === "edit" ? t("common.save") : t("common.addEntry")}
           </SubmitButton>
         </div>
       </form>
@@ -478,9 +487,10 @@ function TransactionFormDialog({
   );
 }
 
-function readError(error: unknown): string {
+function readError(error: unknown, t: (key: string) => string): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return "The request could not be completed.";
+  return t("common.errorFallback");
 }
+

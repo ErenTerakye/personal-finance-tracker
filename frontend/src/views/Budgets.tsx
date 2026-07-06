@@ -19,6 +19,7 @@ import {
 } from "../components/ui";
 import { money, monthNames, periodLabel } from "../format";
 import type { BudgetInput, BudgetRecord, BudgetStatus, ImportSummary } from "../types";
+import { useI18n } from "../i18n";
 
 type BudgetDialog = "create" | "edit" | null;
 
@@ -58,6 +59,7 @@ export function BudgetsView({
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportSummary | null>(null);
   const [importError, setImportError] = useState("");
+  const { t } = useI18n();
 
   const load = () => {
     const month = Number(filters.month || selectedPeriod.month);
@@ -69,7 +71,7 @@ export function BudgetsView({
         setBudgets(budgetResponse.budgets);
         setStatuses(statusResponse.statuses);
       })
-      .catch((err: Error) => setError(readError(err)))
+      .catch((err: Error) => setError(readError(err, t)))
       .finally(() => setLoading(false));
   };
 
@@ -116,7 +118,7 @@ export function BudgetsView({
       setDialog(null);
       load();
     } catch (err) {
-      setDialogError(readError(err));
+      setDialogError(readError(err, t));
     } finally {
       setSaving(false);
     }
@@ -134,7 +136,7 @@ export function BudgetsView({
       setPendingDelete(null);
       load();
     } catch (err) {
-      setDialogError(readError(err));
+      setDialogError(readError(err, t));
     } finally {
       setSaving(false);
     }
@@ -150,25 +152,33 @@ export function BudgetsView({
       setNotice(response.notice);
       load();
     } catch (err) {
-      setImportError(readError(err));
+      setImportError(readError(err, t));
     } finally {
       setImporting(false);
     }
   }
 
+  const pressureDetail = loading 
+    ? t("budgets.pressureLoading") 
+    : `${filters.month}/${filters.year}`;
+
+  const recordsDetail = loading 
+    ? t("budgets.recordsLoading") 
+    : t("budgets.recordsCount", { count: budgets.length });
+
   return (
     <>
       <PageHeader
-        eyebrow="Budgets"
-        title="Budgets"
-        summary="Monitor spending limits and manage budget records."
+        eyebrow={t("budgets.title")}
+        title={t("budgets.title")}
+        summary={t("budgets.summary")}
         actions={
           <div className="action-cluster">
             <ActionButton icon={PiggyBank} onClick={openCreate}>
-              Set budget
+              {t("common.setBudget")}
             </ActionButton>
             <ActionButton icon={Upload} variant="secondary" onClick={() => setImportOpen(true)}>
-              Import CSV
+              {t("common.importCsv")}
             </ActionButton>
           </div>
         }
@@ -177,9 +187,9 @@ export function BudgetsView({
       {error ? <ErrorBanner message={error} /> : null}
 
       <section className="budget-layout">
-        <Panel title="Budget pressure" detail={loading ? "Loading status" : `${filters.month}/${filters.year}`}>
+        <Panel title={t("budgets.pressureTitle")} detail={pressureDetail}>
           {loading ? (
-            <p className="loading-state">Loading budget pressure.</p>
+            <p className="loading-state">{t("budgets.pressureLoading")}</p>
           ) : (
             <BudgetPressureList statuses={statuses} />
           )}
@@ -188,8 +198,8 @@ export function BudgetsView({
         <BudgetFilterForm filters={filters} selectedPeriod={selectedPeriod} onChange={setFilters} />
 
         <Panel
-          title="Budget records"
-          detail={loading ? "Loading budgets" : `${budgets.length} records shown`}
+          title={t("budgets.recordsTitle")}
+          detail={recordsDetail}
           className="records-panel"
           actions={
             <DownloadLink
@@ -198,12 +208,12 @@ export function BudgetsView({
               download
               variant="secondary"
             >
-              Export CSV
+              {t("common.exportCsv")}
             </DownloadLink>
           }
         >
           {loading ? (
-            <p className="loading-state">Loading budget records.</p>
+            <p className="loading-state">{t("budgets.recordsLoading")}</p>
           ) : (
             <BudgetTable budgets={budgets} onEdit={openEdit} onDelete={setPendingDelete} />
           )}
@@ -212,8 +222,8 @@ export function BudgetsView({
 
       <CsvImportDialog
         open={importOpen}
-        title="Import budget CSV"
-        description="Set or update monthly category budgets from CSV rows."
+        title={t("csv.importBudgetTitle")}
+        description={t("csv.importBudgetDesc")}
         result={importResult}
         error={importError}
         uploading={importing}
@@ -238,7 +248,7 @@ export function BudgetsView({
 
       <ModalDialog
         open={pendingDelete !== null}
-        title="Delete budget"
+        title={t("budgets.dialog.deleteTitle")}
         description={pendingDelete ? `${pendingDelete.category} ${money(pendingDelete.amount)}` : undefined}
         onClose={() => {
           setPendingDelete(null);
@@ -246,14 +256,14 @@ export function BudgetsView({
         }}
       >
         {dialogError ? <ErrorBanner message={dialogError} /> : null}
-        <p className="dialog-copy">This removes the budget record from your local budgets.</p>
+        <p className="dialog-copy">{t("budgets.dialog.deleteConfirmText")}</p>
         <div className="dialog-actions">
           <button className="button secondary" type="button" onClick={() => setPendingDelete(null)}>
-            Cancel
+            {t("common.cancel")}
           </button>
           <button className="button danger" type="button" disabled={saving} onClick={confirmDelete}>
             <Trash2 aria-hidden="true" size={18} />
-            <span>Delete budget</span>
+            <span>{t("budgets.dialog.deleteBtn")}</span>
           </button>
         </div>
       </ModalDialog>
@@ -271,6 +281,7 @@ function BudgetFilterForm({
   onChange: (filters: BudgetFilters) => void;
 }) {
   const [draft, setDraft] = useState(filters);
+  const { t } = useI18n();
 
   useEffect(() => {
     setDraft(filters);
@@ -295,7 +306,7 @@ function BudgetFilterForm({
   }
 
   return (
-    <FilterBar title="Filters" summary={`Showing ${periodLabel(period.month, period.year)}`}>
+    <FilterBar title={t("budgets.filterTitle")} summary={t("budgets.filterSummary", { period: periodLabel(period.month, period.year) })}>
       <form
         className="filter-form"
         aria-label="Filter budgets"
@@ -309,7 +320,7 @@ function BudgetFilterForm({
           value={period}
           onChange={(nextPeriod) => setDraft({ ...draft, ...nextPeriod })}
         />
-        <Field id="budget-filter-category" label="Category">
+        <Field id="budget-filter-category" label={t("common.category")}>
           <input
             id="budget-filter-category"
             type="search"
@@ -319,12 +330,12 @@ function BudgetFilterForm({
         </Field>
         <div className="filter-actions">
           <ActionButton icon={Filter} type="submit">
-            Apply filters
+            {t("common.applyFilters")}
           </ActionButton>
           {hasActiveFilters ? (
             <IconButton
               icon={RotateCcw}
-              label="Reset filters"
+              label={t("common.resetFilters")}
               variant="ghost"
               onClick={resetFilters}
             />
@@ -354,16 +365,18 @@ function BudgetFormDialog({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onChange: (form: BudgetInput) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <ModalDialog
       open={open}
-      title={mode === "edit" ? "Update budget" : "Set budget"}
-      description="Set the category limit for a month."
+      title={mode === "edit" ? t("budgets.dialog.updateTitle") : t("budgets.dialog.setTitle")}
+      description={t("budgets.dialog.setDescription")}
       onClose={onClose}
     >
       {error ? <ErrorBanner message={error} /> : null}
       <form className="dialog-form" onSubmit={onSubmit}>
-        <Field id="budget-category" label="Category" hint="Category matching is case-insensitive.">
+        <Field id="budget-category" label={t("common.category")} hint={t("budgets.dialog.categoryHint")}>
           <input
             id="budget-category"
             aria-describedby="budget-category-hint"
@@ -372,7 +385,7 @@ function BudgetFormDialog({
             onChange={(event) => onChange({ ...form, category: event.target.value })}
           />
         </Field>
-        <Field id="budget-amount" label="Amount" hint="Use a positive amount, such as 500.00.">
+        <Field id="budget-amount" label={t("common.amount")} hint={t("budgets.dialog.amountHint")}>
           <input
             id="budget-amount"
             aria-describedby="budget-amount-hint"
@@ -382,7 +395,7 @@ function BudgetFormDialog({
             onChange={(event) => onChange({ ...form, amount: event.target.value })}
           />
         </Field>
-        <Field id="budget-month" label="Month">
+        <Field id="budget-month" label={t("common.month")}>
           <select
             id="budget-month"
             required
@@ -396,7 +409,7 @@ function BudgetFormDialog({
             ))}
           </select>
         </Field>
-        <Field id="budget-year" label="Year">
+        <Field id="budget-year" label={t("common.year")}>
           <input
             id="budget-year"
             min="1"
@@ -408,10 +421,10 @@ function BudgetFormDialog({
         </Field>
         <div className="dialog-actions">
           <button className="button secondary" type="button" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </button>
           <SubmitButton busy={saving} icon={Save}>
-            {mode === "edit" ? "Save changes" : "Save budget"}
+            {mode === "edit" ? t("common.save") : t("budgets.dialog.setTitle")}
           </SubmitButton>
         </div>
       </form>
@@ -419,9 +432,10 @@ function BudgetFormDialog({
   );
 }
 
-function readError(error: unknown): string {
+function readError(error: unknown, t: (key: string) => string): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return "The request could not be completed.";
+  return t("common.errorFallback");
 }
+

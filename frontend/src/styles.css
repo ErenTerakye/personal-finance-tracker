@@ -556,7 +556,8 @@
     border-color: var(--expenses);
   }
 
-  .theme-toggle {
+  .theme-toggle,
+  .lang-toggle {
     display: grid;
     place-items: center;
     inline-size: var(--tap-target);
@@ -570,17 +571,20 @@
     box-shadow: var(--shadow-soft);
   }
 
-  .theme-toggle:hover {
+  .theme-toggle:hover,
+  .lang-toggle:hover {
     background: var(--surface);
     border-color: var(--rule-strong);
   }
 
-  .theme-toggle svg {
+  .theme-toggle svg,
+  .lang-toggle svg {
     display: block;
     transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .theme-toggle:hover svg {
+  .theme-toggle:hover svg,
+  .lang-toggle:hover svg {
     transform: scale(1.08) rotate(15deg);
   }
 

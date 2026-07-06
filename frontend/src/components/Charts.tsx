@@ -14,6 +14,7 @@ import {
 import { compactMoney, money, percent, periodLabel, shortPeriodLabel, signedMoney } from "../format";
 import type { DashboardData } from "../types";
 import { EmptyState } from "./ui";
+import { useI18n } from "../i18n";
 
 type TrendMonth = DashboardData["trend"]["months"][number];
 type MetricKey = "total_income" | "total_expenses" | "net_savings";
@@ -34,18 +35,19 @@ type TooltipData = {
 type VariableStyle = CSSProperties & Record<`--${string}`, string | number>;
 
 const MIN_VISIBLE_TREND_SIZE = 6;
-const metrics: { key: MetricKey; label: string; tone: MetricTone }[] = [
-  { key: "total_income", label: "Income", tone: "cash" },
-  { key: "total_expenses", label: "Expenses", tone: "expenses" },
-  { key: "net_savings", label: "Net", tone: "net" }
+const metrics: { key: MetricKey; tone: MetricTone }[] = [
+  { key: "total_income", tone: "cash" },
+  { key: "total_expenses", tone: "expenses" },
+  { key: "net_savings", tone: "net" }
 ];
 
 export function CashflowTrend({ months }: { months: TrendMonth[] }) {
   const chartRef = useRef<HTMLElement>(null);
   const [active, setActive] = useChartTooltip(chartRef, [months]);
+  const { t } = useI18n();
 
   if (!months.length) {
-    return <EmptyState title="No trend yet" message="Add transactions to build a cashflow trend." />;
+    return <EmptyState title={t("charts.emptyTrendTitle")} message={t("charts.emptyTrendMsg")} />;
   }
 
   const max = Math.max(
@@ -60,12 +62,15 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
   return (
     <figure className="cashflow-trend" ref={chartRef}>
       <figcaption>
-        <strong>Six-month cashflow trend</strong>
-        <span>Income, expenses, and net savings by period.</span>
+        <strong>{t("charts.title")}</strong>
+        <span>{t("charts.desc")}</span>
       </figcaption>
-      <ol aria-label="Six-month cashflow trend">
+      <ol aria-label={t("charts.title")}>
         {months.map((item) => {
           const positive = Number(item.net_savings) >= 0;
+          const formattedNet = signedMoney(item.net_savings);
+          const formattedEntries = t("charts.tooltipEntries", { count: item.transaction_count });
+
           return (
             <li
               key={item.label}
@@ -85,23 +90,26 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
                 {metrics.map((metric) => {
                   const tone =
                     metric.key === "net_savings" && !positive ? "warning" : metric.tone;
+                  const labelKey = metric.key === "total_income" ? "income" : metric.key === "total_expenses" ? "expenses" : "net";
+                  const translatedLabel = t(`charts.${labelKey}`);
+
                   return (
                     <button
                       key={metric.key}
                       className={`trend-bar ${tone}`}
                       type="button"
-                      aria-label={`${metric.label} for ${periodLabel(item.month, item.year)}: ${formatMetricValue(item, metric.key)}`}
+                      aria-label={`${translatedLabel} for ${periodLabel(item.month, item.year)}: ${formatMetricValue(item, metric.key)}`}
                       onBlur={handleTooltipBlur(setActive)}
                       onFocus={(event) =>
-                        setActive(trendTooltip(event.currentTarget, item, metric, tone))
+                        setActive(trendTooltip(event.currentTarget, item, metric, tone, translatedLabel, t))
                       }
                       onKeyDown={(event) => handleTooltipKeyDown(event, setActive)}
                       onPointerDown={(event) =>
-                        setActive(trendTooltip(event.currentTarget, item, metric, tone, event.pointerType === "touch"))
+                        setActive(trendTooltip(event.currentTarget, item, metric, tone, translatedLabel, t, event.pointerType === "touch"))
                       }
                       onPointerEnter={(event) => {
                         if (event.pointerType !== "touch") {
-                          setActive(trendTooltip(event.currentTarget, item, metric, tone));
+                          setActive(trendTooltip(event.currentTarget, item, metric, tone, translatedLabel, t));
                         }
                       }}
                       onPointerLeave={(event) => {
@@ -115,8 +123,8 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
                   );
                 })}
               </div>
-              <strong>{signedMoney(item.net_savings)}</strong>
-              <span>{item.transaction_count} entries</span>
+              <strong>{formattedNet}</strong>
+              <span>{formattedEntries}</span>
             </li>
           );
         })}
@@ -145,9 +153,10 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
   const chartRef = useRef<HTMLElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [active, setActive] = useChartTooltip(chartRef, [months]);
+  const { t } = useI18n();
 
   if (!months.length) {
-    return <EmptyState title="No trend data" message="The trend appears after transactions are added." />;
+    return <EmptyState title={t("charts.emptyLineTitle")} message={t("charts.emptyLineMsg")} />;
   }
 
   const values = months.flatMap((item) => [
@@ -165,13 +174,17 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
 
   function activateTrendPoint(item: TrendMonth, index: number, metric: (typeof metrics)[number], pinned = false) {
     const tone = metric.key === "net_savings" && Number(item.net_savings) < 0 ? "warning" : metric.tone;
+    const labelKey = metric.key === "total_income" ? "income" : metric.key === "total_expenses" ? "expenses" : "net";
+    const translatedLabel = t(`charts.${labelKey}`);
+    const pctVal = percent(item.savings_rate);
+
     setActive(
       svgTooltip(chartRef, svgRef, x(index), y(Number(item[metric.key])), {
         id: `trend-${item.label}-${metric.key}`,
         title: periodLabel(item.month, item.year),
-        label: metric.label,
+        label: translatedLabel,
         value: formatMetricValue(item, metric.key),
-        detail: `${percent(item.savings_rate)} savings rate`,
+        detail: t("charts.tooltipSavingsRate", { rate: pctVal }),
         tone,
         guideX: x(index),
         pinned
@@ -208,10 +221,8 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
           }
         }}
       >
-        <title id={titleId}>Six-month income, expense, and net savings trend</title>
-        <desc id={descId}>
-          Line chart comparing income, expenses, and net savings across the selected period.
-        </desc>
+        <title id={titleId}>{t("charts.ariaTitle")}</title>
+        <desc id={descId}>{t("charts.ariaDesc")}</desc>
         <line className="axis" x1="56" x2="680" y1="250" y2="250" />
         <line className="axis" x1="56" x2="56" y1="42" y2="250" />
         {typeof active?.guideX === "number" ? (
@@ -225,6 +236,9 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
             const tone = metric.key === "net_savings" && Number(item.net_savings) < 0 ? "warning" : metric.tone;
             const pointId = `trend-${item.label}-${metric.key}`;
             const isActive = active?.id === pointId;
+            const labelKey = metric.key === "total_income" ? "income" : metric.key === "total_expenses" ? "expenses" : "net";
+            const translatedLabel = t(`charts.${labelKey}`);
+
             return (
               <circle
                 key={pointId}
@@ -234,7 +248,7 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
                 r="5"
                 tabIndex={0}
                 role="button"
-                aria-label={`${metric.label} for ${periodLabel(item.month, item.year)}: ${formatMetricValue(item, metric.key)}`}
+                aria-label={`${translatedLabel} for ${periodLabel(item.month, item.year)}: ${formatMetricValue(item, metric.key)}`}
                 onBlur={handleTooltipBlur(setActive)}
                 onFocus={() => activateTrendPoint(item, index, metric)}
                 onKeyDown={(event) => handleTooltipKeyDown(event, setActive)}
@@ -267,9 +281,9 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
         ))}
       </svg>
       <figcaption>
-        <span className="legend cash">Income</span>
-        <span className="legend expenses">Expenses</span>
-        <span className="legend net">Net</span>
+        <span className="legend cash">{t("charts.income")}</span>
+        <span className="legend expenses">{t("charts.expenses")}</span>
+        <span className="legend net">{t("charts.net")}</span>
       </figcaption>
       <ChartTooltip active={active} />
     </figure>
@@ -283,8 +297,10 @@ export function CategoryBars({
   title: string;
   items: { label: string; value: string }[];
 }) {
+  const { t } = useI18n();
+
   if (!items.length) {
-    return <EmptyState title="No category data" message="Categories appear after matching records exist." />;
+    return <EmptyState title={t("charts.emptyTrendTitle")} message={t("charts.emptyTrendMsg")} />;
   }
 
   const max = Math.max(1, ...items.map((item) => Math.abs(Number(item.value))));
@@ -298,6 +314,7 @@ export function CategoryBars({
         >
           <span>{item.label}</span>
           <div aria-hidden="true">
+
             <span />
           </div>
           <strong>{money(item.value)}</strong>
@@ -392,6 +409,8 @@ function trendTooltip(
   item: TrendMonth,
   metric: (typeof metrics)[number],
   tone: MetricTone,
+  label: string,
+  t: (key: string, variables?: Record<string, string | number>) => string,
   pinned = false
 ): TooltipData {
   const nodeRect = node.getBoundingClientRect();
@@ -402,9 +421,9 @@ function trendTooltip(
   return {
     id: `trend-${item.label}-${metric.key}`,
     title: periodLabel(item.month, item.year),
-    label: metric.label,
+    label,
     value: formatMetricValue(item, metric.key),
-    detail: `${item.transaction_count} entries`,
+    detail: t("charts.tooltipEntries", { count: item.transaction_count }),
     tone,
     x,
     y,

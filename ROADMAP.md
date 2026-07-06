@@ -26,18 +26,15 @@ would make it stronger without bloating the scope.
   local Python/SQLite workflow.
 - GitHub Actions mirrors the documented check set with Python tests, Ruff,
   frontend unit tests, production build, and Playwright responsive E2E tests.
-- v0.4 adds category alias normalization, manually applied recurring monthly
-  transaction templates, transaction CSV preview and duplicate safeguards,
-  year-to-date and month-over-month report context, and focused API, frontend,
-  and responsive tests around those workflows.
-- Local quality checks last verified for v0.4 on July 3, 2026:
+- v0.6 adds Turkish language support to the frontend interface (with local browser storage persistence), locale-aware date, number, and currency formatting for both Turkish and English, while dynamically combining the active ledger currency setting.
+- Local quality checks last verified for v0.6 on July 6, 2026:
   - `.venv/bin/python -m pytest` - 60 passed.
   - `.venv/bin/python -m ruff check .` - passed.
-  - `npm test` - 22 frontend unit tests passed.
+  - `npm test` - 23 frontend unit tests passed.
   - `npm run build` - passed.
   - `npm run test:e2e` - 44 Playwright responsive E2E tests passed.
   - `.venv/bin/python -m build` - built the source distribution and universal
-    wheel for `personal-finance-tracker` 0.4.0.
+    wheel for `personal-finance-tracker` 0.6.0.
 
 ## Guiding Principles
 
@@ -115,8 +112,6 @@ Make the single-ledger money model explicit before adding localization polish.
 - Add focused Python, React, and Playwright coverage for currency validation,
   defaults, formatting, API exposure, and `USD`/`TRY` display.
 
-## Next Milestones
-
 ### v0.6 Web UI Localization
 
 Add Turkish language support after currency contracts are stable.
@@ -131,6 +126,8 @@ Add Turkish language support after currency contracts are stable.
   unless the project intentionally expands localization scope.
 - Add React and Playwright coverage for translation fallback behavior, Turkish
   month labels, Turkish currency/date formatting, and responsive Turkish UI text.
+
+## Next Milestones
 
 ### v1.0 Portfolio Release
 

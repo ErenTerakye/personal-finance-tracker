@@ -1,26 +1,40 @@
-let currency = new Intl.NumberFormat("en-US", {
+let activeLocale = "en-US";
+let activeCurrencyCode = "USD";
+
+let currency = new Intl.NumberFormat(activeLocale, {
   style: "currency",
-  currency: "USD"
+  currency: activeCurrencyCode
 });
 
-let compactCurrency = new Intl.NumberFormat("en-US", {
+let compactCurrency = new Intl.NumberFormat(activeLocale, {
   style: "currency",
-  currency: "USD",
+  currency: activeCurrencyCode,
   notation: "compact",
   maximumFractionDigits: 1
 });
 
-export function setCurrency(code: string) {
-  currency = new Intl.NumberFormat("en-US", {
+function updateFormatters() {
+  currency = new Intl.NumberFormat(activeLocale, {
     style: "currency",
-    currency: code
+    currency: activeCurrencyCode
   });
-  compactCurrency = new Intl.NumberFormat("en-US", {
+  compactCurrency = new Intl.NumberFormat(activeLocale, {
     style: "currency",
-    currency: code,
+    currency: activeCurrencyCode,
     notation: "compact",
     maximumFractionDigits: 1
   });
+  monthNames = activeLocale.startsWith("tr") ? monthNamesTr : monthNamesEn;
+}
+
+export function setCurrency(code: string) {
+  activeCurrencyCode = code || "USD";
+  updateFormatters();
+}
+
+export function setLocale(lang: "en" | "tr") {
+  activeLocale = lang === "tr" ? "tr-TR" : "en-US";
+  updateFormatters();
 }
 
 export function money(value: string | number): string {
@@ -55,10 +69,11 @@ export function periodLabel(month: number, year: number): string {
 }
 
 export function shortPeriodLabel(month: number, year: number): string {
+  // Safe slice for Turkish month names
   return `${monthNames[month].slice(0, 3)} ${String(year).slice(2)}`;
 }
 
-export const monthNames = [
+const monthNamesEn = [
   "",
   "January",
   "February",
@@ -73,3 +88,22 @@ export const monthNames = [
   "November",
   "December"
 ];
+
+const monthNamesTr = [
+  "",
+  "Ocak",
+  "Şubat",
+  "Mart",
+  "Nisan",
+  "Mayıs",
+  "Haziran",
+  "Temmuz",
+  "Ağustos",
+  "Eylül",
+  "Ekim",
+  "Kasım",
+  "Aralık"
+];
+
+export let monthNames = monthNamesEn;
+

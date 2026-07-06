@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Search, Upload } from "lucide-react";
 import type { ImportSummary, TransactionImportPreview } from "../types";
 import { ErrorBanner, Field, ModalDialog, SubmitButton } from "./ui";
+import { useI18n } from "../i18n";
 
 export function CsvImportDialog({
   open,
@@ -33,6 +34,7 @@ export function CsvImportDialog({
   const [file, setFile] = useState<File | null>(null);
   const [csvText, setCsvText] = useState("");
   const [allowDuplicates, setAllowDuplicates] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!open) {
@@ -68,7 +70,7 @@ export function CsvImportDialog({
     >
       {error ? <ErrorBanner message={error} /> : null}
       <form className="dialog-form" onSubmit={submitImport}>
-        <Field id="csv-file" label="CSV file" hint="Use the same columns as the CLI CSV commands.">
+        <Field id="csv-file" label={t("csv.fileLabel")} hint={t("csv.fileHint")}>
           <input
             id="csv-file"
             type="file"
@@ -96,14 +98,14 @@ export function CsvImportDialog({
               onClose();
             }}
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <SubmitButton
             busy={uploading || previewing}
             icon={onPreview && !preview ? Search : Upload}
             disabled={!file}
           >
-            {onPreview && !preview ? "Preview CSV" : "Import CSV"}
+            {onPreview && !preview ? t("csv.previewBtn") : t("csv.importBtn")}
           </SubmitButton>
         </div>
       </form>
@@ -134,11 +136,17 @@ function ImportPreviewSummary({
   allowDuplicates: boolean;
   onAllowDuplicatesChange: (value: boolean) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="import-summary preview" role="status" aria-live="polite">
-      <strong>CSV preview ready.</strong>
+      <strong>{t("csv.previewReady")}</strong>
       <span>
-        {preview.valid_count} valid, {preview.duplicate_count} duplicate, {preview.invalid_count} invalid.
+        {t("csv.previewSummary", {
+          valid: preview.valid_count,
+          duplicate: preview.duplicate_count,
+          invalid: preview.invalid_count
+        })}
       </span>
       {preview.duplicate_count ? (
         <label className="checkbox-row">
@@ -147,16 +155,18 @@ function ImportPreviewSummary({
             checked={allowDuplicates}
             onChange={(event) => onAllowDuplicatesChange(event.target.checked)}
           />
-          <span>Import duplicate rows too</span>
+          <span>{t("csv.importDuplicates")}</span>
         </label>
       ) : null}
       <ul className="preview-list">
         {preview.rows.slice(0, 8).map((row) => (
           <li key={`${row.line_number}-${row.status}`}>
-            <strong>Line {row.line_number}: {row.status}</strong>
+            <strong>
+              {t("csv.linePreview", { line: row.line_number, status: t(`common.${row.status}`) || row.status })}
+            </strong>
             <span>
               {row.error ??
-                `${row.transaction?.type} ${row.transaction?.amount} ${row.original_category !== row.transaction?.category ? `${row.original_category} -> ` : ""}${row.transaction?.category}`}
+                `${t(`common.${row.transaction?.type}`) || row.transaction?.type} ${row.transaction?.amount} ${row.original_category !== row.transaction?.category ? `${row.original_category} -> ` : ""}${row.transaction?.category}`}
             </span>
           </li>
         ))}
@@ -166,11 +176,16 @@ function ImportPreviewSummary({
 }
 
 function ImportResultSummary({ result }: { result: ImportSummary }) {
+  const { t } = useI18n();
+
   return (
     <div className="import-summary" role="status" aria-live="polite">
       <strong>{result.notice}</strong>
       <span>
-        Imported {result.imported_count}, skipped {result.skipped_count}.
+        {t("csv.importedSummary", {
+          imported: result.imported_count,
+          skipped: result.skipped_count
+        })}
       </span>
       {result.errors.length ? (
         <ul>
@@ -182,3 +197,4 @@ function ImportResultSummary({ result }: { result: ImportSummary }) {
     </div>
   );
 }
+

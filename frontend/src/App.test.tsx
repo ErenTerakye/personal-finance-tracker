@@ -488,6 +488,60 @@ describe("Personal Finance Tracker", () => {
     await userEvent.type(sandboxInput, "uber");
     expect(await screen.findByText(/Maps/i)).toBeInTheDocument();
   });
+
+  it("supports language toggling between English and Turkish", async () => {
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+
+    // Verify it renders in English by default
+    expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Choose period/i })).toBeInTheDocument();
+
+    // Find and click language toggle button
+    const langToggle = screen.getByRole("button", { name: /Switch language|Dili değiştir/i });
+    expect(langToggle).toHaveTextContent("TR");
+    await userEvent.click(langToggle);
+
+    // Verify page titles and other elements are now in Turkish
+    expect(await screen.findByRole("heading", { name: "Kontrol Paneli" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Dönem seçin/i })).toBeInTheDocument();
+    expect(langToggle).toHaveTextContent("EN");
+
+    // Click it again to switch back to English
+    await userEvent.click(langToggle);
+    expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
+    expect(langToggle).toHaveTextContent("TR");
+  });
+
+  it("translates preset categories and descriptions dynamically on Rules view", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/category-rules": { rules: [] },
+      "/api/recurring-templates": { templates: [] },
+      "/api/settings": { currency: "USD" }
+    });
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole("link", { name: /Rules/i }));
+
+    // Verify it renders in English initially
+    expect(screen.getByText("Rent")).toBeInTheDocument();
+    expect(screen.getByText("uber → Transport")).toBeInTheDocument();
+
+    // Toggle language to Turkish
+    const langToggle = screen.getByRole("button", { name: /Switch language|Dili değiştir/i });
+    await userEvent.click(langToggle);
+
+    // Verify it renders in Turkish
+    expect(screen.getByText("Kira")).toBeInTheDocument();
+    expect(screen.getByText("uber → Ulaşım")).toBeInTheDocument();
+
+    // Switch back to English
+    await userEvent.click(langToggle);
+    expect(screen.getByText("Rent")).toBeInTheDocument();
+    expect(screen.getByText("uber → Transport")).toBeInTheDocument();
+  });
 });
 
 function mockFetch(routes: Record<string, unknown>) {

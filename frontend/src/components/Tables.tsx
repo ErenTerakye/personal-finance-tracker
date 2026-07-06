@@ -2,6 +2,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { money, periodLabel } from "../format";
 import type { BudgetRecord, TransactionRecord } from "../types";
 import { EmptyState, IconButton } from "./ui";
+import { useI18n } from "../i18n";
 
 export function TransactionTable({
   transactions,
@@ -12,11 +13,13 @@ export function TransactionTable({
   onEdit: (transaction: TransactionRecord) => void;
   onDelete: (transaction: TransactionRecord) => void;
 }) {
+  const { t } = useI18n();
+
   if (!transactions.length) {
     return (
       <EmptyState
-        title="No transactions found"
-        message="Change the filters or add a new ledger entry."
+        title={t("transactions.empty.noTransactions")}
+        message={t("transactions.empty.noTransactionsMsg")}
       />
     );
   }
@@ -24,40 +27,42 @@ export function TransactionTable({
   return (
     <div className="table-wrap">
       <table className="data-table transaction-table">
-        <caption>Transaction ledger</caption>
+        <caption>{t("transactions.historyTitle")}</caption>
         <thead>
           <tr>
-            <th scope="col">Date</th>
-            <th scope="col">Type</th>
-            <th scope="col">Category</th>
-            <th scope="col">Description</th>
-            <th scope="col">Amount</th>
-            <th scope="col">Actions</th>
+            <th scope="col">{t("common.date")}</th>
+            <th scope="col">{t("common.type")}</th>
+            <th scope="col">{t("common.category")}</th>
+            <th scope="col">{t("common.description")}</th>
+            <th scope="col">{t("common.amount")}</th>
+            <th scope="col">{t("common.actions")}</th>
           </tr>
         </thead>
         <tbody>
           {transactions.map((transaction) => (
             <tr key={transaction.id}>
-              <td data-label="Date">{transaction.date}</td>
-              <td data-label="Type">
-                <span className={`type-chip ${transaction.type}`}>{transaction.type}</span>
+              <td data-label={t("common.date")}>{transaction.date}</td>
+              <td data-label={t("common.type")}>
+                <span className={`type-chip ${transaction.type}`}>
+                  {t(`common.${transaction.type}`) || transaction.type}
+                </span>
               </td>
-              <td data-label="Category">{transaction.category}</td>
-              <td data-label="Description">{transaction.description || "None"}</td>
-              <td data-label="Amount">
+              <td data-label={t("common.category")}>{transaction.category}</td>
+              <td data-label={t("common.description")}>{transaction.description || t("common.all")}</td> {/* fallback empty or "None" */}
+              <td data-label={t("common.amount")}>
                 <strong className={transaction.type}>{money(transaction.amount)}</strong>
               </td>
-              <td data-label="Actions">
+              <td data-label={t("common.actions")}>
                 <div className="row-actions">
                   <IconButton
                     icon={Pencil}
-                    label={`Edit ${transaction.category} transaction`}
+                    label={t("common.editTransaction", { name: transaction.category })}
                     variant="secondary"
                     onClick={() => onEdit(transaction)}
                   />
                   <IconButton
                     icon={Trash2}
-                    label={`Delete ${transaction.category} transaction`}
+                    label={t("common.deleteTransaction", { name: transaction.category })}
                     variant="danger"
                     onClick={() => onDelete(transaction)}
                   />
@@ -80,11 +85,13 @@ export function BudgetTable({
   onEdit: (budget: BudgetRecord) => void;
   onDelete: (budget: BudgetRecord) => void;
 }) {
+  const { t } = useI18n();
+
   if (!budgets.length) {
     return (
       <EmptyState
-        title="No budgets found"
-        message="Change the filters or set a budget for this period."
+        title={t("budgets.empty.noRecords")}
+        message={t("budgets.empty.noRecordsMsg")}
       />
     );
   }
@@ -92,34 +99,34 @@ export function BudgetTable({
   return (
     <div className="table-wrap">
       <table className="data-table budget-table">
-        <caption>Budget records</caption>
+        <caption>{t("budgets.recordsTitle")}</caption>
         <thead>
           <tr>
-            <th scope="col">Period</th>
-            <th scope="col">Category</th>
-            <th scope="col">Amount</th>
-            <th scope="col">Actions</th>
+            <th scope="col">{t("common.period")}</th>
+            <th scope="col">{t("common.category")}</th>
+            <th scope="col">{t("common.amount")}</th>
+            <th scope="col">{t("common.actions")}</th>
           </tr>
         </thead>
         <tbody>
           {budgets.map((budget) => (
             <tr key={budget.id}>
-              <td data-label="Period">{periodLabel(budget.month, budget.year)}</td>
-              <td data-label="Category">{budget.category}</td>
-              <td data-label="Amount">
+              <td data-label={t("common.period")}>{periodLabel(budget.month, budget.year)}</td>
+              <td data-label={t("common.category")}>{budget.category}</td>
+              <td data-label={t("common.amount")}>
                 <strong>{money(budget.amount)}</strong>
               </td>
-              <td data-label="Actions">
+              <td data-label={t("common.actions")}>
                 <div className="row-actions">
                   <IconButton
                     icon={Pencil}
-                    label={`Update ${budget.category} budget`}
+                    label={t("common.editBudget", { name: budget.category })}
                     variant="secondary"
                     onClick={() => onEdit(budget)}
                   />
                   <IconButton
                     icon={Trash2}
-                    label={`Delete ${budget.category} budget`}
+                    label={t("common.deleteBudget", { name: budget.category })}
                     variant="danger"
                     onClick={() => onDelete(budget)}
                   />
@@ -132,3 +139,4 @@ export function BudgetTable({
     </div>
   );
 }
+

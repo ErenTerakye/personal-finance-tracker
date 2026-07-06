@@ -1,8 +1,13 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render as originalRender, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { CashflowTrend, TrendLines } from "./Charts";
 import type { DashboardData } from "../types";
+import { I18nProvider } from "../i18n";
+
+function render(ui: React.ReactElement) {
+  return originalRender(<I18nProvider>{ui}</I18nProvider>);
+}
 
 type TrendMonth = DashboardData["trend"]["months"][number];
 
