@@ -1061,7 +1061,7 @@
     border-block-end: 1px solid var(--rule);
   }
 
-  .cashflow-trend time {
+  .cashflow-trend li time {
     grid-area: time;
     color: var(--muted);
     font-family: var(--font-mono);
@@ -1074,7 +1074,7 @@
     font-size: var(--font-size-xs);
   }
 
-  .cashflow-trend strong {
+  .cashflow-trend li strong {
     grid-area: value;
     align-self: center;
     justify-self: end;
@@ -1277,6 +1277,13 @@
   }
 
   .chart-tooltip {
+    --tooltip-width: 11rem;
+    --tooltip-half-width: calc(var(--tooltip-width) / 2);
+    --tooltip-center: clamp(
+      var(--tooltip-half-width),
+      var(--tooltip-x),
+      calc(100% - var(--tooltip-half-width))
+    );
     position: absolute;
     z-index: 8;
     inset-block-start: clamp(
@@ -1284,14 +1291,10 @@
       calc(var(--tooltip-y) - 0.75rem),
       calc(100% - 6.25rem)
     );
-    inset-inline-start: clamp(
-      0.5rem,
-      calc(var(--tooltip-x) - 5.5rem),
-      calc(100% - min(14rem, 90cqi))
-    );
+    inset-inline-start: var(--tooltip-center);
     display: grid;
     gap: 0.05rem;
-    inline-size: max-content;
+    inline-size: var(--tooltip-width);
     max-inline-size: min(14rem, calc(100cqi - 1rem));
     padding: 0.55rem 0.65rem;
     pointer-events: none;
@@ -1300,7 +1303,7 @@
     border: 1px solid color-mix(in srgb, currentColor 28%, var(--rule));
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-soft);
-    translate: 0 -100%;
+    translate: -50% -100%;
   }
 
   .chart-tooltip::after {
@@ -1309,7 +1312,9 @@
     inset-block-end: -0.38rem;
     inset-inline-start: clamp(
       1rem,
-      calc(var(--tooltip-x) - var(--tooltip-x) + 50%),
+      calc(
+        var(--tooltip-half-width) + var(--tooltip-x) - var(--tooltip-center)
+      ),
       calc(100% - 1rem)
     );
     inline-size: 0.7rem;
@@ -2309,7 +2314,7 @@
       border-block-end: 0;
     }
 
-    .cashflow-trend strong {
+    .cashflow-trend li strong {
       align-self: end;
       justify-self: start;
       text-align: start;

@@ -6,6 +6,7 @@ import {
   CategoryBars,
   KpiCard,
   CashflowTrend,
+  TrendLines,
 } from "../components/Charts";
 import { ActivityList, BudgetPressureList } from "../components/Lists";
 import { PeriodControl } from "../components/PeriodControl";
@@ -159,6 +160,13 @@ export function DashboardView({
       </section>
 
       <section className="analysis-grid" aria-label={t("dashboard.title")}>
+        <Panel
+          title={t("dashboard.sections.contextTitle")}
+          detail={t("dashboard.sections.contextDetail")}
+          deferred
+        >
+          <TrendLines months={data.trend.months} />
+        </Panel>
         <Panel title={t("dashboard.sections.pressureTitle")} deferred>
           <BudgetPressureList statuses={data.budget_statuses} />
         </Panel>
