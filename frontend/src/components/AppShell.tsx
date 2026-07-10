@@ -4,10 +4,10 @@ import {
   LayoutDashboard,
   PiggyBank,
   ReceiptText,
-  SlidersHorizontal
+  SlidersHorizontal,
 } from "lucide-react";
 import { ReactNode } from "react";
-import { View, viewMeta, viewOrder } from "../routes";
+import { RouteView, View, viewMeta, viewOrder } from "../routes";
 import { ThemeToggle } from "./ThemeToggle";
 import { Notice } from "./ui";
 import { useI18n } from "../i18n";
@@ -16,7 +16,7 @@ const navIcons = {
   dashboard: LayoutDashboard,
   transactions: ReceiptText,
   budgets: PiggyBank,
-  rules: SlidersHorizontal
+  rules: SlidersHorizontal,
 };
 
 function LanguageToggle() {
@@ -43,9 +43,9 @@ export function AppShell({
   notice,
   mainRef,
   onNavigate,
-  children
+  children,
 }: {
-  view: View;
+  view: RouteView;
   notice: string;
   mainRef: React.RefObject<HTMLElement | null>;
   onNavigate: (view: View) => void;
@@ -63,6 +63,7 @@ export function AppShell({
           className="brand"
           href="/"
           onClick={(event) => {
+            if (!shouldHandleNavigation(event)) return;
             event.preventDefault();
             onNavigate("dashboard");
           }}
@@ -76,7 +77,7 @@ export function AppShell({
           </span>
         </a>
 
-        <nav aria-label="Primary">
+        <nav aria-label={t("common.primaryNavigation")}>
           <ul>
             {viewOrder.map((item) => {
               const Icon = navIcons[item];
@@ -90,13 +91,19 @@ export function AppShell({
                     aria-current={active ? "page" : undefined}
                     aria-label={translatedLabel}
                     onClick={(event) => {
+                      if (!shouldHandleNavigation(event)) return;
                       event.preventDefault();
                       onNavigate(item);
                     }}
                   >
                     <Icon aria-hidden="true" size={18} />
-                    <span className="nav-label nav-label-full">{translatedLabel}</span>
-                    <span className="nav-label nav-label-compact" aria-hidden="true">
+                    <span className="nav-label nav-label-full">
+                      {translatedLabel}
+                    </span>
+                    <span
+                      className="nav-label nav-label-compact"
+                      aria-hidden="true"
+                    >
                       {compactLabel}
                     </span>
                   </a>
@@ -114,16 +121,45 @@ export function AppShell({
 
       <div className="workspace">
         <main id="content" tabIndex={-1} ref={mainRef}>
-          <div className="local-status" aria-label="Database storage">
+          <div
+            className="local-status"
+            aria-label={t("common.databaseStorage")}
+          >
             <span>
               <Database aria-hidden="true" size={14} />
               {t("common.localSqlite")}
             </span>
           </div>
           <Notice message={notice} />
+          <div
+            className="sr-only"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {notice}
+          </div>
+          <div
+            className="sr-only"
+            aria-live="assertive"
+            aria-atomic="true"
+            id="app-alerts"
+          />
           {children}
         </main>
       </div>
     </div>
+  );
+}
+
+function shouldHandleNavigation(
+  event: React.MouseEvent<HTMLAnchorElement>,
+): boolean {
+  return (
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
   );
 }

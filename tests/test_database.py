@@ -1,4 +1,6 @@
-from finance_tracker.database import connect, initialize_database
+import sqlite3
+
+from finance_tracker.database import SCHEMA_VERSION, connect, initialize_database
 
 
 def test_initialize_database_creates_transactions_table(tmp_path):
@@ -149,3 +151,46 @@ def test_initialize_database_creates_settings_table_and_defaults_currency(tmp_pa
 
     assert table_row["name"] == "settings"
     assert setting_row["value"] == "USD"
+
+
+def test_initialize_database_versions_and_preserves_unversioned_ledger(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """
+            CREATE TABLE transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                type TEXT NOT NULL,
+                amount TEXT NOT NULL,
+                category TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                date TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO transactions (type, amount, category, description, date)
+            VALUES ('expense', '12.34', 'Food', 'Preserve me', '2026-07-10')
+            """
+        )
+
+    initialize_database(db_path)
+
+    with connect(db_path) as connection:
+        version = connection.execute("PRAGMA user_version").fetchone()[0]
+        row = connection.execute("SELECT amount, description FROM transactions").fetchone()
+    assert version == SCHEMA_VERSION
+    assert dict(row) == {"amount": "12.34", "description": "Preserve me"}
+
+
+def test_connect_applies_financial_ledger_pragmas(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    initialize_database(db_path)
+
+    with connect(db_path) as connection:
+        assert connection.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+        assert connection.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
+        assert connection.execute("PRAGMA synchronous").fetchone()[0] == 1
+        assert connection.execute("PRAGMA busy_timeout").fetchone()[0] == 5000

@@ -1,8 +1,8 @@
 # Release Checklist
 
-Use this checklist for the v1.0 portfolio release and later reviewer-demo refreshes.
+Use this checklist for the v1.1 hardened portfolio release and later reviewer-demo refreshes.
 
-## v1.0.0
+## v1.1.0
 
 - [ ] Create a fresh environment and install the app:
 
@@ -59,9 +59,18 @@ npm run build
 ```bash
 .venv/bin/python -m pytest
 .venv/bin/python -m ruff check .
+.venv/bin/python -m mypy
 npm test
+npm run lint
+npm run format:check
+npm run generate:api
+git diff --exit-code -- frontend/src/generated/api.ts
 npm run build
+npm run check:bundle
 npm run test:e2e
+npm run test:e2e:fullstack
+npm audit --audit-level=high
+.venv/bin/python -m pip_audit
 .venv/bin/python -m build
 ```
 

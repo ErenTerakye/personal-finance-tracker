@@ -1,10 +1,4 @@
-import {
-  AlertCircle,
-  X,
-  Loader2,
-  Plus,
-  type LucideIcon
-} from "lucide-react";
+import { AlertCircle, X, Loader2, Plus, type LucideIcon } from "lucide-react";
 import {
   AnchorHTMLAttributes,
   ButtonHTMLAttributes,
@@ -12,7 +6,7 @@ import {
   ReactNode,
   useEffect,
   useId,
-  useRef
+  useRef,
 } from "react";
 import { useI18n } from "../i18n";
 
@@ -21,7 +15,7 @@ export function PageHeader({
   title,
   summary,
   actions,
-  className = ""
+  className = "",
 }: {
   eyebrow: string;
   title: string;
@@ -32,9 +26,14 @@ export function PageHeader({
   const { locale } = useI18n();
 
   return (
-    <section className={`page-heading ${className}`.trim()} aria-labelledby="page-title">
+    <section
+      className={`page-heading ${className}`.trim()}
+      aria-labelledby="page-title"
+    >
       <div>
-        <p className="eyebrow" lang={locale}>{eyebrow}</p>
+        <p className="eyebrow" lang={locale}>
+          {eyebrow}
+        </p>
         <h1 id="page-title">{title}</h1>
         <p>{summary}</p>
       </div>
@@ -49,7 +48,7 @@ export function Panel({
   children,
   actions,
   className = "",
-  deferred = false
+  deferred = false,
 }: {
   title: string;
   detail?: string;
@@ -59,7 +58,9 @@ export function Panel({
   deferred?: boolean;
 }) {
   return (
-    <article className={`panel ${className} ${deferred ? "deferred-section" : ""}`.trim()}>
+    <article
+      className={`panel ${className} ${deferred ? "deferred-section" : ""}`.trim()}
+    >
       <header className="panel-header">
         <div>
           <h2>{title}</h2>
@@ -85,17 +86,13 @@ export function Notice({ message }: { message: string }) {
   if (!message) {
     return null;
   }
-  return (
-    <div className="notice" role="status" aria-live="polite">
-      {message}
-    </div>
-  );
+  return <div className="notice">{message}</div>;
 }
 
 export function EmptyState({
   title,
   message,
-  action
+  action,
 }: {
   title: string;
   message: string;
@@ -114,7 +111,7 @@ export function Field({
   id,
   label,
   hint,
-  children
+  children,
 }: {
   id: string;
   label: string;
@@ -141,7 +138,7 @@ export function ModalDialog({
   description,
   children,
   onClose,
-  className = ""
+  className = "",
 }: {
   open: boolean;
   title: string;
@@ -153,6 +150,7 @@ export function ModalDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
+  const { t } = useI18n();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -180,7 +178,12 @@ export function ModalDialog({
           <h2 id={titleId}>{title}</h2>
           {description ? <p id={descriptionId}>{description}</p> : null}
         </div>
-        <button className="icon-button" type="button" onClick={onClose} aria-label="Close dialog">
+        <button
+          className="icon-button"
+          type="button"
+          onClick={onClose}
+          aria-label={t("common.closeDialog")}
+        >
           <X aria-hidden="true" size={18} />
         </button>
       </header>
@@ -259,8 +262,17 @@ export function SubmitButton({
   variant?: "primary" | "secondary" | "danger" | "ghost";
 }) {
   return (
-    <button {...props} className={`button ${variant}`} type="submit" disabled={busy || props.disabled}>
-      {busy ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <Icon aria-hidden="true" size={18} />}
+    <button
+      {...props}
+      className={`button ${variant}`}
+      type="submit"
+      disabled={busy || props.disabled}
+    >
+      {busy ? (
+        <Loader2 className="spin" aria-hidden="true" size={18} />
+      ) : (
+        <Icon aria-hidden="true" size={18} />
+      )}
       <span>{children}</span>
     </button>
   );
@@ -269,7 +281,7 @@ export function SubmitButton({
 export function FilterBar({
   title,
   summary,
-  children
+  children,
 }: {
   title: string;
   summary: string;
@@ -289,7 +301,10 @@ export function FilterBar({
   );
 }
 
-export function stopForm(event: FormEvent<HTMLFormElement>, handler: () => void) {
+export function stopForm(
+  event: FormEvent<HTMLFormElement>,
+  handler: () => void,
+) {
   event.preventDefault();
   handler();
 }

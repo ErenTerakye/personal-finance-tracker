@@ -1,5 +1,13 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Download, Filter, PiggyBank, RotateCcw, Save, Trash2, Upload } from "lucide-react";
+import {
+  Download,
+  Filter,
+  PiggyBank,
+  RotateCcw,
+  Save,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { api, type BudgetFilters } from "../api";
 import { CsvImportDialog } from "../components/CsvImportDialog";
 import { BudgetPressureList } from "../components/Lists";
@@ -15,11 +23,17 @@ import {
   ModalDialog,
   PageHeader,
   Panel,
-  SubmitButton
+  SubmitButton,
 } from "../components/ui";
 import { money, monthNames, periodLabel } from "../format";
-import type { BudgetInput, BudgetRecord, BudgetStatus, ImportSummary } from "../types";
-import { useI18n } from "../i18n";
+import type {
+  BudgetInput,
+  BudgetRecord,
+  BudgetStatus,
+  ImportSummary,
+} from "../types";
+import { localizedNotice, useI18n } from "../i18n";
+import { readBudgetFilters, writeFilters } from "../urlState";
 
 type BudgetDialog = "create" | "edit" | null;
 
@@ -28,14 +42,14 @@ function defaultBudget(period: { month: number; year: number }): BudgetInput {
     category: "",
     amount: "",
     month: period.month,
-    year: period.year
+    year: period.year,
   };
 }
 
 export function BudgetsView({
   selectedPeriod,
   setSelectedPeriod,
-  setNotice
+  setNotice,
 }: {
   selectedPeriod: { month: number; year: number };
   setSelectedPeriod: (period: { month: number; year: number }) => void;
@@ -43,11 +57,9 @@ export function BudgetsView({
 }) {
   const [budgets, setBudgets] = useState<BudgetRecord[]>([]);
   const [statuses, setStatuses] = useState<BudgetStatus[]>([]);
-  const [filters, setFilters] = useState<BudgetFilters>({
-    month: selectedPeriod.month,
-    year: selectedPeriod.year,
-    category: ""
-  });
+  const [filters, setFilters] = useState<BudgetFilters>(() =>
+    readBudgetFilters(selectedPeriod),
+  );
   const [form, setForm] = useState<BudgetInput>(defaultBudget(selectedPeriod));
   const [dialog, setDialog] = useState<BudgetDialog>(null);
   const [pendingDelete, setPendingDelete] = useState<BudgetRecord | null>(null);
@@ -61,35 +73,48 @@ export function BudgetsView({
   const [importError, setImportError] = useState("");
   const { t } = useI18n();
 
-  const load = () => {
+  const load = (signal?: AbortSignal) => {
     const month = Number(filters.month || selectedPeriod.month);
     const year = Number(filters.year || selectedPeriod.year);
     setError("");
     setLoading(true);
-    Promise.all([api.budgets(filters), api.budgetStatuses(month, year)])
+    Promise.all([
+      api.budgets(filters, signal),
+      api.budgetStatuses(month, year, signal),
+    ])
       .then(([budgetResponse, statusResponse]) => {
         setBudgets(budgetResponse.budgets);
         setStatuses(statusResponse.statuses);
       })
-      .catch((err: Error) => setError(readError(err, t)))
-      .finally(() => setLoading(false));
+      .catch((err: Error) => {
+        if (err.name !== "AbortError") setError(readError(err, t));
+      })
+      .finally(() => {
+        if (!signal?.aborted) setLoading(false);
+      });
   };
 
-  useEffect(load, [filters, selectedPeriod]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [filters, selectedPeriod]);
 
   useEffect(() => {
     setFilters((current) => ({
       ...current,
       month: selectedPeriod.month,
-      year: selectedPeriod.year
+      year: selectedPeriod.year,
     }));
   }, [selectedPeriod.month, selectedPeriod.year]);
 
   function openCreate() {
-    setForm(defaultBudget({
-      month: Number(filters.month || selectedPeriod.month),
-      year: Number(filters.year || selectedPeriod.year)
-    }));
+    setForm(
+      defaultBudget({
+        month: Number(filters.month || selectedPeriod.month),
+        year: Number(filters.year || selectedPeriod.year),
+      }),
+    );
     setDialogError("");
     setDialog("create");
   }
@@ -99,7 +124,7 @@ export function BudgetsView({
       category: budget.category,
       amount: budget.amount,
       month: budget.month,
-      year: budget.year
+      year: budget.year,
     });
     setDialogError("");
     setDialog("edit");
@@ -111,7 +136,7 @@ export function BudgetsView({
     setSaving(true);
     try {
       const response = await api.setBudget(form);
-      setNotice(response.notice);
+      setNotice(localizedNotice(response, t));
       setSelectedPeriod({ month: form.month, year: form.year });
       setFilters({ month: form.month, year: form.year, category: "" });
       setForm(defaultBudget(form));
@@ -132,7 +157,7 @@ export function BudgetsView({
     setSaving(true);
     try {
       const response = await api.deleteBudget(pendingDelete.id);
-      setNotice(response.notice);
+      setNotice(localizedNotice(response, t));
       setPendingDelete(null);
       load();
     } catch (err) {
@@ -149,7 +174,7 @@ export function BudgetsView({
     try {
       const response = await api.importBudgetsCsv(csvText);
       setImportResult(response);
-      setNotice(response.notice);
+      setNotice(localizedNotice(response, t));
       load();
     } catch (err) {
       setImportError(readError(err, t));
@@ -158,12 +183,12 @@ export function BudgetsView({
     }
   }
 
-  const pressureDetail = loading 
-    ? t("budgets.pressureLoading") 
+  const pressureDetail = loading
+    ? t("budgets.pressureLoading")
     : `${filters.month}/${filters.year}`;
 
-  const recordsDetail = loading 
-    ? t("budgets.recordsLoading") 
+  const recordsDetail = loading
+    ? t("budgets.recordsLoading")
     : t("budgets.recordsCount", { count: budgets.length });
 
   return (
@@ -177,7 +202,11 @@ export function BudgetsView({
             <ActionButton icon={PiggyBank} onClick={openCreate}>
               {t("common.setBudget")}
             </ActionButton>
-            <ActionButton icon={Upload} variant="secondary" onClick={() => setImportOpen(true)}>
+            <ActionButton
+              icon={Upload}
+              variant="secondary"
+              onClick={() => setImportOpen(true)}
+            >
               {t("common.importCsv")}
             </ActionButton>
           </div>
@@ -195,7 +224,14 @@ export function BudgetsView({
           )}
         </Panel>
 
-        <BudgetFilterForm filters={filters} selectedPeriod={selectedPeriod} onChange={setFilters} />
+        <BudgetFilterForm
+          filters={filters}
+          selectedPeriod={selectedPeriod}
+          onChange={(next) => {
+            writeFilters(next);
+            setFilters(next);
+          }}
+        />
 
         <Panel
           title={t("budgets.recordsTitle")}
@@ -215,7 +251,11 @@ export function BudgetsView({
           {loading ? (
             <p className="loading-state">{t("budgets.recordsLoading")}</p>
           ) : (
-            <BudgetTable budgets={budgets} onEdit={openEdit} onDelete={setPendingDelete} />
+            <BudgetTable
+              budgets={budgets}
+              onEdit={openEdit}
+              onDelete={setPendingDelete}
+            />
           )}
         </Panel>
       </section>
@@ -249,7 +289,11 @@ export function BudgetsView({
       <ModalDialog
         open={pendingDelete !== null}
         title={t("budgets.dialog.deleteTitle")}
-        description={pendingDelete ? `${pendingDelete.category} ${money(pendingDelete.amount)}` : undefined}
+        description={
+          pendingDelete
+            ? `${pendingDelete.category} ${money(pendingDelete.amount)}`
+            : undefined
+        }
         onClose={() => {
           setPendingDelete(null);
           setDialogError("");
@@ -258,10 +302,19 @@ export function BudgetsView({
         {dialogError ? <ErrorBanner message={dialogError} /> : null}
         <p className="dialog-copy">{t("budgets.dialog.deleteConfirmText")}</p>
         <div className="dialog-actions">
-          <button className="button secondary" type="button" onClick={() => setPendingDelete(null)}>
+          <button
+            className="button secondary"
+            type="button"
+            onClick={() => setPendingDelete(null)}
+          >
             {t("common.cancel")}
           </button>
-          <button className="button danger" type="button" disabled={saving} onClick={confirmDelete}>
+          <button
+            className="button danger"
+            type="button"
+            disabled={saving}
+            onClick={confirmDelete}
+          >
             <Trash2 aria-hidden="true" size={18} />
             <span>{t("budgets.dialog.deleteBtn")}</span>
           </button>
@@ -274,7 +327,7 @@ export function BudgetsView({
 function BudgetFilterForm({
   filters,
   selectedPeriod,
-  onChange
+  onChange,
 }: {
   filters: BudgetFilters;
   selectedPeriod: { month: number; year: number };
@@ -289,34 +342,41 @@ function BudgetFilterForm({
 
   const period = {
     month: Number(draft.month || selectedPeriod.month),
-    year: Number(draft.year || selectedPeriod.year)
+    year: Number(draft.year || selectedPeriod.year),
   };
   const hasActiveFilters = Boolean(
-    draft.category || period.month !== selectedPeriod.month || period.year !== selectedPeriod.year
+    draft.category ||
+    period.month !== selectedPeriod.month ||
+    period.year !== selectedPeriod.year,
   );
 
   function resetFilters() {
     const reset: BudgetFilters = {
       month: selectedPeriod.month,
       year: selectedPeriod.year,
-      category: ""
+      category: "",
     };
     setDraft(reset);
     onChange(reset);
   }
 
   return (
-    <FilterBar title={t("budgets.filterTitle")} summary={t("budgets.filterSummary", { period: periodLabel(period.month, period.year) })}>
+    <FilterBar
+      title={t("budgets.filterTitle")}
+      summary={t("budgets.filterSummary", {
+        period: periodLabel(period.month, period.year),
+      })}
+    >
       <form
         className="filter-form"
-        aria-label="Filter budgets"
+        aria-label={t("budgets.filterAria")}
         onSubmit={(event) => {
           event.preventDefault();
           onChange(draft);
         }}
       >
         <PeriodControl
-          label="Budget filter period"
+          label={t("budgets.filterPeriod")}
           value={period}
           onChange={(nextPeriod) => setDraft({ ...draft, ...nextPeriod })}
         />
@@ -325,7 +385,9 @@ function BudgetFilterForm({
             id="budget-filter-category"
             type="search"
             value={draft.category}
-            onChange={(event) => setDraft({ ...draft, category: event.target.value })}
+            onChange={(event) =>
+              setDraft({ ...draft, category: event.target.value })
+            }
           />
         </Field>
         <div className="filter-actions">
@@ -354,7 +416,7 @@ function BudgetFormDialog({
   saving,
   onClose,
   onSubmit,
-  onChange
+  onChange,
 }: {
   open: boolean;
   mode: Exclude<BudgetDialog, null>;
@@ -370,29 +432,45 @@ function BudgetFormDialog({
   return (
     <ModalDialog
       open={open}
-      title={mode === "edit" ? t("budgets.dialog.updateTitle") : t("budgets.dialog.setTitle")}
+      title={
+        mode === "edit"
+          ? t("budgets.dialog.updateTitle")
+          : t("budgets.dialog.setTitle")
+      }
       description={t("budgets.dialog.setDescription")}
       onClose={onClose}
     >
       {error ? <ErrorBanner message={error} /> : null}
       <form className="dialog-form" onSubmit={onSubmit}>
-        <Field id="budget-category" label={t("common.category")} hint={t("budgets.dialog.categoryHint")}>
+        <Field
+          id="budget-category"
+          label={t("common.category")}
+          hint={t("budgets.dialog.categoryHint")}
+        >
           <input
             id="budget-category"
             aria-describedby="budget-category-hint"
             required
             value={form.category}
-            onChange={(event) => onChange({ ...form, category: event.target.value })}
+            onChange={(event) =>
+              onChange({ ...form, category: event.target.value })
+            }
           />
         </Field>
-        <Field id="budget-amount" label={t("common.amount")} hint={t("budgets.dialog.amountHint")}>
+        <Field
+          id="budget-amount"
+          label={t("common.amount")}
+          hint={t("budgets.dialog.amountHint")}
+        >
           <input
             id="budget-amount"
             aria-describedby="budget-amount-hint"
             inputMode="decimal"
             required
             value={form.amount}
-            onChange={(event) => onChange({ ...form, amount: event.target.value })}
+            onChange={(event) =>
+              onChange({ ...form, amount: event.target.value })
+            }
           />
         </Field>
         <Field id="budget-month" label={t("common.month")}>
@@ -400,7 +478,9 @@ function BudgetFormDialog({
             id="budget-month"
             required
             value={form.month}
-            onChange={(event) => onChange({ ...form, month: Number(event.target.value) })}
+            onChange={(event) =>
+              onChange({ ...form, month: Number(event.target.value) })
+            }
           >
             {monthNames.slice(1).map((name, index) => (
               <option key={name} value={index + 1}>
@@ -416,7 +496,9 @@ function BudgetFormDialog({
             type="number"
             required
             value={form.year}
-            onChange={(event) => onChange({ ...form, year: Number(event.target.value) })}
+            onChange={(event) =>
+              onChange({ ...form, year: Number(event.target.value) })
+            }
           />
         </Field>
         <div className="dialog-actions">
@@ -438,4 +520,3 @@ function readError(error: unknown, t: (key: string) => string): string {
   }
   return t("common.errorFallback");
 }
-

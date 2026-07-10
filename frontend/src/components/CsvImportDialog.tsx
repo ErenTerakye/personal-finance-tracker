@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Search, Upload } from "lucide-react";
 import type { ImportSummary, TransactionImportPreview } from "../types";
 import { ErrorBanner, Field, ModalDialog, SubmitButton } from "./ui";
-import { useI18n } from "../i18n";
+import { localizedNotice, useI18n } from "../i18n";
 
 export function CsvImportDialog({
   open,
@@ -16,7 +16,7 @@ export function CsvImportDialog({
   onClose,
   onImport,
   onPreview,
-  onReset
+  onReset,
 }: {
   open: boolean;
   title: string;
@@ -49,7 +49,7 @@ export function CsvImportDialog({
     if (!file) {
       return;
     }
-    const text = csvText || await readFileText(file);
+    const text = csvText || (await readFileText(file));
     if (onPreview && !preview) {
       setCsvText(text);
       await onPreview(text);
@@ -70,7 +70,11 @@ export function CsvImportDialog({
     >
       {error ? <ErrorBanner message={error} /> : null}
       <form className="dialog-form" onSubmit={submitImport}>
-        <Field id="csv-file" label={t("csv.fileLabel")} hint={t("csv.fileHint")}>
+        <Field
+          id="csv-file"
+          label={t("csv.fileLabel")}
+          hint={t("csv.fileHint")}
+        >
           <input
             id="csv-file"
             type="file"
@@ -122,7 +126,9 @@ async function readFileText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.addEventListener("load", () => resolve(String(reader.result ?? "")));
-    reader.addEventListener("error", () => reject(reader.error ?? new Error("Could not read the CSV file.")));
+    reader.addEventListener("error", () =>
+      reject(reader.error ?? new Error("Could not read the CSV file.")),
+    );
     reader.readAsText(file);
   });
 }
@@ -130,7 +136,7 @@ async function readFileText(file: File): Promise<string> {
 function ImportPreviewSummary({
   preview,
   allowDuplicates,
-  onAllowDuplicatesChange
+  onAllowDuplicatesChange,
 }: {
   preview: TransactionImportPreview;
   allowDuplicates: boolean;
@@ -145,7 +151,7 @@ function ImportPreviewSummary({
         {t("csv.previewSummary", {
           valid: preview.valid_count,
           duplicate: preview.duplicate_count,
-          invalid: preview.invalid_count
+          invalid: preview.invalid_count,
         })}
       </span>
       {preview.duplicate_count ? (
@@ -162,7 +168,10 @@ function ImportPreviewSummary({
         {preview.rows.slice(0, 8).map((row) => (
           <li key={`${row.line_number}-${row.status}`}>
             <strong>
-              {t("csv.linePreview", { line: row.line_number, status: t(`common.${row.status}`) || row.status })}
+              {t("csv.linePreview", {
+                line: row.line_number,
+                status: t(`common.${row.status}`) || row.status,
+              })}
             </strong>
             <span>
               {row.error ??
@@ -180,11 +189,11 @@ function ImportResultSummary({ result }: { result: ImportSummary }) {
 
   return (
     <div className="import-summary" role="status" aria-live="polite">
-      <strong>{result.notice}</strong>
+      <strong>{localizedNotice(result, t)}</strong>
       <span>
         {t("csv.importedSummary", {
           imported: result.imported_count,
-          skipped: result.skipped_count
+          skipped: result.skipped_count,
         })}
       </span>
       {result.errors.length ? (
@@ -197,4 +206,3 @@ function ImportResultSummary({ result }: { result: ImportSummary }) {
     </div>
   );
 }
-

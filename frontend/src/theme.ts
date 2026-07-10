@@ -63,7 +63,9 @@ export function subscribeToSystemColorScheme(listener: () => void) {
 }
 
 function colorSchemeMeta() {
-  let meta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
+  let meta = document.querySelector<HTMLMetaElement>(
+    'meta[name="color-scheme"]',
+  );
   if (!meta) {
     meta = document.createElement("meta");
     meta.name = "color-scheme";

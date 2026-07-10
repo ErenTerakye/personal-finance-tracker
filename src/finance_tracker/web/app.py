@@ -7,10 +7,10 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.responses import FileResponse, JSONResponse, Response
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict
+from fastapi import FastAPI, HTTPException, Query, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from finance_tracker.charts import render_monthly_chart_png, render_trend_chart_png
 from finance_tracker.csv_io import (
@@ -23,6 +23,7 @@ from finance_tracker.csv_io import (
     import_transactions_csv_text,
     preview_transactions_csv_text,
 )
+from finance_tracker.database import initialize_database
 from finance_tracker.exceptions import (
     BudgetNotFoundError,
     CategoryRuleNotFoundError,
@@ -51,8 +52,8 @@ from finance_tracker.services import (
 
 WEB_DIR = Path(__file__).parent
 STATIC_DIR = WEB_DIR / "static"
-ASSETS_DIR = STATIC_DIR / "spa" / "assets"
-INDEX_PATH = STATIC_DIR / "spa" / "index.html"
+SPA_DIR = STATIC_DIR / "spa"
+MAX_CSV_BYTES = 5 * 1024 * 1024
 
 MONTH_NAMES = (
     "",
@@ -72,19 +73,27 @@ MONTH_NAMES = (
 
 
 class ApiModel(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+
+class ApiErrorDetail(ApiModel):
+    code: str
+    message: str
+    fields: dict[str, str] | None = None
 
 
 class ErrorResponse(ApiModel):
-    error: str
+    error: ApiErrorDetail
 
 
 class NoticeResponse(ApiModel):
     notice: str
+    notice_code: str
 
 
 class ImportSummaryResponse(ApiModel):
     notice: str
+    notice_code: str
     imported_count: int
     skipped_count: int
     errors: list[str]
@@ -92,38 +101,38 @@ class ImportSummaryResponse(ApiModel):
 
 class TransactionRequest(ApiModel):
     type: Literal["income", "expense"]
-    amount: str
-    category: str
-    description: str = ""
-    date: str
+    amount: str = Field(min_length=1, max_length=64)
+    category: str = Field(min_length=1, max_length=100)
+    description: str = Field(default="", max_length=500)
+    date: str = Field(min_length=10, max_length=10)
 
 
 class TransactionPatchRequest(ApiModel):
     type: Literal["income", "expense"] | None = None
-    amount: str | None = None
-    category: str | None = None
-    description: str | None = None
-    date: str | None = None
+    amount: str | None = Field(default=None, min_length=1, max_length=64)
+    category: str | None = Field(default=None, min_length=1, max_length=100)
+    description: str | None = Field(default=None, max_length=500)
+    date: str | None = Field(default=None, min_length=10, max_length=10)
 
 
 class BudgetRequest(ApiModel):
-    category: str
-    amount: str
-    month: int
-    year: int
+    category: str = Field(min_length=1, max_length=100)
+    amount: str = Field(min_length=1, max_length=64)
+    month: int = Field(ge=1, le=12)
+    year: int = Field(ge=1, le=9999)
 
 
 class CategoryRuleRequest(ApiModel):
-    alias: str
-    category: str
+    alias: str = Field(min_length=1, max_length=100)
+    category: str = Field(min_length=1, max_length=100)
 
 
 class RecurringTemplateRequest(ApiModel):
     type: Literal["income", "expense"]
-    amount: str
-    category: str
-    description: str = ""
-    day_of_month: int
+    amount: str = Field(min_length=1, max_length=64)
+    category: str = Field(min_length=1, max_length=100)
+    description: str = Field(default="", max_length=500)
+    day_of_month: int = Field(ge=1, le=31)
 
 
 class SettingsResponse(ApiModel):
@@ -132,6 +141,14 @@ class SettingsResponse(ApiModel):
 
 class SettingsRequest(ApiModel):
     currency: str
+
+    @field_validator("currency")
+    @classmethod
+    def normalize_currency(cls, value: str) -> str:
+        currency = value.strip().upper()
+        if currency not in {"USD", "EUR", "GBP", "TRY"}:
+            raise ValueError("Currency must be one of USD, EUR, GBP, or TRY.")
+        return currency
 
 
 class TransactionResponse(ApiModel):
@@ -239,21 +256,31 @@ class DashboardResponse(ApiModel):
     currency: str
 
 
+class PageResponse(ApiModel):
+    limit: int
+    offset: int
+    total: int
+
+
 class TransactionListResponse(ApiModel):
     transactions: list[TransactionResponse]
+    page: PageResponse
 
 
 class TransactionMutationResponse(ApiModel):
     notice: str
+    notice_code: str
     transaction: TransactionResponse
 
 
 class BudgetListResponse(ApiModel):
     budgets: list[BudgetResponse]
+    page: PageResponse
 
 
 class BudgetMutationResponse(ApiModel):
     notice: str
+    notice_code: str
     budget: BudgetResponse
 
 
@@ -263,6 +290,7 @@ class CategoryRuleListResponse(ApiModel):
 
 class CategoryRuleMutationResponse(ApiModel):
     notice: str
+    notice_code: str
     rule: CategoryRuleResponse
 
 
@@ -272,11 +300,13 @@ class RecurringTemplateListResponse(ApiModel):
 
 class RecurringTemplateMutationResponse(ApiModel):
     notice: str
+    notice_code: str
     template: RecurringTemplateResponse
 
 
 class RecurringApplyResponse(ApiModel):
     notice: str
+    notice_code: str
     created_count: int
     skipped_duplicates: int
     transactions: list[TransactionResponse]
@@ -302,11 +332,25 @@ class BudgetStatusListResponse(ApiModel):
 
 
 def create_app(db_path: Path | str) -> FastAPI:
-    app = FastAPI(title="Personal Finance Tracker")
-    app.state.db_path = Path(db_path)
+    resolved_db_path = Path(db_path)
+    initialize_database(resolved_db_path)
+    app = FastAPI(title="Personal Finance Tracker", version="1.1.0")
+    app.state.db_path = resolved_db_path
 
-    if ASSETS_DIR.exists():
-        app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self'; "
+            "img-src 'self' data:; font-src 'self'; connect-src 'self'; "
+            "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+        )
+        if request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.exception_handler(FinanceTrackerError)
     async def handle_finance_error(_request: Request, exc: FinanceTrackerError) -> JSONResponse:
@@ -323,7 +367,36 @@ def create_app(db_path: Path | str) -> FastAPI:
             )
             else status.HTTP_400_BAD_REQUEST
         )
-        return JSONResponse(status_code=status_code, content={"error": str(exc)})
+        code = "not_found" if status_code == status.HTTP_404_NOT_FOUND else "validation_error"
+        return _error_response(status_code, code, str(exc))
+
+    @app.exception_handler(RequestValidationError)
+    async def handle_request_validation(
+        _request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        fields = {
+            ".".join(str(part) for part in item["loc"] if part != "body"): item["msg"]
+            for item in exc.errors()
+        }
+        return _error_response(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "request_validation_error",
+            "The request contains invalid fields.",
+            fields or None,
+        )
+
+    @app.exception_handler(HTTPException)
+    async def handle_http_error(_request: Request, exc: HTTPException) -> JSONResponse:
+        detail = exc.detail
+        if isinstance(detail, dict):
+            message = str(detail.get("error") or detail.get("message") or "Request failed.")
+        else:
+            message = str(detail)
+        code = {
+            status.HTTP_413_CONTENT_TOO_LARGE: "upload_too_large",
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE: "unsupported_media_type",
+        }.get(exc.status_code, "http_error")
+        return _error_response(exc.status_code, code, message)
 
     @app.get("/api/health")
     def health() -> dict[str, str]:
@@ -386,15 +459,20 @@ def create_app(db_path: Path | str) -> FastAPI:
         year: int | None = None,
         category: str | None = None,
         transaction_type: Literal["income", "expense"] | None = None,
+        limit: int = Query(default=100, ge=1, le=250),
+        offset: int = Query(default=0, ge=0),
     ) -> TransactionListResponse:
-        transactions = _transaction_service(request).list_transactions(
+        transactions, total = _transaction_service(request).list_transactions_page(
             month=month,
             year=year,
             category=category or None,
             transaction_type=transaction_type,
+            limit=limit,
+            offset=offset,
         )
         return TransactionListResponse(
-            transactions=[_transaction_response(transaction) for transaction in transactions]
+            transactions=[_transaction_response(transaction) for transaction in transactions],
+            page=PageResponse(limit=limit, offset=offset, total=total),
         )
 
     @app.post(
@@ -412,7 +490,9 @@ def create_app(db_path: Path | str) -> FastAPI:
             _transaction_service(request),
             allow_duplicates=allow_duplicates,
         )
-        return _import_summary_response("Transaction CSV import finished.", result)
+        return _import_summary_response(
+            "csv.transactions.imported", "Transaction CSV import finished.", result
+        )
 
     @app.post(
         "/api/transactions/import-csv/preview",
@@ -467,6 +547,7 @@ def create_app(db_path: Path | str) -> FastAPI:
         )
         return TransactionMutationResponse(
             notice="Transaction added to the local ledger.",
+            notice_code="transaction.created",
             transaction=_transaction_response(transaction),
         )
 
@@ -490,6 +571,7 @@ def create_app(db_path: Path | str) -> FastAPI:
         )
         return TransactionMutationResponse(
             notice="Transaction changes saved.",
+            notice_code="transaction.updated",
             transaction=_transaction_response(transaction),
         )
 
@@ -500,7 +582,10 @@ def create_app(db_path: Path | str) -> FastAPI:
     )
     def delete_transaction(request: Request, transaction_id: int) -> NoticeResponse:
         _transaction_service(request).delete_transaction(transaction_id)
-        return NoticeResponse(notice="Transaction removed from the local ledger.")
+        return NoticeResponse(
+            notice="Transaction removed from the local ledger.",
+            notice_code="transaction.deleted",
+        )
 
     @app.get(
         "/api/budgets",
@@ -512,13 +597,20 @@ def create_app(db_path: Path | str) -> FastAPI:
         month: int | None = None,
         year: int | None = None,
         category: str | None = None,
+        limit: int = Query(default=100, ge=1, le=250),
+        offset: int = Query(default=0, ge=0),
     ) -> BudgetListResponse:
-        budgets = _budget_service(request).list_budgets(
+        budgets, total = _budget_service(request).list_budgets_page(
             month=month,
             year=year,
             category=category or None,
+            limit=limit,
+            offset=offset,
         )
-        return BudgetListResponse(budgets=[_budget_response(budget) for budget in budgets])
+        return BudgetListResponse(
+            budgets=[_budget_response(budget) for budget in budgets],
+            page=PageResponse(limit=limit, offset=offset, total=total),
+        )
 
     @app.post(
         "/api/budgets/import-csv",
@@ -528,7 +620,9 @@ def create_app(db_path: Path | str) -> FastAPI:
     async def import_budgets(request: Request) -> ImportSummaryResponse:
         csv_text = await _request_text(request)
         result = import_budgets_csv_text(csv_text, _budget_service(request))
-        return _import_summary_response("Budget CSV import finished.", result)
+        return _import_summary_response(
+            "csv.budgets.imported", "Budget CSV import finished.", result
+        )
 
     @app.get(
         "/api/budgets/export-csv",
@@ -567,6 +661,7 @@ def create_app(db_path: Path | str) -> FastAPI:
         )
         return BudgetMutationResponse(
             notice="Budget saved for the selected month.",
+            notice_code="budget.saved",
             budget=_budget_response(budget),
         )
 
@@ -588,7 +683,9 @@ def create_app(db_path: Path | str) -> FastAPI:
     )
     def delete_budget(request: Request, budget_id: int) -> NoticeResponse:
         _budget_service(request).delete_budget(budget_id)
-        return NoticeResponse(notice="Budget removed from the local ledger.")
+        return NoticeResponse(
+            notice="Budget removed from the local ledger.", notice_code="budget.deleted"
+        )
 
     @app.get(
         "/api/category-rules",
@@ -614,6 +711,7 @@ def create_app(db_path: Path | str) -> FastAPI:
         )
         return CategoryRuleMutationResponse(
             notice="Category rule saved.",
+            notice_code="category_rule.saved",
             rule=_category_rule_response(rule),
         )
 
@@ -624,7 +722,9 @@ def create_app(db_path: Path | str) -> FastAPI:
     )
     def delete_category_rule(request: Request, rule_id: int) -> NoticeResponse:
         _category_rule_service(request).delete_rule(rule_id)
-        return NoticeResponse(notice="Category rule removed.")
+        return NoticeResponse(
+            notice="Category rule removed.", notice_code="category_rule.deleted"
+        )
 
     @app.get(
         "/api/recurring-templates",
@@ -655,6 +755,7 @@ def create_app(db_path: Path | str) -> FastAPI:
         )
         return RecurringTemplateMutationResponse(
             notice="Recurring template saved.",
+            notice_code="recurring_template.saved",
             template=_recurring_template_response(template),
         )
 
@@ -665,7 +766,9 @@ def create_app(db_path: Path | str) -> FastAPI:
     )
     def delete_recurring_template(request: Request, template_id: int) -> NoticeResponse:
         _recurring_template_service(request).delete_template(template_id)
-        return NoticeResponse(notice="Recurring template removed.")
+        return NoticeResponse(
+            notice="Recurring template removed.", notice_code="recurring_template.deleted"
+        )
 
     @app.post(
         "/api/recurring-templates/apply",
@@ -768,46 +871,55 @@ def create_app(db_path: Path | str) -> FastAPI:
         payload: SettingsRequest,
     ) -> NoticeResponse:
         _settings_service(request).set_currency(payload.currency)
-        return NoticeResponse(notice="Ledger currency updated successfully.")
+        return NoticeResponse(
+            notice="Ledger currency updated successfully.", notice_code="settings.currency_updated"
+        )
 
-    @app.get("/", include_in_schema=False)
-    def spa_index() -> FileResponse:
-        return _spa_response()
-
-    @app.get("/{path:path}", include_in_schema=False)
-    def spa_fallback(path: str) -> FileResponse:
-        if path.startswith("api/"):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail={"error": "Not found."},
-            )
-        return _spa_response()
+    if SPA_DIR.exists():
+        app.frontend("/", directory=SPA_DIR, fallback="index.html")
 
     return app
 
 
 def _transaction_service(request: Request) -> TransactionService:
-    return TransactionService(request.app.state.db_path)
+    return TransactionService(request.app.state.db_path, initialize=False)
 
 
 def _budget_service(request: Request) -> BudgetService:
-    return BudgetService(request.app.state.db_path)
+    return BudgetService(request.app.state.db_path, initialize=False)
 
 
 def _category_rule_service(request: Request) -> CategoryRuleService:
-    return CategoryRuleService(request.app.state.db_path)
+    return CategoryRuleService(request.app.state.db_path, initialize=False)
 
 
 def _recurring_template_service(request: Request) -> RecurringTemplateService:
-    return RecurringTemplateService(request.app.state.db_path)
+    return RecurringTemplateService(request.app.state.db_path, initialize=False)
 
 
 def _settings_service(request: Request) -> SettingsService:
-    return SettingsService(request.app.state.db_path)
+    return SettingsService(request.app.state.db_path, initialize=False)
 
 
 async def _request_text(request: Request) -> str:
+    content_type = request.headers.get("content-type", "").split(";", maxsplit=1)[0].lower()
+    if content_type not in {"text/csv", "application/csv", "text/plain"}:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail={"error": "CSV upload must use a CSV text content type."},
+        )
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > MAX_CSV_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail={"error": "CSV upload must be 5 MB or smaller."},
+        )
     body = await request.body()
+    if len(body) > MAX_CSV_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail={"error": "CSV upload must be 5 MB or smaller."},
+        )
     try:
         return body.decode("utf-8-sig")
     except UnicodeDecodeError as exc:
@@ -861,9 +973,12 @@ def _period_filename(prefix: str, month: int | None, year: int | None, extension
     return f"{prefix}.{extension}"
 
 
-def _import_summary_response(notice: str, result: ImportResult) -> ImportSummaryResponse:
+def _import_summary_response(
+    notice_code: str, notice: str, result: ImportResult
+) -> ImportSummaryResponse:
     return ImportSummaryResponse(
         notice=notice,
+        notice_code=notice_code,
         imported_count=result.imported_count,
         skipped_count=result.skipped_count,
         errors=result.errors,
@@ -976,6 +1091,7 @@ def _recurring_apply_response(result: RecurringApplyResult) -> RecurringApplyRes
             f"Created {len(result.created)} recurring transaction(s); "
             f"skipped {result.skipped_duplicates} duplicate(s)."
         ),
+        notice_code="recurring_template.applied",
         created_count=len(result.created),
         skipped_duplicates=result.skipped_duplicates,
         transactions=[_transaction_response(transaction) for transaction in result.created],
@@ -1049,8 +1165,13 @@ def _require_id(value: int | None) -> int:
     return value
 
 
-def _spa_response() -> FileResponse:
-    if INDEX_PATH.exists():
-        return FileResponse(INDEX_PATH)
-    fallback_path = STATIC_DIR / "fallback.html"
-    return FileResponse(fallback_path)
+def _error_response(
+    status_code: int,
+    code: str,
+    message: str,
+    fields: dict[str, str] | None = None,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content={"error": {"code": code, "message": message, "fields": fields}},
+    )

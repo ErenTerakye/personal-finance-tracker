@@ -12,9 +12,9 @@ The application uses a layered structure:
 
 - `cli.py` owns Typer commands, terminal output, and process exit behavior.
 - `models.py` owns domain objects and validation helpers.
-- `services.py` coordinates use cases and keeps CLI code away from persistence details.
-- `repositories.py` owns SQL queries and maps database rows into domain objects.
-- `database.py` owns SQLite connection setup and schema initialization.
+- `services.py` coordinates transactional use cases and keeps CLI code away from persistence details.
+- `repositories.py` owns SQL queries and row mapping without committing transactions.
+- `database.py` owns SQLite connection setup and ordered `PRAGMA user_version` migrations.
 - `csv_io.py` owns portable transaction and budget CSV import/export behavior.
 - `reports.py` owns monthly and trend report calculations and text formatting.
 - `charts.py` owns optional PNG chart generation with matplotlib.
@@ -117,7 +117,7 @@ The Web UI is an intentional scope expansion from the original CLI-first milesto
 finance-tracker web --host 127.0.0.1 --port 8000
 ```
 
-The Python app exposes JSON endpoints under `/api` and serves the compiled React SPA for browser routes. During development, Vite can run separately against the same local API.
+The Python app exposes JSON endpoints under `/api` and serves the compiled React SPA for browser routes. During development, Vite proxies `/api` to the FastAPI process at `127.0.0.1:8000`. OpenAPI generates checked-in TypeScript wire types; list responses are paginated while CSV exports remain complete.
 
 Supported browser workflows:
 

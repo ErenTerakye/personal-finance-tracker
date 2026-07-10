@@ -39,7 +39,7 @@ class TransactionRepository:
                 transaction.date.isoformat(),
             ),
         )
-        self.connection.commit()
+        assert cursor.lastrowid is not None
         return self.get(cursor.lastrowid)
 
     def get(self, transaction_id: int) -> Transaction:
@@ -67,39 +67,39 @@ class TransactionRepository:
                 transaction_id,
             ),
         )
-        self.connection.commit()
         if cursor.rowcount == 0:
             raise TransactionNotFoundError(f"Transaction {transaction_id} was not found.")
         return self.get(transaction_id)
 
-    def list(self, filters: TransactionFilters | None = None) -> list[Transaction]:
+    def list(
+        self,
+        filters: TransactionFilters | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[Transaction]:
         filters = filters or TransactionFilters()
-        clauses: list[str] = []
-        params: list[str | int] = []
-
-        if filters.month is not None:
-            clauses.append("CAST(strftime('%m', date) AS INTEGER) = ?")
-            params.append(filters.month)
-        if filters.year is not None:
-            clauses.append("CAST(strftime('%Y', date) AS INTEGER) = ?")
-            params.append(filters.year)
-        if filters.category is not None:
-            clauses.append("LOWER(category) = LOWER(?)")
-            params.append(filters.category)
-        if filters.transaction_type is not None:
-            clauses.append("type = ?")
-            params.append(filters.transaction_type.value)
-
+        clauses, params = _transaction_filter_sql(filters)
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        pagination = ""
+        if limit is not None:
+            pagination = " LIMIT ? OFFSET ?"
+            params.extend((limit, offset))
         rows = self.connection.execute(
-            f"SELECT * FROM transactions {where} ORDER BY date DESC, id DESC",
+            f"SELECT * FROM transactions {where} ORDER BY date DESC, id DESC{pagination}",
             params,
         ).fetchall()
         return [self._from_row(row) for row in rows]
 
+    def count_filtered(self, filters: TransactionFilters | None = None) -> int:
+        clauses, params = _transaction_filter_sql(filters or TransactionFilters())
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        row = self.connection.execute(
+            f"SELECT COUNT(*) AS count FROM transactions {where}", params
+        ).fetchone()
+        return int(row["count"])
+
     def delete(self, transaction_id: int) -> None:
         cursor = self.connection.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
-        self.connection.commit()
         if cursor.rowcount == 0:
             raise TransactionNotFoundError(f"Transaction {transaction_id} was not found.")
 
@@ -153,6 +153,7 @@ class BudgetRepository:
         )
         if existing is None:
             return self.add(budget)
+        assert existing.id is not None
         return self.update(existing.id, budget)
 
     def add(self, budget: Budget) -> Budget:
@@ -168,7 +169,7 @@ class BudgetRepository:
                 str(budget.amount),
             ),
         )
-        self.connection.commit()
+        assert cursor.lastrowid is not None
         return self.get(cursor.lastrowid)
 
     def get(self, budget_id: int) -> Budget:
@@ -205,12 +206,16 @@ class BudgetRepository:
                 budget_id,
             ),
         )
-        self.connection.commit()
         if cursor.rowcount == 0:
             raise BudgetNotFoundError(f"Budget {budget_id} was not found.")
         return self.get(budget_id)
 
-    def list(self, filters: BudgetFilters | None = None) -> list[Budget]:
+    def list(
+        self,
+        filters: BudgetFilters | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[Budget]:
         filters = filters or BudgetFilters()
         clauses: list[str] = []
         params: list[str | int] = []
@@ -226,15 +231,38 @@ class BudgetRepository:
             params.append(filters.category)
 
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        pagination = ""
+        if limit is not None:
+            pagination = " LIMIT ? OFFSET ?"
+            params.extend((limit, offset))
         rows = self.connection.execute(
-            f"SELECT * FROM budgets {where} ORDER BY year DESC, month DESC, LOWER(category)",
+            f"SELECT * FROM budgets {where} "
+            f"ORDER BY year DESC, month DESC, LOWER(category){pagination}",
             params,
         ).fetchall()
         return [self._from_row(row) for row in rows]
 
+    def count_filtered(self, filters: BudgetFilters | None = None) -> int:
+        filters = filters or BudgetFilters()
+        clauses: list[str] = []
+        params: list[str | int] = []
+        if filters.month is not None:
+            clauses.append("month = ?")
+            params.append(filters.month)
+        if filters.year is not None:
+            clauses.append("year = ?")
+            params.append(filters.year)
+        if filters.category is not None:
+            clauses.append("LOWER(category) = LOWER(?)")
+            params.append(filters.category)
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        row = self.connection.execute(
+            f"SELECT COUNT(*) AS count FROM budgets {where}", params
+        ).fetchone()
+        return int(row["count"])
+
     def delete(self, budget_id: int) -> None:
         cursor = self.connection.execute("DELETE FROM budgets WHERE id = ?", (budget_id,))
-        self.connection.commit()
         if cursor.rowcount == 0:
             raise BudgetNotFoundError(f"Budget {budget_id} was not found.")
 
@@ -258,6 +286,7 @@ class CategoryRuleRepository:
         existing = self.find_by_alias(rule.alias)
         if existing is None:
             return self.add(rule)
+        assert existing.id is not None
         return self.update(existing.id, rule)
 
     def add(self, rule: CategoryRule) -> CategoryRule:
@@ -268,7 +297,7 @@ class CategoryRuleRepository:
             """,
             (rule.alias, rule.category),
         )
-        self.connection.commit()
+        assert cursor.lastrowid is not None
         return self.get(cursor.lastrowid)
 
     def get(self, rule_id: int) -> CategoryRule:
@@ -300,7 +329,6 @@ class CategoryRuleRepository:
             """,
             (rule.alias, rule.category, rule_id),
         )
-        self.connection.commit()
         if cursor.rowcount == 0:
             raise CategoryRuleNotFoundError(f"Category rule {rule_id} was not found.")
         return self.get(rule_id)
@@ -313,7 +341,6 @@ class CategoryRuleRepository:
 
     def delete(self, rule_id: int) -> None:
         cursor = self.connection.execute("DELETE FROM category_rules WHERE id = ?", (rule_id,))
-        self.connection.commit()
         if cursor.rowcount == 0:
             raise CategoryRuleNotFoundError(f"Category rule {rule_id} was not found.")
 
@@ -347,7 +374,7 @@ class RecurringTemplateRepository:
                 int(template.active),
             ),
         )
-        self.connection.commit()
+        assert cursor.lastrowid is not None
         return self.get(cursor.lastrowid)
 
     def get(self, template_id: int) -> RecurringTemplate:
@@ -373,7 +400,6 @@ class RecurringTemplateRepository:
             "DELETE FROM recurring_templates WHERE id = ?",
             (template_id,),
         )
-        self.connection.commit()
         if cursor.rowcount == 0:
             raise RecurringTemplateNotFoundError(
                 f"Recurring template {template_id} was not found."
@@ -415,4 +441,31 @@ class SettingsRepository:
             """,
             (key, value),
         )
-        self.connection.commit()
+
+
+def _period_bounds(year: int, month: int) -> tuple[str, str]:
+    start = f"{year:04d}-{month:02d}-01"
+    end = f"{year + 1:04d}-01-01" if month == 12 else f"{year:04d}-{month + 1:02d}-01"
+    return start, end
+
+
+def _transaction_filter_sql(filters: TransactionFilters) -> tuple[list[str], list[str | int]]:
+    clauses: list[str] = []
+    params: list[str | int] = []
+    if filters.month is not None and filters.year is not None:
+        start, end = _period_bounds(filters.year, filters.month)
+        clauses.append("date >= ? AND date < ?")
+        params.extend((start, end))
+    elif filters.month is not None:
+        clauses.append("CAST(strftime('%m', date) AS INTEGER) = ?")
+        params.append(filters.month)
+    elif filters.year is not None:
+        clauses.append("date >= ? AND date < ?")
+        params.extend((f"{filters.year:04d}-01-01", f"{filters.year + 1:04d}-01-01"))
+    if filters.category is not None:
+        clauses.append("LOWER(category) = LOWER(?)")
+        params.append(filters.category)
+    if filters.transaction_type is not None:
+        clauses.append("type = ?")
+        params.append(filters.transaction_type.value)
+    return clauses, params

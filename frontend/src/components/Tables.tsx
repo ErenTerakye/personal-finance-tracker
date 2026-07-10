@@ -7,7 +7,7 @@ import { useI18n } from "../i18n";
 export function TransactionTable({
   transactions,
   onEdit,
-  onDelete
+  onDelete,
 }: {
   transactions: TransactionRecord[];
   onEdit: (transaction: TransactionRecord) => void;
@@ -48,21 +48,29 @@ export function TransactionTable({
                 </span>
               </td>
               <td data-label={t("common.category")}>{transaction.category}</td>
-              <td data-label={t("common.description")}>{transaction.description || t("common.all")}</td> {/* fallback empty or "None" */}
+              <td data-label={t("common.description")}>
+                {transaction.description || t("common.all")}
+              </td>
               <td data-label={t("common.amount")}>
-                <strong className={transaction.type}>{money(transaction.amount)}</strong>
+                <strong className={transaction.type}>
+                  {money(transaction.amount)}
+                </strong>
               </td>
               <td data-label={t("common.actions")}>
                 <div className="row-actions">
                   <IconButton
                     icon={Pencil}
-                    label={t("common.editTransaction", { name: transaction.category })}
+                    label={t("common.editTransaction", {
+                      name: transaction.category,
+                    })}
                     variant="secondary"
                     onClick={() => onEdit(transaction)}
                   />
                   <IconButton
                     icon={Trash2}
-                    label={t("common.deleteTransaction", { name: transaction.category })}
+                    label={t("common.deleteTransaction", {
+                      name: transaction.category,
+                    })}
                     variant="danger"
                     onClick={() => onDelete(transaction)}
                   />
@@ -79,7 +87,7 @@ export function TransactionTable({
 export function BudgetTable({
   budgets,
   onEdit,
-  onDelete
+  onDelete,
 }: {
   budgets: BudgetRecord[];
   onEdit: (budget: BudgetRecord) => void;
@@ -111,7 +119,9 @@ export function BudgetTable({
         <tbody>
           {budgets.map((budget) => (
             <tr key={budget.id}>
-              <td data-label={t("common.period")}>{periodLabel(budget.month, budget.year)}</td>
+              <td data-label={t("common.period")}>
+                {periodLabel(budget.month, budget.year)}
+              </td>
               <td data-label={t("common.category")}>{budget.category}</td>
               <td data-label={t("common.amount")}>
                 <strong>{money(budget.amount)}</strong>

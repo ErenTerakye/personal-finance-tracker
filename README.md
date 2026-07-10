@@ -4,7 +4,7 @@
 ![Python 3.14](https://img.shields.io/badge/python-3.14-blue)
 ![Node 24](https://img.shields.io/badge/node-24-43853d)
 
-A Python CLI application for tracking income and expenses using SQLite, CSV processing, OOP, and data visualization.
+A local-first finance tracker with a Typer CLI, FastAPI JSON API, React browser UI, SQLite persistence, CSV workflows, and data visualization.
 
 ## Highlights
 
@@ -114,6 +114,8 @@ finance-tracker web --db-path demo.sqlite3
 npm run dev
 ```
 
+Open `http://127.0.0.1:5173`; Vite proxies `/api` to the Python process on port 8000. Activate `.venv` before generating API types so the script can import FastAPI and the application package.
+
 The browser interface uses modern platform features progressively, including semantic landmarks, accessible forms, native dialogs and popovers, SVG charts, container queries, color-scheme-aware dark mode with a persistent local override, mobile-safe viewport units, same-document view transitions, and reduced-motion-aware animation. The support policy is Baseline 2026-capable browsers; newer features must degrade without large polyfills.
 
 GitHub Pages can host static files only, so it cannot run the live Python/SQLite app. A static showcase is available in [docs/showcase/index.html](docs/showcase/index.html) for portfolio hosting, while real CRUD requires `finance-tracker web`.
@@ -163,8 +165,8 @@ src/finance_tracker/
   cli.py            # Typer commands
   models.py         # Domain objects and validation
   services.py       # Use-case coordination
-  database.py       # SQLite setup
-  repositories.py   # SQL queries
+  database.py       # SQLite setup and ordered migrations
+  repositories.py   # SQL queries without transaction commits
   csv_io.py         # CSV import/export
   reports.py        # Monthly report calculations
   charts.py         # PNG chart generation
@@ -183,16 +185,24 @@ After activating the virtual environment, run:
 ```bash
 .venv/bin/python -m pytest
 .venv/bin/python -m ruff check .
+.venv/bin/python -m mypy
 npm test
+npm run lint
+npm run format:check
+npm run generate:api
+git diff --exit-code frontend/src/generated/api.ts
 npm run build
+npm run check:bundle
 npm run test:e2e
+npm run test:e2e:fullstack
+.venv/bin/python -m pip_audit
 .venv/bin/python -m build
 ```
 
-For the first Playwright run on a new machine, install Chromium with `npx playwright install --with-deps chromium`.
+For the first Playwright run on a new machine, install the configured browsers with `npx playwright install --with-deps chromium firefox webkit`.
 
 GitHub Actions runs the Python checks on Python 3.14 and the frontend checks on Node 24.
 
-See [ROADMAP.md](ROADMAP.md), [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md), [docs/USAGE.md](docs/USAGE.md), and [AGENTS.md](AGENTS.md) for deeper project notes.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [ROADMAP.md](ROADMAP.md), [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md), [docs/USAGE.md](docs/USAGE.md), and [AGENTS.md](AGENTS.md) for deeper project notes.
 
 Use [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) when refreshing the demo, screenshots, packaged SPA assets, and release checks.

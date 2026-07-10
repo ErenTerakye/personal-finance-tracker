@@ -1,5 +1,13 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Download, Filter, Plus, RotateCcw, Save, Trash2, Upload } from "lucide-react";
+import {
+  Download,
+  Filter,
+  Plus,
+  RotateCcw,
+  Save,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { api, type TransactionFilters } from "../api";
 import { CsvImportDialog } from "../components/CsvImportDialog";
 import { PeriodControl } from "../components/PeriodControl";
@@ -14,7 +22,7 @@ import {
   ModalDialog,
   PageHeader,
   Panel,
-  SubmitButton
+  SubmitButton,
 } from "../components/ui";
 import { money, periodLabel, todayIso } from "../format";
 import type {
@@ -22,9 +30,10 @@ import type {
   TransactionImportPreview,
   TransactionInput,
   TransactionRecord,
-  TransactionType
+  TransactionType,
 } from "../types";
-import { useI18n } from "../i18n";
+import { localizedNotice, useI18n } from "../i18n";
+import { readTransactionFilters, writeFilters } from "../urlState";
 
 type TransactionDialog = "create" | "edit" | null;
 
@@ -33,27 +42,26 @@ const defaultTransaction = (): TransactionInput => ({
   amount: "",
   category: "",
   description: "",
-  date: todayIso()
+  date: todayIso(),
 });
 
 export function TransactionsView({
   selectedPeriod,
-  setNotice
+  setNotice,
 }: {
   selectedPeriod: { month: number; year: number };
   setNotice: (notice: string) => void;
 }) {
   const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
-  const [filters, setFilters] = useState<TransactionFilters>({
-    month: selectedPeriod.month,
-    year: selectedPeriod.year,
-    transaction_type: "",
-    category: ""
-  });
+  const [filters, setFilters] = useState<TransactionFilters>(() =>
+    readTransactionFilters(selectedPeriod),
+  );
   const [form, setForm] = useState<TransactionInput>(defaultTransaction);
   const [dialog, setDialog] = useState<TransactionDialog>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<TransactionRecord | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<TransactionRecord | null>(
+    null,
+  );
   const [error, setError] = useState("");
   const [dialogError, setDialogError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -61,28 +69,37 @@ export function TransactionsView({
   const [importOpen, setImportOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const [previewing, setPreviewing] = useState(false);
-  const [importPreview, setImportPreview] = useState<TransactionImportPreview | null>(null);
+  const [importPreview, setImportPreview] =
+    useState<TransactionImportPreview | null>(null);
   const [importResult, setImportResult] = useState<ImportSummary | null>(null);
   const [importError, setImportError] = useState("");
   const { t } = useI18n();
 
-  const load = () => {
+  const load = (signal?: AbortSignal) => {
     setError("");
     setLoading(true);
     api
-      .transactions(filters)
+      .transactions(filters, signal)
       .then((response) => setTransactions(response.transactions))
-      .catch((err: Error) => setError(readError(err, t)))
-      .finally(() => setLoading(false));
+      .catch((err: Error) => {
+        if (err.name !== "AbortError") setError(readError(err, t));
+      })
+      .finally(() => {
+        if (!signal?.aborted) setLoading(false);
+      });
   };
 
-  useEffect(load, [filters]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [filters]);
 
   useEffect(() => {
     setFilters((current) => ({
       ...current,
       month: selectedPeriod.month,
-      year: selectedPeriod.year
+      year: selectedPeriod.year,
     }));
   }, [selectedPeriod.month, selectedPeriod.year]);
 
@@ -95,11 +112,11 @@ export function TransactionsView({
 
   function openEdit(transaction: TransactionRecord) {
     setForm({
-      type: transaction.type,
+      type: transaction.type as TransactionType,
       amount: transaction.amount,
       category: transaction.category,
       description: transaction.description,
-      date: transaction.date
+      date: transaction.date,
     });
     setEditingId(transaction.id);
     setDialogError("");
@@ -115,7 +132,7 @@ export function TransactionsView({
         dialog === "edit" && editingId
           ? await api.updateTransaction(editingId, form)
           : await api.createTransaction(form);
-      setNotice(response.notice);
+      setNotice(localizedNotice(response, t));
       setDialog(null);
       setForm(defaultTransaction());
       setEditingId(null);
@@ -135,7 +152,7 @@ export function TransactionsView({
     setSaving(true);
     try {
       const response = await api.deleteTransaction(pendingDelete.id);
-      setNotice(response.notice);
+      setNotice(localizedNotice(response, t));
       setPendingDelete(null);
       load();
     } catch (err) {
@@ -165,9 +182,12 @@ export function TransactionsView({
     setImportResult(null);
     setImporting(true);
     try {
-      const response = await api.importTransactionsCsvWithOptions(csvText, allowDuplicates);
+      const response = await api.importTransactionsCsvWithOptions(
+        csvText,
+        allowDuplicates,
+      );
       setImportResult(response);
-      setNotice(response.notice);
+      setNotice(localizedNotice(response, t));
       setImportPreview(null);
       load();
     } catch (err) {
@@ -177,8 +197,8 @@ export function TransactionsView({
     }
   }
 
-  const detailLabel = loading 
-    ? t("transactions.historyDetail.loading") 
+  const detailLabel = loading
+    ? t("transactions.historyDetail.loading")
     : t("transactions.historyDetail.count", { count: transactions.length });
 
   return (
@@ -192,7 +212,11 @@ export function TransactionsView({
             <ActionButton icon={Plus} onClick={openCreate}>
               {t("common.addEntry")}
             </ActionButton>
-            <ActionButton icon={Upload} variant="secondary" onClick={() => setImportOpen(true)}>
+            <ActionButton
+              icon={Upload}
+              variant="secondary"
+              onClick={() => setImportOpen(true)}
+            >
               {t("common.importCsv")}
             </ActionButton>
           </div>
@@ -205,7 +229,10 @@ export function TransactionsView({
         <TransactionFilterForm
           filters={filters}
           selectedPeriod={selectedPeriod}
-          onChange={setFilters}
+          onChange={(next) => {
+            writeFilters(next);
+            setFilters(next);
+          }}
         />
 
         <Panel
@@ -267,7 +294,14 @@ export function TransactionsView({
       <ModalDialog
         open={pendingDelete !== null}
         title={t("transactions.dialog.deleteTitle")}
-        description={pendingDelete ? t("transactions.dialog.deleteDescription", { category: pendingDelete.category, amount: money(pendingDelete.amount) }) : undefined}
+        description={
+          pendingDelete
+            ? t("transactions.dialog.deleteDescription", {
+                category: pendingDelete.category,
+                amount: money(pendingDelete.amount),
+              })
+            : undefined
+        }
         onClose={() => {
           setPendingDelete(null);
           setDialogError("");
@@ -278,10 +312,19 @@ export function TransactionsView({
           {t("transactions.dialog.deleteConfirmText")}
         </p>
         <div className="dialog-actions">
-          <button className="button secondary" type="button" onClick={() => setPendingDelete(null)}>
+          <button
+            className="button secondary"
+            type="button"
+            onClick={() => setPendingDelete(null)}
+          >
             {t("common.cancel")}
           </button>
-          <button className="button danger" type="button" disabled={saving} onClick={confirmDelete}>
+          <button
+            className="button danger"
+            type="button"
+            disabled={saving}
+            onClick={confirmDelete}
+          >
             <Trash2 aria-hidden="true" size={18} />
             <span>{t("transactions.dialog.deleteBtn")}</span>
           </button>
@@ -294,7 +337,7 @@ export function TransactionsView({
 function TransactionFilterForm({
   filters,
   selectedPeriod,
-  onChange
+  onChange,
 }: {
   filters: TransactionFilters;
   selectedPeriod: { month: number; year: number };
@@ -309,13 +352,13 @@ function TransactionFilterForm({
 
   const period = {
     month: Number(draft.month || selectedPeriod.month),
-    year: Number(draft.year || selectedPeriod.year)
+    year: Number(draft.year || selectedPeriod.year),
   };
   const hasActiveFilters = Boolean(
     draft.category ||
-      draft.transaction_type ||
-      period.month !== selectedPeriod.month ||
-      period.year !== selectedPeriod.year
+    draft.transaction_type ||
+    period.month !== selectedPeriod.month ||
+    period.year !== selectedPeriod.year,
   );
 
   function resetFilters() {
@@ -323,7 +366,7 @@ function TransactionFilterForm({
       month: selectedPeriod.month,
       year: selectedPeriod.year,
       transaction_type: "",
-      category: ""
+      category: "",
     };
     setDraft(reset);
     onChange(reset);
@@ -331,19 +374,21 @@ function TransactionFilterForm({
 
   return (
     <FilterBar
-      title={t("budgets.filterTitle")}
-      summary={t("budgets.filterSummary", { period: periodLabel(period.month, period.year) })}
+      title={t("transactions.filterTitle")}
+      summary={t("transactions.filterSummary", {
+        period: periodLabel(period.month, period.year),
+      })}
     >
       <form
         className="filter-form"
-        aria-label={t("transactions.dialog.deleteBtn")}
+        aria-label={t("transactions.filterAria")}
         onSubmit={(event) => {
           event.preventDefault();
           onChange(draft);
         }}
       >
         <PeriodControl
-          label="Transaction filter period"
+          label={t("transactions.filterPeriod")}
           value={period}
           onChange={(nextPeriod) => setDraft({ ...draft, ...nextPeriod })}
         />
@@ -352,7 +397,9 @@ function TransactionFilterForm({
             id="filter-category"
             type="search"
             value={draft.category}
-            onChange={(event) => setDraft({ ...draft, category: event.target.value })}
+            onChange={(event) =>
+              setDraft({ ...draft, category: event.target.value })
+            }
           />
         </Field>
         <Field id="filter-type" label={t("common.type")}>
@@ -360,7 +407,10 @@ function TransactionFilterForm({
             id="filter-type"
             value={draft.transaction_type}
             onChange={(event) =>
-              setDraft({ ...draft, transaction_type: event.target.value as TransactionType | "" })
+              setDraft({
+                ...draft,
+                transaction_type: event.target.value as TransactionType | "",
+              })
             }
           >
             <option value="">{t("common.all")}</option>
@@ -394,7 +444,7 @@ function TransactionFormDialog({
   saving,
   onClose,
   onSubmit,
-  onChange
+  onChange,
 }: {
   open: boolean;
   mode: Exclude<TransactionDialog, null>;
@@ -410,7 +460,11 @@ function TransactionFormDialog({
   return (
     <ModalDialog
       open={open}
-      title={mode === "edit" ? t("transactions.dialog.editTitle") : t("transactions.dialog.addTitle")}
+      title={
+        mode === "edit"
+          ? t("transactions.dialog.editTitle")
+          : t("transactions.dialog.addTitle")
+      }
       description={t("transactions.dialog.addDescription")}
       onClose={onClose}
     >
@@ -439,23 +493,35 @@ function TransactionFormDialog({
             <span>{t("common.income")}</span>
           </label>
         </fieldset>
-        <Field id="transaction-amount" label={t("common.amount")} hint={t("transactions.dialog.amountHint")}>
+        <Field
+          id="transaction-amount"
+          label={t("common.amount")}
+          hint={t("transactions.dialog.amountHint")}
+        >
           <input
             id="transaction-amount"
             aria-describedby="transaction-amount-hint"
             inputMode="decimal"
             required
             value={form.amount}
-            onChange={(event) => onChange({ ...form, amount: event.target.value })}
+            onChange={(event) =>
+              onChange({ ...form, amount: event.target.value })
+            }
           />
         </Field>
-        <Field id="transaction-category" label={t("common.category")} hint={t("transactions.dialog.categoryHint")}>
+        <Field
+          id="transaction-category"
+          label={t("common.category")}
+          hint={t("transactions.dialog.categoryHint")}
+        >
           <input
             id="transaction-category"
             aria-describedby="transaction-category-hint"
             required
             value={form.category}
-            onChange={(event) => onChange({ ...form, category: event.target.value })}
+            onChange={(event) =>
+              onChange({ ...form, category: event.target.value })
+            }
           />
         </Field>
         <Field id="transaction-date" label={t("common.date")}>
@@ -464,14 +530,18 @@ function TransactionFormDialog({
             type="date"
             required
             value={form.date}
-            onChange={(event) => onChange({ ...form, date: event.target.value })}
+            onChange={(event) =>
+              onChange({ ...form, date: event.target.value })
+            }
           />
         </Field>
         <Field id="transaction-description" label={t("common.description")}>
           <input
             id="transaction-description"
             value={form.description}
-            onChange={(event) => onChange({ ...form, description: event.target.value })}
+            onChange={(event) =>
+              onChange({ ...form, description: event.target.value })
+            }
           />
         </Field>
         <div className="dialog-actions">
@@ -493,4 +563,3 @@ function readError(error: unknown, t: (key: string) => string): string {
   }
   return t("common.errorFallback");
 }
-

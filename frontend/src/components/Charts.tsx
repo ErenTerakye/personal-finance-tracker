@@ -9,9 +9,16 @@ import {
   useEffect,
   useId,
   useRef,
-  useState
+  useState,
 } from "react";
-import { compactMoney, money, percent, periodLabel, shortPeriodLabel, signedMoney } from "../format";
+import {
+  compactMoney,
+  money,
+  percent,
+  periodLabel,
+  shortPeriodLabel,
+  signedMoney,
+} from "../format";
 import type { DashboardData } from "../types";
 import { EmptyState } from "./ui";
 import { useI18n } from "../i18n";
@@ -38,7 +45,7 @@ const MIN_VISIBLE_TREND_SIZE = 6;
 const metrics: { key: MetricKey; tone: MetricTone }[] = [
   { key: "total_income", tone: "cash" },
   { key: "total_expenses", tone: "expenses" },
-  { key: "net_savings", tone: "net" }
+  { key: "net_savings", tone: "net" },
 ];
 
 export function CashflowTrend({ months }: { months: TrendMonth[] }) {
@@ -47,7 +54,12 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
   const { t } = useI18n();
 
   if (!months.length) {
-    return <EmptyState title={t("charts.emptyTrendTitle")} message={t("charts.emptyTrendMsg")} />;
+    return (
+      <EmptyState
+        title={t("charts.emptyTrendTitle")}
+        message={t("charts.emptyTrendMsg")}
+      />
+    );
   }
 
   const max = Math.max(
@@ -55,8 +67,8 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
     ...months.flatMap((item) => [
       absoluteAmount(item.total_income),
       absoluteAmount(item.total_expenses),
-      absoluteAmount(item.net_savings)
-    ])
+      absoluteAmount(item.net_savings),
+    ]),
   );
 
   return (
@@ -69,7 +81,9 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
         {months.map((item) => {
           const positive = Number(item.net_savings) >= 0;
           const formattedNet = signedMoney(item.net_savings);
-          const formattedEntries = t("charts.tooltipEntries", { count: item.transaction_count });
+          const formattedEntries = t("charts.tooltipEntries", {
+            count: item.transaction_count,
+          });
 
           return (
             <li
@@ -79,18 +93,27 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
                 {
                   "--income-size": trendSize(item.total_income, max),
                   "--expense-size": trendSize(item.total_expenses, max),
-                  "--net-size": trendSize(item.net_savings, max)
+                  "--net-size": trendSize(item.net_savings, max),
                 } as VariableStyle
               }
             >
-              <time dateTime={`${item.year}-${String(item.month).padStart(2, "0")}`}>
+              <time
+                dateTime={`${item.year}-${String(item.month).padStart(2, "0")}`}
+              >
                 {shortPeriodLabel(item.month, item.year)}
               </time>
               <div className="trend-bars">
                 {metrics.map((metric) => {
                   const tone =
-                    metric.key === "net_savings" && !positive ? "warning" : metric.tone;
-                  const labelKey = metric.key === "total_income" ? "income" : metric.key === "total_expenses" ? "expenses" : "net";
+                    metric.key === "net_savings" && !positive
+                      ? "warning"
+                      : metric.tone;
+                  const labelKey =
+                    metric.key === "total_income"
+                      ? "income"
+                      : metric.key === "total_expenses"
+                        ? "expenses"
+                        : "net";
                   const translatedLabel = t(`charts.${labelKey}`);
 
                   return (
@@ -101,20 +124,52 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
                       aria-label={`${translatedLabel} for ${periodLabel(item.month, item.year)}: ${formatMetricValue(item, metric.key)}`}
                       onBlur={handleTooltipBlur(setActive)}
                       onFocus={(event) =>
-                        setActive(trendTooltip(event.currentTarget, item, metric, tone, translatedLabel, t))
+                        setActive(
+                          trendTooltip(
+                            event.currentTarget,
+                            item,
+                            metric,
+                            tone,
+                            translatedLabel,
+                            t,
+                          ),
+                        )
                       }
-                      onKeyDown={(event) => handleTooltipKeyDown(event, setActive)}
+                      onKeyDown={(event) =>
+                        handleTooltipKeyDown(event, setActive)
+                      }
                       onPointerDown={(event) =>
-                        setActive(trendTooltip(event.currentTarget, item, metric, tone, translatedLabel, t, event.pointerType === "touch"))
+                        setActive(
+                          trendTooltip(
+                            event.currentTarget,
+                            item,
+                            metric,
+                            tone,
+                            translatedLabel,
+                            t,
+                            event.pointerType === "touch",
+                          ),
+                        )
                       }
                       onPointerEnter={(event) => {
                         if (event.pointerType !== "touch") {
-                          setActive(trendTooltip(event.currentTarget, item, metric, tone, translatedLabel, t));
+                          setActive(
+                            trendTooltip(
+                              event.currentTarget,
+                              item,
+                              metric,
+                              tone,
+                              translatedLabel,
+                              t,
+                            ),
+                          );
                         }
                       }}
                       onPointerLeave={(event) => {
                         if (event.pointerType !== "touch") {
-                          setActive((current) => (current?.pinned ? current : null));
+                          setActive((current) =>
+                            current?.pinned ? current : null,
+                          );
                         }
                       }}
                     >
@@ -130,6 +185,7 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
         })}
       </ol>
       <ChartTooltip active={active} />
+      <ChartDataTable months={months} />
     </figure>
   );
 }
@@ -156,25 +212,46 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
   const { t } = useI18n();
 
   if (!months.length) {
-    return <EmptyState title={t("charts.emptyLineTitle")} message={t("charts.emptyLineMsg")} />;
+    return (
+      <EmptyState
+        title={t("charts.emptyLineTitle")}
+        message={t("charts.emptyLineMsg")}
+      />
+    );
   }
 
   const values = months.flatMap((item) => [
     Number(item.total_income),
     Number(item.total_expenses),
-    Number(item.net_savings)
+    Number(item.net_savings),
   ]);
   const min = Math.min(0, ...values);
   const max = Math.max(1, ...values);
   const span = max - min || 1;
-  const x = (index: number) => 56 + (index * 612) / Math.max(months.length - 1, 1);
+  const x = (index: number) =>
+    56 + (index * 612) / Math.max(months.length - 1, 1);
   const y = (value: number) => 250 - ((value - min) / span) * 190;
   const points = (key: MetricKey) =>
-    months.map((item, index) => `${x(index)},${y(Number(item[key]))}`).join(" ");
+    months
+      .map((item, index) => `${x(index)},${y(Number(item[key]))}`)
+      .join(" ");
 
-  function activateTrendPoint(item: TrendMonth, index: number, metric: (typeof metrics)[number], pinned = false) {
-    const tone = metric.key === "net_savings" && Number(item.net_savings) < 0 ? "warning" : metric.tone;
-    const labelKey = metric.key === "total_income" ? "income" : metric.key === "total_expenses" ? "expenses" : "net";
+  function activateTrendPoint(
+    item: TrendMonth,
+    index: number,
+    metric: (typeof metrics)[number],
+    pinned = false,
+  ) {
+    const tone =
+      metric.key === "net_savings" && Number(item.net_savings) < 0
+        ? "warning"
+        : metric.tone;
+    const labelKey =
+      metric.key === "total_income"
+        ? "income"
+        : metric.key === "total_expenses"
+          ? "expenses"
+          : "net";
     const translatedLabel = t(`charts.${labelKey}`);
     const pctVal = percent(item.savings_rate);
 
@@ -187,21 +264,33 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
         detail: t("charts.tooltipSavingsRate", { rate: pctVal }),
         tone,
         guideX: x(index),
-        pinned
-      })
+        pinned,
+      }),
     );
   }
 
-  function activateNearestPoint(event: PointerEvent<SVGSVGElement>, pinned = false) {
+  function activateNearestPoint(
+    event: PointerEvent<SVGSVGElement>,
+    pinned = false,
+  ) {
     const rect = event.currentTarget.getBoundingClientRect();
     const ratio = (event.clientX - rect.left) / Math.max(rect.width, 1);
     const viewBoxX = ratio * 720;
-    const index = clamp(Math.round(((viewBoxX - 56) / 612) * Math.max(months.length - 1, 1)), 0, months.length - 1);
+    const index = clamp(
+      Math.round(((viewBoxX - 56) / 612) * Math.max(months.length - 1, 1)),
+      0,
+      months.length - 1,
+    );
     const item = months[index];
-    const nearestMetric = metrics.reduce((nearest, metric) => {
-      const distance = Math.abs(y(Number(item[metric.key])) - pointerSvgY(event, rect));
-      return distance < nearest.distance ? { metric, distance } : nearest;
-    }, { metric: metrics[0], distance: Number.POSITIVE_INFINITY });
+    const nearestMetric = metrics.reduce(
+      (nearest, metric) => {
+        const distance = Math.abs(
+          y(Number(item[metric.key])) - pointerSvgY(event, rect),
+        );
+        return distance < nearest.distance ? { metric, distance } : nearest;
+      },
+      { metric: metrics[0], distance: Number.POSITIVE_INFINITY },
+    );
 
     activateTrendPoint(item, index, nearestMetric.metric, pinned);
   }
@@ -214,7 +303,9 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
         aria-labelledby={`${titleId} ${descId}`}
         viewBox="0 0 720 300"
         preserveAspectRatio="xMidYMid meet"
-        onPointerDown={(event) => activateNearestPoint(event, event.pointerType === "touch")}
+        onPointerDown={(event) =>
+          activateNearestPoint(event, event.pointerType === "touch")
+        }
         onPointerMove={(event) => {
           if (event.pointerType === "touch" && active?.pinned) {
             activateNearestPoint(event, true);
@@ -226,17 +317,40 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
         <line className="axis" x1="56" x2="680" y1="250" y2="250" />
         <line className="axis" x1="56" x2="56" y1="42" y2="250" />
         {typeof active?.guideX === "number" ? (
-          <line className="chart-guide" x1={active.guideX} x2={active.guideX} y1="42" y2="250" />
+          <line
+            className="chart-guide"
+            x1={active.guideX}
+            x2={active.guideX}
+            y1="42"
+            y2="250"
+          />
         ) : null}
-        <polyline className="chart-line cash-line" points={points("total_income")} />
-        <polyline className="chart-line expenses-line" points={points("total_expenses")} />
-        <polyline className="chart-line net-line" points={points("net_savings")} />
+        <polyline
+          className="chart-line cash-line"
+          points={points("total_income")}
+        />
+        <polyline
+          className="chart-line expenses-line"
+          points={points("total_expenses")}
+        />
+        <polyline
+          className="chart-line net-line"
+          points={points("net_savings")}
+        />
         {metrics.map((metric) =>
           months.map((item, index) => {
-            const tone = metric.key === "net_savings" && Number(item.net_savings) < 0 ? "warning" : metric.tone;
+            const tone =
+              metric.key === "net_savings" && Number(item.net_savings) < 0
+                ? "warning"
+                : metric.tone;
             const pointId = `trend-${item.label}-${metric.key}`;
             const isActive = active?.id === pointId;
-            const labelKey = metric.key === "total_income" ? "income" : metric.key === "total_expenses" ? "expenses" : "net";
+            const labelKey =
+              metric.key === "total_income"
+                ? "income"
+                : metric.key === "total_expenses"
+                  ? "expenses"
+                  : "net";
             const translatedLabel = t(`charts.${labelKey}`);
 
             return (
@@ -270,7 +384,7 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
                 }}
               />
             );
-          })
+          }),
         )}
         {months.map((item, index) => (
           <g key={item.label}>
@@ -286,13 +400,45 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
         <span className="legend net">{t("charts.net")}</span>
       </figcaption>
       <ChartTooltip active={active} />
+      <ChartDataTable months={months} />
     </figure>
+  );
+}
+
+function ChartDataTable({ months }: { months: TrendMonth[] }) {
+  const { t } = useI18n();
+  return (
+    <details className="chart-data">
+      <summary>{t("charts.dataTable")}</summary>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">{t("charts.period")}</th>
+              <th scope="col">{t("charts.income")}</th>
+              <th scope="col">{t("charts.expenses")}</th>
+              <th scope="col">{t("charts.net")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {months.map((item) => (
+              <tr key={item.label}>
+                <th scope="row">{periodLabel(item.month, item.year)}</th>
+                <td>{money(item.total_income)}</td>
+                <td>{money(item.total_expenses)}</td>
+                <td>{signedMoney(item.net_savings)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
   );
 }
 
 export function CategoryBars({
   title,
-  items
+  items,
 }: {
   title: string;
   items: { label: string; value: string }[];
@@ -300,7 +446,12 @@ export function CategoryBars({
   const { t } = useI18n();
 
   if (!items.length) {
-    return <EmptyState title={t("charts.emptyTrendTitle")} message={t("charts.emptyTrendMsg")} />;
+    return (
+      <EmptyState
+        title={t("charts.emptyTrendTitle")}
+        message={t("charts.emptyTrendMsg")}
+      />
+    );
   }
 
   const max = Math.max(1, ...items.map((item) => Math.abs(Number(item.value))));
@@ -310,11 +461,14 @@ export function CategoryBars({
         <div
           className="category-bar"
           key={item.label}
-          style={{ "--bar-size": `${(Math.abs(Number(item.value)) / max) * 100}%` } as VariableStyle}
+          style={
+            {
+              "--bar-size": `${(Math.abs(Number(item.value)) / max) * 100}%`,
+            } as VariableStyle
+          }
         >
           <span>{item.label}</span>
           <div aria-hidden="true">
-
             <span />
           </div>
           <strong>{money(item.value)}</strong>
@@ -329,7 +483,7 @@ export function KpiCard({
   value,
   detail,
   tone = "neutral",
-  featured = false
+  featured = false,
 }: {
   label: string;
   value: string;
@@ -340,7 +494,9 @@ export function KpiCard({
   const { locale } = useI18n();
 
   return (
-    <article className={`kpi-card ${tone} ${featured ? "featured" : ""}`.trim()}>
+    <article
+      className={`kpi-card ${tone} ${featured ? "featured" : ""}`.trim()}
+    >
       <span lang={locale}>{label}</span>
       <strong>{value}</strong>
       {detail ? <em>{detail}</em> : null}
@@ -354,7 +510,7 @@ export function compactValue(value: string | number): string {
 
 function useChartTooltip(
   chartRef: RefObject<HTMLElement | null>,
-  dependencies: unknown[]
+  dependencies: unknown[],
 ): [TooltipData | null, Dispatch<SetStateAction<TooltipData | null>>] {
   const [active, setActive] = useState<TooltipData | null>(null);
 
@@ -377,10 +533,17 @@ function useChartTooltip(
       setActive(null);
     }
 
-    document.addEventListener("pointerdown", closeFromOutside, { capture: true });
-    window.addEventListener("scroll", closeOnScroll, { capture: true, passive: true });
+    document.addEventListener("pointerdown", closeFromOutside, {
+      capture: true,
+    });
+    window.addEventListener("scroll", closeOnScroll, {
+      capture: true,
+      passive: true,
+    });
     return () => {
-      document.removeEventListener("pointerdown", closeFromOutside, { capture: true });
+      document.removeEventListener("pointerdown", closeFromOutside, {
+        capture: true,
+      });
       window.removeEventListener("scroll", closeOnScroll, { capture: true });
     };
   }, [active?.pinned, chartRef]);
@@ -396,7 +559,12 @@ function ChartTooltip({ active }: { active: TooltipData | null }) {
   return (
     <output
       className={`chart-tooltip ${active.tone}`}
-      style={{ "--tooltip-x": `${active.x}px`, "--tooltip-y": `${active.y}px` } as VariableStyle}
+      style={
+        {
+          "--tooltip-x": `${active.x}px`,
+          "--tooltip-y": `${active.y}px`,
+        } as VariableStyle
+      }
     >
       <span>{active.title}</span>
       <strong>{active.value}</strong>
@@ -413,11 +581,13 @@ function trendTooltip(
   tone: MetricTone,
   label: string,
   t: (key: string, variables?: Record<string, string | number>) => string,
-  pinned = false
+  pinned = false,
 ): TooltipData {
   const nodeRect = node.getBoundingClientRect();
   const chartRect = node.closest(".cashflow-trend")?.getBoundingClientRect();
-  const x = chartRect ? nodeRect.left + nodeRect.width / 2 - chartRect.left : nodeRect.width / 2;
+  const x = chartRect
+    ? nodeRect.left + nodeRect.width / 2 - chartRect.left
+    : nodeRect.width / 2;
   const y = chartRect ? nodeRect.top - chartRect.top : 0;
 
   return {
@@ -429,7 +599,7 @@ function trendTooltip(
     tone,
     x,
     y,
-    pinned
+    pinned,
   };
 }
 
@@ -438,7 +608,7 @@ function svgTooltip(
   svgRef: RefObject<SVGSVGElement | null>,
   svgX: number,
   svgY: number,
-  data: Omit<TooltipData, "x" | "y">
+  data: Omit<TooltipData, "x" | "y">,
 ): TooltipData {
   const chartRect = chartRef.current?.getBoundingClientRect();
   const svgRect = svgRef.current?.getBoundingClientRect();
@@ -449,15 +619,19 @@ function svgTooltip(
   return {
     ...data,
     x: svgRect.left + (svgX / 720) * svgRect.width - chartRect.left,
-    y: svgRect.top + (svgY / 300) * svgRect.height - chartRect.top
+    y: svgRect.top + (svgY / 300) * svgRect.height - chartRect.top,
   };
 }
 
 function handleTooltipBlur(
-  setActive: Dispatch<SetStateAction<TooltipData | null>>
+  setActive: Dispatch<SetStateAction<TooltipData | null>>,
 ) {
   return (event: FocusEvent<HTMLElement | SVGCircleElement>) => {
-    if (!event.currentTarget.parentElement?.contains(event.relatedTarget as Node | null)) {
+    if (
+      !event.currentTarget.parentElement?.contains(
+        event.relatedTarget as Node | null,
+      )
+    ) {
       setActive((current) => (current?.pinned ? current : null));
     }
   };
@@ -465,7 +639,7 @@ function handleTooltipBlur(
 
 function handleTooltipKeyDown(
   event: KeyboardEvent<HTMLElement | SVGCircleElement>,
-  setActive: Dispatch<SetStateAction<TooltipData | null>>
+  setActive: Dispatch<SetStateAction<TooltipData | null>>,
 ) {
   if (event.key === "Escape") {
     setActive(null);
@@ -480,7 +654,10 @@ function formatMetricValue(item: TrendMonth, key: MetricKey): string {
   return money(item[key]);
 }
 
-function pointerSvgY(event: PointerEvent<SVGSVGElement>, rect: DOMRect): number {
+function pointerSvgY(
+  event: PointerEvent<SVGSVGElement>,
+  rect: DOMRect,
+): number {
   return ((event.clientY - rect.top) / Math.max(rect.height, 1)) * 300;
 }
 

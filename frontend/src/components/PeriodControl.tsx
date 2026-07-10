@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
-import { FormEvent, useEffect, useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { monthNames, periodLabel } from "../format";
-import { IconButton, SubmitButton } from "./ui";
+import { IconButton } from "./ui";
 import { useI18n } from "../i18n";
 
 export interface PeriodValue {
@@ -12,7 +12,7 @@ export interface PeriodValue {
 export function PeriodControl({
   value,
   onChange,
-  label = "Period"
+  label = "Period",
 }: {
   value: PeriodValue;
   onChange: (period: PeriodValue) => void;
@@ -30,8 +30,7 @@ export function PeriodControl({
     setDraft(value);
   }, [value]);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function applyDraft() {
     onChange({ month: Number(draft.month), year: Number(draft.year) });
     closePopover(popoverId);
   }
@@ -40,7 +39,9 @@ export function PeriodControl({
     <div className="period-control" aria-label={label}>
       <IconButton
         icon={ChevronLeft}
-        label={t("periodControl.prevMonth", { period: periodLabel(previous.month, previous.year) })}
+        label={t("periodControl.prevMonth", {
+          period: periodLabel(previous.month, previous.year),
+        })}
         variant="secondary"
         onClick={() => onChange(previous)}
       />
@@ -48,25 +49,31 @@ export function PeriodControl({
         className="period-chip"
         type="button"
         popoverTarget={popoverId}
-        aria-label={t("periodControl.choosePeriod", { period: periodLabel(value.month, value.year) })}
+        aria-label={t("periodControl.choosePeriod", {
+          period: periodLabel(value.month, value.year),
+        })}
       >
         <CalendarDays aria-hidden="true" size={17} />
         <span>{periodLabel(value.month, value.year)}</span>
       </button>
       <IconButton
         icon={ChevronRight}
-        label={t("periodControl.nextMonth", { period: periodLabel(next.month, next.year) })}
+        label={t("periodControl.nextMonth", {
+          period: periodLabel(next.month, next.year),
+        })}
         variant="secondary"
         onClick={() => onChange(next)}
       />
       <div className="period-popover" id={popoverId} popover="auto">
-        <form className="period-picker" onSubmit={submit}>
+        <div className="period-picker">
           <div className="field compact-field">
             <label htmlFor={monthId}>{t("periodControl.monthLabel")}</label>
             <select
               id={monthId}
               value={draft.month}
-              onChange={(event) => setDraft({ ...draft, month: Number(event.target.value) })}
+              onChange={(event) =>
+                setDraft({ ...draft, month: Number(event.target.value) })
+              }
             >
               {monthNames.slice(1).map((name, index) => (
                 <option key={name} value={index + 1}>
@@ -82,11 +89,16 @@ export function PeriodControl({
               min="1"
               type="number"
               value={draft.year}
-              onChange={(event) => setDraft({ ...draft, year: Number(event.target.value) })}
+              onChange={(event) =>
+                setDraft({ ...draft, year: Number(event.target.value) })
+              }
             />
           </div>
-          <SubmitButton icon={CalendarDays}>{t("periodControl.applyBtn")}</SubmitButton>
-        </form>
+          <button className="button primary" type="button" onClick={applyDraft}>
+            <CalendarDays aria-hidden="true" size={18} />
+            {t("periodControl.applyBtn")}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -96,12 +108,12 @@ function shiftPeriod(value: PeriodValue, delta: -1 | 1): PeriodValue {
   const date = new Date(value.year, value.month - 1 + delta, 1);
   return {
     month: date.getMonth() + 1,
-    year: date.getFullYear()
+    year: date.getFullYear(),
   };
 }
 
 function closePopover(id: string) {
-  const popover = document.getElementById(id) as (HTMLElement & { hidePopover?: () => void }) | null;
+  const popover = document.getElementById(id) as
+    (HTMLElement & { hidePopover?: () => void }) | null;
   popover?.hidePopover?.();
 }
-

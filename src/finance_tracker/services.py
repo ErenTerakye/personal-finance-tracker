@@ -45,9 +45,10 @@ class RecurringApplyResult:
 
 
 class TransactionService:
-    def __init__(self, db_path: Path | str) -> None:
+    def __init__(self, db_path: Path | str, *, initialize: bool = True) -> None:
         self.db_path = Path(db_path)
-        initialize_database(self.db_path)
+        if initialize:
+            initialize_database(self.db_path)
 
     def add_transaction(
         self,
@@ -110,6 +111,27 @@ class TransactionService:
         with connect(self.db_path) as connection:
             return TransactionRepository(connection).list(filters)
 
+    def list_transactions_page(
+        self,
+        month: int | None = None,
+        year: int | None = None,
+        category: str | None = None,
+        transaction_type: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> tuple[list[Transaction], int]:
+        filters = TransactionFilters(
+            month=month,
+            year=year,
+            category=category,
+            transaction_type=parse_transaction_type(transaction_type) if transaction_type else None,
+        )
+        with connect(self.db_path) as connection:
+            repository = TransactionRepository(connection)
+            return repository.list(filters, limit=limit, offset=offset), repository.count_filtered(
+                filters
+            )
+
     def delete_transaction(self, transaction_id: int) -> None:
         with connect(self.db_path) as connection:
             TransactionRepository(connection).delete(transaction_id)
@@ -138,9 +160,10 @@ class TransactionService:
 
 
 class BudgetService:
-    def __init__(self, db_path: Path | str) -> None:
+    def __init__(self, db_path: Path | str, *, initialize: bool = True) -> None:
         self.db_path = Path(db_path)
-        initialize_database(self.db_path)
+        if initialize:
+            initialize_database(self.db_path)
 
     def set_budget(self, category: str, amount: str, month: int, year: int) -> Budget:
         budget = Budget.create(category=category, amount=amount, month=month, year=year)
@@ -162,6 +185,21 @@ class BudgetService:
         filters = BudgetFilters(month=month, year=year, category=category)
         with connect(self.db_path) as connection:
             return BudgetRepository(connection).list(filters)
+
+    def list_budgets_page(
+        self,
+        month: int | None = None,
+        year: int | None = None,
+        category: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> tuple[list[Budget], int]:
+        filters = BudgetFilters(month=month, year=year, category=category)
+        with connect(self.db_path) as connection:
+            repository = BudgetRepository(connection)
+            return repository.list(filters, limit=limit, offset=offset), repository.count_filtered(
+                filters
+            )
 
     def delete_budget(self, budget_id: int) -> None:
         with connect(self.db_path) as connection:
@@ -216,9 +254,10 @@ class BudgetService:
 
 
 class CategoryRuleService:
-    def __init__(self, db_path: Path | str) -> None:
+    def __init__(self, db_path: Path | str, *, initialize: bool = True) -> None:
         self.db_path = Path(db_path)
-        initialize_database(self.db_path)
+        if initialize:
+            initialize_database(self.db_path)
 
     def set_rule(self, alias: str, category: str) -> CategoryRule:
         rule = CategoryRule.create(alias=alias, category=category)
@@ -238,9 +277,10 @@ class CategoryRuleService:
 
 
 class RecurringTemplateService:
-    def __init__(self, db_path: Path | str) -> None:
+    def __init__(self, db_path: Path | str, *, initialize: bool = True) -> None:
         self.db_path = Path(db_path)
-        initialize_database(self.db_path)
+        if initialize:
+            initialize_database(self.db_path)
 
     def add_template(
         self,
@@ -328,9 +368,10 @@ def _canonical_template(connection, template: RecurringTemplate) -> RecurringTem
 
 
 class SettingsService:
-    def __init__(self, db_path: Path | str) -> None:
+    def __init__(self, db_path: Path | str, *, initialize: bool = True) -> None:
         self.db_path = Path(db_path)
-        initialize_database(self.db_path)
+        if initialize:
+            initialize_database(self.db_path)
 
     def get_currency(self) -> str:
         with connect(self.db_path) as connection:

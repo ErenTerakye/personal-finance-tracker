@@ -3,26 +3,26 @@ let activeCurrencyCode = "USD";
 
 let currency = new Intl.NumberFormat(activeLocale, {
   style: "currency",
-  currency: activeCurrencyCode
+  currency: activeCurrencyCode,
 });
 
 let compactCurrency = new Intl.NumberFormat(activeLocale, {
   style: "currency",
   currency: activeCurrencyCode,
   notation: "compact",
-  maximumFractionDigits: 1
+  maximumFractionDigits: 1,
 });
 
 function updateFormatters() {
   currency = new Intl.NumberFormat(activeLocale, {
     style: "currency",
-    currency: activeCurrencyCode
+    currency: activeCurrencyCode,
   });
   compactCurrency = new Intl.NumberFormat(activeLocale, {
     style: "currency",
     currency: activeCurrencyCode,
     notation: "compact",
-    maximumFractionDigits: 1
+    maximumFractionDigits: 1,
   });
   monthNames = activeLocale.startsWith("tr") ? monthNamesTr : monthNamesEn;
 }
@@ -86,7 +86,7 @@ const monthNamesEn = [
   "September",
   "October",
   "November",
-  "December"
+  "December",
 ];
 
 const monthNamesTr = [
@@ -102,8 +102,7 @@ const monthNamesTr = [
   "Eylül",
   "Ekim",
   "Kasım",
-  "Aralık"
+  "Aralık",
 ];
 
 export let monthNames = monthNamesEn;
-

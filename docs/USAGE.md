@@ -86,6 +86,10 @@ finance-tracker web --db-path demo.sqlite3
 npm run dev
 ```
 
+Open `http://127.0.0.1:5173` for the development UI. Vite forwards same-origin `/api` requests to `http://127.0.0.1:8000`, so both processes are required. The packaged application at port 8000 uses the built SPA instead.
+
+The API paginates browser list endpoints with `limit` (1–250) and `offset`, returning `page.limit`, `page.offset`, and `page.total`. CSV exports intentionally remain complete and filtered rather than paginated. CSV uploads must be an accepted CSV media type, UTF-8 encoded, and no larger than 5 MiB.
+
 Browser support policy: the Web UI targets Baseline 2026-capable browsers. Newly available browser features are used only as progressive enhancements, so core navigation and CRUD workflows remain usable without large polyfills. The UI uses color-scheme-aware dark mode with a persistent local override, native dialogs and popovers, SVG charts, container queries, mobile-safe viewport units, same-document view transitions, and reduced-motion-aware animation.
 
 The Web UI is a local Python app. GitHub Pages cannot run the live app because Pages does not run Python or SQLite; use [showcase/index.html](showcase/index.html) as a static portfolio preview and run `finance-tracker web` for live CRUD.

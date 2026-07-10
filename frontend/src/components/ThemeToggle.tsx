@@ -7,14 +7,18 @@ import {
   subscribeToSystemColorScheme,
   writeColorSchemePreference,
   type ColorScheme,
-  type ColorSchemePreference
+  type ColorSchemePreference,
 } from "../theme";
+import { useI18n } from "../i18n";
 
 export function ThemeToggle() {
+  const { t } = useI18n();
   const [preference, setPreference] = useState<ColorSchemePreference>(() =>
-    readColorSchemePreference()
+    readColorSchemePreference(),
   );
-  const [systemScheme, setSystemScheme] = useState<ColorScheme>(() => getSystemColorScheme());
+  const [systemScheme, setSystemScheme] = useState<ColorScheme>(() =>
+    getSystemColorScheme(),
+  );
   const manual = preference !== "system";
   const nextPreference: ColorSchemePreference = manual
     ? "system"
@@ -22,11 +26,12 @@ export function ThemeToggle() {
       ? "light"
       : "dark";
   const label = manual
-    ? "Use system color setting"
+    ? t("theme.system")
     : systemScheme === "dark"
-      ? "Use light mode"
-      : "Use dark mode";
-  const currentScheme: ColorScheme = preference === "system" ? systemScheme : preference;
+      ? t("theme.light")
+      : t("theme.dark");
+  const currentScheme: ColorScheme =
+    preference === "system" ? systemScheme : preference;
   const Icon = currentScheme === "dark" ? Sun : Moon;
 
   useEffect(() => {
@@ -38,7 +43,7 @@ export function ThemeToggle() {
       subscribeToSystemColorScheme(() => {
         setSystemScheme(getSystemColorScheme());
       }),
-    []
+    [],
   );
 
   return (

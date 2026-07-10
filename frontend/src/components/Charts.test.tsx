@@ -1,4 +1,9 @@
-import { fireEvent, render as originalRender, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render as originalRender,
+  screen,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { CashflowTrend, TrendLines } from "./Charts";
@@ -19,15 +24,15 @@ describe("CashflowTrend", () => {
           trendMonth("2026-01", {
             total_income: "100.00",
             total_expenses: "1.00",
-            net_savings: "99.00"
+            net_savings: "99.00",
           }),
           trendMonth("2026-02", {
             total_income: "0.00",
             total_expenses: "0.00",
-            net_savings: "0.00"
-          })
+            net_savings: "0.00",
+          }),
         ]}
-      />
+      />,
     );
 
     const activeMonth = screen.getByText("Jan 26").closest("li") as HTMLElement;
@@ -49,16 +54,16 @@ describe("CashflowTrend", () => {
           trendMonth("2026-01", {
             total_income: "100.00",
             total_expenses: "12.34",
-            net_savings: "87.66"
-          })
+            net_savings: "87.66",
+          }),
         ]}
-      />
+      />,
     );
 
     await user.tab();
     await user.tab();
 
-    const tooltip = screen.getByText("$12.34").closest("output") as HTMLElement;
+    const tooltip = document.querySelector("output") as HTMLElement;
     expect(within(tooltip).getByText("Expenses")).toBeInTheDocument();
     expect(within(tooltip).getByText("1 entries")).toBeInTheDocument();
   });
@@ -70,20 +75,26 @@ describe("CashflowTrend", () => {
           trendMonth("2026-01", {
             total_income: "100.00",
             total_expenses: "12.34",
-            net_savings: "87.66"
-          })
+            net_savings: "87.66",
+          }),
         ]}
-      />
+      />,
     );
 
-    fireEvent.pointerDown(screen.getByRole("button", { name: /Expenses for January 2026/ }), {
-      pointerType: "touch"
-    });
+    fireEvent.pointerDown(
+      screen.getByRole("button", { name: /Expenses for January 2026/ }),
+      {
+        pointerType: "touch",
+      },
+    );
 
-    expect(screen.getByText("$12.34")).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByRole("button", { name: /Expenses for January 2026/ }), { key: "Escape" });
+    expect(document.querySelector("output")).toHaveTextContent("$12.34");
+    fireEvent.keyDown(
+      screen.getByRole("button", { name: /Expenses for January 2026/ }),
+      { key: "Escape" },
+    );
 
-    expect(screen.queryByText("$12.34")).not.toBeInTheDocument();
+    expect(document.querySelector("output")).not.toBeInTheDocument();
   });
 });
 
@@ -96,16 +107,16 @@ describe("TrendLines", () => {
           trendMonth("2026-01", {
             total_income: "100.00",
             total_expenses: "12.34",
-            net_savings: "87.66"
-          })
+            net_savings: "87.66",
+          }),
         ]}
-      />
+      />,
     );
 
     screen.getByRole("button", { name: /Income for January 2026: \$100.00/ });
     await user.tab();
 
-    const tooltip = screen.getByText("$100.00").closest("output") as HTMLElement;
+    const tooltip = document.querySelector("output") as HTMLElement;
     expect(within(tooltip).getByText("Income")).toBeInTheDocument();
     expect(within(tooltip).getByText("0.0% savings rate")).toBeInTheDocument();
   });
@@ -113,7 +124,7 @@ describe("TrendLines", () => {
 
 function trendMonth(
   label: string,
-  values: Pick<TrendMonth, "total_income" | "total_expenses" | "net_savings">
+  values: Pick<TrendMonth, "total_income" | "total_expenses" | "net_savings">,
 ): TrendMonth {
   const [year, month] = label.split("-").map(Number);
   return {
@@ -125,6 +136,6 @@ function trendMonth(
     income_delta: "0.00",
     expenses_delta: "0.00",
     net_savings_delta: "0.00",
-    ...values
+    ...values,
   };
 }

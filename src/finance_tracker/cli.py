@@ -143,6 +143,12 @@ def web(
 
     typer.echo(f"Starting finance tracker web UI at http://{host}:{port}")
     typer.echo(f"Using database: {resolved_path}")
+    if host not in {"127.0.0.1", "localhost", "::1"}:
+        typer.secho(
+            "Warning: this unauthenticated local ledger is being exposed beyond loopback.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
     uvicorn.run(create_app(resolved_path), host=host, port=port)
 
 
@@ -579,9 +585,9 @@ def report(
 
 @app.command()
 def trends(
+    end_month: Annotated[int, typer.Option("--end-month", help="Final month 1-12")],
+    end_year: Annotated[int, typer.Option("--end-year", help="Final year")],
     months: Annotated[int, typer.Option("--months", help="Number of months to include")] = 6,
-    end_month: Annotated[int, typer.Option("--end-month", help="Final month 1-12")] = ...,
-    end_year: Annotated[int, typer.Option("--end-year", help="Final year")] = ...,
     chart: Annotated[Path | None, typer.Option("--chart", help="Optional PNG output path")] = None,
     db_path: DbPathOption = None,
 ) -> None:

@@ -88,9 +88,13 @@ def test_api_transaction_validation_and_not_found_errors_are_json(tmp_path):
     not_found_response = client.delete("/api/transactions/404")
 
     assert validation_response.status_code == 400
-    assert validation_response.json() == {"error": "Amount must be greater than zero."}
+    assert validation_response.json()["error"] == {
+        "code": "validation_error",
+        "message": "Amount must be greater than zero.",
+        "fields": None,
+    }
     assert not_found_response.status_code == 404
-    assert not_found_response.json() == {"error": "Transaction 404 was not found."}
+    assert not_found_response.json()["error"]["message"] == "Transaction 404 was not found."
 
 
 def test_api_transaction_csv_import_reports_skipped_rows_and_export_filters(tmp_path):
@@ -123,6 +127,7 @@ def test_api_transaction_csv_import_reports_skipped_rows_and_export_filters(tmp_
     assert import_response.status_code == 200
     assert import_response.json() == {
         "notice": "Transaction CSV import finished.",
+        "notice_code": "csv.transactions.imported",
         "imported_count": 2,
         "skipped_count": 1,
         "errors": ["Line 3: Amount must be greater than zero."],
@@ -136,7 +141,7 @@ def test_api_transaction_csv_import_reports_skipped_rows_and_export_filters(tmp_
         "expense,45.90,Food,Groceries,2026-06-12",
     ]
     assert missing_column_response.status_code == 400
-    assert "missing required columns" in missing_column_response.json()["error"]
+    assert "missing required columns" in missing_column_response.json()["error"]["message"]
 
 
 def test_api_transaction_csv_preview_reports_duplicates_and_aliases(tmp_path):
@@ -206,10 +211,11 @@ def test_api_budget_validation_and_not_found_errors_are_json(tmp_path):
     )
     not_found_response = client.delete("/api/budgets/404")
 
-    assert validation_response.status_code == 400
-    assert validation_response.json() == {"error": "Month must be between 1 and 12."}
+    assert validation_response.status_code == 422
+    assert validation_response.json()["error"]["code"] == "request_validation_error"
+    assert "month" in validation_response.json()["error"]["fields"]
     assert not_found_response.status_code == 404
-    assert not_found_response.json() == {"error": "Budget 404 was not found."}
+    assert not_found_response.json()["error"]["message"] == "Budget 404 was not found."
 
 
 def test_api_budget_csv_import_reports_skipped_rows_and_export_filters(tmp_path):
@@ -242,6 +248,7 @@ def test_api_budget_csv_import_reports_skipped_rows_and_export_filters(tmp_path)
     assert import_response.status_code == 200
     assert import_response.json() == {
         "notice": "Budget CSV import finished.",
+        "notice_code": "csv.budgets.imported",
         "imported_count": 2,
         "skipped_count": 1,
         "errors": ["Line 3: Amount must be greater than zero."],
@@ -255,7 +262,71 @@ def test_api_budget_csv_import_reports_skipped_rows_and_export_filters(tmp_path)
         "Food,400.00,6,2026",
     ]
     assert missing_column_response.status_code == 400
-    assert "missing required columns" in missing_column_response.json()["error"]
+    assert "missing required columns" in missing_column_response.json()["error"]["message"]
+
+
+def test_api_lists_are_paginated_and_report_total(tmp_path):
+    client = TestClient(create_app(tmp_path / "finance.sqlite3"))
+    for day in (1, 2, 3):
+        client.post(
+            "/api/transactions",
+            json={
+                "type": "expense",
+                "amount": "10.00",
+                "category": "Food",
+                "description": f"Item {day}",
+                "date": f"2026-07-{day:02d}",
+            },
+        )
+
+    response = client.get("/api/transactions", params={"limit": 1, "offset": 1})
+
+    assert response.status_code == 200
+    assert len(response.json()["transactions"]) == 1
+    assert response.json()["page"] == {"limit": 1, "offset": 1, "total": 3}
+
+
+def test_api_rejects_extra_fields_and_unsafe_csv_uploads(tmp_path):
+    client = TestClient(create_app(tmp_path / "finance.sqlite3"))
+    extra_field = client.post(
+        "/api/transactions",
+        json={
+            "type": "expense",
+            "amount": "10",
+            "category": "Food",
+            "description": "Lunch",
+            "date": "2026-07-10",
+            "unexpected": True,
+        },
+    )
+    wrong_type = client.post(
+        "/api/transactions/import-csv",
+        content="not,csv",
+        headers={"content-type": "application/json"},
+    )
+    too_large = client.post(
+        "/api/transactions/import-csv",
+        content=b"x" * (5 * 1024 * 1024 + 1),
+        headers={"content-type": "text/csv"},
+    )
+
+    assert extra_field.status_code == 422
+    assert "unexpected" in extra_field.json()["error"]["fields"]
+    assert wrong_type.status_code == 415
+    assert wrong_type.json()["error"]["code"] == "unsupported_media_type"
+    assert too_large.status_code == 413
+    assert too_large.json()["error"]["code"] == "upload_too_large"
+
+
+def test_api_uses_conservative_security_and_cache_headers(tmp_path):
+    client = TestClient(create_app(tmp_path / "finance.sqlite3"))
+
+    response = client.get("/api/settings")
+
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["referrer-policy"] == "no-referrer"
+    assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
 
 
 def test_api_report_and_chart_downloads_return_attachments(tmp_path):

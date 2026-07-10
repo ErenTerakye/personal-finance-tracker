@@ -1,7 +1,8 @@
 """Domain models for the finance tracker."""
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date as Date
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 
@@ -19,7 +20,7 @@ class Transaction:
     amount: Decimal
     category: str
     description: str
-    date: date
+    date: Date
     id: int | None = None
     created_at: datetime | None = None
 
@@ -30,7 +31,7 @@ class Transaction:
         amount: str | int | float | Decimal,
         category: str,
         description: str,
-        transaction_date: str | date,
+        transaction_date: str | Date,
     ) -> Transaction:
         return cls(
             type=parse_transaction_type(transaction_type),
@@ -176,11 +177,11 @@ def validate_day_of_month(value: int) -> int:
     return value
 
 
-def parse_date(value: str | date) -> date:
-    if isinstance(value, date):
+def parse_date(value: str | Date) -> Date:
+    if isinstance(value, Date):
         return value
     try:
-        return date.fromisoformat(value)
+        return Date.fromisoformat(value)
     except ValueError as exc:
         raise ValidationError("Date must use YYYY-MM-DD format.") from exc
 

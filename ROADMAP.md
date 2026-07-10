@@ -25,21 +25,22 @@ would make it stronger without bloating the scope.
   English/Turkish language preferences.
 - A static showcase exists for portfolio hosting, while real CRUD remains a
   local Python/SQLite workflow.
-- GitHub Actions mirrors the documented check set with Python tests, Ruff,
-  frontend unit tests, production build, and Playwright responsive/accessibility
-  E2E tests.
-- v1.0 packages the project as a clean public portfolio release with refreshed
+- GitHub Actions mirrors the documented check set with Python tests, Ruff, mypy,
+  frontend linters, OpenAPI drift and bundle budgets, production build, dependency
+  audits, and cross-browser Playwright E2E tests.
+- v1.1 packages the project as a clean public portfolio release with refreshed
   documentation, static showcase copy, reviewer screenshots, packaged SPA
   assets, demo artifacts, accessibility coverage, and install/package checks.
-- Local quality checks last verified for v1.0 on July 9, 2026:
-  - `.venv/bin/python -m pytest` - 64 passed.
+- Local quality checks last verified for v1.1 on July 10, 2026:
+  - `.venv/bin/python -m pytest` - 69 passed.
   - `.venv/bin/python -m ruff check .` - passed.
   - `npm test` - 25 frontend unit tests passed.
   - `npm run build` - passed.
-  - `npm run test:e2e` - 54 Playwright responsive/accessibility E2E tests
-    passed.
+  - `npm run test:e2e -- --project=chromium` - 54 responsive/accessibility tests passed.
+  - Critical Firefox/WebKit suite - 16 tests passed.
+  - Packaged FastAPI + SQLite Playwright suite - 2 tests passed.
   - `.venv/bin/python -m build` - built the source distribution and universal
-    wheel for `personal-finance-tracker` 1.0.0.
+    wheel for `personal-finance-tracker` 1.1.0.
   - Fresh install checks passed with a clean virtual environment,
     `python -m pip install -e ".[dev,web]"`, `npm ci`, and `npm run build`.
 
@@ -156,11 +157,8 @@ Prepared the project as a clean public showcase.
 
 ## Backlog / Later
 
-- Add lightweight SQLite migrations if schema changes outgrow
-  `CREATE TABLE IF NOT EXISTS`.
-- Split FastAPI request/response models from route definitions if the API grows.
-- Generate frontend API types from an OpenAPI schema if manual TypeScript types
-  become noisy or error-prone.
+- Continue splitting the FastAPI and largest view modules into smaller domain files.
+- Continue splitting the legacy stylesheet as component styles are touched.
 - Add richer chart options while keeping matplotlib isolated in `charts.py` and
   browser SVG charts in frontend components.
 - Explore packaging polish such as a wheel build check or scripted demo reset.

@@ -67,5 +67,6 @@ def test_api_settings_endpoints(tmp_path):
 
     # Verify invalid currency rejection
     put_invalid = client.put("/api/settings", json={"currency": "INVALID"})
-    assert put_invalid.status_code == 400
-    assert "Currency must be a valid 3-letter ISO code" in put_invalid.json()["error"]
+    assert put_invalid.status_code == 422
+    assert put_invalid.json()["error"]["code"] == "request_validation_error"
+    assert "currency" in put_invalid.json()["error"]["fields"]

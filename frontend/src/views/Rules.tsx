@@ -1,5 +1,14 @@
 import { FormEvent, useEffect, useState } from "react";
-import { CalendarCheck, GitMerge, Plus, Trash2, Sparkles, CheckCircle2, Info, Settings } from "lucide-react";
+import {
+  CalendarCheck,
+  GitMerge,
+  Plus,
+  Trash2,
+  Sparkles,
+  CheckCircle2,
+  Info,
+  Settings,
+} from "lucide-react";
 import { api } from "../api";
 import { money, periodLabel } from "../format";
 import type {
@@ -15,9 +24,9 @@ import {
   IconButton,
   PageHeader,
   Panel,
-  SubmitButton
+  SubmitButton,
 } from "../components/ui";
-import { useI18n } from "../i18n";
+import { localizedNotice, useI18n } from "../i18n";
 
 const defaultRule: CategoryRuleInput = { alias: "", category: "" };
 
@@ -26,7 +35,7 @@ const defaultTemplate: RecurringTemplateInput = {
   amount: "",
   category: "",
   description: "",
-  day_of_month: 1
+  day_of_month: 1,
 };
 
 const ALIAS_PRESETS = [
@@ -34,21 +43,51 @@ const ALIAS_PRESETS = [
   { alias: "starbucks", category: "Food & Drinks" },
   { alias: "netflix", category: "Entertainment" },
   { alias: "amazon", category: "Shopping" },
-  { alias: "spotify", category: "Entertainment" }
+  { alias: "spotify", category: "Entertainment" },
 ];
 
 const TEMPLATE_PRESETS = [
-  { type: "expense" as const, amount: "1200.00", category: "Rent", day_of_month: 1, description: "Monthly Rent" },
-  { type: "income" as const, amount: "3000.00", category: "Salary", day_of_month: 25, description: "Paycheck" },
-  { type: "expense" as const, amount: "15.49", category: "Entertainment", day_of_month: 15, description: "Netflix Subscription" },
-  { type: "expense" as const, amount: "50.00", category: "Health & Wellness", day_of_month: 5, description: "Gym Membership" },
-  { type: "expense" as const, amount: "100.00", category: "Utilities", day_of_month: 10, description: "Electric Bill" }
+  {
+    type: "expense" as const,
+    amount: "1200.00",
+    category: "Rent",
+    day_of_month: 1,
+    description: "Monthly Rent",
+  },
+  {
+    type: "income" as const,
+    amount: "3000.00",
+    category: "Salary",
+    day_of_month: 25,
+    description: "Paycheck",
+  },
+  {
+    type: "expense" as const,
+    amount: "15.49",
+    category: "Entertainment",
+    day_of_month: 15,
+    description: "Netflix Subscription",
+  },
+  {
+    type: "expense" as const,
+    amount: "50.00",
+    category: "Health & Wellness",
+    day_of_month: 5,
+    description: "Gym Membership",
+  },
+  {
+    type: "expense" as const,
+    amount: "100.00",
+    category: "Utilities",
+    day_of_month: 10,
+    description: "Electric Bill",
+  },
 ];
 
 export function RulesView({
   selectedPeriod,
   setNotice,
-  onCurrencyChange
+  onCurrencyChange,
 }: {
   selectedPeriod: { month: number; year: number };
   setNotice: (notice: string) => void;
@@ -57,7 +96,8 @@ export function RulesView({
   const [rules, setRules] = useState<CategoryRule[]>([]);
   const [templates, setTemplates] = useState<RecurringTemplate[]>([]);
   const [ruleForm, setRuleForm] = useState<CategoryRuleInput>(defaultRule);
-  const [templateForm, setTemplateForm] = useState<RecurringTemplateInput>(defaultTemplate);
+  const [templateForm, setTemplateForm] =
+    useState<RecurringTemplateInput>(defaultTemplate);
   const [error, setError] = useState("");
   const [ruleError, setRuleError] = useState("");
   const [templateError, setTemplateError] = useState("");
@@ -76,7 +116,11 @@ export function RulesView({
   const load = () => {
     setError("");
     setLoading(true);
-    Promise.all([api.categoryRules(), api.recurringTemplates(), api.getSettings()])
+    Promise.all([
+      api.categoryRules(),
+      api.recurringTemplates(),
+      api.getSettings(),
+    ])
       .then(([ruleResponse, templateResponse, settingsResponse]) => {
         setRules(ruleResponse.rules);
         setTemplates(templateResponse.templates);
@@ -94,7 +138,7 @@ export function RulesView({
     setSavingRule(true);
     try {
       const response = await api.setCategoryRule(ruleForm);
-      setNotice(response.notice);
+      setNotice(localizedNotice(response, t));
       setRuleForm(defaultRule);
       load();
     } catch (err) {
@@ -109,7 +153,7 @@ export function RulesView({
     setSavingRule(true);
     try {
       const response = await api.setCategoryRule({ alias, category });
-      setNotice(response.notice);
+      setNotice(localizedNotice(response, t));
       load();
     } catch (err) {
       setRuleError(readError(err, t));
@@ -124,7 +168,7 @@ export function RulesView({
     setSavingTemplate(true);
     try {
       const response = await api.createRecurringTemplate(templateForm);
-      setNotice(response.notice);
+      setNotice(localizedNotice(response, t));
       setTemplateForm(defaultTemplate);
       load();
     } catch (err) {
@@ -134,12 +178,12 @@ export function RulesView({
     }
   }
 
-  async function quickAddTemplate(preset: typeof TEMPLATE_PRESETS[0]) {
+  async function quickAddTemplate(preset: (typeof TEMPLATE_PRESETS)[0]) {
     setTemplateError("");
     setSavingTemplate(true);
     try {
       const response = await api.createRecurringTemplate(preset);
-      setNotice(response.notice);
+      setNotice(localizedNotice(response, t));
       load();
     } catch (err) {
       setTemplateError(readError(err, t));
@@ -154,7 +198,7 @@ export function RulesView({
     setSavingCurrency(true);
     try {
       const response = await api.updateSettings({ currency });
-      setNotice(response.notice);
+      setNotice(localizedNotice(response, t));
       onCurrencyChange(currency);
     } catch (err) {
       setError(readError(err, t));
@@ -165,13 +209,13 @@ export function RulesView({
 
   async function deleteRule(rule: CategoryRule) {
     const response = await api.deleteCategoryRule(rule.id);
-    setNotice(response.notice);
+    setNotice(localizedNotice(response, t));
     load();
   }
 
   async function deleteTemplate(template: RecurringTemplate) {
     const response = await api.deleteRecurringTemplate(template.id);
-    setNotice(response.notice);
+    setNotice(localizedNotice(response, t));
     load();
   }
 
@@ -179,8 +223,11 @@ export function RulesView({
     setError("");
     setApplying(true);
     try {
-      const response = await api.applyRecurringTemplates(selectedPeriod.month, selectedPeriod.year);
-      setNotice(response.notice);
+      const response = await api.applyRecurringTemplates(
+        selectedPeriod.month,
+        selectedPeriod.year,
+      );
+      setNotice(localizedNotice(response, t));
     } catch (err) {
       setError(readError(err, t));
     } finally {
@@ -189,15 +236,17 @@ export function RulesView({
   }
 
   const matchedRule = playgroundInput.trim()
-    ? rules.find((r) => r.alias.toLowerCase() === playgroundInput.trim().toLowerCase())
+    ? rules.find(
+        (r) => r.alias.toLowerCase() === playgroundInput.trim().toLowerCase(),
+      )
     : null;
 
-  const aliasesDetail = loading 
-    ? t("rules.aliasesLoading") 
+  const aliasesDetail = loading
+    ? t("rules.aliasesLoading")
     : t("rules.aliasesCount", { count: rules.length });
 
-  const templatesDetail = loading 
-    ? t("rules.templatesLoading") 
+  const templatesDetail = loading
+    ? t("rules.templatesLoading")
     : t("rules.templatesCount", { count: templates.length });
 
   return (
@@ -207,8 +256,14 @@ export function RulesView({
         title={t("rules.title")}
         summary={t("rules.summary")}
         actions={
-          <ActionButton icon={CalendarCheck} onClick={applyTemplates} disabled={applying}>
-            {t("rules.applyFor", { period: periodLabel(selectedPeriod.month, selectedPeriod.year) })}
+          <ActionButton
+            icon={CalendarCheck}
+            onClick={applyTemplates}
+            disabled={applying}
+          >
+            {t("rules.applyFor", {
+              period: periodLabel(selectedPeriod.month, selectedPeriod.year),
+            })}
           </ActionButton>
         }
       />
@@ -241,20 +296,32 @@ export function RulesView({
         <Panel title={t("rules.aliasesTitle")} detail={aliasesDetail}>
           {ruleError ? <ErrorBanner message={ruleError} /> : null}
           <form className="inline-form" onSubmit={saveRule}>
-            <Field id="rule-alias" label={t("rules.aliasField")} hint={t("rules.aliasHint")}>
+            <Field
+              id="rule-alias"
+              label={t("rules.aliasField")}
+              hint={t("rules.aliasHint")}
+            >
               <input
                 id="rule-alias"
                 required
                 value={ruleForm.alias}
-                onChange={(event) => setRuleForm({ ...ruleForm, alias: event.target.value })}
+                onChange={(event) =>
+                  setRuleForm({ ...ruleForm, alias: event.target.value })
+                }
               />
             </Field>
-            <Field id="rule-category" label={t("common.category")} hint={t("rules.categoryHint")}>
+            <Field
+              id="rule-category"
+              label={t("common.category")}
+              hint={t("rules.categoryHint")}
+            >
               <input
                 id="rule-category"
                 required
                 value={ruleForm.category}
-                onChange={(event) => setRuleForm({ ...ruleForm, category: event.target.value })}
+                onChange={(event) =>
+                  setRuleForm({ ...ruleForm, category: event.target.value })
+                }
               />
             </Field>
             <SubmitButton busy={savingRule} icon={GitMerge}>
@@ -264,21 +331,32 @@ export function RulesView({
 
           {rules.length === 0 || showAliasPresets ? (
             <div className="presets-box">
-              <span className="presets-title" lang={locale}>{t("rules.presetsTitle")}</span>
+              <span className="presets-title" lang={locale}>
+                {t("rules.presetsTitle")}
+              </span>
               <div className="preset-chips">
                 {ALIAS_PRESETS.map((preset) => {
                   const alreadyExists = rules.some(
-                    (r) => r.alias.toLowerCase() === preset.alias.toLowerCase()
+                    (r) => r.alias.toLowerCase() === preset.alias.toLowerCase(),
                   );
-                  const translatedCategory = t(`categories.${preset.category}`) || preset.category;
+                  const translatedCategory =
+                    t(`categories.${preset.category}`) || preset.category;
                   return (
                     <button
                       key={preset.alias}
                       type="button"
                       className="preset-chip"
                       disabled={alreadyExists || savingRule}
-                      onClick={() => quickAddAlias(preset.alias, translatedCategory)}
-                      title={alreadyExists ? t("rules.alreadyAdded") : t("rules.addPreset", { name: `${preset.alias} -> ${translatedCategory}` })}
+                      onClick={() =>
+                        quickAddAlias(preset.alias, translatedCategory)
+                      }
+                      title={
+                        alreadyExists
+                          ? t("rules.alreadyAdded")
+                          : t("rules.addPreset", {
+                              name: `${preset.alias} -> ${translatedCategory}`,
+                            })
+                      }
                     >
                       <Sparkles size={12} />
                       <span>
@@ -319,7 +397,7 @@ export function RulesView({
                     {t("rules.playgroundSuccess", {
                       input: playgroundInput,
                       category: matchedRule.category,
-                      alias: matchedRule.alias
+                      alias: matchedRule.alias,
                     })}
                   </span>
                 </div>
@@ -346,7 +424,9 @@ export function RulesView({
                   type="radio"
                   value="expense"
                   checked={templateForm.type === "expense"}
-                  onChange={() => setTemplateForm({ ...templateForm, type: "expense" })}
+                  onChange={() =>
+                    setTemplateForm({ ...templateForm, type: "expense" })
+                  }
                 />
                 <span>{t("common.expense")}</span>
               </label>
@@ -356,7 +436,9 @@ export function RulesView({
                   type="radio"
                   value="income"
                   checked={templateForm.type === "income"}
-                  onChange={() => setTemplateForm({ ...templateForm, type: "income" })}
+                  onChange={() =>
+                    setTemplateForm({ ...templateForm, type: "income" })
+                  }
                 />
                 <span>{t("common.income")}</span>
               </label>
@@ -367,7 +449,12 @@ export function RulesView({
                 inputMode="decimal"
                 required
                 value={templateForm.amount}
-                onChange={(event) => setTemplateForm({ ...templateForm, amount: event.target.value })}
+                onChange={(event) =>
+                  setTemplateForm({
+                    ...templateForm,
+                    amount: event.target.value,
+                  })
+                }
               />
             </Field>
             <Field id="template-category" label={t("common.category")}>
@@ -375,7 +462,12 @@ export function RulesView({
                 id="template-category"
                 required
                 value={templateForm.category}
-                onChange={(event) => setTemplateForm({ ...templateForm, category: event.target.value })}
+                onChange={(event) =>
+                  setTemplateForm({
+                    ...templateForm,
+                    category: event.target.value,
+                  })
+                }
               />
             </Field>
             <Field id="template-day" label={t("rules.dayField")}>
@@ -387,7 +479,10 @@ export function RulesView({
                 required
                 value={templateForm.day_of_month}
                 onChange={(event) =>
-                  setTemplateForm({ ...templateForm, day_of_month: Number(event.target.value) })
+                  setTemplateForm({
+                    ...templateForm,
+                    day_of_month: Number(event.target.value),
+                  })
                 }
               />
             </Field>
@@ -396,7 +491,10 @@ export function RulesView({
                 id="template-description"
                 value={templateForm.description}
                 onChange={(event) =>
-                  setTemplateForm({ ...templateForm, description: event.target.value })
+                  setTemplateForm({
+                    ...templateForm,
+                    description: event.target.value,
+                  })
                 }
               />
             </Field>
@@ -407,32 +505,44 @@ export function RulesView({
 
           {templates.length === 0 || showTemplatePresets ? (
             <div className="presets-box">
-              <span className="presets-title" lang={locale}>{t("rules.presetsTemplatesTitle")}</span>
+              <span className="presets-title" lang={locale}>
+                {t("rules.presetsTemplatesTitle")}
+              </span>
               <div className="preset-grid">
                 {TEMPLATE_PRESETS.map((preset) => {
                   const alreadyExists = templates.some(
                     (t) =>
-                      t.category.toLowerCase() === preset.category.toLowerCase() &&
-                      t.type === preset.type
+                      t.category.toLowerCase() ===
+                        preset.category.toLowerCase() && t.type === preset.type,
                   );
-                  const translatedCategory = t(`categories.${preset.category}`) || preset.category;
-                  const translatedDesc = t(`presets.${preset.description}`) || preset.description;
+                  const translatedCategory =
+                    t(`categories.${preset.category}`) || preset.category;
+                  const translatedDesc =
+                    t(`presets.${preset.description}`) || preset.description;
                   return (
                     <button
                       key={`${preset.type}-${preset.category}`}
                       type="button"
                       className="preset-grid-card"
                       disabled={alreadyExists || savingTemplate}
-                      onClick={() => quickAddTemplate({
-                        ...preset,
-                        category: translatedCategory,
-                        description: translatedDesc
-                      })}
-                      title={alreadyExists ? t("rules.alreadyAdded") : t("rules.addPreset", { name: translatedCategory })}
+                      onClick={() =>
+                        quickAddTemplate({
+                          ...preset,
+                          category: translatedCategory,
+                          description: translatedDesc,
+                        })
+                      }
+                      title={
+                        alreadyExists
+                          ? t("rules.alreadyAdded")
+                          : t("rules.addPreset", { name: translatedCategory })
+                      }
                     >
                       <strong>{translatedCategory}</strong>
                       <span>
-                        {preset.type === "expense" ? "-" : "+"}{money(preset.amount)} ({t("rules.onDayText", { day: preset.day_of_month })})
+                        {preset.type === "expense" ? "-" : "+"}
+                        {money(preset.amount)} (
+                        {t("rules.onDayText", { day: preset.day_of_month })})
                       </span>
                     </button>
                   );
@@ -455,7 +565,11 @@ export function RulesView({
         <Panel title={t("rules.settingsTitle")} className="settings-panel">
           {error ? <ErrorBanner message={error} /> : null}
           <form className="inline-form" onSubmit={saveCurrency}>
-            <Field id="settings-currency" label={t("rules.settingsCurrency")} hint={t("rules.settingsHint")}>
+            <Field
+              id="settings-currency"
+              label={t("rules.settingsCurrency")}
+              hint={t("rules.settingsHint")}
+            >
               <select
                 id="settings-currency"
                 required
@@ -480,7 +594,7 @@ export function RulesView({
 
 function RuleList({
   rules,
-  onDelete
+  onDelete,
 }: {
   rules: CategoryRule[];
   onDelete: (rule: CategoryRule) => void;
@@ -498,7 +612,11 @@ function RuleList({
             <strong>{rule.alias}</strong>
             <em>&rarr; {rule.category}</em>
           </span>
-          <IconButton icon={Trash2} label={`${t("common.delete")} ${rule.alias} ${t("rules.aliasesTitle").toLowerCase()}`} onClick={() => onDelete(rule)} />
+          <IconButton
+            icon={Trash2}
+            label={`${t("common.delete")} ${rule.alias} ${t("rules.aliasesTitle").toLowerCase()}`}
+            onClick={() => onDelete(rule)}
+          />
         </li>
       ))}
     </ul>
@@ -507,7 +625,7 @@ function RuleList({
 
 function TemplateList({
   templates,
-  onDelete
+  onDelete,
 }: {
   templates: RecurringTemplate[];
   onDelete: (template: RecurringTemplate) => void;

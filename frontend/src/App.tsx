@@ -1,31 +1,40 @@
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "./components/AppShell";
 import { currentPeriod, setCurrency } from "./format";
-import { pathForView, viewFromPath, type View } from "./routes";
+import {
+  pathForView,
+  viewFromPath,
+  viewOrder,
+  type RouteView,
+  type View,
+} from "./routes";
 import { api } from "./api";
 import { BudgetsView } from "./views/Budgets";
 import { DashboardView } from "./views/Dashboard";
 import { RulesView } from "./views/Rules";
 import { TransactionsView } from "./views/Transactions";
 import { I18nProvider, useI18n } from "./i18n";
+import { ActionButton, PageHeader } from "./components/ui";
+import { LayoutDashboard } from "lucide-react";
 
-const initialPeriod = currentPeriod();
+const initialPeriod = periodFromUrl();
 
 function AppContent() {
   const { t, locale } = useI18n();
-  const [view, setView] = useState<View>(() => viewFromPath(window.location.pathname));
+  const [view, setView] = useState<RouteView>(() =>
+    viewFromPath(window.location.pathname),
+  );
   const [selectedPeriod, setSelectedPeriod] = useState(initialPeriod);
   const [notice, setNotice] = useState("");
-  const [currency, setAppCurrency] = useState("USD");
   const [ready, setReady] = useState(false);
   const mainRef = useRef<HTMLElement | null>(null);
   const didMount = useRef(false);
 
   useEffect(() => {
-    api.getSettings()
+    api
+      .getSettings()
       .then((settings) => {
         setCurrency(settings.currency);
-        setAppCurrency(settings.currency);
         setReady(true);
       })
       .catch(() => {
@@ -43,7 +52,9 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    document.title = `${t(`nav.${view}`)} | Personal Finance Tracker`;
+    const title =
+      view === "not-found" ? t("notFound.eyebrow") : t(`nav.${view}`);
+    document.title = `${title} | Personal Finance Tracker`;
     if (didMount.current) {
       window.requestAnimationFrame(() => mainRef.current?.focus());
     }
@@ -55,7 +66,9 @@ function AppContent() {
       return;
     }
     const nextPath = pathForView(nextView);
-    const direction = nextView === "dashboard" ? "backward" : "forward"; // simpler fallback or order-based logic
+    const currentIndex = view === "not-found" ? 0 : viewOrder.indexOf(view);
+    const direction =
+      viewOrder.indexOf(nextView) < currentIndex ? "backward" : "forward";
     const update = () => {
       if (window.location.pathname !== nextPath) {
         window.history.pushState({}, "", nextPath);
@@ -65,7 +78,9 @@ function AppContent() {
     };
 
     const transition = (document as ViewTransitionDocument).startViewTransition;
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const reduceMotion = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
 
     if (!transition || reduceMotion) {
       update();
@@ -74,13 +89,30 @@ function AppContent() {
 
     transition.call(document, {
       update,
-      types: [direction]
+      types: [direction],
     });
+  }
+
+  function changePeriod(period: { month: number; year: number }) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("month", String(period.month));
+    url.searchParams.set("year", String(period.year));
+    window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+    setSelectedPeriod(period);
   }
 
   if (!ready) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", fontFamily: "sans-serif", color: "#666" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+          fontFamily: "sans-serif",
+          color: "#666",
+        }}
+      >
         {t("common.loading")}
       </div>
     );
@@ -96,17 +128,20 @@ function AppContent() {
       {view === "dashboard" ? (
         <DashboardView
           selectedPeriod={selectedPeriod}
-          setSelectedPeriod={setSelectedPeriod}
+          setSelectedPeriod={changePeriod}
           onNavigate={navigate}
         />
       ) : null}
       {view === "transactions" ? (
-        <TransactionsView selectedPeriod={selectedPeriod} setNotice={setNotice} />
+        <TransactionsView
+          selectedPeriod={selectedPeriod}
+          setNotice={setNotice}
+        />
       ) : null}
       {view === "budgets" ? (
         <BudgetsView
           selectedPeriod={selectedPeriod}
-          setSelectedPeriod={setSelectedPeriod}
+          setSelectedPeriod={changePeriod}
           setNotice={setNotice}
         />
       ) : null}
@@ -116,8 +151,22 @@ function AppContent() {
           setNotice={setNotice}
           onCurrencyChange={(code) => {
             setCurrency(code);
-            setAppCurrency(code);
           }}
+        />
+      ) : null}
+      {view === "not-found" ? (
+        <PageHeader
+          eyebrow={t("notFound.eyebrow")}
+          title={t("notFound.title")}
+          summary={t("notFound.summary")}
+          actions={
+            <ActionButton
+              icon={LayoutDashboard}
+              onClick={() => navigate("dashboard")}
+            >
+              {t("notFound.action")}
+            </ActionButton>
+          }
         />
       ) : null}
     </AppShell>
@@ -133,9 +182,18 @@ export default function App() {
 }
 
 type ViewTransitionDocument = Document & {
-  startViewTransition?: (options: {
-    update: () => void;
-    types?: string[];
-  }) => { finished: Promise<void> };
+  startViewTransition?: (options: { update: () => void; types?: string[] }) => {
+    finished: Promise<void>;
+  };
 };
 
+function periodFromUrl(): { month: number; year: number } {
+  const fallback = currentPeriod();
+  const params = new URLSearchParams(window.location.search);
+  const month = Number(params.get("month"));
+  const year = Number(params.get("year"));
+  return {
+    month: month >= 1 && month <= 12 ? month : fallback.month,
+    year: year >= 1 ? year : fallback.year,
+  };
+}

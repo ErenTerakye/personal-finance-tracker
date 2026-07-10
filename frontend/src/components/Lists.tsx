@@ -42,7 +42,11 @@ export function BudgetPressureList({ statuses }: { statuses: BudgetStatus[] }) {
   );
 }
 
-export function ActivityList({ transactions }: { transactions: TransactionRecord[] }) {
+export function ActivityList({
+  transactions,
+}: {
+  transactions: TransactionRecord[];
+}) {
   if (!transactions.length) {
     return (
       <EmptyState
@@ -66,7 +70,9 @@ export function ActivityList({ transactions }: { transactions: TransactionRecord
               </em>
             </span>
           </div>
-          <strong className={transaction.type}>{money(transaction.amount)}</strong>
+          <strong className={transaction.type}>
+            {money(transaction.amount)}
+          </strong>
         </li>
       ))}
     </ul>

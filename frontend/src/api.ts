@@ -10,6 +10,7 @@ import type {
   DashboardData,
   ImportSummary,
   NoticeResponse,
+  PageMetadata,
   RecurringApplyResponse,
   RecurringTemplate,
   RecurringTemplateInput,
@@ -19,13 +20,13 @@ import type {
   TransactionMutationResponse,
   TransactionPatch,
   TransactionRecord,
-  TransactionType
+  TransactionType,
 } from "./types";
 
 export class ApiError extends Error {
   constructor(
     message: string,
-    readonly status: number
+    readonly status: number,
   ) {
     super(message);
     this.name = "ApiError";
@@ -46,34 +47,42 @@ export interface BudgetFilters {
 }
 
 export const api = {
-  dashboard: (month: number, year: number) =>
-    request<DashboardData>(`/api/dashboard?${query({ month, year })}`),
+  dashboard: (month: number, year: number, signal?: AbortSignal) =>
+    request<DashboardData>(`/api/dashboard?${query({ month, year })}`, {
+      signal,
+    }),
 
-  transactions: (filters: TransactionFilters = {}) =>
-    request<{ transactions: TransactionRecord[] }>(`/api/transactions?${query(filters)}`),
+  transactions: (filters: TransactionFilters = {}, signal?: AbortSignal) =>
+    request<{ transactions: TransactionRecord[]; page: PageMetadata }>(
+      `/api/transactions?${query(filters)}`,
+      { signal },
+    ),
 
   importTransactionsCsv: (csvText: string) =>
     request<ImportSummary>("/api/transactions/import-csv", {
       method: "POST",
       body: csvText,
-      headers: { "Content-Type": "text/csv; charset=utf-8" }
+      headers: { "Content-Type": "text/csv; charset=utf-8" },
     }),
 
   previewTransactionsCsv: (csvText: string) =>
     request<TransactionImportPreview>("/api/transactions/import-csv/preview", {
       method: "POST",
       body: csvText,
-      headers: { "Content-Type": "text/csv; charset=utf-8" }
+      headers: { "Content-Type": "text/csv; charset=utf-8" },
     }),
 
-  importTransactionsCsvWithOptions: (csvText: string, allowDuplicates = false) =>
+  importTransactionsCsvWithOptions: (
+    csvText: string,
+    allowDuplicates = false,
+  ) =>
     request<ImportSummary>(
       `/api/transactions/import-csv?${query({ allow_duplicates: allowDuplicates })}`,
       {
         method: "POST",
         body: csvText,
-        headers: { "Content-Type": "text/csv; charset=utf-8" }
-      }
+        headers: { "Content-Type": "text/csv; charset=utf-8" },
+      },
     ),
 
   transactionCsvExportUrl: (filters: TransactionFilters = {}) =>
@@ -82,26 +91,29 @@ export const api = {
   createTransaction: (payload: TransactionInput) =>
     request<TransactionMutationResponse>("/api/transactions", {
       method: "POST",
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     }),
 
   updateTransaction: (id: number, payload: TransactionPatch) =>
     request<TransactionMutationResponse>(`/api/transactions/${id}`, {
       method: "PATCH",
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     }),
 
   deleteTransaction: (id: number) =>
     request<NoticeResponse>(`/api/transactions/${id}`, { method: "DELETE" }),
 
-  budgets: (filters: BudgetFilters = {}) =>
-    request<{ budgets: BudgetRecord[] }>(`/api/budgets?${query(filters)}`),
+  budgets: (filters: BudgetFilters = {}, signal?: AbortSignal) =>
+    request<{ budgets: BudgetRecord[]; page: PageMetadata }>(
+      `/api/budgets?${query(filters)}`,
+      { signal },
+    ),
 
   importBudgetsCsv: (csvText: string) =>
     request<ImportSummary>("/api/budgets/import-csv", {
       method: "POST",
       body: csvText,
-      headers: { "Content-Type": "text/csv; charset=utf-8" }
+      headers: { "Content-Type": "text/csv; charset=utf-8" },
     }),
 
   budgetCsvExportUrl: (filters: BudgetFilters = {}) =>
@@ -110,21 +122,25 @@ export const api = {
   setBudget: (payload: BudgetInput) =>
     request<BudgetMutationResponse>("/api/budgets", {
       method: "POST",
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     }),
 
-  budgetStatuses: (month: number, year: number) =>
-    request<{ statuses: BudgetStatus[] }>(`/api/budgets/status?${query({ month, year })}`),
+  budgetStatuses: (month: number, year: number, signal?: AbortSignal) =>
+    request<{ statuses: BudgetStatus[] }>(
+      `/api/budgets/status?${query({ month, year })}`,
+      { signal },
+    ),
 
   deleteBudget: (id: number) =>
     request<NoticeResponse>(`/api/budgets/${id}`, { method: "DELETE" }),
 
-  categoryRules: () => request<{ rules: CategoryRule[] }>("/api/category-rules"),
+  categoryRules: () =>
+    request<{ rules: CategoryRule[] }>("/api/category-rules"),
 
   setCategoryRule: (payload: CategoryRuleInput) =>
     request<CategoryRuleMutationResponse>("/api/category-rules", {
       method: "POST",
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     }),
 
   deleteCategoryRule: (id: number) =>
@@ -136,24 +152,29 @@ export const api = {
   createRecurringTemplate: (payload: RecurringTemplateInput) =>
     request<RecurringTemplateMutationResponse>("/api/recurring-templates", {
       method: "POST",
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     }),
 
   deleteRecurringTemplate: (id: number) =>
-    request<NoticeResponse>(`/api/recurring-templates/${id}`, { method: "DELETE" }),
+    request<NoticeResponse>(`/api/recurring-templates/${id}`, {
+      method: "DELETE",
+    }),
 
   applyRecurringTemplates: (month: number, year: number) =>
-    request<RecurringApplyResponse>(`/api/recurring-templates/apply?${query({ month, year })}`, {
-      method: "POST"
-    }),
+    request<RecurringApplyResponse>(
+      `/api/recurring-templates/apply?${query({ month, year })}`,
+      {
+        method: "POST",
+      },
+    ),
 
   getSettings: () => request<{ currency: string }>("/api/settings"),
 
   updateSettings: (payload: { currency: string }) =>
     request<NoticeResponse>("/api/settings", {
       method: "PUT",
-      body: JSON.stringify(payload)
-    })
+      body: JSON.stringify(payload),
+    }),
 };
 
 export const artifactUrls = {
@@ -164,12 +185,14 @@ export const artifactUrls = {
   monthlyChart: (month: number, year: number) =>
     `/api/charts/monthly.png?${query({ month, year })}`,
   trendChart: (month: number, year: number, months = 6) =>
-    `/api/charts/trends.png?${query({ months, end_month: month, end_year: year })}`
+    `/api/charts/trends.png?${query({ months, end_month: month, end_year: year })}`,
 };
 
 export function query(values: object): string {
   const params = new URLSearchParams();
-  Object.entries(values as Record<string, string | number | boolean | undefined | null>).forEach(([key, value]) => {
+  Object.entries(
+    values as Record<string, string | number | boolean | undefined | null>,
+  ).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
       params.set(key, String(value));
     }
@@ -182,8 +205,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      ...init.headers
-    }
+      ...init.headers,
+    },
   });
 
   const body = await response.json().catch(() => ({}));
@@ -194,8 +217,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 function readError(body: ApiErrorBody): string {
-  if (body.error) {
+  if (typeof body.error === "string") {
     return body.error;
+  }
+  if (body.error?.message) {
+    return body.error.message;
   }
   if (typeof body.detail === "string") {
     return body.detail;

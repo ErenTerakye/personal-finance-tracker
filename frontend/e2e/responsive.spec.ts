@@ -11,18 +11,32 @@ for (const width of viewports) {
       await mockApi(page);
     });
 
-    test("keeps the dashboard readable without horizontal overflow", async ({ page }) => {
+    test("keeps the dashboard readable without horizontal overflow", async ({
+      page,
+    }) => {
       await page.goto("/");
 
-      await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Dashboard" }),
+      ).toBeVisible();
       await expect(page.getByText("Six-month cashflow trend")).toBeVisible();
-      await expect(page.getByRole("button", { name: /Choose period/ })).toBeVisible();
-      await expect(page.getByRole("link", { name: "Month report" })).toBeVisible();
-      await expect(page.getByRole("link", { name: "Trend chart" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /Choose period/ }),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "Reports and exports" }).click();
+      await expect(
+        page.getByRole("link", { name: "Month report" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "Trend chart" }),
+      ).toBeVisible();
       await assertNoHorizontalOverflow(page);
       await assertCannotPanHorizontally(page);
       await expectDashboardFitsViewport(page);
-      await expectElementsFitViewport(page, [".dashboard-actions", ".artifact-actions .button"]);
+      await expectElementsFitViewport(page, [
+        ".dashboard-actions",
+        ".artifact-actions .button",
+      ]);
       await expectQuickActionsStacked(page);
       await expectThemeToggleIconCentered(page);
       await expectMobileNavigationIsCompact(page, width);
@@ -39,15 +53,28 @@ for (const width of viewports) {
     test("adapts transaction records and dialogs", async ({ page }) => {
       await page.goto("/transactions");
 
-      await expect(page.getByRole("heading", { name: "Transactions" })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Transactions" }),
+      ).toBeVisible();
       await expect(page.getByText("Groceries")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Import CSV" })).toBeVisible();
-      await expect(page.getByRole("link", { name: "Export CSV" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Import CSV" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "Export CSV" }),
+      ).toBeVisible();
       await assertNoHorizontalOverflow(page);
-      await expectElementsFitViewport(page, [".action-cluster", ".panel-actions"]);
+      await expectElementsFitViewport(page, [
+        ".action-cluster",
+        ".panel-actions",
+      ]);
       await expectTableModeMatchesContainer(page);
-      await expect(page.getByRole("button", { name: "Edit Food transaction" })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Delete Food transaction" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Edit Food transaction" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Delete Food transaction" }),
+      ).toBeVisible();
 
       await page.getByRole("button", { name: "Add entry" }).click();
       const dialog = page.getByRole("dialog", { name: "Add transaction" });
@@ -58,17 +85,32 @@ for (const width of viewports) {
     test("adapts budget records and dialogs", async ({ page }) => {
       await page.goto("/budgets");
 
-      await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
-      await expect(page.locator(".records-panel .data-table td[data-label='Category']")).toHaveText("Travel");
-      await expect(page.getByRole("button", { name: "Import CSV" })).toBeVisible();
-      await expect(page.getByRole("link", { name: "Export CSV" })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Budgets" }),
+      ).toBeVisible();
+      await expect(
+        page.locator(".records-panel .data-table td[data-label='Category']"),
+      ).toHaveText("Travel");
+      await expect(
+        page.getByRole("button", { name: "Import CSV" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "Export CSV" }),
+      ).toBeVisible();
       await assertNoHorizontalOverflow(page);
       await expectBudgetPressureBarsAligned(page);
       await expectOverBudgetBadgeContrast(page);
-      await expectElementsFitViewport(page, [".action-cluster", ".panel-actions"]);
+      await expectElementsFitViewport(page, [
+        ".action-cluster",
+        ".panel-actions",
+      ]);
       await expectTableModeMatchesContainer(page);
-      await expect(page.getByRole("button", { name: "Update Travel budget" })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Delete Travel budget" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Update Travel budget" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Delete Travel budget" }),
+      ).toBeVisible();
 
       await page.getByRole("button", { name: "Set budget" }).click();
       const dialog = page.getByRole("dialog", { name: "Set budget" });
@@ -80,11 +122,19 @@ for (const width of viewports) {
       await page.goto("/rules");
 
       await expect(page.getByRole("heading", { name: "Rules" })).toBeVisible();
-      await expect(page.locator(".rule-list strong", { hasText: "groceries" })).toBeVisible();
+      await expect(
+        page.locator(".rule-list strong", { hasText: "groceries" }),
+      ).toBeVisible();
       await expect(page.getByText("Rent $1,200.00")).toBeVisible();
-      await expect(page.getByRole("button", { name: /Apply for/ })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /Apply for/ }),
+      ).toBeVisible();
       await assertNoHorizontalOverflow(page);
-      await expectElementsFitViewport(page, [".rules-layout", ".template-form", ".rule-list li"]);
+      await expectElementsFitViewport(page, [
+        ".rules-layout",
+        ".template-form",
+        ".rule-list li",
+      ]);
     });
   });
 }
@@ -95,12 +145,18 @@ test.describe("cashflow trend graph rendering", () => {
     await mockApi(page);
   });
 
-  test("scales desktop bars and leaves empty months blank", async ({ page }) => {
+  test("scales desktop bars and leaves empty months blank", async ({
+    page,
+  }) => {
     await page.goto("/");
 
     await expect(page.getByText("Six-month cashflow trend")).toBeVisible();
-    const activeBars = await measureTrendBars(page.locator(".cashflow-trend li").first());
-    const emptyBars = await measureTrendBars(page.locator(".cashflow-trend li").last());
+    const activeBars = await measureTrendBars(
+      page.locator(".cashflow-trend li").first(),
+    );
+    const emptyBars = await measureTrendBars(
+      page.locator(".cashflow-trend li").last(),
+    );
 
     expect(activeBars.cash).toBeGreaterThan(activeBars.expenses);
     expect(activeBars.net).toBeGreaterThan(activeBars.expenses);
@@ -121,7 +177,7 @@ test.describe("cashflow trend graph rendering", () => {
   });
 });
 
-test.describe("interactive trend chart", () => {
+test.describe("keyboard chart interaction", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await mockApi(page);
@@ -130,12 +186,11 @@ test.describe("interactive trend chart", () => {
   test("shows exact values on keyboard focus", async ({ page }) => {
     await page.goto("/");
 
-    await page.locator(".line-chart .chart-point.cash").first().focus();
-    const tooltip = page.locator(".line-chart .chart-tooltip");
+    await page.locator(".cashflow-trend .trend-bar.cash").first().focus();
+    const tooltip = page.locator(".cashflow-trend .chart-tooltip");
 
     await expect(tooltip).toContainText("Income");
     await expect(tooltip).toContainText("$2,500.00");
-    await expect(tooltip).toContainText("80.0% savings rate");
     await expectElementsFitViewport(page, [".chart-tooltip"]);
   });
 });
@@ -147,12 +202,17 @@ test.describe("mobile chart interactions", () => {
     await mockApi(page);
   });
 
-  test("pins a tapped bar tooltip inside the viewport and dismisses on outside tap", async ({ page }) => {
+  test("pins a tapped bar tooltip inside the viewport and dismisses on outside tap", async ({
+    page,
+  }) => {
     await page.goto("/");
 
-    await page.locator(".cashflow-trend .trend-bar.expenses").last().dispatchEvent("pointerdown", {
-      pointerType: "touch"
-    });
+    await page
+      .locator(".cashflow-trend .trend-bar.expenses")
+      .last()
+      .dispatchEvent("pointerdown", {
+        pointerType: "touch",
+      });
     const tooltip = page.locator(".cashflow-trend .chart-tooltip");
 
     await expect(tooltip).toContainText("$0.00");
@@ -162,15 +222,18 @@ test.describe("mobile chart interactions", () => {
     await expect(tooltip).toBeHidden();
   });
 
-  test("pins a tapped trend point and dismisses on scroll", async ({ page }) => {
+  test("pins a tapped income bar and dismisses on scroll", async ({ page }) => {
     await page.goto("/");
 
-    await page.locator(".line-chart .chart-point.expenses").first().dispatchEvent("pointerdown", {
-      pointerType: "touch"
-    });
-    const tooltip = page.locator(".line-chart .chart-tooltip");
+    await page
+      .locator(".cashflow-trend .trend-bar.cash")
+      .last()
+      .dispatchEvent("pointerdown", {
+        pointerType: "touch",
+      });
+    const tooltip = page.locator(".cashflow-trend .chart-tooltip");
 
-    await expect(tooltip).toContainText("Expenses");
+    await expect(tooltip).toContainText("Income");
     await expectElementsFitViewport(page, [".chart-tooltip"]);
 
     await page.mouse.wheel(0, 320);
@@ -189,45 +252,57 @@ for (const width of themeViewports) {
     test("pins, persists, and clears a manual theme", async ({ page }) => {
       await page.goto("/");
 
-      await expect(page.getByRole("button", { name: "Use dark mode" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Use dark mode" }),
+      ).toBeVisible();
       await expectThemeState(page, {
         dataTheme: null,
         meta: "light dark",
         stored: null,
-        colorScheme: "light dark"
+        colorScheme: "light dark",
       });
 
       await page.getByRole("button", { name: "Use dark mode" }).click();
 
-      await expect(page.getByRole("button", { name: "Use system color setting" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Use system color setting" }),
+      ).toBeVisible();
       await expectThemeState(page, {
         dataTheme: "dark",
         meta: "dark",
         stored: "dark",
-        colorScheme: "dark"
+        colorScheme: "dark",
       });
       await assertNoHorizontalOverflow(page);
       await expectOverBudgetBadgeContrast(page);
 
       await page.reload();
 
-      await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Use system color setting" })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Dashboard" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Use system color setting" }),
+      ).toBeVisible();
       await expectThemeState(page, {
         dataTheme: "dark",
         meta: "dark",
         stored: "dark",
-        colorScheme: "dark"
+        colorScheme: "dark",
       });
 
-      await page.getByRole("button", { name: "Use system color setting" }).click();
+      await page
+        .getByRole("button", { name: "Use system color setting" })
+        .click();
 
-      await expect(page.getByRole("button", { name: "Use dark mode" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Use dark mode" }),
+      ).toBeVisible();
       await expectThemeState(page, {
         dataTheme: null,
         meta: "light dark",
         stored: null,
-        colorScheme: "light dark"
+        colorScheme: "light dark",
       });
       await assertNoHorizontalOverflow(page);
     });
@@ -241,29 +316,37 @@ test.describe("theme system preference", () => {
     await mockApi(page);
   });
 
-  test("updates the system-mode action when OS color scheme changes", async ({ page }) => {
+  test("updates the system-mode action when OS color scheme changes", async ({
+    page,
+  }) => {
     await page.goto("/");
 
-    await expect(page.getByRole("button", { name: "Use dark mode" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Use dark mode" }),
+    ).toBeVisible();
     await page.emulateMedia({ colorScheme: "dark" });
 
-    await expect(page.getByRole("button", { name: "Use light mode" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Use light mode" }),
+    ).toBeVisible();
     await expectThemeState(page, {
       dataTheme: null,
       meta: "light dark",
       stored: null,
-      colorScheme: "light dark"
+      colorScheme: "light dark",
     });
 
     await page.getByRole("button", { name: "Use light mode" }).click();
     await page.emulateMedia({ colorScheme: "light" });
 
-    await expect(page.getByRole("button", { name: "Use system color setting" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Use system color setting" }),
+    ).toBeVisible();
     await expectThemeState(page, {
       dataTheme: "light",
       meta: "light",
       stored: "light",
-      colorScheme: "light"
+      colorScheme: "light",
     });
   });
 });
@@ -296,14 +379,17 @@ async function expectDashboardFitsViewport(page: Page) {
     ".dashboard-summary",
     ".dashboard-lead",
     ".cashflow-trend ol",
-    ".theme-toggle"
+    ".theme-toggle",
   ]);
 }
 
 async function expectQuickActionsStacked(page: Page) {
   const addEntry = page.getByRole("button", { name: "Add entry" });
   const setBudget = page.getByRole("button", { name: "Set budget" });
-  const [addBox, budgetBox] = await Promise.all([addEntry.boundingBox(), setBudget.boundingBox()]);
+  const [addBox, budgetBox] = await Promise.all([
+    addEntry.boundingBox(),
+    setBudget.boundingBox(),
+  ]);
 
   expect(addBox).not.toBeNull();
   expect(budgetBox).not.toBeNull();
@@ -327,9 +413,12 @@ async function expectElementsFitViewport(page: Page, selectors: string[]) {
           index,
           left: rect.left,
           right: rect.right,
-          viewportWidth
+          viewportWidth,
         };
-      }).filter((entry) => entry && (entry.left < -1 || entry.right > viewportWidth + 1))
+      }).filter(
+        (entry) =>
+          entry && (entry.left < -1 || entry.right > viewportWidth + 1),
+      ),
     );
   }, selectors);
 
@@ -337,16 +426,18 @@ async function expectElementsFitViewport(page: Page, selectors: string[]) {
 }
 
 async function expectBudgetPressureBarsAligned(page: Page) {
-  const bars = await page.locator(".pressure-row progress").evaluateAll((nodes) =>
-    nodes.map((node) => {
-      const rect = node.getBoundingClientRect();
-      return {
-        left: rect.left,
-        right: rect.right,
-        width: rect.width
-      };
-    })
-  );
+  const bars = await page
+    .locator(".pressure-row progress")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const rect = node.getBoundingClientRect();
+        return {
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+        };
+      }),
+    );
 
   expect(bars.length).toBeGreaterThanOrEqual(3);
   const [first] = bars;
@@ -358,38 +449,43 @@ async function expectBudgetPressureBarsAligned(page: Page) {
 }
 
 async function expectOverBudgetBadgeContrast(page: Page) {
-  const ratio = await page.locator(".pressure-row.over-budget em").first().evaluate((badge) => {
-    const label = badge.querySelector("span") ?? badge;
-    const textColor = getComputedStyle(label).color;
-    const backgroundColor = getComputedStyle(badge).backgroundColor;
+  const ratio = await page
+    .locator(".pressure-row.over-budget em")
+    .first()
+    .evaluate((badge) => {
+      const label = badge.querySelector("span") ?? badge;
+      const textColor = getComputedStyle(label).color;
+      const backgroundColor = getComputedStyle(badge).backgroundColor;
 
-    function parseRgb(color: string) {
-      const channels = color.match(/\d+(\.\d+)?/g)?.map(Number) ?? [];
-      if (channels.length < 3) {
-        throw new Error(`Expected RGB color, got ${color}`);
+      function parseRgb(color: string) {
+        const channels = color.match(/\d+(\.\d+)?/g)?.map(Number) ?? [];
+        if (channels.length < 3) {
+          throw new Error(`Expected RGB color, got ${color}`);
+        }
+        return channels.slice(0, 3);
       }
-      return channels.slice(0, 3);
-    }
 
-    function relativeLuminance(channel: number) {
-      const value = channel / 255;
-      return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-    }
+      function relativeLuminance(channel: number) {
+        const value = channel / 255;
+        return value <= 0.03928
+          ? value / 12.92
+          : ((value + 0.055) / 1.055) ** 2.4;
+      }
 
-    function luminance([red, green, blue]: number[]) {
-      return (
-        0.2126 * relativeLuminance(red) +
-        0.7152 * relativeLuminance(green) +
-        0.0722 * relativeLuminance(blue)
-      );
-    }
+      function luminance([red, green, blue]: number[]) {
+        return (
+          0.2126 * relativeLuminance(red) +
+          0.7152 * relativeLuminance(green) +
+          0.0722 * relativeLuminance(blue)
+        );
+      }
 
-    const foreground = luminance(parseRgb(textColor));
-    const background = luminance(parseRgb(backgroundColor));
-    const lighter = Math.max(foreground, background);
-    const darker = Math.min(foreground, background);
-    return (lighter + 0.05) / (darker + 0.05);
-  });
+      const foreground = luminance(parseRgb(textColor));
+      const background = luminance(parseRgb(backgroundColor));
+      const lighter = Math.max(foreground, background);
+      const darker = Math.min(foreground, background);
+      return (lighter + 0.05) / (darker + 0.05);
+    });
 
   expect(ratio).toBeGreaterThanOrEqual(4.5);
 }
@@ -404,8 +500,16 @@ async function expectThemeToggleIconCentered(page: Page) {
     const buttonRect = button.getBoundingClientRect();
     const iconRect = icon.getBoundingClientRect();
     return {
-      x: Math.abs(buttonRect.left + buttonRect.width / 2 - (iconRect.left + iconRect.width / 2)),
-      y: Math.abs(buttonRect.top + buttonRect.height / 2 - (iconRect.top + iconRect.height / 2))
+      x: Math.abs(
+        buttonRect.left +
+          buttonRect.width / 2 -
+          (iconRect.left + iconRect.width / 2),
+      ),
+      y: Math.abs(
+        buttonRect.top +
+          buttonRect.height / 2 -
+          (iconRect.top + iconRect.height / 2),
+      ),
     };
   });
 
@@ -420,15 +524,18 @@ async function expectThemeState(
     meta: string | null;
     stored: string | null;
     colorScheme: string;
-  }
+  },
 ) {
   const state = await page.evaluate((key) => {
     const root = document.documentElement;
     return {
       colorScheme: getComputedStyle(root).getPropertyValue("color-scheme"),
       dataTheme: root.getAttribute("data-theme"),
-      meta: document.querySelector('meta[name="color-scheme"]')?.getAttribute("content") ?? null,
-      stored: localStorage.getItem(key)
+      meta:
+        document
+          .querySelector('meta[name="color-scheme"]')
+          ?.getAttribute("content") ?? null,
+      stored: localStorage.getItem(key),
     };
   }, colorSchemeStorageKey);
 
@@ -439,17 +546,22 @@ async function expectThemeState(
 }
 
 async function expectTableModeMatchesContainer(page: Page) {
-  const { headerDisplay, wrapWidth, rootFontSize } = await page.locator(".table-wrap").first().evaluate((node) => {
-    const tableHeader = node.querySelector(".data-table thead");
-    if (!tableHeader) {
-      throw new Error("Expected data table header inside table wrapper");
-    }
-    return {
-      headerDisplay: getComputedStyle(tableHeader).display,
-      wrapWidth: node.getBoundingClientRect().width,
-      rootFontSize: Number.parseFloat(getComputedStyle(document.documentElement).fontSize)
-    };
-  });
+  const { headerDisplay, wrapWidth, rootFontSize } = await page
+    .locator(".table-wrap")
+    .first()
+    .evaluate((node) => {
+      const tableHeader = node.querySelector(".data-table thead");
+      if (!tableHeader) {
+        throw new Error("Expected data table header inside table wrapper");
+      }
+      return {
+        headerDisplay: getComputedStyle(tableHeader).display,
+        wrapWidth: node.getBoundingClientRect().width,
+        rootFontSize: Number.parseFloat(
+          getComputedStyle(document.documentElement).fontSize,
+        ),
+      };
+    });
 
   if (wrapWidth < rootFontSize * 48) {
     expect(headerDisplay).toBe("none");
@@ -477,17 +589,20 @@ async function expectMobileNavigationIsCompact(page: Page, width: number) {
       viewportWidth: document.documentElement.clientWidth,
       left: rect.left,
       right: rect.right,
-      links
+      links,
     };
   });
 
   expect(layout.position).toBe("fixed");
   expect(layout.links).toHaveLength(4);
-  expect(Math.max(...layout.links.map(({ top }) => top)) - Math.min(...layout.links.map(({ top }) => top)))
-    .toBeLessThanOrEqual(1);
-  expect(Math.max(...layout.links.map(({ width: linkWidth }) => linkWidth)) -
-    Math.min(...layout.links.map(({ width: linkWidth }) => linkWidth)))
-    .toBeLessThanOrEqual(1);
+  expect(
+    Math.max(...layout.links.map(({ top }) => top)) -
+      Math.min(...layout.links.map(({ top }) => top)),
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.max(...layout.links.map(({ width: linkWidth }) => linkWidth)) -
+      Math.min(...layout.links.map(({ width: linkWidth }) => linkWidth)),
+  ).toBeLessThanOrEqual(1);
   expect(layout.links.every(({ height }) => height >= 44)).toBe(true);
   expect(layout.left).toBeGreaterThanOrEqual(0);
   expect(layout.right).toBeLessThanOrEqual(layout.viewportWidth);
@@ -500,18 +615,21 @@ async function measureTrendBars(card: ReturnType<Page["locator"]>) {
     return {
       cash: barHeight(".trend-bars .cash"),
       expenses: barHeight(".trend-bars .expenses"),
-      net: barHeight(".trend-bars .net")
+      net: barHeight(".trend-bars .net"),
     };
   });
 }
 
-async function expectDialogFitsViewport(page: Page, dialog: ReturnType<Page["getByRole"]>) {
+async function expectDialogFitsViewport(
+  page: Page,
+  dialog: ReturnType<Page["getByRole"]>,
+) {
   const [box, viewport] = await Promise.all([
     dialog.boundingBox(),
     page.evaluate(() => ({
       width: document.documentElement.clientWidth,
-      height: document.documentElement.clientHeight
-    }))
+      height: document.documentElement.clientHeight,
+    })),
   ]);
 
   expect(box?.width).toBeLessThanOrEqual(viewport.width);
@@ -543,7 +661,11 @@ async function mockApi(page: Page) {
     }
     if (url.pathname === "/api/category-rules") {
       await route.fulfill({
-        json: { rules: [{ id: 1, alias: "groceries", category: "Food", created_at: null }] }
+        json: {
+          rules: [
+            { id: 1, alias: "groceries", category: "Food", created_at: null },
+          ],
+        },
       });
       return;
     }
@@ -559,14 +681,17 @@ async function mockApi(page: Page) {
               description: "Monthly rent",
               day_of_month: 1,
               active: true,
-              created_at: null
-            }
-          ]
-        }
+              created_at: null,
+            },
+          ],
+        },
       });
       return;
     }
-    await route.fulfill({ status: 404, json: { detail: { error: "Unhandled mock route" } } });
+    await route.fulfill({
+      status: 404,
+      json: { detail: { error: "Unhandled mock route" } },
+    });
   });
 }
 
@@ -578,14 +703,14 @@ function transaction() {
     category: "Food",
     description: "Groceries",
     date: "2026-06-12",
-    created_at: "2026-06-12T12:00:00"
+    created_at: "2026-06-12T12:00:00",
   };
 }
 
 function budget(overrides: Partial<ReturnType<typeof budgetPayload>> = {}) {
   return {
     ...budgetPayload(),
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -596,7 +721,7 @@ function budgetPayload() {
     amount: "150.00",
     month: 6,
     year: 2026,
-    created_at: "2026-06-12T12:00:00"
+    created_at: "2026-06-12T12:00:00",
   };
 }
 
@@ -607,25 +732,25 @@ function budgetStatuses() {
       actual_expenses: "428.75",
       remaining: "51.25",
       percent_used: "89.3",
-      status: "ok"
+      status: "ok",
     }),
     budgetStatus({
       budget: budget({ id: 3, category: "Dining", amount: "170.00" }),
       actual_expenses: "164.30",
       remaining: "5.70",
       percent_used: "96.6",
-      status: "near limit"
+      status: "near limit",
     }),
-    budgetStatus()
+    budgetStatus(),
   ];
 }
 
 function budgetStatus(
-  overrides: Partial<ReturnType<typeof budgetStatusPayload>> = {}
+  overrides: Partial<ReturnType<typeof budgetStatusPayload>> = {},
 ) {
   return {
     ...budgetStatusPayload(),
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -635,7 +760,7 @@ function budgetStatusPayload() {
     actual_expenses: "185.00",
     remaining: "-35.00",
     percent_used: "123.3",
-    status: "over budget"
+    status: "over budget",
   };
 }
 
@@ -658,7 +783,7 @@ function dashboardPayload() {
       ytd_net_savings: "12000.00",
       income_delta: "100.00",
       expenses_delta: "-25.00",
-      net_savings_delta: "125.00"
+      net_savings_delta: "125.00",
     },
     trend: {
       months: [
@@ -670,29 +795,29 @@ function dashboardPayload() {
         trendMonth("2026-06", "0.00", {
           total_income: "0.00",
           total_expenses: "0.00",
-          transaction_count: 0
-        })
+          transaction_count: 0,
+        }),
       ],
       total_income: "12500.00",
       total_expenses: "2500.00",
       net_savings: "10842.95",
       transaction_count: 25,
-      top_expense_categories: { Food: "386.40", Travel: "185.00" }
+      top_expense_categories: { Food: "386.40", Travel: "185.00" },
     },
     savings_rate: "84.5",
     recent_transactions: [transaction()],
-    budget_statuses: [budgetStatus()]
+    budget_statuses: [budgetStatus()],
   };
 }
 
 function trendMonth(
   label: string,
   netSavings: string,
-  overrides: Partial<ReturnType<typeof baseTrendMonth>> = {}
+  overrides: Partial<ReturnType<typeof baseTrendMonth>> = {},
 ) {
   return {
     ...baseTrendMonth(label, netSavings),
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -709,6 +834,6 @@ function baseTrendMonth(label: string, netSavings: string) {
     savings_rate: "80.0",
     income_delta: "0.00",
     expenses_delta: "0.00",
-    net_savings_delta: "0.00"
+    net_savings_delta: "0.00",
   };
 }
