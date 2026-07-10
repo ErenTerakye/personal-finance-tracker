@@ -75,6 +75,7 @@ The Web UI supports:
 - Category alias and recurring monthly transaction template management from the Rules view.
 - Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
 - A color theme action that follows the operating system by default and can pin a local light or dark preference.
+- An English/Turkish language action stored in local browser storage, with locale-aware date, number, and currency formatting based on the active ledger currency.
 
 The Python server exposes JSON under `/api` and serves the compiled React + Vite app from the same local origin. Money values in API responses are decimal strings, preserving the SQLite/`Decimal` behavior used by the CLI.
 
@@ -85,13 +86,13 @@ finance-tracker web --db-path demo.sqlite3
 npm run dev
 ```
 
-Browser support policy: the Web UI targets modern Baseline-capable browsers as of June 2026. Newly available browser features are used only as progressive enhancements, so core navigation and CRUD workflows remain usable without large polyfills. The UI uses color-scheme-aware dark mode with a persistent local override, native dialogs and popovers, SVG charts, container queries, mobile-safe viewport units, same-document view transitions, and reduced-motion-aware animation.
+Browser support policy: the Web UI targets Baseline 2026-capable browsers. Newly available browser features are used only as progressive enhancements, so core navigation and CRUD workflows remain usable without large polyfills. The UI uses color-scheme-aware dark mode with a persistent local override, native dialogs and popovers, SVG charts, container queries, mobile-safe viewport units, same-document view transitions, and reduced-motion-aware animation.
 
 The Web UI is a local Python app. GitHub Pages cannot run the live app because Pages does not run Python or SQLite; use [showcase/index.html](showcase/index.html) as a static portfolio preview and run `finance-tracker web` for live CRUD.
 
 ## Reviewer Screenshots
 
-Tracked screenshots live in [assets/screenshots](assets/screenshots) and are captured from the generated July 2026 demo database:
+Tracked screenshots live in [assets/screenshots](assets/screenshots) and are captured from the generated July 2026 demo database after importing the sample CSVs and applying the documented category rule and recurring template:
 
 - `dashboard-desktop.png` from `/`
 - `transactions-mobile.png` from `/transactions`
@@ -302,6 +303,8 @@ npm run build
 npm run test:e2e
 .venv/bin/python -m build
 ```
+
+The Playwright suite includes responsive checks and automated accessibility scans for the primary Web UI routes.
 
 For the first Playwright run on a new machine, install Chromium with `npx playwright install --with-deps chromium`.
 

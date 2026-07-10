@@ -41,7 +41,7 @@ describe("Personal Finance Tracker", () => {
     expect(screen.getByText("Six-month cashflow trend")).toBeInTheDocument();
     expect(screen.getAllByText("$2,500.00").length).toBeGreaterThan(0);
     expect(screen.getByText("over budget")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /six-month income/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /six-month income/i })).toBeInTheDocument();
   });
 
   it("exposes downloadable dashboard artifacts for the selected period", async () => {

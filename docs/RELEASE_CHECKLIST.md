@@ -1,8 +1,8 @@
 # Release Checklist
 
-Use this checklist for the v0.4 finance insight depth release and later reviewer-demo refreshes.
+Use this checklist for the v1.0 portfolio release and later reviewer-demo refreshes.
 
-## v0.4.0
+## v1.0.0
 
 - [ ] Create a fresh environment and install the app:
 
@@ -10,7 +10,8 @@ Use this checklist for the v0.4 finance insight depth release and later reviewer
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev,web]"
-npm install
+npm ci
+npm run build
 ```
 
 - [ ] Rebuild the generated demo database from source CSV files:
@@ -61,6 +62,9 @@ npm run build
 npm test
 npm run build
 npm run test:e2e
+.venv/bin/python -m build
 ```
 
-- [ ] Confirm README badges, docs, static showcase, screenshots, and `ROADMAP.md` describe the same release state.
+- [ ] Confirm README badges, docs, static showcase, screenshots, packaged SPA assets, and `ROADMAP.md` describe the same release state.
+
+- [ ] Tag the release only after checks, docs, demo flow, and screenshots are all in sync.

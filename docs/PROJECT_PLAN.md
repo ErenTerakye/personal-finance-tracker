@@ -130,7 +130,7 @@ Supported browser workflows:
 - Rules view for category aliases and recurring monthly transaction templates.
 - Dashboard downloads for monthly and trend text reports plus PNG charts generated through the Python report/chart layers.
 
-Browser support policy: target modern Baseline-capable browsers as of June 2026. Newly available platform features, such as native dialogs and popovers, SVG chart affordances, container queries, color-scheme-aware dark mode, same-document view transitions, and reduced-motion-aware animation, are allowed when they are progressive enhancements and the core local CRUD workflows remain usable without large polyfills.
+Browser support policy: target Baseline 2026-capable browsers. Newly available platform features, such as native dialogs and popovers, SVG chart affordances, container queries, color-scheme-aware dark mode, same-document view transitions, and reduced-motion-aware animation, are allowed when they are progressive enhancements and the core local CRUD workflows remain usable without large polyfills.
 
 The live Web UI is not designed for GitHub Pages because Pages only serves static files. The repository can include a static showcase page for portfolio presentation, but live CRUD requires running the local Python server.
 
@@ -163,7 +163,7 @@ Invalid data rows are skipped during import and reported to the user. Missing re
 
 ## Current Development Direction
 
-The current milestone direction is single-ledger currency readiness after v0.4 finance insight depth, followed by Turkish Web UI localization before v1.0. Currency support should start as one configurable ledger currency per local database, defaulting existing and demo data to `USD`; mixed-currency accounting, exchange-rate lookup, and per-transaction currency fields are later-scope ideas. Turkish language support should start in the browser with local translation dictionaries, a local language preference, and locale-aware formatting that reuses the active ledger currency; CLI output, generated text reports, and docs stay English unless the project scope expands.
+The project is now in v1.0 portfolio-release maintenance mode. The core local-first CLI, SQLite, reporting, charting, FastAPI, and React workflows should stay stable while future changes focus on small correctness, documentation, accessibility, packaging, and demo-quality improvements.
 
 The CLI and local FastAPI/React Web UI should remain aligned, the reviewer demo should stay easy to reproduce, and the project should remain portfolio-scale: no authentication, cloud sync, background workers, or hosted database unless the project scope changes again.
 
@@ -187,7 +187,8 @@ Use pytest with temporary SQLite databases. Cover:
 - Chart output for monthly and trend reports.
 - Web API dashboard data, form validation feedback, CRUD flows, filters, category rules, recurring templates, CSV import/export, and downloadable report/chart artifacts.
 - React dashboard, route navigation, transaction/budget/rules workflows, CSV import preview dialogs, delete-dialog, API-client, downloadable artifact links, and SVG chart behavior.
-- Future currency tests should cover ledger currency validation/defaults, settings persistence if added, report and chart formatting, CSV compatibility, API exposure, and frontend `USD`/`TRY` formatting.
-- Future Turkish Web UI tests should cover translation lookup and fallback behavior, Turkish month labels, `tr-TR` date/number/currency formatting, local language preference, and responsive Turkish text in key browser workflows.
+- Currency tests cover ledger currency validation/defaults, settings persistence, report and chart formatting, CSV compatibility, API exposure, and frontend `USD`/`TRY` formatting.
+- Turkish Web UI tests cover translation lookup and fallback behavior, Turkish month labels, `tr-TR` date/number/currency formatting, local language preference, and responsive Turkish text in key browser workflows.
+- Playwright coverage includes responsive layout checks and automated accessibility scans across the primary browser routes.
 - CLI smoke flows through Typer's test runner.
 - GitHub Actions runs pytest and Ruff on Python 3.14, plus frontend unit tests, production build, and Playwright responsive E2E tests on Node 24.

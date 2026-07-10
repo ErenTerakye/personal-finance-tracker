@@ -43,7 +43,7 @@
     --ink-dark: #f4f7fb;
     --text-light: #29313d;
     --text-dark: #dce3ec;
-    --muted-light: #687486;
+    --muted-light: #5f6b7c;
     --muted-dark: #a4afbd;
     --rule-light: #dce3ec;
     --rule-dark: #323945;
@@ -51,7 +51,7 @@
     --rule-strong-dark: #505b6b;
     --cash-light: #08795f;
     --cash-dark: #50d0ad;
-    --expenses-light: #bd4941;
+    --expenses-light: #a83b35;
     --expenses-dark: #ff8f86;
     --warning-light: #b77912;
     --warning-dark: #e8b24e;
@@ -63,7 +63,7 @@
     --shadow-dark: 0 18px 56px rgba(0, 0, 0, 0.32);
     --shadow-soft-light: 0 10px 28px rgba(20, 31, 46, 0.07);
     --shadow-soft-dark: 0 10px 30px rgba(0, 0, 0, 0.24);
-    --select-chevron-light: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23687486' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+    --select-chevron-light: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235f6b7c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
     --select-chevron-dark: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a4afbd' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
 
     --paper: light-dark(var(--paper-light), var(--paper-dark));

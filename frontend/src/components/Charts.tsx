@@ -210,7 +210,7 @@ export function TrendLines({ months }: { months: TrendMonth[] }) {
     <figure className="line-chart" ref={chartRef}>
       <svg
         ref={svgRef}
-        role="img"
+        role="group"
         aria-labelledby={`${titleId} ${descId}`}
         viewBox="0 0 720 300"
         preserveAspectRatio="xMidYMid meet"

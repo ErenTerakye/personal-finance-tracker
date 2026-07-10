@@ -21,20 +21,27 @@ would make it stronger without bloating the scope.
 - The Web UI includes dashboard, transaction, budget, and rules workflows with
   responsive layouts, accessible dialogs, SVG charts, period controls, route
   navigation, browser CSV import/export, transaction CSV preview, dashboard
-  report/chart downloads, and persistent light/dark/system theme behavior.
+  report/chart downloads, persistent light/dark/system theme behavior, and
+  English/Turkish language preferences.
 - A static showcase exists for portfolio hosting, while real CRUD remains a
   local Python/SQLite workflow.
 - GitHub Actions mirrors the documented check set with Python tests, Ruff,
-  frontend unit tests, production build, and Playwright responsive E2E tests.
-- v0.6 adds Turkish language support to the frontend interface (with local browser storage persistence), locale-aware date, number, and currency formatting for both Turkish and English, while dynamically combining the active ledger currency setting.
-- Local quality checks last verified for v0.6 on July 6, 2026:
-  - `.venv/bin/python -m pytest` - 60 passed.
+  frontend unit tests, production build, and Playwright responsive/accessibility
+  E2E tests.
+- v1.0 packages the project as a clean public portfolio release with refreshed
+  documentation, static showcase copy, reviewer screenshots, packaged SPA
+  assets, demo artifacts, accessibility coverage, and install/package checks.
+- Local quality checks last verified for v1.0 on July 9, 2026:
+  - `.venv/bin/python -m pytest` - 64 passed.
   - `.venv/bin/python -m ruff check .` - passed.
-  - `npm test` - 23 frontend unit tests passed.
+  - `npm test` - 25 frontend unit tests passed.
   - `npm run build` - passed.
-  - `npm run test:e2e` - 44 Playwright responsive E2E tests passed.
+  - `npm run test:e2e` - 54 Playwright responsive/accessibility E2E tests
+    passed.
   - `.venv/bin/python -m build` - built the source distribution and universal
-    wheel for `personal-finance-tracker` 0.6.0.
+    wheel for `personal-finance-tracker` 1.0.0.
+  - Fresh install checks passed with a clean virtual environment,
+    `python -m pip install -e ".[dev,web]"`, `npm ci`, and `npm run build`.
 
 ## Guiding Principles
 
@@ -127,19 +134,25 @@ Add Turkish language support after currency contracts are stable.
 - Add React and Playwright coverage for translation fallback behavior, Turkish
   month labels, Turkish currency/date formatting, and responsive Turkish UI text.
 
-## Next Milestones
-
 ### v1.0 Portfolio Release
 
-Prepare the project as a clean public showcase.
+Prepared the project as a clean public showcase.
 
-- Complete final documentation pass across README, usage docs, project plan, and
+- Completed final documentation pass across README, usage docs, project plan, and
   roadmap.
-- Run an accessibility and responsive QA pass on the Web UI.
-- Refresh static showcase content, screenshots, and demo data.
-- Verify install from a fresh clone on a clean virtual environment.
-- Tag the release once checks, docs, demo flow, and packaged SPA assets are in
-  sync.
+- Added automated accessibility scans and keyboard smoke checks to the
+  Playwright Web UI suite, alongside existing responsive coverage.
+- Refreshed static showcase content, reviewer screenshots, packaged SPA assets,
+  and generated local demo artifacts from the July 2026 reviewer flow.
+- Verified install from a clean virtual environment plus `npm ci`, production
+  build, Python package build, and the full documented check set.
+
+## Maintenance Focus
+
+- Keep documentation, screenshots, packaged SPA assets, and release checklist in
+  sync when reviewer-facing behavior changes.
+- Keep accessibility and responsive checks current as the Web UI evolves.
+- Prefer small, reviewable improvements from the backlog over new product scope.
 
 ## Backlog / Later
 

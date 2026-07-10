@@ -18,6 +18,8 @@ A Python CLI application for tracking income and expenses using SQLite, CSV proc
 - Save optional PNG charts for monthly reports and trend reports.
 - Run a polished local FastAPI JSON API and React Web UI with route-aware dashboard, transaction, budget, and rules workflows.
 - Preview transaction CSV imports before writing, skip duplicates by default, import/export budget CSV files, and download report/chart artifacts from the dashboard.
+- Configure one local ledger currency and use locale-aware English/Turkish browser formatting.
+- Verify responsive and accessibility behavior with Playwright coverage.
 - Use a clean `src/` package layout with Typer, pytest, and Ruff.
 
 ## Install
@@ -63,6 +65,9 @@ Run a fresh local demo without touching the default database:
 finance-tracker init --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
 finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
+finance-tracker category-rule-set groceries Food --db-path demo.sqlite3
+finance-tracker recurring-add expense 1600 --category Rent --description "Monthly rent" --day 1 --db-path demo.sqlite3
+finance-tracker recurring-apply --month 7 --year 2026 --db-path demo.sqlite3
 mkdir -p reports exports
 finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --preview --db-path demo.sqlite3
@@ -75,7 +80,7 @@ finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 
 ## Reviewer Screenshots
 
-These screenshots are generated from the July 2026 sample CSV demo using `finance-tracker web --db-path demo.sqlite3`.
+These screenshots are generated from the July 2026 reviewer demo using `finance-tracker web --db-path demo.sqlite3` after importing the sample CSVs and applying the documented category rule and recurring template.
 
 ![Dashboard desktop screenshot](docs/assets/screenshots/dashboard-desktop.png)
 
@@ -100,6 +105,7 @@ The browser application includes:
 - Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
 - Read-only transaction tables that collapse into mobile-friendly record lists with compact row actions.
 - A header theme action that follows your system color setting by default and can pin the opposite light/dark mode locally.
+- An English/Turkish language action with local browser preference persistence and locale-aware money/date formatting using the active ledger currency.
 
 During frontend development, run the Python app and Vite separately:
 
@@ -108,7 +114,7 @@ finance-tracker web --db-path demo.sqlite3
 npm run dev
 ```
 
-The browser interface uses modern platform features progressively, including semantic landmarks, accessible forms, native dialogs and popovers, SVG charts, container queries, color-scheme-aware dark mode with a persistent local override, mobile-safe viewport units, same-document view transitions, and reduced-motion-aware animation. The support policy is modern Baseline-capable browsers as of June 2026; newer features must degrade without large polyfills.
+The browser interface uses modern platform features progressively, including semantic landmarks, accessible forms, native dialogs and popovers, SVG charts, container queries, color-scheme-aware dark mode with a persistent local override, mobile-safe viewport units, same-document view transitions, and reduced-motion-aware animation. The support policy is Baseline 2026-capable browsers; newer features must degrade without large polyfills.
 
 GitHub Pages can host static files only, so it cannot run the live Python/SQLite app. A static showcase is available in [docs/showcase/index.html](docs/showcase/index.html) for portfolio hosting, while real CRUD requires `finance-tracker web`.
 
@@ -180,6 +186,7 @@ After activating the virtual environment, run:
 npm test
 npm run build
 npm run test:e2e
+.venv/bin/python -m build
 ```
 
 For the first Playwright run on a new machine, install Chromium with `npx playwright install --with-deps chromium`.
