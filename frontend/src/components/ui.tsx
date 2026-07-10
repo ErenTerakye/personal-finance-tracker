@@ -306,3 +306,21 @@ export function stopForm(
   event.preventDefault();
   handler();
 }
+
+export function TableSkeleton({ rows = 5 }: { rows?: number }) {
+  return (
+    <div className="skeleton-container" aria-hidden="true">
+      {Array.from({ length: rows }).map((_, index) => (
+        <div key={index} className="skeleton-row">
+          <div className="skeleton-cell skeleton-cell-date" />
+          <div className="skeleton-cell skeleton-cell-badge" />
+          <div className="skeleton-cell skeleton-cell-text" />
+          <div className="skeleton-cell skeleton-cell-description" />
+          <div className="skeleton-cell skeleton-cell-amount" />
+          <div className="skeleton-cell skeleton-cell-actions" />
+        </div>
+      ))}
+    </div>
+  );
+}
+

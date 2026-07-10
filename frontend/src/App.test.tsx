@@ -420,7 +420,17 @@ describe("Personal Finance Tracker", () => {
     );
     await screen.findByText("Groceries");
     await userEvent.click(
-      screen.getByRole("button", { name: "Delete Food transaction" }),
+      screen.getByRole("button", { name: "Actions" }),
+    );
+    const popover = document.getElementById("row-actions-1");
+    if (popover && typeof (popover as any).showPopover === "function") {
+      (popover as any).showPopover();
+    } else if (popover) {
+      // Fallback: manually strip popover attribute if JSDOM doesn't support the API
+      popover.removeAttribute("popover");
+    }
+    await userEvent.click(
+      screen.getByRole("button", { name: "Delete" }),
     );
     const dialog = screen.getByRole("dialog", { name: "Delete transaction" });
 

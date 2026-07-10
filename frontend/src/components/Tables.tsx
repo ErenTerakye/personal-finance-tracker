@@ -1,5 +1,5 @@
-import { Pencil, Trash2 } from "lucide-react";
-import { money, periodLabel } from "../format";
+import { Pencil, Trash2, MoreVertical } from "lucide-react";
+import { money, periodLabel, formatDate } from "../format";
 import type { BudgetRecord, TransactionRecord } from "../types";
 import { EmptyState, IconButton } from "./ui";
 import { useI18n } from "../i18n";
@@ -41,7 +41,7 @@ export function TransactionTable({
         <tbody>
           {transactions.map((transaction) => (
             <tr key={transaction.id}>
-              <td data-label={t("common.date")}>{transaction.date}</td>
+              <td data-label={t("common.date")}>{formatDate(transaction.date)}</td>
               <td data-label={t("common.type")}>
                 <span className={`type-chip ${transaction.type}`}>
                   {t(`common.${transaction.type}`) || transaction.type}
@@ -57,23 +57,49 @@ export function TransactionTable({
                 </strong>
               </td>
               <td data-label={t("common.actions")}>
-                <div className="row-actions">
-                  <IconButton
-                    icon={Pencil}
-                    label={t("common.editTransaction", {
-                      name: transaction.category,
-                    })}
-                    variant="secondary"
-                    onClick={() => onEdit(transaction)}
-                  />
-                  <IconButton
-                    icon={Trash2}
-                    label={t("common.deleteTransaction", {
-                      name: transaction.category,
-                    })}
-                    variant="danger"
-                    onClick={() => onDelete(transaction)}
-                  />
+                <div className="row-actions-container">
+                  <button
+                    className="icon-button ghost action-trigger-btn"
+                    type="button"
+                    popoverTarget={`row-actions-${transaction.id}`}
+                    aria-label={t("common.actions")}
+                    style={{
+                      anchorName: `--row-anchor-${transaction.id}`,
+                    } as React.CSSProperties}
+                  >
+                    <MoreVertical aria-hidden="true" size={18} />
+                  </button>
+                  <div
+                    popover="auto"
+                    id={`row-actions-${transaction.id}`}
+                    className="row-action-panel"
+                    style={{
+                      positionAnchor: `--row-anchor-${transaction.id}`,
+                    } as React.CSSProperties}
+                  >
+                    <button
+                      className="row-action-item edit"
+                      type="button"
+                      onClick={() => {
+                        closePopover(`row-actions-${transaction.id}`);
+                        onEdit(transaction);
+                      }}
+                    >
+                      <Pencil aria-hidden="true" size={16} />
+                      <span>{t("common.edit")}</span>
+                    </button>
+                    <button
+                      className="row-action-item delete"
+                      type="button"
+                      onClick={() => {
+                        closePopover(`row-actions-${transaction.id}`);
+                        onDelete(transaction);
+                      }}
+                    >
+                      <Trash2 aria-hidden="true" size={16} />
+                      <span>{t("common.delete")}</span>
+                    </button>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -148,4 +174,11 @@ export function BudgetTable({
       </table>
     </div>
   );
+}
+
+function closePopover(id: string) {
+  const popover = document.getElementById(id) as
+    | (HTMLElement & { hidePopover?: () => void })
+    | null;
+  popover?.hidePopover?.();
 }

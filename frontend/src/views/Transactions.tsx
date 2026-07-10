@@ -1,7 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import {
   Download,
-  Filter,
   Plus,
   RotateCcw,
   Save,
@@ -23,6 +22,7 @@ import {
   PageHeader,
   Panel,
   SubmitButton,
+  TableSkeleton,
 } from "../components/ui";
 import { money, periodLabel, todayIso } from "../format";
 import type {
@@ -34,6 +34,7 @@ import type {
 } from "../types";
 import { localizedNotice, useI18n } from "../i18n";
 import { readTransactionFilters, writeFilters } from "../urlState";
+import { useDebounce } from "../hooks/useDebounce";
 
 type TransactionDialog = "create" | "edit" | null;
 
@@ -73,7 +74,36 @@ export function TransactionsView({
     useState<TransactionImportPreview | null>(null);
   const [importResult, setImportResult] = useState<ImportSummary | null>(null);
   const [importError, setImportError] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const { t, tUpper } = useI18n();
+
+  useEffect(() => {
+    if (transactions.length > 0) {
+      const uniq = Array.from(new Set(transactions.map((t) => t.category).filter(Boolean)));
+      setCategories((prev) => {
+        const combined = Array.from(new Set([...prev, ...uniq]));
+        return combined.sort();
+      });
+    }
+  }, [transactions]);
+
+  useEffect(() => {
+    api
+      .budgets()
+      .then((res) => {
+        const budgetCats = res.budgets.map((b) => b.category);
+        setCategories((prev) => Array.from(new Set([...prev, ...budgetCats])).sort());
+      })
+      .catch(() => {});
+
+    api
+      .categoryRules()
+      .then((res) => {
+        const ruleCats = res.rules.map((r) => r.category);
+        setCategories((prev) => Array.from(new Set([...prev, ...ruleCats])).sort());
+      })
+      .catch(() => {});
+  }, []);
 
   const load = (signal?: AbortSignal) => {
     setError("");
@@ -250,7 +280,7 @@ export function TransactionsView({
           }
         >
           {loading ? (
-            <p className="loading-state">{t("transactions.empty.loading")}</p>
+            <TableSkeleton rows={5} />
           ) : (
             <TransactionTable
               transactions={transactions}
@@ -330,6 +360,12 @@ export function TransactionsView({
           </button>
         </div>
       </ModalDialog>
+
+      <datalist id="category-suggestions">
+        {categories.map((cat) => (
+          <option key={cat} value={cat} />
+        ))}
+      </datalist>
     </>
   );
 }
@@ -343,33 +379,41 @@ function TransactionFilterForm({
   selectedPeriod: { month: number; year: number };
   onChange: (filters: TransactionFilters) => void;
 }) {
-  const [draft, setDraft] = useState(filters);
+  const [categorySearch, setCategorySearch] = useState(filters.category || "");
+  const debouncedCategory = useDebounce(categorySearch, 250);
   const { t } = useI18n();
 
   useEffect(() => {
-    setDraft(filters);
-  }, [filters]);
+    setCategorySearch(filters.category || "");
+  }, [filters.category]);
+
+  useEffect(() => {
+    if (debouncedCategory !== filters.category) {
+      onChange({
+        ...filters,
+        category: debouncedCategory,
+      });
+    }
+  }, [debouncedCategory, filters, onChange]);
 
   const period = {
-    month: Number(draft.month || selectedPeriod.month),
-    year: Number(draft.year || selectedPeriod.year),
+    month: Number(filters.month || selectedPeriod.month),
+    year: Number(filters.year || selectedPeriod.year),
   };
   const hasActiveFilters = Boolean(
-    draft.category ||
-    draft.transaction_type ||
+    filters.category ||
+    filters.transaction_type ||
     period.month !== selectedPeriod.month ||
     period.year !== selectedPeriod.year,
   );
 
   function resetFilters() {
-    const reset: TransactionFilters = {
+    onChange({
       month: selectedPeriod.month,
       year: selectedPeriod.year,
       transaction_type: "",
       category: "",
-    };
-    setDraft(reset);
-    onChange(reset);
+    });
   }
 
   return (
@@ -384,31 +428,29 @@ function TransactionFilterForm({
         aria-label={t("transactions.filterAria")}
         onSubmit={(event) => {
           event.preventDefault();
-          onChange(draft);
         }}
       >
         <PeriodControl
           label={t("transactions.filterPeriod")}
           value={period}
-          onChange={(nextPeriod) => setDraft({ ...draft, ...nextPeriod })}
+          onChange={(nextPeriod) => onChange({ ...filters, ...nextPeriod })}
         />
         <Field id="filter-category" label={t("common.category")}>
           <input
             id="filter-category"
             type="search"
-            value={draft.category}
-            onChange={(event) =>
-              setDraft({ ...draft, category: event.target.value })
-            }
+            list="category-suggestions"
+            value={categorySearch}
+            onChange={(event) => setCategorySearch(event.target.value)}
           />
         </Field>
         <Field id="filter-type" label={t("common.type")}>
           <select
             id="filter-type"
-            value={draft.transaction_type}
+            value={filters.transaction_type}
             onChange={(event) =>
-              setDraft({
-                ...draft,
+              onChange({
+                ...filters,
                 transaction_type: event.target.value as TransactionType | "",
               })
             }
@@ -419,9 +461,6 @@ function TransactionFilterForm({
           </select>
         </Field>
         <div className="filter-actions">
-          <ActionButton icon={Filter} type="submit">
-            {t("common.applyFilters")}
-          </ActionButton>
           {hasActiveFilters ? (
             <IconButton
               icon={RotateCcw}
@@ -518,6 +557,7 @@ function TransactionFormDialog({
             id="transaction-category"
             aria-describedby="transaction-category-hint"
             required
+            list="category-suggestions"
             value={form.category}
             onChange={(event) =>
               onChange({ ...form, category: event.target.value })

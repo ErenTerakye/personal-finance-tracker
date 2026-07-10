@@ -55,6 +55,49 @@ export function percent(value: string | number): string {
   return `${Number(value).toFixed(1)}%`;
 }
 
+export function formatDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (!year || !month || !day) return dateStr;
+
+  const dateObj = new Date(year, month - 1, day);
+  try {
+    const dtf = new Intl.DateTimeFormat(activeLocale, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    return dtf.format(dateObj);
+  } catch {
+    return dateStr;
+  }
+}
+
+export function formatActivityDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (!year || !month || !day) return dateStr;
+
+  const dateObj = new Date(year, month - 1, day);
+  const todayObj = new Date();
+
+  const d1 = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+  const d2 = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate());
+
+  const diffTime = d1.getTime() - d2.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (Math.abs(diffDays) <= 3) {
+    try {
+      const rtf = new Intl.RelativeTimeFormat(activeLocale, { numeric: "auto" });
+      return rtf.format(diffDays, "day");
+    } catch {}
+  }
+
+  return formatDate(dateStr);
+}
+
+
 export function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }

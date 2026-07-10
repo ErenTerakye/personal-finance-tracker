@@ -90,6 +90,11 @@ export function AppShell({
                     href={viewMeta[item].path}
                     aria-current={active ? "page" : undefined}
                     aria-label={translatedLabel}
+                    style={
+                      active
+                        ? { viewTransitionName: "active-nav-indicator" }
+                        : undefined
+                    }
                     onClick={(event) => {
                       if (!shouldHandleNavigation(event)) return;
                       event.preventDefault();

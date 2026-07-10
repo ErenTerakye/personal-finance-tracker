@@ -1,5 +1,5 @@
 import { AlertTriangle, CheckCircle2, CircleDollarSign } from "lucide-react";
-import { money, percent } from "../format";
+import { money, percent, formatActivityDate } from "../format";
 import type { BudgetStatus, TransactionRecord } from "../types";
 import { EmptyState } from "./ui";
 
@@ -65,8 +65,8 @@ export function ActivityList({
             <span>
               <strong>{transaction.category}</strong>
               <em>
-                {transaction.date}
-                {transaction.description ? `, ${transaction.description}` : ""}
+                {formatActivityDate(transaction.date)}
+                {transaction.description ? ` • ${transaction.description}` : ""}
               </em>
             </span>
           </div>

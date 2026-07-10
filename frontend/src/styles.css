@@ -732,6 +732,7 @@
     color: var(--ink);
     background: var(--surface);
     border-color: var(--rule);
+    white-space: nowrap;
   }
 
   .period-popover {
@@ -2610,26 +2611,38 @@
 }
 
 @layer motion {
+  /* Set view transition names for page elements */
+  html {
+    view-transition-name: none; /* Disable full-document snapshotting to avoid header layout shifts */
+  }
+
+  .app-header {
+    view-transition-name: app-header;
+  }
+
+  main {
+    view-transition-name: main-content;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
-    ::view-transition-group(root) {
-      animation-duration: 180ms;
-      animation-timing-function: ease-out;
+    /* Depth Zoom animations for the main content area */
+    ::view-transition-group(main-content) {
+      animation-duration: 220ms;
+      animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
-    html:active-view-transition-type(forward)::view-transition-old(root) {
-      animation-name: slide-to-left;
+    ::view-transition-old(main-content) {
+      animation-name: scale-down-fade;
     }
 
-    html:active-view-transition-type(forward)::view-transition-new(root) {
-      animation-name: slide-from-right;
+    ::view-transition-new(main-content) {
+      animation-name: scale-up-fade;
     }
 
-    html:active-view-transition-type(backward)::view-transition-old(root) {
-      animation-name: slide-to-right;
-    }
-
-    html:active-view-transition-type(backward)::view-transition-new(root) {
-      animation-name: slide-from-left;
+    /* Morphing active navigation indicator transition */
+    ::view-transition-group(active-nav-indicator) {
+      animation-duration: 220ms;
+      animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
     }
   }
 
@@ -2657,30 +2670,16 @@
     }
   }
 
-  @keyframes slide-to-left {
+  @keyframes scale-down-fade {
     to {
-      transform: translateX(-1.5rem);
+      scale: 0.97;
       opacity: 0;
     }
   }
 
-  @keyframes slide-from-right {
+  @keyframes scale-up-fade {
     from {
-      transform: translateX(1.5rem);
-      opacity: 0;
-    }
-  }
-
-  @keyframes slide-to-right {
-    to {
-      transform: translateX(1.5rem);
-      opacity: 0;
-    }
-  }
-
-  @keyframes slide-from-left {
-    from {
-      transform: translateX(-1.5rem);
+      scale: 1.03;
       opacity: 0;
     }
   }
@@ -2688,6 +2687,171 @@
   @keyframes spin {
     to {
       rotate: 360deg;
+    }
+  }
+}
+
+@layer components {
+  /* Skeleton Loader Styles */
+  .skeleton-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+  }
+
+  .skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skeleton-cell {
+    height: 1.25rem;
+    background: var(--rule);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Skeleton shimmer animation overlay */
+  .skeleton-row::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.08) 20%,
+      rgba(255, 255, 255, 0.15) 60%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 1.5s infinite;
+    content: '';
+  }
+
+  .skeleton-cell-date { width: 12%; }
+
+  .skeleton-cell-badge {
+    width: 10%;
+    height: 1.5rem;
+    border-radius: 12px;
+  }
+  .skeleton-cell-text { width: 20%; }
+  .skeleton-cell-description { width: 35%; }
+
+  .skeleton-cell-amount {
+    width: 13%;
+    margin-left: auto;
+  }
+  .skeleton-cell-actions { width: 5%; }
+
+  /* CSS Anchor Positioning for Row Actions Popover */
+  .row-actions-container {
+    display: inline-block;
+  }
+
+  .action-trigger-btn {
+    padding: 0.4rem;
+    border-radius: var(--radius);
+    transition: background 0.15s ease;
+  }
+
+  .row-action-panel {
+    /* Set positioning */
+    inset: auto;
+    position-area: block-end span-inline-end;
+    position-try-fallbacks: flip-block, flip-inline;
+    margin: 0;
+    padding: 0.35rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-inline-size: 8rem;
+    z-index: 100;
+  }
+
+  .row-action-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: var(--font-size-sm);
+    text-align: left;
+    border-radius: calc(var(--radius) - 2px);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .row-action-item:hover {
+    background: var(--rule);
+  }
+
+  .row-action-item.delete:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+  }
+
+  /* Responsive details for Skeleton on mobile card view */
+  @media (max-width: 48rem) {
+    .skeleton-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.6rem;
+    }
+    .skeleton-cell-date { width: 30%; }
+    .skeleton-cell-badge { width: 25%; }
+    .skeleton-cell-text { width: 60%; }
+    .skeleton-cell-description { width: 85%; }
+
+    .skeleton-cell-amount {
+      width: 35%;
+      margin-left: 0;
+      margin-top: 0.2rem;
+    }
+    .skeleton-cell-actions { display: none; }
+  }
+}
+
+@layer motion {
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Entry and Exit Animations using @starting-style and transition-behavior */
+  @supports (transition-behavior: allow-discrete) {
+    .row-action-panel {
+      opacity: 0;
+      transform: scale(0.95) translateY(-4px);
+      transition: opacity 150ms ease-out, transform 150ms ease-out, display 150ms allow-discrete, overlay 150ms allow-discrete;
+    }
+
+    .row-action-panel:is(:popover-open, .\:popover-open) {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+
+      @starting-style {
+        opacity: 0;
+        transform: scale(0.95) translateY(-4px);
+      }
     }
   }
 }
