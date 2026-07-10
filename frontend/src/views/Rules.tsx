@@ -111,7 +111,7 @@ export function RulesView({
   const [showAliasPresets, setShowAliasPresets] = useState(false);
   const [showTemplatePresets, setShowTemplatePresets] = useState(false);
   const [playgroundInput, setPlaygroundInput] = useState("");
-  const { locale, t } = useI18n();
+  const { t, tUpper } = useI18n();
 
   const load = () => {
     setError("");
@@ -252,7 +252,7 @@ export function RulesView({
   return (
     <>
       <PageHeader
-        eyebrow={t("rules.title")}
+        eyebrow={tUpper("rules.title")}
         title={t("rules.title")}
         summary={t("rules.summary")}
         actions={
@@ -331,8 +331,8 @@ export function RulesView({
 
           {rules.length === 0 || showAliasPresets ? (
             <div className="presets-box">
-              <span className="presets-title" lang={locale}>
-                {t("rules.presetsTitle")}
+              <span className="presets-title">
+                {tUpper("rules.presetsTitle")}
               </span>
               <div className="preset-chips">
                 {ALIAS_PRESETS.map((preset) => {
@@ -505,8 +505,8 @@ export function RulesView({
 
           {templates.length === 0 || showTemplatePresets ? (
             <div className="presets-box">
-              <span className="presets-title" lang={locale}>
-                {t("rules.presetsTemplatesTitle")}
+              <span className="presets-title">
+                {tUpper("rules.presetsTemplatesTitle")}
               </span>
               <div className="preset-grid">
                 {TEMPLATE_PRESETS.map((preset) => {
@@ -630,7 +630,7 @@ function TemplateList({
   templates: RecurringTemplate[];
   onDelete: (template: RecurringTemplate) => void;
 }) {
-  const { locale, t } = useI18n();
+  const { t, tUpper } = useI18n();
 
   if (!templates.length) {
     return <p className="empty-inline">{t("rules.emptyTemplates")}</p>;
@@ -641,8 +641,8 @@ function TemplateList({
         <li key={template.id}>
           <span>
             <strong>
-              <span className={`template-badge ${template.type}`} lang={locale}>
-                {t(`common.${template.type}`) || template.type}
+              <span className={`template-badge ${template.type}`}>
+                {tUpper(`common.${template.type}`) || template.type.toUpperCase()}
               </span>
               {template.category} {money(template.amount)}
             </strong>

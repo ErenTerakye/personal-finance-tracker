@@ -73,7 +73,7 @@ export function TransactionsView({
     useState<TransactionImportPreview | null>(null);
   const [importResult, setImportResult] = useState<ImportSummary | null>(null);
   const [importError, setImportError] = useState("");
-  const { t } = useI18n();
+  const { t, tUpper } = useI18n();
 
   const load = (signal?: AbortSignal) => {
     setError("");
@@ -204,7 +204,7 @@ export function TransactionsView({
   return (
     <>
       <PageHeader
-        eyebrow={t("transactions.title")}
+        eyebrow={tUpper("transactions.title")}
         title={t("transactions.title")}
         summary={t("transactions.summary")}
         actions={

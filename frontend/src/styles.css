@@ -478,7 +478,6 @@
     font-style: normal;
     font-weight: var(--font-weight-semibold);
     letter-spacing: 0.04em;
-    text-transform: uppercase;
   }
 
   nav {
@@ -609,7 +608,6 @@
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
     letter-spacing: 0.06em;
-    text-transform: uppercase;
   }
 
   .page-actions {
@@ -1001,7 +999,6 @@
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
     letter-spacing: 0.04em;
-    text-transform: uppercase;
   }
 
   .kpi-card em {
@@ -1708,7 +1705,6 @@
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
     letter-spacing: 0.04em;
-    text-transform: uppercase;
   }
 
   .data-table td {
@@ -2128,7 +2124,6 @@
     color: var(--text);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
-    text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
@@ -2293,7 +2288,6 @@
     border-radius: 4px;
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
-    text-transform: uppercase;
     margin-inline-end: 0.45rem;
   }
 

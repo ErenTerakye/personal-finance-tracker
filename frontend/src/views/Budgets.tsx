@@ -71,7 +71,7 @@ export function BudgetsView({
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportSummary | null>(null);
   const [importError, setImportError] = useState("");
-  const { t } = useI18n();
+  const { t, tUpper } = useI18n();
 
   const load = (signal?: AbortSignal) => {
     const month = Number(filters.month || selectedPeriod.month);
@@ -194,7 +194,7 @@ export function BudgetsView({
   return (
     <>
       <PageHeader
-        eyebrow={t("budgets.title")}
+        eyebrow={tUpper("budgets.title")}
         title={t("budgets.title")}
         summary={t("budgets.summary")}
         actions={

@@ -1,7 +1,6 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useState,
   ReactNode,
 } from "react";
@@ -598,6 +597,7 @@ const i18nContext = createContext<{
   setLocale: (locale: Language) => void;
   toggleLocale: () => void;
   t: (key: string, variables?: Record<string, string | number>) => string;
+  tUpper: (key: string, variables?: Record<string, string | number>) => string;
 } | null>(null);
 
 const STORAGE_KEY = "finance-tracker-language";
@@ -630,9 +630,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLocale(locale === "en" ? "tr" : "en");
   };
 
-  useEffect(() => {
-    setFormatterLocale(locale);
-  }, [locale]);
+  // Synchronously sync the formatter locale on every render to avoid lag/race condition
+  setFormatterLocale(locale);
 
   const t = (
     key: string,
@@ -673,8 +672,50 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return result;
   };
 
+  const tUpper = (
+    key: string,
+    variables?: Record<string, string | number>,
+  ): string => {
+    const parts = key.split(".");
+    let enVal: any = enDict;
+    let trVal: any = trDict;
+
+    for (const part of parts) {
+      if (enVal) enVal = enVal[part];
+      if (trVal) trVal = trVal[part];
+    }
+
+    let result = locale === "tr" ? trVal : enVal;
+    let resolvedLang: Language = locale;
+    if (result === undefined || result === null) {
+      result = enVal;
+      resolvedLang = "en";
+    }
+    if (result === undefined || result === null) {
+      return key.toUpperCase();
+    }
+
+    if (typeof result !== "string") {
+      return key.toUpperCase();
+    }
+
+    let interpolated = result;
+    if (variables) {
+      for (const [varName, varVal] of Object.entries(variables)) {
+        interpolated = interpolated.replace(
+          new RegExp(`{${varName}}`, "g"),
+          String(varVal),
+        );
+      }
+    }
+
+    return resolvedLang === "tr"
+      ? interpolated.toLocaleUpperCase("tr-TR")
+      : interpolated.toUpperCase();
+  };
+
   return (
-    <i18nContext.Provider value={{ locale, setLocale, toggleLocale, t }}>
+    <i18nContext.Provider value={{ locale, setLocale, toggleLocale, t, tUpper }}>
       {children}
     </i18nContext.Provider>
   );

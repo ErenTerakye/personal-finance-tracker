@@ -13,7 +13,7 @@ export function TransactionTable({
   onEdit: (transaction: TransactionRecord) => void;
   onDelete: (transaction: TransactionRecord) => void;
 }) {
-  const { locale, t } = useI18n();
+  const { t, tUpper } = useI18n();
 
   if (!transactions.length) {
     return (
@@ -28,14 +28,14 @@ export function TransactionTable({
     <div className="table-wrap">
       <table className="data-table transaction-table">
         <caption>{t("transactions.historyTitle")}</caption>
-        <thead lang={locale}>
+        <thead>
           <tr>
-            <th scope="col">{t("common.date")}</th>
-            <th scope="col">{t("common.type")}</th>
-            <th scope="col">{t("common.category")}</th>
-            <th scope="col">{t("common.description")}</th>
-            <th scope="col">{t("common.amount")}</th>
-            <th scope="col">{t("common.actions")}</th>
+            <th scope="col">{tUpper("common.date")}</th>
+            <th scope="col">{tUpper("common.type")}</th>
+            <th scope="col">{tUpper("common.category")}</th>
+            <th scope="col">{tUpper("common.description")}</th>
+            <th scope="col">{tUpper("common.amount")}</th>
+            <th scope="col">{tUpper("common.actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -93,7 +93,7 @@ export function BudgetTable({
   onEdit: (budget: BudgetRecord) => void;
   onDelete: (budget: BudgetRecord) => void;
 }) {
-  const { locale, t } = useI18n();
+  const { t, tUpper } = useI18n();
 
   if (!budgets.length) {
     return (
@@ -108,12 +108,12 @@ export function BudgetTable({
     <div className="table-wrap">
       <table className="data-table budget-table">
         <caption>{t("budgets.recordsTitle")}</caption>
-        <thead lang={locale}>
+        <thead>
           <tr>
-            <th scope="col">{t("common.period")}</th>
-            <th scope="col">{t("common.category")}</th>
-            <th scope="col">{t("common.amount")}</th>
-            <th scope="col">{t("common.actions")}</th>
+            <th scope="col">{tUpper("common.period")}</th>
+            <th scope="col">{tUpper("common.category")}</th>
+            <th scope="col">{tUpper("common.amount")}</th>
+            <th scope="col">{tUpper("common.actions")}</th>
           </tr>
         </thead>
         <tbody>

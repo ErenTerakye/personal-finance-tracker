@@ -613,7 +613,7 @@ describe("Personal Finance Tracker", () => {
     expect(
       screen.getByRole("button", { name: /Choose period/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Cashflow Overview")).toHaveAttribute("lang", "en");
+    expect(screen.getByText("CASHFLOW OVERVIEW")).toBeInTheDocument();
 
     // Find and click language toggle button
     const langToggle = screen.getByRole("button", {
@@ -630,15 +630,8 @@ describe("Personal Finance Tracker", () => {
       screen.getByRole("button", { name: /Dönem seçin/i }),
     ).toBeInTheDocument();
     expect(langToggle).toHaveTextContent("EN");
-    const eyebrow = screen.getByText("Nakit Akışı Özeti");
-    expect(eyebrow).toHaveAttribute("lang", "tr");
-    expect(eyebrow.textContent?.toLocaleUpperCase(eyebrow.lang)).toBe(
-      "NAKİT AKIŞI ÖZETİ",
-    );
-    expect(screen.getByText("Finance Tracker")).not.toHaveAttribute(
-      "lang",
-      "tr",
-    );
+    expect(screen.getByText("NAKİT AKIŞI ÖZETİ")).toBeInTheDocument();
+    expect(screen.getByText("Finance Tracker")).toBeInTheDocument();
 
     // Click it again to switch back to English
     await userEvent.click(langToggle);
@@ -646,7 +639,7 @@ describe("Personal Finance Tracker", () => {
       await screen.findByRole("heading", { name: "Dashboard" }),
     ).toBeInTheDocument();
     expect(langToggle).toHaveTextContent("TR");
-    expect(screen.getByText("Cashflow Overview")).toHaveAttribute("lang", "en");
+    expect(screen.getByText("CASHFLOW OVERVIEW")).toBeInTheDocument();
   });
 
   it("translates preset categories and descriptions dynamically on Rules view", async () => {
@@ -663,6 +656,24 @@ describe("Personal Finance Tracker", () => {
     // Verify it renders in English initially
     expect(screen.getByText("Rent")).toBeInTheDocument();
     expect(screen.getByText("uber → Transport")).toBeInTheDocument();
+    
+    const now = new Date();
+    const monthIndex = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const monthNamesEn = [
+      "", "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    const monthNamesTr = [
+      "", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+      "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
+    ];
+    const expectedEnPeriod = `${monthNamesEn[monthIndex]} ${year}`;
+    const expectedTrPeriod = `${monthNamesTr[monthIndex]} ${year}`;
+
+    expect(
+      screen.getByRole("button", { name: new RegExp(`Apply for ${expectedEnPeriod}`, "i") }),
+    ).toBeInTheDocument();
 
     // Toggle language to Turkish
     const langToggle = screen.getByRole("button", {
@@ -673,11 +684,17 @@ describe("Personal Finance Tracker", () => {
     // Verify it renders in Turkish
     expect(screen.getByText("Kira")).toBeInTheDocument();
     expect(screen.getByText("uber → Ulaşım")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: new RegExp(`${expectedTrPeriod} için uygula`, "i") }),
+    ).toBeInTheDocument();
 
     // Switch back to English
     await userEvent.click(langToggle);
     expect(screen.getByText("Rent")).toBeInTheDocument();
     expect(screen.getByText("uber → Transport")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: new RegExp(`Apply for ${expectedEnPeriod}`, "i") }),
+    ).toBeInTheDocument();
   });
 });
 

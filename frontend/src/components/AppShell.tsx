@@ -51,7 +51,7 @@ export function AppShell({
   onNavigate: (view: View) => void;
   children: ReactNode;
 }) {
-  const { locale, t } = useI18n();
+  const { t, tUpper } = useI18n();
 
   return (
     <div className="app">
@@ -73,7 +73,7 @@ export function AppShell({
           </span>
           <span>
             <strong>Finance Tracker</strong>
-            <em lang={locale}>{t("common.brandMarkSub")}</em>
+            <em>{tUpper("common.brandMarkSub")}</em>
           </span>
         </a>
 

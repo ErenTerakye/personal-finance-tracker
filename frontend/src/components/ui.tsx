@@ -23,15 +23,13 @@ export function PageHeader({
   actions?: ReactNode;
   className?: string;
 }) {
-  const { locale } = useI18n();
-
   return (
     <section
       className={`page-heading ${className}`.trim()}
       aria-labelledby="page-title"
     >
       <div>
-        <p className="eyebrow" lang={locale}>
+        <p className="eyebrow">
           {eyebrow}
         </p>
         <h1 id="page-title">{title}</h1>

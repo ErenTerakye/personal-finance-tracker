@@ -20,7 +20,7 @@ import { LayoutDashboard } from "lucide-react";
 const initialPeriod = periodFromUrl();
 
 function AppContent() {
-  const { t, locale } = useI18n();
+  const { t, locale, tUpper } = useI18n();
   const [view, setView] = useState<RouteView>(() =>
     viewFromPath(window.location.pathname),
   );
@@ -156,7 +156,7 @@ function AppContent() {
       ) : null}
       {view === "not-found" ? (
         <PageHeader
-          eyebrow={t("notFound.eyebrow")}
+          eyebrow={tUpper("notFound.eyebrow")}
           title={t("notFound.title")}
           summary={t("notFound.summary")}
           actions={

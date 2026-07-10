@@ -491,13 +491,11 @@ export function KpiCard({
   tone?: "cash" | "expenses" | "warning" | "neutral";
   featured?: boolean;
 }) {
-  const { locale } = useI18n();
-
   return (
     <article
       className={`kpi-card ${tone} ${featured ? "featured" : ""}`.trim()}
     >
-      <span lang={locale}>{label}</span>
+      <span>{label}</span>
       <strong>{value}</strong>
       {detail ? <em>{detail}</em> : null}
     </article>

@@ -32,7 +32,7 @@ export function DashboardView({
 }) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
-  const { t, locale } = useI18n();
+  const { t, locale, tUpper } = useI18n();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -79,7 +79,7 @@ export function DashboardView({
   return (
     <>
       <PageHeader
-        eyebrow={t("dashboard.eyebrow")}
+        eyebrow={tUpper("dashboard.eyebrow")}
         title={t("dashboard.title")}
         summary={t("dashboard.summary")}
         className="dashboard-heading"
@@ -103,7 +103,7 @@ export function DashboardView({
         aria-label={t("dashboard.summaryAria", { period: displayPeriodLabel })}
       >
         <KpiCard
-          label={t("dashboard.kpi.netPosition")}
+          label={tUpper("dashboard.kpi.netPosition")}
           value={money(data.report.net_savings)}
           detail={t("dashboard.detail.entries", {
             count: data.report.transaction_count,
@@ -112,7 +112,7 @@ export function DashboardView({
           featured
         />
         <KpiCard
-          label={t("dashboard.kpi.savingsRate")}
+          label={tUpper("dashboard.kpi.savingsRate")}
           value={percent(data.savings_rate)}
           detail={t("dashboard.detail.income", {
             amount: compactValue(data.report.total_income),
@@ -120,7 +120,7 @@ export function DashboardView({
           tone="neutral"
         />
         <KpiCard
-          label={t("dashboard.kpi.budgetRisk")}
+          label={tUpper("dashboard.kpi.budgetRisk")}
           value={String(overBudget + nearLimit)}
           detail={t("dashboard.detail.risk", {
             over: overBudget,
