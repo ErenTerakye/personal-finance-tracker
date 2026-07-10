@@ -167,6 +167,12 @@ Prepared the project as a clean public showcase.
   useful.
 - Consider Turkish CLI/report/documentation localization only if user-facing
   scope grows beyond the current local portfolio app.
+- **TypeScript 7.x Migration Path**: Plan upgrade from `5.9.3` to the latest stable version `7.0.2` (Go-based compiler release):
+  - **Tooling Check**: Verify compatibility for parser and linter tools (`typescript-eslint` v8) with TS 7.0's AST representation.
+  - **Package Upgrade**: Run `npm install --save-dev typescript@7.0.2` and check corresponding dependencies/types.
+  - **Compiler Config**: Verify the project reference structure (`tsc -b` with the primary `tsconfig.json` referencing `tsconfig.app.json` and `tsconfig.node.json`) compiled under the Go-based engine.
+  - **Unicode Verification**: Inspect custom string-handling type logic for template literal type changes (TS 7.0 treats surrogate pairs as single Unicode units rather than split UTF-16 code units).
+  - **Verification Suite**: Clean the state and run the complete validation chain: `rm -rf node_modules && npm ci && npm run lint && npm run build && npm test && npm run test:e2e`.
 
 ## Non-Goals
 
