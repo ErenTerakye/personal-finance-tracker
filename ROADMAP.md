@@ -44,6 +44,11 @@ would make it stronger without bloating the scope.
   - Fresh install checks passed with a clean virtual environment,
     `python -m pip install -e ".[dev,web]"`, `npm ci`, and `npm run build`.
 
+The post-1.1 architecture cleanup is specified in
+[`docs/ARCHITECTURE_CLEANUP_SPEC.md`](docs/ARCHITECTURE_CLEANUP_SPEC.md). It preserves the frozen CLI,
+HTTP, SQLite, CSV, browser, and packaging contracts while assigning every Python and frontend
+hotspot a capability-focused owner and enforcing dependency direction in automated checks.
+
 ## Guiding Principles
 
 - Keep the project local-first and easy to understand from GitHub.
@@ -148,6 +153,22 @@ Prepared the project as a clean public showcase.
 - Verified install from a clean virtual environment plus `npm ci`, production
   build, Python package build, and the full documented check set.
 
+### Post-1.1 Architecture Cleanup
+
+Completed the compatibility-first structural cleanup without expanding product scope.
+
+- Split Python domain, persistence, service, format, CLI, and FastAPI hotspots into
+  responsibility-focused packages while preserving public entrypoints and behavior.
+- Split the React application into app composition, API transport, feature workflows, and shared
+  hooks/components/formatting/i18n/theme/chart/style ownership.
+- Added executable Python and frontend dependency boundaries plus CSS cascade/output checks.
+- Added focused request lifecycle, adapter-contract, architecture, accessibility, and packaged
+  full-stack verification around the frozen contracts.
+- Synchronized generated API types, packaged SPA assets, architecture guidance, release material,
+  and reviewer documentation from the final source tree.
+- Recorded the final automated, cross-browser, package, performance, and live interaction results in
+  [`docs/ARCHITECTURE_CLEANUP_EVIDENCE.md`](docs/ARCHITECTURE_CLEANUP_EVIDENCE.md).
+
 ## Maintenance Focus
 
 - Keep documentation, screenshots, packaged SPA assets, and release checklist in
@@ -157,10 +178,8 @@ Prepared the project as a clean public showcase.
 
 ## Backlog / Later
 
-- Continue splitting the FastAPI and largest view modules into smaller domain files.
-- Continue splitting the legacy stylesheet as component styles are touched.
-- Add richer chart options while keeping matplotlib isolated in `charts.py` and
-  browser SVG charts in frontend components.
+- Add richer chart options while keeping matplotlib isolated in `charts/` and browser SVG charts in
+  shared frontend chart modules.
 - Explore packaging polish such as a wheel build check or scripted demo reset.
 - Explore mixed-currency transaction support, exchange-rate lookup, and
   per-transaction currency fields only after the single-ledger model proves

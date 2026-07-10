@@ -69,12 +69,9 @@ for (const width of viewports) {
         ".panel-actions",
       ]);
       await expectTableModeMatchesContainer(page);
-      await expect(
-        page.getByRole("button", { name: "Edit Food transaction" }),
-      ).toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "Delete Food transaction" }),
-      ).toBeVisible();
+      await page.getByRole("button", { name: "Actions" }).click();
+      await expect(page.getByRole("button", { name: "Edit" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Delete" })).toBeVisible();
 
       await page.getByRole("button", { name: "Add entry" }).click();
       const dialog = page.getByRole("dialog", { name: "Add transaction" });
@@ -210,9 +207,16 @@ test.describe("mobile chart interactions", () => {
     await page
       .locator(".cashflow-trend .trend-bar.expenses")
       .last()
-      .dispatchEvent("pointerdown", {
-        pointerType: "touch",
-      });
+      .evaluate((element) =>
+        element.dispatchEvent(
+          new PointerEvent("pointerdown", {
+            bubbles: true,
+            isPrimary: true,
+            pointerId: 1,
+            pointerType: "touch",
+          }),
+        ),
+      );
     const tooltip = page.locator(".cashflow-trend .chart-tooltip");
 
     await expect(tooltip).toContainText("$0.00");
@@ -228,9 +232,16 @@ test.describe("mobile chart interactions", () => {
     await page
       .locator(".cashflow-trend .trend-bar.cash")
       .last()
-      .dispatchEvent("pointerdown", {
-        pointerType: "touch",
-      });
+      .evaluate((element) =>
+        element.dispatchEvent(
+          new PointerEvent("pointerdown", {
+            bubbles: true,
+            isPrimary: true,
+            pointerId: 1,
+            pointerType: "touch",
+          }),
+        ),
+      );
     const tooltip = page.locator(".cashflow-trend .chart-tooltip");
 
     await expect(tooltip).toContainText("Income");
@@ -639,6 +650,10 @@ async function expectDialogFitsViewport(
 async function mockApi(page: Page) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
+    if (!url.pathname.startsWith("/api/")) {
+      await route.fallback();
+      return;
+    }
     if (url.pathname === "/api/dashboard") {
       await route.fulfill({ json: dashboardPayload() });
       return;

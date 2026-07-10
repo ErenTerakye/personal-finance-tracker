@@ -2,36 +2,94 @@
 
 ## Scope and trust model
 
-Personal Finance Tracker is a single-user, local-first application. The CLI and browser UI share one SQLite ledger on the user's machine. The web server binds to `127.0.0.1` by default and has no authentication, remote account, telemetry, cloud sync, background worker, or service worker. Binding it to a non-loopback interface exposes an unauthenticated financial ledger and is intentionally discouraged.
+Personal Finance Tracker is a single-user, local-first layered modular monolith. The Typer CLI and
+React browser UI share one SQLite ledger on the user's machine through the same Python use cases.
+The FastAPI server binds to `127.0.0.1` by default and has no authentication, remote account,
+telemetry, cloud sync, background worker, or service worker. Binding it to a non-loopback interface
+exposes an unauthenticated financial ledger and is intentionally discouraged.
 
-## Data flow
+## Containers and dependency direction
 
 ```text
-Typer CLI ───────┐
-                 ├─> services ─> repositories ─> SQLite
-FastAPI routers ─┘       │
-       ▲                 ├─> CSV import/export
-       │                 └─> reports ─> matplotlib charts
-React SPA ── JSON/CSV/report requests
+Typer command groups ───────┐
+                           ├─> services ─> repositories ─> SQLite
+FastAPI routers/schemas ────┘       │
+       ▲                            ├─> CSV adapters
+       │                            └─> reports ─> matplotlib charts
+React feature modules ── same-origin JSON/CSV/text/PNG
 ```
 
-- `cli.py` and the FastAPI layer translate input/output; they do not own domain rules or SQL.
-- `models.py` validates domain values. Money remains `Decimal` in Python, decimal text in JSON, and text in SQLite.
-- `services.py` defines use cases and transaction boundaries.
-- `repositories.py` owns SQL and row mapping but never commits independently.
-- `csv_io.py`, `reports.py`, and `charts.py` isolate their respective formats and calculations.
-- FastAPI's OpenAPI schema generates the checked-in TypeScript wire types in `frontend/src/generated/api.ts`.
+- `models/` contains framework-free domain values and validation.
+- `database.py` owns connection configuration, schema SQL, and ordered migrations.
+- `repositories/` owns parameterized SQL and row mapping but never commits independently.
+- `services/` owns application validation, orchestration, and complete commit/rollback units.
+- `csv_io/`, `reports/`, and `charts/` own their formats and calculations. Matplotlib appears only
+  in `charts/`.
+- `cli/` and `web/` are inbound adapters. They call public services and never import repositories or
+  execute SQL.
+- Python import boundaries are checked by `tests/architecture/test_python_imports.py`.
+
+The frontend follows one dependency direction:
+
+```text
+main.tsx -> app/ -> features/ -> api/
+                 \           -> shared/
+                  -----------> shared/
+api/ -> types.ts -> generated/api.ts
+```
+
+Feature folders own workflows and may import `api/` and `shared/`, but never another feature. App
+composition owns routing and cross-feature composition. `shared/` owns reusable components, hooks,
+formatting, i18n, theme, charts, and layered styles. Browser transport is isolated in `api/`, and
+`fetch` is used only by `api/client.ts`. ESLint enforces these boundaries.
+
+## Request and transaction flow
+
+A CLI command or FastAPI router validates transport input and calls a concrete service. The service
+opens a configured connection, constructs repositories for that connection, and owns the complete
+transaction. Repositories execute SQL and return domain models. Successful use cases commit at the
+service boundary; failures roll back before project exceptions are translated by the inbound
+adapter.
+
+This explicit construction is deliberately small. The project has one persistence implementation
+and does not use repository protocols, a dependency-injection container, or a global server-state
+cache.
 
 ## Web delivery
 
-During development Vite proxies `/api` to FastAPI at `127.0.0.1:8000`. Production builds are written into the Python package and FastAPI serves the SPA with an `index.html` fallback. Unknown client routes are handled by the React not-found view. Financial API responses use `Cache-Control: no-store`; the server also supplies CSP, `nosniff`, referrer, permissions, and frame-ancestor protections.
+During development Vite proxies `/api` to FastAPI at `127.0.0.1:8000`. Production builds are written
+to `src/finance_tracker/web/static/spa`, included in the wheel, and served by FastAPI with an
+`index.html` fallback for browser routes. Unknown client routes render the React not-found view.
 
-## Database and migrations
+FastAPI's OpenAPI document is the source for the checked-in TypeScript wire types. Financial API
+responses use `Cache-Control: no-store`; the server also supplies CSP, `nosniff`, referrer,
+permissions, and frame-ancestor protections.
 
-SQLite schema changes are ordered in `database.py` and tracked with `PRAGMA user_version`. An existing unversioned v1 database is stamped and upgraded in place without discarding records. Every migration runs transactionally. Connections enable foreign keys, WAL, a busy timeout, and `synchronous=NORMAL`, and use explicit Python 3.14 transaction behavior.
+The browser uses small custom resource and mutation hooks for request cancellation, stale-response
+guards, error normalization, duplicate-submit prevention, and explicit refresh. It does not use a
+global cache, optimistic updates, automatic retries, or background revalidation.
 
-Repositories do not commit. A service use case owns one connection and commits or rolls back the complete unit of work, so multi-write operations can be atomic. Date queries use ISO ranges and indexed filter expressions.
+## Styling, accessibility, and browser policy
 
-## Compatibility policy
+Global CSS is split into the ordered native cascade layers `tokens`, `reset`, `base`, `layout`,
+`components`, `features`, `utilities`, and `overrides`. The source order and built output are checked
+without adding a CSS architecture dependency.
 
-The API keeps English `notice` alongside stable `notice_code` during the 1.1 compatibility release. Errors use `{ "error": { "code", "message", "fields?" } }`; the frontend can still read the legacy error shapes while older clients migrate. List endpoints retain their entity arrays and add `page: { limit, offset, total }`.
+The UI targets Baseline 2026 and progressively enhances native dialogs, popovers, container queries,
+same-document view transitions, and modern CSS. Core navigation, forms, dialogs, and CRUD remain
+usable without optional motion. Semantic landmarks, route focus, dialog focus restoration, live
+status regions, chart data alternatives, responsive reflow, forced-colors support, and reduced
+motion are verification targets.
+
+## Database and compatibility
+
+SQLite schema changes remain ordered in `database.py` and tracked with `PRAGMA user_version`. An
+existing unversioned v1 database is stamped and upgraded in place without discarding records.
+Connections enable foreign keys, WAL, a busy timeout, and `synchronous=NORMAL` with explicit Python
+3.14 transaction behavior. Money remains `Decimal` in Python and decimal text in SQLite and JSON;
+dates remain ISO text.
+
+The 26 CLI commands, 28 HTTP operations, OpenAPI schema names, CSV headers, SQLite schema/indexes,
+browser routes, security headers, and package entrypoints frozen by
+[`ARCHITECTURE_CLEANUP_SPEC.md`](ARCHITECTURE_CLEANUP_SPEC.md) are compatibility contracts. Tests
+characterize those contracts, and generated OpenAPI output is changed only through the generator.

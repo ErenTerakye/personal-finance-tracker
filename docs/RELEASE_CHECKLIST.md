@@ -66,6 +66,7 @@ npm run format:check
 npm run generate:api
 git diff --exit-code -- frontend/src/generated/api.ts
 npm run build
+npm run check:css
 npm run check:bundle
 npm run test:e2e
 npm run test:e2e:fullstack
@@ -75,5 +76,10 @@ npm audit --audit-level=high
 ```
 
 - [ ] Confirm README badges, docs, static showcase, screenshots, packaged SPA assets, and `ROADMAP.md` describe the same release state.
+
+- [ ] Confirm the architecture cleanup evidence is current: Python import/adapter manifests pass
+  under pytest, ESLint feature/API/shared boundaries pass, the CSS layer checker passes, and no
+  legacy monolith or expired compatibility façade remains. Record the final results in
+  `docs/ARCHITECTURE_CLEANUP_EVIDENCE.md`.
 
 - [ ] Tag the release only after checks, docs, demo flow, and screenshots are all in sync.

@@ -162,20 +162,24 @@ Rent,1600.00,7,2026
 
 ```text
 src/finance_tracker/
-  cli.py            # Typer commands
-  models.py         # Domain objects and validation
-  services.py       # Use-case coordination
-  database.py       # SQLite setup and ordered migrations
-  repositories.py   # SQL queries without transaction commits
-  csv_io.py         # CSV import/export
-  reports.py        # Monthly report calculations
-  charts.py         # PNG chart generation
-  web/              # Local FastAPI JSON API and packaged SPA host
+  models/            # Framework-free domain objects and validation
+  repositories/      # SQL queries and row mapping without commits
+  services/          # Transactional use-case coordination
+  csv_io/            # Transaction and budget CSV adapters
+  reports/           # Monthly/trend calculations and text formatting
+  charts/            # PNG chart rendering with isolated matplotlib use
+  cli/               # Typer composition and capability command groups
+  web/               # FastAPI composition, schemas, routers, and SPA host
+  database.py        # SQLite setup and ordered migrations
 ```
 
 ```text
-frontend/
-  src/              # React + TypeScript Personal Finance Tracker SPA
+frontend/src/
+  app/               # React composition and routes
+  api/               # Browser transport, artifacts, and API errors
+  features/          # Dashboard, transactions, budgets, and rules workflows
+  shared/            # Reusable UI, hooks, format, i18n, charts, theme, and styles
+  generated/         # OpenAPI-generated TypeScript contract
 ```
 
 ## Development
@@ -192,6 +196,7 @@ npm run format:check
 npm run generate:api
 git diff --exit-code frontend/src/generated/api.ts
 npm run build
+npm run check:css
 npm run check:bundle
 npm run test:e2e
 npm run test:e2e:fullstack
@@ -203,6 +208,9 @@ For the first Playwright run on a new machine, install the configured browsers w
 
 GitHub Actions runs the Python checks on Python 3.14 and the frontend checks on Node 24.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [ROADMAP.md](ROADMAP.md), [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md), [docs/USAGE.md](docs/USAGE.md), and [AGENTS.md](AGENTS.md) for deeper project notes.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
+[docs/ARCHITECTURE_CLEANUP_EVIDENCE.md](docs/ARCHITECTURE_CLEANUP_EVIDENCE.md),
+[ROADMAP.md](ROADMAP.md), [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md),
+[docs/USAGE.md](docs/USAGE.md), and [AGENTS.md](AGENTS.md) for deeper project notes.
 
 Use [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) when refreshing the demo, screenshots, packaged SPA assets, and release checks.

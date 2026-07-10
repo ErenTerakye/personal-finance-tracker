@@ -10,16 +10,18 @@ The project is intentionally local-first and easy to run. It demonstrates Python
 
 The application uses a layered structure:
 
-- `cli.py` owns Typer commands, terminal output, and process exit behavior.
-- `models.py` owns domain objects and validation helpers.
-- `services.py` coordinates transactional use cases and keeps CLI code away from persistence details.
-- `repositories.py` owns SQL queries and row mapping without committing transactions.
+- `cli/` owns Typer composition, command groups, terminal output, and process exit behavior.
+- `models/` owns domain objects and validation helpers by capability.
+- `services/` coordinates transactional use cases and keeps entrypoints away from persistence details.
+- `repositories/` owns SQL queries and row mapping without committing transactions.
 - `database.py` owns SQLite connection setup and ordered `PRAGMA user_version` migrations.
-- `csv_io.py` owns portable transaction and budget CSV import/export behavior.
-- `reports.py` owns monthly and trend report calculations and text formatting.
-- `charts.py` owns optional PNG chart generation with matplotlib.
-- `web/` owns the FastAPI JSON API and static SPA hosting.
-- `frontend/` owns the React + Vite + TypeScript browser app.
+- `csv_io/` owns portable transaction and budget CSV import/export behavior.
+- `reports/` owns monthly and trend report calculations and text formatting.
+- `charts/` owns optional PNG chart generation with matplotlib.
+- `web/` owns FastAPI composition, schemas, routers, middleware, errors, responses, and static SPA
+  hosting.
+- `frontend/src/app/` composes browser routes, `features/` owns workflows, `api/` owns transport, and
+  `shared/` owns reusable UI, hooks, formatting, i18n, charts, theme, and layered CSS.
 
 SQL should stay in repository/database modules. Business validation should stay in models/services. CLI commands should stay thin and user-facing. Web routes should call the same service and report layers rather than duplicating business rules.
 
@@ -163,7 +165,11 @@ Invalid data rows are skipped during import and reported to the user. Missing re
 
 ## Current Development Direction
 
-The project is now in v1.0 portfolio-release maintenance mode. The core local-first CLI, SQLite, reporting, charting, FastAPI, and React workflows should stay stable while future changes focus on small correctness, documentation, accessibility, packaging, and demo-quality improvements.
+The project is in portfolio-release maintenance mode. The architecture cleanup defined in
+`ARCHITECTURE_CLEANUP_SPEC.md` reorganized the modular monolith by capability without changing the
+core local-first CLI, SQLite, reporting, charting, FastAPI, or React workflows. Future changes should
+preserve the enforced dependency direction and focus on small correctness, documentation,
+accessibility, packaging, and demo-quality improvements.
 
 The CLI and local FastAPI/React Web UI should remain aligned, the reviewer demo should stay easy to reproduce, and the project should remain portfolio-scale: no authentication, cloud sync, background workers, or hosted database unless the project scope changes again.
 
@@ -186,9 +192,12 @@ Use pytest with temporary SQLite databases. Cover:
 - Transaction CSV preview and duplicate safeguards.
 - Chart output for monthly and trend reports.
 - Web API dashboard data, form validation feedback, CRUD flows, filters, category rules, recurring templates, CSV import/export, and downloadable report/chart artifacts.
-- React dashboard, route navigation, transaction/budget/rules workflows, CSV import preview dialogs, delete-dialog, API-client, downloadable artifact links, and SVG chart behavior.
+- React app composition, focused feature workflows, request cancellation/stale guards, mutation
+  locking, CSV import preview dialogs, delete-dialog behavior, API-client transport, downloadable
+  artifact links, and SVG chart behavior.
 - Currency tests cover ledger currency validation/defaults, settings persistence, report and chart formatting, CSV compatibility, API exposure, and frontend `USD`/`TRY` formatting.
 - Turkish Web UI tests cover translation lookup and fallback behavior, Turkish month labels, `tr-TR` date/number/currency formatting, local language preference, and responsive Turkish text in key browser workflows.
-- Playwright coverage includes responsive layout checks and automated accessibility scans across the primary browser routes.
+- Playwright coverage includes keyboard navigation, dialogs, responsive reflow, theme/motion
+  preferences, and automated accessibility scans across the primary browser routes.
 - CLI smoke flows through Typer's test runner.
 - GitHub Actions runs pytest and Ruff on Python 3.14, plus frontend unit tests, production build, and Playwright responsive E2E tests on Node 24.

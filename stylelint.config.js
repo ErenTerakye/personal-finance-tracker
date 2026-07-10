@@ -14,8 +14,8 @@ export default {
     "media-feature-range-notation": null,
     "no-descending-specificity": null,
     "property-no-vendor-prefix": null,
-    "selector-class-pattern": null
-    ,"shorthand-property-no-redundant-values": null,
+    "selector-class-pattern": null,
+    "shorthand-property-no-redundant-values": null,
     "value-keyword-case": null
   }
 };

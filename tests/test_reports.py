@@ -10,6 +10,7 @@ from finance_tracker.reports import (
     format_monthly_report,
     format_trend_report,
 )
+from finance_tracker.reports.monthly import calculate_savings_rate
 from finance_tracker.services import TransactionService
 
 
@@ -53,6 +54,23 @@ def test_monthly_report_calculates_ytd_and_month_over_month_context(tmp_path):
     assert report.net_savings_delta == Decimal("100.00")
     assert "YTD net:       $4,100.00" in formatted
     assert "MoM net:       +$100.00" in formatted
+
+
+def test_monthly_report_savings_rate_is_a_deterministic_report_calculation(tmp_path):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+    service.add_transaction("income", "3000", "Salary", "Paycheck", "2026-06-01")
+    service.add_transaction("expense", "125.50", "Food", "Groceries", "2026-06-12")
+    report = build_monthly_report(
+        service.list_transactions(month=6, year=2026),
+        month=6,
+        year=2026,
+    )
+
+    assert calculate_savings_rate(report.total_income, report.net_savings) == Decimal("95.8")
+    empty_report = build_monthly_report([], month=6, year=2026)
+    assert calculate_savings_rate(empty_report.total_income, empty_report.net_savings) == Decimal(
+        "0.0"
+    )
 
 
 def test_trend_report_calculates_monthly_totals_empty_months_and_top_categories(tmp_path):

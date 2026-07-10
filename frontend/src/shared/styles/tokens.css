@@ -1,0 +1,105 @@
+@layer tokens {
+  :root {
+    color-scheme: light dark;
+
+    --paper-light: #f7f8fb;
+    --paper-dark: #101114;
+    --surface-light: #ffffff;
+    --surface-dark: #181a1f;
+    --surface-2-light: #eef2f6;
+    --surface-2-dark: #20242b;
+    --surface-3-light: #e7edf4;
+    --surface-3-dark: #292f38;
+    --ink-light: #151922;
+    --ink-dark: #f4f7fb;
+    --text-light: #29313d;
+    --text-dark: #dce3ec;
+    --muted-light: #5f6b7c;
+    --muted-dark: #a4afbd;
+    --rule-light: #dce3ec;
+    --rule-dark: #323945;
+    --rule-strong-light: #aeb8c7;
+    --rule-strong-dark: #505b6b;
+    --cash-light: #08795f;
+    --cash-dark: #50d0ad;
+    --expenses-light: #a83b35;
+    --expenses-dark: #ff8f86;
+    --warning-light: #b77912;
+    --warning-dark: #e8b24e;
+    --action-light: #365ad8;
+    --action-dark: #91a8ff;
+    --focus-light: #2448cf;
+    --focus-dark: #b9c7ff;
+    --shadow-light: none;
+    --shadow-dark: none;
+    --shadow-soft-light: none;
+    --shadow-soft-dark: none;
+    --select-chevron-light: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235f6b7c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+    --select-chevron-dark: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a4afbd' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+
+    --paper: light-dark(var(--paper-light), var(--paper-dark));
+    --surface: light-dark(var(--surface-light), var(--surface-dark));
+    --surface-2: light-dark(var(--surface-2-light), var(--surface-2-dark));
+    --surface-3: light-dark(var(--surface-3-light), var(--surface-3-dark));
+    --ink: light-dark(var(--ink-light), var(--ink-dark));
+    --text: light-dark(var(--text-light), var(--text-dark));
+    --muted: light-dark(var(--muted-light), var(--muted-dark));
+    --rule: light-dark(var(--rule-light), var(--rule-dark));
+    --rule-strong: light-dark(
+      var(--rule-strong-light),
+      var(--rule-strong-dark)
+    );
+    --cash: light-dark(var(--cash-light), var(--cash-dark));
+    --expenses: light-dark(var(--expenses-light), var(--expenses-dark));
+    --warning: light-dark(var(--warning-light), var(--warning-dark));
+    --action: light-dark(var(--action-light), var(--action-dark));
+    --focus: light-dark(var(--focus-light), var(--focus-dark));
+    --shadow: light-dark(var(--shadow-light), var(--shadow-dark));
+    --shadow-soft: light-dark(
+      var(--shadow-soft-light),
+      var(--shadow-soft-dark)
+    );
+    --button-hover-mix: light-dark(#000000, #ffffff);
+    --select-chevron: var(--select-chevron-light);
+    --radius: 14px;
+    --radius-sm: 10px;
+    --tap-target: 2.75rem;
+    --page-gutter: clamp(1rem, 3vw, 1.5rem);
+    --font-sans:
+      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --font-mono:
+      ui-monospace, "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono",
+      monospace;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.35rem;
+    --font-size-2xl: 1.75rem;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 650;
+    --font-weight-bold: 760;
+    --line-tight: 1.15;
+    --line-normal: 1.5;
+
+    accent-color: var(--action);
+    scrollbar-color: var(--rule-strong) transparent;
+  }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --select-chevron: var(--select-chevron-light);
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --select-chevron: var(--select-chevron-dark);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+      --select-chevron: var(--select-chevron-dark);
+    }
+  }
+}

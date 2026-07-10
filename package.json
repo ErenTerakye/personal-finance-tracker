@@ -14,11 +14,13 @@
     "test:e2e:fullstack": "playwright test --config playwright.fullstack.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
     "test:coverage": "vitest run --coverage --config vitest.config.ts",
-    "lint": "eslint frontend/src vite.config.ts vitest.config.ts playwright.config.ts playwright.fullstack.config.ts --max-warnings 0 && stylelint \"frontend/src/**/*.css\"",
-    "format": "prettier --write \"frontend/src/**/*.{ts,tsx,css}\" \"*.{ts,json}\"",
-    "format:check": "prettier --check \"frontend/src/**/*.{ts,tsx,css}\" \"*.{ts,json}\"",
-    "generate:api": "python3 scripts/export_openapi.py && openapi-typescript build/openapi.json -o frontend/src/generated/api.ts",
-    "check:bundle": "node scripts/check_bundle.mjs"
+    "lint": "eslint frontend/src frontend/e2e frontend/e2e-fullstack vite.config.ts vitest.config.ts playwright.config.ts playwright.fullstack.config.ts --max-warnings 0 && stylelint \"frontend/src/**/*.css\" && npm run check:css",
+    "format": "prettier --write \"frontend/src/**/*.{ts,tsx,css}\" \"frontend/e2e/**/*.ts\" \"frontend/e2e-fullstack/**/*.ts\" \"scripts/*.mjs\" \"*.{ts,json}\"",
+    "format:check": "prettier --check \"frontend/src/**/*.{ts,tsx,css}\" \"frontend/e2e/**/*.ts\" \"frontend/e2e-fullstack/**/*.ts\" \"scripts/*.mjs\" \"*.{ts,json}\"",
+    "generate:api": "python3 scripts/export_openapi.py && openapi-typescript build/openapi.json -o frontend/src/generated/api.ts && prettier --write frontend/src/generated/api.ts",
+    "check:bundle": "node scripts/check_bundle.mjs",
+    "check:css": "node scripts/check_css_architecture.mjs",
+    "measure:vitals": "node scripts/measure_web_vitals.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.24.0",

@@ -2,13 +2,13 @@
 
 | Field          | Value                                                       |
 | -------------- | ----------------------------------------------------------- |
-| Status         | Proposed                                                    |
+| Status         | Implemented and verified                                    |
 | Date           | 2026-07-10                                                  |
 | Target release | Post-1.1 maintenance release; no version commitment         |
 | Decision owner | Repository maintainer                                       |
 | Scope          | Whole-repository structural cleanup                         |
 | Compatibility  | No intentional breaking changes                             |
-| Authority      | Source of truth for the cleanup until retired or superseded |
+| Authority      | Historical decision and implementation record               |
 
 ## 1. Executive summary
 
@@ -1053,3 +1053,10 @@ This specification is decision-complete when all statements below are true:
 - [x] Rejected architectural directions and dependency choices are recorded.
 - [x] Follow-up documentation and release synchronization targets are listed.
 - [x] No placeholders, unresolved choices, or intended breaking changes remain.
+
+## 11. Implementation closure
+
+The migration completed on 2026-07-10. All six phases, their frozen contracts, and the final release
+gate are recorded in [`ARCHITECTURE_CLEANUP_EVIDENCE.md`](ARCHITECTURE_CLEANUP_EVIDENCE.md). The
+concise maintained architecture now lives in [`ARCHITECTURE.md`](ARCHITECTURE.md); this RFC remains
+the historical decision and compatibility record.
