@@ -1,0 +1,150 @@
+from decimal import Decimal
+
+import pytest
+from typer.testing import CliRunner
+
+from finance_tracker.cli import app
+from finance_tracker.exceptions import TransactionNotFoundError, ValidationError
+from finance_tracker.services import (
+    CategoryRuleService,
+    RecurringTemplateService,
+    TransactionService,
+)
+
+
+def test_add_and_filter_transactions(tmp_path):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+
+    income = service.add_transaction("income", "2500", "Salary", "June salary", "2026-06-01")
+    service.add_transaction("expense", "45.90", "Food", "Groceries", "2026-06-12")
+    service.add_transaction("expense", "20", "Food", "Lunch", "2026-07-01")
+
+    june_transactions = service.list_transactions(month=6, year=2026)
+    food_transactions = service.list_transactions(category="food", transaction_type="expense")
+
+    assert income.id is not None
+    assert len(june_transactions) == 2
+    assert len(food_transactions) == 2
+    assert food_transactions[0].amount == Decimal("20.00")
+
+
+@pytest.mark.parametrize(
+    ("transaction_type", "amount", "category", "transaction_date", "message"),
+    [
+        ("bonus", "10", "Other", "2026-06-01", "income'.*expense"),
+        ("income", "-10", "Salary", "2026-06-01", "greater than zero"),
+        ("income", "abc", "Salary", "2026-06-01", "valid number"),
+        ("income", "10", "", "2026-06-01", "Category is required"),
+        ("income", "10", "Salary", "06-01-2026", "YYYY-MM-DD"),
+    ],
+)
+def test_add_transaction_validates_input(
+    tmp_path, transaction_type, amount, category, transaction_date, message
+):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+
+    with pytest.raises(ValidationError, match=message):
+        service.add_transaction(transaction_type, amount, category, "", transaction_date)
+
+
+def test_delete_transaction(tmp_path):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+    transaction = service.add_transaction("expense", "15", "Food", "Coffee", "2026-06-02")
+
+    service.delete_transaction(transaction.id)
+
+    assert service.count_transactions() == 0
+    with pytest.raises(TransactionNotFoundError):
+        service.delete_transaction(transaction.id)
+
+
+def test_edit_transaction_updates_selected_fields(tmp_path):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+    transaction = service.add_transaction("expense", "15", "Food", "Coffee", "2026-06-02")
+
+    updated = service.edit_transaction(
+        transaction.id,
+        amount="18.50",
+        category="Dining",
+        description="Breakfast",
+    )
+
+    assert updated.id == transaction.id
+    assert updated.amount == Decimal("18.50")
+    assert updated.category == "Dining"
+    assert updated.description == "Breakfast"
+    assert updated.type == transaction.type
+    assert updated.date == transaction.date
+
+
+def test_edit_transaction_validates_updates(tmp_path):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+    transaction = service.add_transaction("expense", "15", "Food", "Coffee", "2026-06-02")
+
+    with pytest.raises(ValidationError, match="greater than zero"):
+        service.edit_transaction(transaction.id, amount="-1")
+
+
+def test_category_rules_canonicalize_transaction_writes(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    rules = CategoryRuleService(db_path)
+    transactions = TransactionService(db_path)
+
+    rule = rules.set_rule("groceries", "Food")
+    transaction = transactions.add_transaction(
+        "expense",
+        "42.50",
+        "groceries",
+        "Market",
+        "2026-06-12",
+    )
+
+    assert rule.category == "Food"
+    assert transaction.category == "Food"
+    assert transactions.list_transactions(category="Food")[0].description == "Market"
+
+
+def test_recurring_templates_apply_manually_and_skip_duplicates(tmp_path):
+    db_path = tmp_path / "finance.sqlite3"
+    recurring = RecurringTemplateService(db_path)
+    transactions = TransactionService(db_path)
+
+    recurring.add_template("expense", "1200", "Rent", "Monthly rent", 31)
+    first_apply = recurring.apply_templates(month=2, year=2026)
+    second_apply = recurring.apply_templates(month=2, year=2026)
+    stored = transactions.list_transactions(month=2, year=2026)
+
+    assert len(first_apply.created) == 1
+    assert first_apply.created[0].date.isoformat() == "2026-02-28"
+    assert second_apply.skipped_duplicates == 1
+    assert len(stored) == 1
+
+
+def test_cli_list_aligns_long_category_names(tmp_path):
+    runner = CliRunner()
+    db_path = tmp_path / "finance.sqlite3"
+
+    runner.invoke(
+        app,
+        [
+            "add",
+            "expense",
+            "22.50",
+            "--category",
+            "Transportation",
+            "--description",
+            "Monthly pass",
+            "--date",
+            "2026-06-18",
+            "--db-path",
+            str(db_path),
+        ],
+    )
+
+    result = runner.invoke(app, ["list", "--db-path", str(db_path)])
+
+    assert result.exit_code == 0
+    lines = result.output.splitlines()
+    header = next(line for line in lines if line.startswith("ID"))
+    row = next(line for line in lines if "Transportation" in line)
+    assert header.index("Description") == row.index("Monthly pass")

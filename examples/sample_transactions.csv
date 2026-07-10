@@ -1,0 +1,71 @@
+type,amount,category,description,date
+income,4200.00,Salary,January salary,2026-01-01
+expense,1500.00,Rent,Apartment rent,2026-01-02
+expense,178.40,Utilities,Electric and internet,2026-01-06
+expense,312.60,Food,Groceries and staples,2026-01-10
+expense,88.20,Dining,Weekend brunch,2026-01-14
+expense,82.00,Transport,Transit pass,2026-01-17
+expense,44.99,Subscriptions,Streaming and cloud storage,2026-01-20
+expense,64.00,Health,Prescription refill,2026-01-24
+expense,120.75,Household,Desk chair repair,2026-01-28
+income,4200.00,Salary,February salary,2026-02-01
+expense,1500.00,Rent,Apartment rent,2026-02-02
+expense,184.10,Utilities,Electric and internet,2026-02-06
+expense,298.45,Food,Groceries and pantry restock,2026-02-09
+expense,96.30,Dining,Valentine dinner,2026-02-14
+expense,82.00,Transport,Transit pass,2026-02-17
+expense,44.99,Subscriptions,Streaming and cloud storage,2026-02-20
+expense,74.20,Household,Laundry and cleaning supplies,2026-02-22
+expense,220.00,Travel,Winter cabin deposit,2026-02-26
+income,4200.00,Salary,March salary,2026-03-01
+expense,1500.00,Rent,Apartment rent,2026-03-02
+expense,176.80,Utilities,Electric and internet,2026-03-06
+income,350.00,Freelance,Dashboard copy polish,2026-03-08
+expense,336.90,Food,Groceries and household basics,2026-03-11
+expense,64.75,Dining,Coffee and lunch catchups,2026-03-15
+expense,84.50,Transport,Transit pass and rideshare,2026-03-18
+expense,44.99,Subscriptions,Streaming and cloud storage,2026-03-20
+expense,135.60,Health,Dental cleaning copay,2026-03-23
+expense,89.35,Household,Kitchen restock,2026-03-28
+income,4200.00,Salary,April salary,2026-04-01
+expense,1500.00,Rent,Apartment rent,2026-04-02
+expense,181.65,Utilities,Electric and internet,2026-04-06
+expense,321.35,Food,Groceries and market run,2026-04-09
+expense,142.50,Dining,Birthday dinner,2026-04-12
+expense,82.00,Transport,Transit pass,2026-04-17
+expense,44.99,Subscriptions,Streaming and cloud storage,2026-04-20
+expense,210.00,Household,Small appliance replacement,2026-04-22
+expense,380.00,Travel,Spring flight booking,2026-04-26
+income,4200.00,Salary,May salary,2026-05-01
+expense,1500.00,Rent,Apartment rent,2026-05-02
+expense,189.70,Utilities,Electric and internet,2026-05-06
+expense,355.25,Food,Groceries and farmers market,2026-05-09
+expense,118.40,Dining,Friends dinner,2026-05-13
+expense,96.80,Transport,Metro card and rideshare,2026-05-16
+income,120.00,Refund,Insurance reimbursement,2026-05-18
+expense,44.99,Subscriptions,Streaming and cloud storage,2026-05-20
+expense,118.40,Health,Prescription refill,2026-05-22
+expense,65.55,Household,Home maintenance supplies,2026-05-24
+expense,260.00,Travel,Weekend train tickets,2026-05-27
+income,4200.00,Salary,June salary,2026-06-01
+expense,1500.00,Rent,Apartment rent,2026-06-02
+expense,192.35,Utilities,Electric and internet,2026-06-06
+expense,486.40,Food,Groceries and farmers market,2026-06-10
+expense,171.00,Dining,Team dinner and coffee,2026-06-15
+expense,96.80,Transport,Metro card and rideshare,2026-06-18
+expense,44.99,Subscriptions,Streaming and cloud storage,2026-06-20
+expense,128.00,Household,Closet organization supplies,2026-06-22
+expense,185.00,Travel,Family visit fuel,2026-06-24
+income,450.00,Freelance,Landing page update,2026-06-26
+expense,72.50,Health,Clinic copay,2026-06-27
+income,4200.00,Salary,July salary,2026-07-01
+expense,1500.00,Rent,Apartment rent,2026-07-02
+expense,205.20,Utilities,Electric and internet,2026-07-06
+expense,428.75,Food,Groceries and summer market,2026-07-09
+expense,164.30,Dining,Holiday weekend meals,2026-07-12
+expense,104.60,Transport,Metro card and airport ride,2026-07-15
+expense,44.99,Subscriptions,Streaming and cloud storage,2026-07-20
+expense,92.00,Health,Physical therapy copay,2026-07-21
+expense,186.40,Household,Patio repair supplies,2026-07-23
+income,300.00,Freelance,Newsletter cleanup,2026-07-25
+expense,640.00,Travel,Summer trip lodging balance,2026-07-27

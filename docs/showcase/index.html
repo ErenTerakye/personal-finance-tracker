@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Personal Finance Tracker Showcase</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --ink: #111318;
+        --paper: #f7f8fa;
+        --panel: #ffffff;
+        --subtle: #eef2f6;
+        --rule: #d8dee7;
+        --rule-strong: #98a4b3;
+        --cash: #0f7b63;
+        --outflow: #b9473f;
+        --action: #3157d5;
+        --warning: #c98a1a;
+        --text: #222831;
+        --muted: #667181;
+        --radius: 8px;
+        --mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
+        --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #f3f6fa;
+          --paper: #111318;
+          --panel: #191d24;
+          --subtle: #222832;
+          --rule: #313946;
+          --rule-strong: #566171;
+          --cash: #48c6a6;
+          --outflow: #ff8a80;
+          --action: #8ea5ff;
+          --warning: #f1bd58;
+          --text: #e8edf4;
+          --muted: #a9b3c1;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100dvh;
+        margin: 0;
+        color: var(--text);
+        background:
+          linear-gradient(90deg, color-mix(in srgb, var(--rule) 42%, transparent) 1px, transparent 1px) 0 0 / 28px 28px,
+          linear-gradient(180deg, color-mix(in srgb, var(--action) 10%, transparent), transparent 20rem),
+          var(--paper);
+        font-family: var(--sans);
+        line-height: 1.5;
+      }
+
+      header,
+      main {
+        width: min(1180px, calc(100% - 28px));
+        margin-inline: auto;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        min-height: 76px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--ink);
+        text-decoration: none;
+      }
+
+      .mark {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        color: var(--panel);
+        background: var(--ink);
+        border-radius: var(--radius);
+        box-shadow: 5px 5px 0 color-mix(in srgb, var(--action) 18%, transparent);
+      }
+
+      .brand strong,
+      .brand em {
+        display: block;
+      }
+
+      .brand em,
+      .pill,
+      .eyebrow,
+      .kpi span,
+      .kpi em,
+      .tape time,
+      .tape small,
+      th {
+        font-family: var(--mono);
+      }
+
+      .brand em {
+        color: var(--muted);
+        font-size: 0.74rem;
+        font-style: normal;
+      }
+
+      .pill {
+        padding: 8px 10px;
+        color: var(--ink);
+        background: var(--panel);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius);
+        font-size: 0.8rem;
+        font-weight: 760;
+      }
+
+      main {
+        padding-bottom: 56px;
+      }
+
+      .heading,
+      .panel,
+      .kpi {
+        background: var(--panel);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius);
+      }
+
+      .heading {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: end;
+        padding: clamp(16px, 3vw, 24px);
+        border-top: 4px solid var(--ink);
+      }
+
+      .eyebrow {
+        margin: 0 0 6px;
+        color: var(--action);
+        font-size: 0.74rem;
+        font-weight: 820;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      p,
+      figure {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 16ch;
+        color: var(--ink);
+        font-size: clamp(2rem, 6vw, 4rem);
+        line-height: 1;
+      }
+
+      .heading p:not(.eyebrow) {
+        max-width: 64ch;
+        margin-top: 10px;
+        color: var(--muted);
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding-inline: 14px;
+        color: #ffffff;
+        background: var(--action);
+        border: 1px solid var(--action);
+        border-radius: 6px;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .lead {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(270px, 0.55fr);
+        gap: 14px;
+        margin-top: 14px;
+      }
+
+      .panel,
+      .kpi {
+        padding: 16px;
+      }
+
+      .panel h2 {
+        color: var(--ink);
+        font-size: 1.05rem;
+      }
+
+      .panel > p {
+        margin-top: 2px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 0.76rem;
+      }
+
+      .tape {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 16px;
+        padding: 0;
+        list-style: none;
+      }
+
+      .tape li {
+        display: grid;
+        gap: 8px;
+        min-height: 205px;
+        padding: 10px;
+        background: var(--subtle);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius);
+      }
+
+      .bars {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+        align-items: end;
+        height: 104px;
+      }
+
+      .bars span {
+        display: block;
+        border-radius: 999px 999px 3px 3px;
+      }
+
+      .cash {
+        height: var(--cash-size);
+        background: var(--cash);
+      }
+
+      .outflow {
+        height: var(--outflow-size);
+        background: var(--outflow);
+      }
+
+      .net {
+        height: var(--net-size);
+        background: var(--action);
+      }
+
+      .tape strong,
+      .kpi strong {
+        color: var(--ink);
+        font-family: var(--mono);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .tape small,
+      .tape time,
+      .kpi span,
+      .kpi em {
+        color: var(--muted);
+        font-size: 0.75rem;
+        font-style: normal;
+      }
+
+      .stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      .kpi {
+        display: grid;
+        gap: 6px;
+        min-height: 112px;
+        border-top: 4px solid var(--rule-strong);
+      }
+
+      .kpi.cash {
+        border-top-color: var(--cash);
+      }
+
+      .kpi.warning {
+        border-top-color: var(--warning);
+      }
+
+      .kpi strong {
+        font-size: clamp(1.5rem, 5vw, 2.5rem);
+        line-height: 1;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+        gap: 14px;
+        margin-top: 14px;
+      }
+
+      svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      .axis {
+        stroke: var(--rule-strong);
+      }
+
+      .line {
+        fill: none;
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      table {
+        width: 100%;
+        margin-top: 12px;
+        border-collapse: collapse;
+      }
+
+      caption {
+        position: absolute;
+        clip-path: inset(50%);
+      }
+
+      th,
+      td {
+        padding: 10px 8px;
+        border-bottom: 1px solid var(--rule);
+        text-align: left;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+      }
+
+      td strong {
+        font-family: var(--mono);
+      }
+
+      @media (max-width: 820px) {
+        header,
+        .heading,
+        .lead,
+        .grid,
+        .tape {
+          grid-template-columns: 1fr;
+        }
+
+        header {
+          align-items: start;
+          flex-direction: column;
+          padding-block: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="../PROJECT_PLAN.md">
+        <span class="mark" aria-hidden="true">FT</span>
+        <span>
+          <strong>Finance Tracker</strong>
+          <em>Local Finance</em>
+        </span>
+      </a>
+      <span class="pill">Static showcase - reviewer demo</span>
+    </header>
+
+    <main>
+      <section class="heading" aria-labelledby="title">
+        <div>
+          <p class="eyebrow">Cashflow Overview</p>
+          <h1 id="title">Cashflow trend first. Month close second.</h1>
+          <p>
+            A local SQLite finance tracker using the same synthetic July 2026 demo
+            data shown in the tracked reviewer screenshots.
+          </p>
+        </div>
+        <a class="button" href="../../README.md">Run the local demo</a>
+      </section>
+
+      <section class="lead" aria-label="Dashboard preview">
+        <article class="panel">
+          <h2>Cashflow trend</h2>
+          <p>Six months through July 2026</p>
+          <ol class="tape" aria-label="Six-month cashflow summary">
+            <li style="--cash-size: 90%; --outflow-size: 54%; --net-size: 37%;">
+              <time>Feb 26</time><div class="bars" aria-hidden="true"><span class="cash"></span><span class="outflow"></span><span class="net"></span></div><strong>+$1.7k</strong><small>9 entries</small>
+            </li>
+            <li style="--cash-size: 98%; --outflow-size: 52%; --net-size: 46%;">
+              <time>Mar 26</time><div class="bars" aria-hidden="true"><span class="cash"></span><span class="outflow"></span><span class="net"></span></div><strong>+$2.1k</strong><small>10 entries</small>
+            </li>
+            <li style="--cash-size: 90%; --outflow-size: 62%; --net-size: 29%;">
+              <time>Apr 26</time><div class="bars" aria-hidden="true"><span class="cash"></span><span class="outflow"></span><span class="net"></span></div><strong>+$1.3k</strong><small>9 entries</small>
+            </li>
+            <li style="--cash-size: 93%; --outflow-size: 59%; --net-size: 34%;">
+              <time>May 26</time><div class="bars" aria-hidden="true"><span class="cash"></span><span class="outflow"></span><span class="net"></span></div><strong>+$1.6k</strong><small>11 entries</small>
+            </li>
+            <li style="--cash-size: 100%; --outflow-size: 62%; --net-size: 38%;">
+              <time>Jun 26</time><div class="bars" aria-hidden="true"><span class="cash"></span><span class="outflow"></span><span class="net"></span></div><strong>+$1.8k</strong><small>11 entries</small>
+            </li>
+            <li style="--cash-size: 97%; --outflow-size: 100%; --net-size: 10%;">
+              <time>Jul 26</time><div class="bars" aria-hidden="true"><span class="cash"></span><span class="outflow"></span><span class="net"></span></div><strong>-$466</strong><small>12 entries</small>
+            </li>
+          </ol>
+        </article>
+
+        <div class="stack">
+          <article class="kpi cash"><span>Net position</span><strong>-$466.24</strong><em>12 entries</em></article>
+          <article class="kpi"><span>Savings rate</span><strong>-10.4%</strong><em>$4.5k income</em></article>
+          <article class="kpi warning"><span>Budget risk</span><strong>7</strong><em>3 over, 4 near</em></article>
+        </div>
+      </section>
+
+      <section class="grid" aria-label="Analysis preview">
+        <article class="panel">
+          <h2>Trend context</h2>
+          <p>Income, outflow, and net lines</p>
+          <svg role="img" aria-labelledby="trend-title trend-desc" viewBox="0 0 720 300">
+            <title id="trend-title">Six-month financial trend preview</title>
+            <desc id="trend-desc">Line chart preview for income, outflow, and net savings.</desc>
+            <line class="axis" x1="56" x2="680" y1="250" y2="250"></line>
+            <line class="axis" x1="56" x2="56" y1="42" y2="250"></line>
+            <polyline class="line" stroke="var(--cash)" points="56,78 178,64 300,78 422,74 544,60 666,66"></polyline>
+            <polyline class="line" stroke="var(--outflow)" points="56,148 178,151 300,133 422,138 544,132 666,86"></polyline>
+            <polyline class="line" stroke="var(--action)" points="56,181 178,164 300,195 422,186 544,178 666,236"></polyline>
+          </svg>
+        </article>
+
+        <article class="panel">
+          <h2>Budget pressure sample</h2>
+          <p>July 2026</p>
+          <table>
+            <caption>Budget pressure sample</caption>
+            <thead>
+              <tr><th scope="col">Category</th><th scope="col">Actual</th><th scope="col">Budget</th><th scope="col">Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Rent</td><td><strong>$3,100.00</strong></td><td>$1,600.00</td><td>over budget</td></tr>
+              <tr><td>Travel</td><td><strong>$640.00</strong></td><td>$550.00</td><td>over budget</td></tr>
+              <tr><td>Dining</td><td><strong>$164.30</strong></td><td>$170.00</td><td>near limit</td></tr>
+              <tr><td>Food</td><td><strong>$428.75</strong></td><td>$480.00</td><td>ok</td></tr>
+            </tbody>
+          </table>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
