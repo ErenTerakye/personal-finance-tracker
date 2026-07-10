@@ -71,7 +71,7 @@ export function RulesView({
   const [showAliasPresets, setShowAliasPresets] = useState(false);
   const [showTemplatePresets, setShowTemplatePresets] = useState(false);
   const [playgroundInput, setPlaygroundInput] = useState("");
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
 
   const load = () => {
     setError("");
@@ -264,7 +264,7 @@ export function RulesView({
 
           {rules.length === 0 || showAliasPresets ? (
             <div className="presets-box">
-              <span className="presets-title">{t("rules.presetsTitle")}</span>
+              <span className="presets-title" lang={locale}>{t("rules.presetsTitle")}</span>
               <div className="preset-chips">
                 {ALIAS_PRESETS.map((preset) => {
                   const alreadyExists = rules.some(
@@ -407,7 +407,7 @@ export function RulesView({
 
           {templates.length === 0 || showTemplatePresets ? (
             <div className="presets-box">
-              <span className="presets-title">{t("rules.presetsTemplatesTitle")}</span>
+              <span className="presets-title" lang={locale}>{t("rules.presetsTemplatesTitle")}</span>
               <div className="preset-grid">
                 {TEMPLATE_PRESETS.map((preset) => {
                   const alreadyExists = templates.some(
@@ -512,7 +512,7 @@ function TemplateList({
   templates: RecurringTemplate[];
   onDelete: (template: RecurringTemplate) => void;
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
 
   if (!templates.length) {
     return <p className="empty-inline">{t("rules.emptyTemplates")}</p>;
@@ -523,7 +523,7 @@ function TemplateList({
         <li key={template.id}>
           <span>
             <strong>
-              <span className={`template-badge ${template.type}`}>
+              <span className={`template-badge ${template.type}`} lang={locale}>
                 {t(`common.${template.type}`) || template.type}
               </span>
               {template.category} {money(template.amount)}
@@ -550,4 +550,3 @@ function readError(error: unknown, t: (key: string) => string): string {
   }
   return t("common.errorFallback");
 }
-

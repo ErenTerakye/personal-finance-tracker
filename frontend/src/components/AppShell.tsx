@@ -51,7 +51,7 @@ export function AppShell({
   onNavigate: (view: View) => void;
   children: ReactNode;
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
 
   return (
     <div className="app">
@@ -72,7 +72,7 @@ export function AppShell({
           </span>
           <span>
             <strong>Finance Tracker</strong>
-            <em>{t("common.brandMarkSub")}</em>
+            <em lang={locale}>{t("common.brandMarkSub")}</em>
           </span>
         </a>
 
@@ -82,6 +82,7 @@ export function AppShell({
               const Icon = navIcons[item];
               const active = view === item;
               const translatedLabel = t(`nav.${item}`);
+              const compactLabel = t(`navShort.${item}`);
               return (
                 <li key={item}>
                   <a
@@ -94,7 +95,10 @@ export function AppShell({
                     }}
                   >
                     <Icon aria-hidden="true" size={18} />
-                    <span>{translatedLabel}</span>
+                    <span className="nav-label nav-label-full">{translatedLabel}</span>
+                    <span className="nav-label nav-label-compact" aria-hidden="true">
+                      {compactLabel}
+                    </span>
                   </a>
                 </li>
               );
@@ -123,4 +127,3 @@ export function AppShell({
     </div>
   );
 }
-

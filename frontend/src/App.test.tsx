@@ -497,7 +497,7 @@ describe("Personal Finance Tracker", () => {
     // Verify it renders in English by default
     expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Choose period/i })).toBeInTheDocument();
-    expect(document.documentElement).toHaveAttribute("lang", "en");
+    expect(screen.getByText("Cashflow Overview")).toHaveAttribute("lang", "en");
 
     // Find and click language toggle button
     const langToggle = screen.getByRole("button", { name: /Switch language|Dili değiştir/i });
@@ -508,16 +508,18 @@ describe("Personal Finance Tracker", () => {
     expect(await screen.findByRole("heading", { name: "Kontrol Paneli" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Dönem seçin/i })).toBeInTheDocument();
     expect(langToggle).toHaveTextContent("EN");
-    expect(document.documentElement).toHaveAttribute("lang", "tr");
-    expect("Nakit Akışı Özeti".toLocaleUpperCase(document.documentElement.lang)).toBe(
+    const eyebrow = screen.getByText("Nakit Akışı Özeti");
+    expect(eyebrow).toHaveAttribute("lang", "tr");
+    expect(eyebrow.textContent?.toLocaleUpperCase(eyebrow.lang)).toBe(
       "NAKİT AKIŞI ÖZETİ"
     );
+    expect(screen.getByText("Finance Tracker")).not.toHaveAttribute("lang", "tr");
 
     // Click it again to switch back to English
     await userEvent.click(langToggle);
     expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
     expect(langToggle).toHaveTextContent("TR");
-    expect(document.documentElement).toHaveAttribute("lang", "en");
+    expect(screen.getByText("Cashflow Overview")).toHaveAttribute("lang", "en");
   });
 
   it("translates preset categories and descriptions dynamically on Rules view", async () => {

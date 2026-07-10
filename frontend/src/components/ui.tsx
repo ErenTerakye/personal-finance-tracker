@@ -14,6 +14,7 @@ import {
   useId,
   useRef
 } from "react";
+import { useI18n } from "../i18n";
 
 export function PageHeader({
   eyebrow,
@@ -28,10 +29,12 @@ export function PageHeader({
   actions?: ReactNode;
   className?: string;
 }) {
+  const { locale } = useI18n();
+
   return (
     <section className={`page-heading ${className}`.trim()} aria-labelledby="page-title">
       <div>
-        <p className="eyebrow">{eyebrow}</p>
+        <p className="eyebrow" lang={locale}>{eyebrow}</p>
         <h1 id="page-title">{title}</h1>
         <p>{summary}</p>
       </div>

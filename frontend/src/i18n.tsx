@@ -47,6 +47,12 @@ const trDict: Translations = {
     budgets: "Bütçeler",
     rules: "Kurallar"
   },
+  navShort: {
+    dashboard: "Özet",
+    transactions: "İşlemler",
+    budgets: "Bütçe",
+    rules: "Kurallar"
+  },
   theme: {
     system: "Sistem renk ayarını kullan",
     light: "Açık modu kullan",
@@ -283,6 +289,12 @@ const enDict: Translations = {
   nav: {
     dashboard: "Dashboard",
     transactions: "Transactions",
+    budgets: "Budgets",
+    rules: "Rules"
+  },
+  navShort: {
+    dashboard: "Overview",
+    transactions: "Entries",
     budgets: "Budgets",
     rules: "Rules"
   },
@@ -523,9 +535,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setFormatterLocale(locale);
-    // CSS text-transform follows the element's language when applying
-    // locale-sensitive casing (for example, Turkish i -> İ and ı -> I).
-    document.documentElement.lang = locale;
   }, [locale]);
 
   const t = (key: string, variables?: Record<string, string | number>): string => {

@@ -464,8 +464,33 @@ async function expectMobileNavigationIsCompact(page: Page, width: number) {
   }
   const nav = page.getByRole("navigation", { name: "Primary" });
   await expect(nav.getByRole("link", { name: "Transactions" })).toBeVisible();
-  const position = await nav.evaluate((node) => getComputedStyle(node).position);
-  expect(position).toBe("fixed");
+  await expect(nav.locator(".nav-label-compact").first()).toBeVisible();
+
+  const layout = await nav.evaluate((node) => {
+    const links = [...node.querySelectorAll("a")].map((link) => {
+      const rect = link.getBoundingClientRect();
+      return { top: rect.top, width: rect.width, height: rect.height };
+    });
+    const rect = node.getBoundingClientRect();
+    return {
+      position: getComputedStyle(node).position,
+      viewportWidth: document.documentElement.clientWidth,
+      left: rect.left,
+      right: rect.right,
+      links
+    };
+  });
+
+  expect(layout.position).toBe("fixed");
+  expect(layout.links).toHaveLength(4);
+  expect(Math.max(...layout.links.map(({ top }) => top)) - Math.min(...layout.links.map(({ top }) => top)))
+    .toBeLessThanOrEqual(1);
+  expect(Math.max(...layout.links.map(({ width: linkWidth }) => linkWidth)) -
+    Math.min(...layout.links.map(({ width: linkWidth }) => linkWidth)))
+    .toBeLessThanOrEqual(1);
+  expect(layout.links.every(({ height }) => height >= 44)).toBe(true);
+  expect(layout.left).toBeGreaterThanOrEqual(0);
+  expect(layout.right).toBeLessThanOrEqual(layout.viewportWidth);
 }
 
 async function measureTrendBars(card: ReturnType<Page["locator"]>) {

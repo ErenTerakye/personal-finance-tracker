@@ -13,7 +13,7 @@ export function TransactionTable({
   onEdit: (transaction: TransactionRecord) => void;
   onDelete: (transaction: TransactionRecord) => void;
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
 
   if (!transactions.length) {
     return (
@@ -28,7 +28,7 @@ export function TransactionTable({
     <div className="table-wrap">
       <table className="data-table transaction-table">
         <caption>{t("transactions.historyTitle")}</caption>
-        <thead>
+        <thead lang={locale}>
           <tr>
             <th scope="col">{t("common.date")}</th>
             <th scope="col">{t("common.type")}</th>
@@ -85,7 +85,7 @@ export function BudgetTable({
   onEdit: (budget: BudgetRecord) => void;
   onDelete: (budget: BudgetRecord) => void;
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
 
   if (!budgets.length) {
     return (
@@ -100,7 +100,7 @@ export function BudgetTable({
     <div className="table-wrap">
       <table className="data-table budget-table">
         <caption>{t("budgets.recordsTitle")}</caption>
-        <thead>
+        <thead lang={locale}>
           <tr>
             <th scope="col">{t("common.period")}</th>
             <th scope="col">{t("common.category")}</th>
@@ -139,4 +139,3 @@ export function BudgetTable({
     </div>
   );
 }
-
