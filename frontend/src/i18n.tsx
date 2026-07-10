@@ -523,6 +523,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setFormatterLocale(locale);
+    // CSS text-transform follows the element's language when applying
+    // locale-sensitive casing (for example, Turkish i -> İ and ı -> I).
+    document.documentElement.lang = locale;
   }, [locale]);
 
   const t = (key: string, variables?: Record<string, string | number>): string => {
