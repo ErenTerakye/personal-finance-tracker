@@ -56,7 +56,9 @@ describe("rules workflow", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<App />);
-    await userEvent.click(await screen.findByRole("link", { name: /Rules/i }));
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Rules|Automations/i }),
+    );
     await userEvent.type(await screen.findByLabelText("Alias"), "groceries");
     await userEvent.type(
       document.querySelector("#rule-category") as HTMLInputElement,
@@ -71,7 +73,7 @@ describe("rules workflow", () => {
     );
   });
 
-  it("renders rules info cards, presets, and playground correctly", async () => {
+  it("renders task-specific presets and category playground correctly", async () => {
     const fetchMock = vi.fn(
       async (input: RequestInfo | URL, _init?: RequestInit) => {
         const url = String(input);
@@ -91,18 +93,18 @@ describe("rules workflow", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<App />);
-    await userEvent.click(await screen.findByRole("link", { name: /Rules/i }));
-
-    // Verifies info cards
-    expect(screen.getByText("Category Aliases")).toBeInTheDocument();
-    expect(screen.getByText("Recurring Templates")).toBeInTheDocument();
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Rules|Automations/i }),
+    );
 
     // Verifies template presets show by default (since templates is empty)
+    await userEvent.click(screen.getByRole("tab", { name: "Recurring" }));
     expect(
       screen.getByText(/Quick-add standard templates:/i),
     ).toBeInTheDocument();
 
     // Verifies alias presets do not show by default (since rules is not empty), but toggle button shows
+    await userEvent.click(screen.getByRole("tab", { name: "Categories" }));
     expect(
       screen.queryByText(/Quick-add popular aliases:/i),
     ).not.toBeInTheDocument();
@@ -137,10 +139,14 @@ describe("rules workflow", () => {
     });
 
     render(<App />);
-    await userEvent.click(await screen.findByRole("link", { name: /Rules/i }));
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Rules|Automations/i }),
+    );
 
     // Verify it renders in English initially
+    await userEvent.click(screen.getByRole("tab", { name: "Recurring" }));
     expect(screen.getByText("Rent")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "Categories" }));
     expect(screen.getByText("uber → Transport")).toBeInTheDocument();
 
     const now = new Date();
@@ -179,6 +185,7 @@ describe("rules workflow", () => {
     const expectedEnPeriod = `${monthNamesEn[monthIndex]} ${year}`;
     const expectedTrPeriod = `${monthNamesTr[monthIndex]} ${year}`;
 
+    await userEvent.click(screen.getByRole("tab", { name: "Recurring" }));
     expect(
       screen.getByRole("button", {
         name: new RegExp(`Apply for ${expectedEnPeriod}`, "i"),
@@ -193,7 +200,9 @@ describe("rules workflow", () => {
 
     // Verify it renders in Turkish
     expect(screen.getByText("Kira")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "Kategoriler" }));
     expect(screen.getByText("uber → Ulaşım")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "Yinelenen" }));
     expect(
       screen.getByRole("button", {
         name: new RegExp(`${expectedTrPeriod} için uygula`, "i"),
@@ -203,11 +212,65 @@ describe("rules workflow", () => {
     // Switch back to English
     await userEvent.click(langToggle);
     expect(screen.getByText("Rent")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "Categories" }));
     expect(screen.getByText("uber → Transport")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "Recurring" }));
     expect(
       screen.getByRole("button", {
         name: new RegExp(`Apply for ${expectedEnPeriod}`, "i"),
       }),
     ).toBeInTheDocument();
+  });
+
+  it("deep-links tabs, supports expected arrow keys, and previews recurring consequences", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/rules?tab=recurring&month=3&year=2026",
+    );
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/category-rules": { rules: [] },
+      "/api/recurring-templates": {
+        templates: [
+          {
+            id: 4,
+            type: "expense",
+            amount: "1200.00",
+            category: "Rent",
+            description: "Monthly rent",
+            day_of_month: 1,
+            active: true,
+            created_at: null,
+          },
+        ],
+      },
+      "/api/settings": { currency: "USD" },
+    });
+
+    render(<App />);
+    const recurring = await screen.findByRole("tab", { name: "Recurring" });
+    expect(recurring).toHaveAttribute("aria-selected", "true");
+
+    recurring.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: "Preferences" })).toHaveFocus();
+    expect(window.location.search).toContain("tab=preferences");
+    await userEvent.keyboard("{Home}");
+    expect(screen.getByRole("tab", { name: "Categories" })).toHaveFocus();
+    await userEvent.keyboard("{End}");
+    expect(screen.getByRole("tab", { name: "Preferences" })).toHaveFocus();
+    await userEvent.keyboard("{ArrowLeft}");
+
+    await userEvent.click(screen.getByRole("button", { name: /Apply for/i }));
+    expect(
+      screen.getByRole("heading", { name: "Preview recurring entries" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/existing recurring transactions will be skipped/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Create transactions" }),
+    ).toBeEnabled();
   });
 });

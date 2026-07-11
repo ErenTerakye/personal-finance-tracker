@@ -32,7 +32,7 @@ describe("app composition", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: "Dashboard" }),
+      await screen.findByRole("heading", { level: 1 }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Choose period/ }),
@@ -40,7 +40,7 @@ describe("app composition", () => {
     expect(screen.getByText("Six-month cashflow trend")).toBeInTheDocument();
     expect(screen.getAllByText("$2,500.00").length).toBeGreaterThan(0);
     expect(screen.getByText("over budget")).toBeInTheDocument();
-    expect(screen.getAllByText("Show chart data as a table").length).toBe(2);
+    expect(screen.getByText("Show chart data as a table")).toBeInTheDocument();
   });
 
   it("navigates with browser routes", async () => {
@@ -51,15 +51,31 @@ describe("app composition", () => {
     });
 
     render(<App />);
-    await userEvent.click(
-      await screen.findByRole("link", { name: /Budgets/i }),
-    );
+    await userEvent.click(await screen.findByRole("link", { name: /Plan/i }));
 
     expect(window.location.pathname).toBe("/budgets");
     expect(
       await screen.findByRole("heading", { name: "Budgets" }),
     ).toBeInTheDocument();
-    expect(document.title).toBe("Budgets | Personal Finance Tracker");
+    expect(document.title).toBe("Plan | Personal Finance Tracker");
+  });
+
+  it("opens the transaction form from the global create command", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": { transactions: [] },
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { level: 1 });
+    await userEvent.click(
+      screen.getAllByRole("button", { name: "Add transaction" })[0],
+    );
+
+    expect(window.location.pathname).toBe("/transactions");
+    expect(
+      await screen.findByRole("dialog", { name: "Add transaction" }),
+    ).toBeInTheDocument();
   });
 
   it("uses view transitions for route changes when motion is allowed", async () => {
@@ -79,7 +95,7 @@ describe("app composition", () => {
     });
 
     render(<App />);
-    await userEvent.click(await screen.findByRole("link", { name: "Budgets" }));
+    await userEvent.click(await screen.findByRole("link", { name: "Plan" }));
 
     expect(startViewTransition).toHaveBeenCalledWith({
       update: expect.any(Function),
@@ -102,7 +118,7 @@ describe("app composition", () => {
     });
 
     render(<App />);
-    await userEvent.click(await screen.findByRole("link", { name: "Budgets" }));
+    await userEvent.click(await screen.findByRole("link", { name: "Plan" }));
 
     expect(startViewTransition).not.toHaveBeenCalled();
     expect(window.location.pathname).toBe("/budgets");
@@ -115,7 +131,7 @@ describe("app composition", () => {
 
     // Verify it renders in English by default
     expect(
-      await screen.findByRole("heading", { name: "Dashboard" }),
+      await screen.findByRole("heading", { level: 1 }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Choose period/i }),
@@ -132,21 +148,21 @@ describe("app composition", () => {
 
     // Verify page titles and other elements are now in Turkish
     expect(
-      await screen.findByRole("heading", { name: "Kontrol Paneli" }),
+      await screen.findByRole("heading", { level: 1 }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Dönem seçin/i }),
     ).toBeInTheDocument();
     expect(langToggle).toHaveTextContent("EN");
     expect(screen.getByText("NAKİT AKIŞI ÖZETİ")).toBeInTheDocument();
-    expect(screen.getByText("Finance Tracker")).toBeInTheDocument();
+    expect(screen.getAllByText("Finance Tracker").length).toBeGreaterThan(0);
     expect(document.documentElement.lang).toBe("tr");
     await waitFor(() => expect(langToggle).toHaveFocus());
 
     // Click it again to switch back to English
     await userEvent.click(langToggle);
     expect(
-      await screen.findByRole("heading", { name: "Dashboard" }),
+      await screen.findByRole("heading", { level: 1 }),
     ).toBeInTheDocument();
     expect(langToggle).toHaveTextContent("TR");
     expect(screen.getByText("CASHFLOW OVERVIEW")).toBeInTheDocument();

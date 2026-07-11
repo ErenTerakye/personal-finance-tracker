@@ -16,7 +16,7 @@ A local-first finance tracker with a Typer CLI, FastAPI JSON API, React browser 
 - Store records locally in SQLite.
 - Generate monthly and multi-month income, expense, net savings, category, YTD, and month-over-month reports.
 - Save optional PNG charts for monthly reports and trend reports.
-- Run a polished local FastAPI JSON API and React Web UI with route-aware dashboard, transaction, budget, and rules workflows.
+- Run a polished local FastAPI JSON API and React “ledger editorial” workspace with Overview, Activity, Plan, and Automations workflows.
 - Preview transaction CSV imports before writing, skip duplicates by default, import/export budget CSV files, and download report/chart artifacts from the dashboard.
 - Configure one local ledger currency and use locale-aware English/Turkish browser formatting.
 - Verify responsive and accessibility behavior with Playwright coverage.
@@ -92,6 +92,8 @@ These screenshots are generated from the July 2026 reviewer demo using `finance-
 
 The local Web UI is an intentional portfolio-scale scope expansion: a Personal Finance Tracker for trend-first monthly review, transaction entry, and budget pressure checks. It remains local-first: the Python server reads and writes your SQLite database on your machine.
 
+The 2026 interface uses a persistent desktop rail and compact top-layer drawer, an editorial cashflow overview, searchable activity ledger, planned-versus-spent workspace, and deep-linkable automation tabs. Design rationale and release evidence are recorded in [docs/WEB_UI_OVERHAUL_RELEASE.md](docs/WEB_UI_OVERHAUL_RELEASE.md).
+
 Architecture: FastAPI exposes JSON endpoints under `/api`, and a React + Vite + TypeScript SPA is served from the same local server after `npm run build`. Money values are sent as decimal strings so the browser never depends on floating-point rounding for stored amounts.
 
 The browser application includes:
@@ -119,6 +121,8 @@ Open `http://127.0.0.1:5173`; Vite proxies `/api` to the Python process on port 
 The browser interface uses modern platform features progressively, including semantic landmarks, accessible forms, native dialogs and popovers, SVG charts, container queries, color-scheme-aware dark mode with a persistent local override, mobile-safe viewport units, same-document view transitions, and reduced-motion-aware animation. The support policy is Baseline 2026-capable browsers; newer features must degrade without large polyfills.
 
 GitHub Pages can host static files only, so it cannot run the live Python/SQLite app. A static showcase is available in [docs/showcase/index.html](docs/showcase/index.html) for portfolio hosting, while real CRUD requires `finance-tracker web`.
+
+Sites deployment uses `npm run build:sites` to package the React UI with a small hosted-demo Worker adapter and seeded sample data. The published demo is interactive for review, but its changes are session-only; durable CRUD remains available through the local FastAPI + SQLite app.
 
 ## Common Commands
 

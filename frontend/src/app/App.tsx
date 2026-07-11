@@ -28,6 +28,7 @@ function AppContent() {
   );
   const [selectedPeriod, setSelectedPeriod] = useState(initialPeriod);
   const [notice, setNotice] = useState("");
+  const [createTransactionRequest, setCreateTransactionRequest] = useState(0);
   const mainRef = useRef<HTMLElement | null>(null);
   const didMount = useRef(false);
   const settings = useAppSettings();
@@ -110,6 +111,10 @@ function AppContent() {
       notice={notice}
       mainRef={mainRef}
       onNavigate={navigate}
+      onCreateTransaction={() => {
+        setCreateTransactionRequest((request) => request + 1);
+        if (view !== "transactions") navigate("transactions");
+      }}
     >
       {view === "dashboard" ? (
         <DashboardView
@@ -122,6 +127,7 @@ function AppContent() {
         <TransactionsView
           selectedPeriod={selectedPeriod}
           setNotice={setNotice}
+          createRequestId={createTransactionRequest}
         />
       ) : null}
       {view === "budgets" ? (

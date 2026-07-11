@@ -11,6 +11,57 @@ import {
 installAppTestLifecycle();
 
 describe("budgets workflow", () => {
+  it("summarizes planned, spent, remaining, and uncovered amounts", async () => {
+    const budgetRecord = {
+      id: 1,
+      category: "Food",
+      amount: "500.00",
+      month: 7,
+      year: 2026,
+      created_at: null,
+    };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith("/api/budgets/status")) {
+        return response({
+          statuses: [
+            {
+              budget: budgetRecord,
+              actual_expenses: "400.00",
+              remaining: "100.00",
+              percent_used: "80.0",
+              status: "near limit",
+            },
+          ],
+        });
+      }
+      if (url.startsWith("/api/budgets"))
+        return response({ budgets: [budgetRecord] });
+      return response(
+        dashboardPayload({
+          report: { ...dashboardPayload({}).report, total_expenses: "450.00" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole("link", { name: /Plan/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Planned versus spent" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Uncovered spending").nextSibling,
+    ).toHaveTextContent("$50.00");
+    await userEvent.click(
+      screen.getByRole("button", { name: /Food, near limit/ }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Edit Food budget" }),
+    ).toBeInTheDocument();
+  });
+
   it("imports budget CSV from a dialog and shows row results", async () => {
     const fetchMock = vi.fn(
       async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -35,9 +86,7 @@ describe("budgets workflow", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<App />);
-    await userEvent.click(
-      await screen.findByRole("link", { name: /Budgets/i }),
-    );
+    await userEvent.click(await screen.findByRole("link", { name: /Plan/i }));
     await userEvent.click(
       await screen.findByRole("button", { name: "Import CSV" }),
     );

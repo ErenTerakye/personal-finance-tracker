@@ -1,13 +1,7 @@
 import { useId } from "react";
 import { ArrowRight, Download, FileText, ImageDown } from "lucide-react";
 import { artifactUrls } from "../../api/artifacts";
-import {
-  compactValue,
-  CategoryBars,
-  KpiCard,
-  CashflowTrend,
-  TrendLines,
-} from "../../shared/charts";
+import { CategoryBars, CashflowTrend } from "../../shared/charts";
 import { PeriodControl } from "../../shared/components/PeriodControl";
 import {
   ActivityList,
@@ -62,6 +56,18 @@ export function DashboardView({
   const categories = Object.entries(data.report.expenses_by_category)
     .map(([label, value]) => ({ label, value }))
     .sort((a, b) => Number(b.value) - Number(a.value));
+  const net = Number(data.report.net_savings);
+  const netDelta = Number(data.report.net_savings_delta);
+  const attention = [...data.budget_statuses]
+    .filter((status) => status.status !== "ok")
+    .sort((a, b) => {
+      const priority = (value: string) =>
+        value === "over budget" ? 2 : value === "near limit" ? 1 : 0;
+      return (
+        priority(b.status) - priority(a.status) ||
+        Number(b.percent_used) - Number(a.percent_used)
+      );
+    });
 
   // Determine localized period label from month number if Turkish
   const displayPeriodLabel =
@@ -71,8 +77,14 @@ export function DashboardView({
     <>
       <PageHeader
         eyebrow={tUpper("dashboard.eyebrow")}
-        title={t("dashboard.title")}
-        summary={t("dashboard.summary")}
+        title={displayPeriodLabel}
+        summary={
+          net >= 0
+            ? t("dashboard.narrative.positive", { amount: money(net) })
+            : t("dashboard.narrative.negative", {
+                amount: money(Math.abs(net)),
+              })
+        }
         className="dashboard-heading"
         actions={
           <div className="dashboard-actions">
@@ -93,32 +105,39 @@ export function DashboardView({
         className="dashboard-summary"
         aria-label={t("dashboard.summaryAria", { period: displayPeriodLabel })}
       >
-        <KpiCard
-          label={tUpper("dashboard.kpi.netPosition")}
-          value={money(data.report.net_savings)}
-          detail={t("dashboard.detail.entries", {
-            count: data.report.transaction_count,
-          })}
-          tone={Number(data.report.net_savings) >= 0 ? "cash" : "expenses"}
-          featured
-        />
-        <KpiCard
-          label={tUpper("dashboard.kpi.savingsRate")}
-          value={percent(data.savings_rate)}
-          detail={t("dashboard.detail.income", {
-            amount: compactValue(data.report.total_income),
-          })}
-          tone="neutral"
-        />
-        <KpiCard
-          label={tUpper("dashboard.kpi.budgetRisk")}
-          value={String(overBudget + nearLimit)}
-          detail={t("dashboard.detail.risk", {
-            over: overBudget,
-            near: nearLimit,
-          })}
-          tone={overBudget ? "warning" : "cash"}
-        />
+        <div className={`balance-story ${net < 0 ? "negative" : "positive"}`}>
+          <p className="eyebrow">{tUpper("dashboard.kpi.netPosition")}</p>
+          <strong>{money(data.report.net_savings)}</strong>
+          <p>
+            {netDelta === 0
+              ? t("dashboard.narrative.unchanged")
+              : t(
+                  netDelta > 0
+                    ? "dashboard.narrative.better"
+                    : "dashboard.narrative.lower",
+                  { amount: money(Math.abs(netDelta)) },
+                )}
+          </p>
+          <dl className="cashflow-comparison">
+            <div>
+              <dt>{t("dashboard.kpi.income")}</dt>
+              <dd>{money(data.report.total_income)}</dd>
+            </div>
+            <div>
+              <dt>{t("dashboard.kpi.expenses")}</dt>
+              <dd>{money(data.report.total_expenses)}</dd>
+            </div>
+            <div>
+              <dt>{t("dashboard.kpi.savingsRate")}</dt>
+              <dd>{percent(data.savings_rate)}</dd>
+            </div>
+          </dl>
+          <p>
+            {t("dashboard.detail.entries", {
+              count: data.report.transaction_count,
+            })}
+          </p>
+        </div>
         <div
           className="quick-actions"
           aria-label={t("dashboard.detail.actions")}
@@ -149,35 +168,52 @@ export function DashboardView({
         </Panel>
       </section>
 
-      <section className="analysis-grid" aria-label={t("dashboard.title")}>
+      <section
+        className="analysis-grid dashboard-priorities"
+        aria-label={t("dashboard.title")}
+      >
         <Panel
-          title={t("dashboard.sections.contextTitle")}
-          detail={t("dashboard.sections.contextDetail")}
-          deferred
+          title={t("dashboard.sections.attentionTitle")}
+          detail={t("dashboard.detail.risk", {
+            over: overBudget,
+            near: nearLimit,
+          })}
         >
-          <TrendLines months={data.trend.months} />
+          {attention.length ? (
+            <BudgetPressureList statuses={attention} />
+          ) : (
+            <p className="quiet-state">{t("dashboard.attentionEmpty")}</p>
+          )}
         </Panel>
-        <Panel title={t("dashboard.sections.pressureTitle")} deferred>
-          <BudgetPressureList statuses={data.budget_statuses} />
+        <Panel
+          title={t("dashboard.sections.activityTitle")}
+          detail={t("dashboard.sections.activityDetail")}
+          actions={
+            <button
+              className="button ghost"
+              type="button"
+              onClick={() => onNavigate("transactions")}
+            >
+              {t("dashboard.viewAllActivity")}
+            </button>
+          }
+        >
+          <ActivityList transactions={data.recent_transactions} />
         </Panel>
+      </section>
+
+      <details className="secondary-analysis deferred-section">
+        <summary>{t("dashboard.secondaryAnalysis")}</summary>
         <Panel
           title={t("dashboard.sections.mixTitle")}
           detail={t("dashboard.sections.mixDetail")}
-          deferred
         >
           <CategoryBars
             title={t("dashboard.sections.mixTitle")}
             items={categories}
           />
         </Panel>
-        <Panel
-          title={t("dashboard.sections.activityTitle")}
-          detail={t("dashboard.sections.activityDetail")}
-          deferred
-        >
-          <ActivityList transactions={data.recent_transactions} />
-        </Panel>
-      </section>
+      </details>
     </>
   );
 }

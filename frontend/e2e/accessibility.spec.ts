@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 const routes = [
-  { path: "/", heading: "Dashboard" },
+  { path: "/", heading: "June 2026" },
   { path: "/transactions", heading: "Transactions" },
   { path: "/budgets", heading: "Budgets" },
   { path: "/rules", heading: "Rules" },
@@ -57,7 +57,7 @@ test.describe("keyboard accessibility smoke checks", () => {
 
     const transactionsLink = page
       .getByRole("navigation", { name: "Primary" })
-      .getByRole("link", { name: "Transactions" });
+      .getByRole("link", { name: "Activity" });
     await transactionsLink.focus();
     await page.keyboard.press("Enter");
 
@@ -151,7 +151,7 @@ test.describe("accessibility display preferences", () => {
 
     await page
       .getByRole("navigation", { name: "Primary" })
-      .getByRole("link", { name: "Budgets" })
+      .getByRole("link", { name: "Plan" })
       .click();
     await expect(page).toHaveURL(/\/budgets$/);
     await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();

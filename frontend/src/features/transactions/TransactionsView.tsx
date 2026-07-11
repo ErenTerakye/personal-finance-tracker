@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Download, Plus, Trash2, Upload } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Download, Plus, Search, Trash2, Upload } from "lucide-react";
 import type { TransactionFilters } from "../../api/client";
 import { artifactUrls } from "../../api/artifacts";
 import { CsvImportDialog } from "../../shared/components/CsvImportDialog";
@@ -40,9 +40,11 @@ type TransactionDialog = "create" | "edit" | null;
 export function TransactionsView({
   selectedPeriod,
   setNotice,
+  createRequestId = 0,
 }: {
   selectedPeriod: { month: number; year: number };
   setNotice: (notice: string) => void;
+  createRequestId?: number;
 }) {
   const [filters, setFilters] = useState<TransactionFilters>(() =>
     readTransactionFilters(selectedPeriod),
@@ -54,10 +56,26 @@ export function TransactionsView({
     null,
   );
   const [importOpen, setImportOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ledgerHeadingRef = useRef<HTMLDivElement>(null);
+  const handledCreateRequest = useRef(0);
   const { t, tUpper } = useI18n();
   const transactionResource = useTransactions(filters);
   const categoryResource = useTransactionCategories();
   const transactions = transactionResource.data?.transactions ?? [];
+  const visibleTransactions = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase();
+    if (!query) return transactions;
+    return transactions.filter((transaction) =>
+      [
+        transaction.category,
+        transaction.description,
+        transaction.amount,
+        transaction.date,
+        transaction.type,
+      ].some((value) => String(value).toLocaleLowerCase().includes(query)),
+    );
+  }, [search, transactions]);
   const loading = transactionResource.status === "loading";
   const categories = useMemo(
     () =>
@@ -82,6 +100,7 @@ export function TransactionsView({
     setNotice(localizedNotice(response, t));
     setPendingDelete(null);
     transactionResource.refetch();
+    requestAnimationFrame(() => ledgerHeadingRef.current?.focus());
   });
   const previewMutation = useTransactionPreview();
   const importMutation = useTransactionImport((response) => {
@@ -97,6 +116,18 @@ export function TransactionsView({
       year: selectedPeriod.year,
     }));
   }, [selectedPeriod.month, selectedPeriod.year]);
+
+  useEffect(() => {
+    window.addEventListener("finance-tracker:add-transaction", openCreate);
+    return () =>
+      window.removeEventListener("finance-tracker:add-transaction", openCreate);
+  });
+
+  useEffect(() => {
+    if (createRequestId <= handledCreateRequest.current) return;
+    handledCreateRequest.current = createRequestId;
+    openCreate();
+  }, [createRequestId]);
 
   function openCreate() {
     setForm(defaultTransaction());
@@ -146,7 +177,18 @@ export function TransactionsView({
 
   const detailLabel = loading
     ? t("transactions.historyDetail.loading")
-    : t("transactions.historyDetail.count", { count: transactions.length });
+    : t("transactions.historyDetail.count", {
+        count: visibleTransactions.length,
+      });
+
+  const activeFilterLabels = [
+    Number(filters.month) !== selectedPeriod.month ||
+    Number(filters.year) !== selectedPeriod.year
+      ? `${filters.year}-${String(filters.month).padStart(2, "0")}`
+      : null,
+    filters.category ? `${t("common.category")}: ${filters.category}` : null,
+    filters.transaction_type ? t(`common.${filters.transaction_type}`) : null,
+  ].filter((label): label is string => Boolean(label));
 
   return (
     <>
@@ -174,40 +216,102 @@ export function TransactionsView({
         <ErrorBanner message={transactionResource.error.message} />
       ) : null}
 
-      <section className="tracker-grid">
-        <TransactionFilterForm
-          filters={filters}
-          selectedPeriod={selectedPeriod}
-          onChange={(next) => {
-            writeTransactionFilters(next);
-            setFilters(next);
-          }}
-        />
+      <section
+        className="activity-workspace"
+        aria-label={t("transactions.title")}
+      >
+        <div className="activity-tools">
+          <label className="transaction-search">
+            <span>{t("transactions.searchLabel")}</span>
+            <span className="search-control">
+              <Search aria-hidden="true" size={18} />
+              <input
+                type="search"
+                value={search}
+                placeholder={t("transactions.searchHint")}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </span>
+          </label>
+          <TransactionFilterForm
+            filters={filters}
+            selectedPeriod={selectedPeriod}
+            onChange={(next) => {
+              writeTransactionFilters(next);
+              setFilters(next);
+            }}
+          />
 
-        <Panel
-          title={t("transactions.historyTitle")}
-          detail={detailLabel}
-          actions={
-            <DownloadLink
-              icon={Download}
-              href={artifactUrls.transactionsCsv(filters)}
-              download
-              variant="secondary"
+          {activeFilterLabels.length ? (
+            <div
+              className="active-filter-summary"
+              aria-label={t("transactions.filters.active")}
             >
-              {t("common.exportCsv")}
-            </DownloadLink>
-          }
+              <span>{t("transactions.filters.active")}</span>
+              {activeFilterLabels.map((label) => (
+                <span className="filter-chip" key={label}>
+                  {label}
+                </span>
+              ))}
+              <button
+                className="button ghost"
+                type="button"
+                onClick={() => {
+                  const next = {
+                    month: selectedPeriod.month,
+                    year: selectedPeriod.year,
+                    transaction_type: "" as const,
+                    category: "",
+                  };
+                  writeTransactionFilters(next);
+                  setFilters(next);
+                }}
+              >
+                {t("transactions.filters.clear")}
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        <div
+          className="transaction-ledger"
+          ref={ledgerHeadingRef}
+          tabIndex={-1}
         >
-          {loading ? (
-            <TableSkeleton rows={5} />
-          ) : (
-            <TransactionTable
-              transactions={transactions}
-              onEdit={openEdit}
-              onDelete={setPendingDelete}
-            />
-          )}
-        </Panel>
+          <Panel
+            title={t("transactions.historyTitle")}
+            detail={detailLabel}
+            actions={
+              <details className="data-menu">
+                <summary className="button secondary">
+                  <Download aria-hidden="true" size={18} />
+                  <span>{t("transactions.dataMenu")}</span>
+                </summary>
+                <div className="data-menu-panel">
+                  <p>{t("transactions.exportScope")}</p>
+                  <DownloadLink
+                    icon={Download}
+                    href={artifactUrls.transactionsCsv(filters)}
+                    download
+                    variant="secondary"
+                  >
+                    {t("common.exportCsv")}
+                  </DownloadLink>
+                </div>
+              </details>
+            }
+          >
+            {loading ? (
+              <TableSkeleton rows={5} />
+            ) : (
+              <TransactionTable
+                transactions={visibleTransactions}
+                onEdit={openEdit}
+                onDelete={setPendingDelete}
+              />
+            )}
+          </Panel>
+        </div>
       </section>
 
       <CsvImportDialog

@@ -18,13 +18,16 @@ export function useBudgets(
   const category = filters.category;
   const load = useCallback(
     async (signal: AbortSignal) => {
-      const [budgetResponse, statusResponse] = await Promise.all([
-        api.budgets(filters, signal),
-        api.budgetStatuses(month, year, signal),
-      ]);
+      const [budgetResponse, statusResponse, dashboardResponse] =
+        await Promise.all([
+          api.budgets(filters, signal),
+          api.budgetStatuses(month, year, signal),
+          api.dashboard(month, year, signal),
+        ]);
       return {
         budgets: budgetResponse.budgets,
         statuses: statusResponse.statuses,
+        totalExpenses: dashboardResponse.report.total_expenses,
       };
     },
     [month, year, category],

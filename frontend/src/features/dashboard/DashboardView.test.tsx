@@ -17,7 +17,7 @@ describe("dashboard workflow", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: "Dashboard" }),
+      await screen.findByRole("heading", { name: "June 2026" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Month report").closest("a")).toHaveAttribute(
       "href",
@@ -43,7 +43,7 @@ describe("dashboard workflow", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: "Dashboard" }),
+      await screen.findByRole("heading", { name: "June 2026" }),
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /^Next month,/ }));
 
@@ -53,5 +53,24 @@ describe("dashboard workflow", () => {
       );
       expect(dashboardCalls.length).toBeGreaterThan(1);
     });
+  });
+
+  it("presents the period as one cashflow story with a quiet attention state", async () => {
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+
+    expect(
+      await screen.findByText("$2,113.60 remained after expenses this month."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Nothing needs attention. Spending is within the budgets set for this period.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "View all activity" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("table")).toBeInTheDocument();
   });
 });

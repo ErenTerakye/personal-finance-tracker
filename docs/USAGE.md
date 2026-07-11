@@ -63,7 +63,7 @@ For the reviewer demo, use the generated sample database:
 finance-tracker web --host 127.0.0.1 --port 8000 --db-path demo.sqlite3
 ```
 
-The Web UI supports:
+The Web UI uses four destinations—Overview, Activity, Plan, and Automations—and supports:
 
 - A Personal Finance Tracker dashboard with a six-month cashflow trend, KPI cards, YTD/month-over-month context, trend/category charts, recent transactions, and budget pressure.
 - Route-aware browser navigation for `/`, `/transactions`, `/budgets`, and `/rules`.
@@ -72,7 +72,7 @@ The Web UI supports:
 - Budget set/update, delete, filters, and monthly status comparison with pressure shown first.
 - Transaction and budget CSV import/export from the browser, using the same columns and validation rules as the CLI.
 - Transaction CSV preview before import, including invalid rows, duplicates, and category alias changes.
-- Category alias and recurring monthly transaction template management from the Rules view.
+- Category alias and recurring monthly transaction template management from the Automations view, with deep-linkable Categories, Recurring, and Preferences tabs.
 - Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
 - A color theme action that follows the operating system by default and can pin a local light or dark preference.
 - An English/Turkish language action stored in local browser storage, with locale-aware date, number, and currency formatting based on the active ledger currency.
@@ -278,10 +278,10 @@ finance-tracker export-budgets-csv exports/july-budgets.csv --month 7 --year 202
 
 In the local Web UI:
 
-- Use `Transactions -> Import CSV` to add transaction rows from a CSV file with `type,amount,category,description,date`.
-- Use `Transactions -> Export CSV` to download the currently filtered transaction view.
-- Use `Budgets -> Import CSV` to set or update monthly budgets from `category,amount,month,year`.
-- Use `Budgets -> Export CSV` to download the currently filtered budget view.
+- Use `Activity -> Import CSV` to add transaction rows from a CSV file with `type,amount,category,description,date`.
+- Use `Activity -> Data options -> Export CSV` to download the currently filtered transaction view.
+- Use `Plan -> Import CSV` to set or update monthly budgets from `category,amount,month,year`.
+- Use `Plan -> Export CSV` to download the currently filtered budget view.
 - Use the dashboard download actions to save the selected month report/chart and the six-month trend report/chart.
 
 Transaction CSV imports skip duplicates by default. Duplicate identity is the

@@ -13,6 +13,54 @@ import {
 installAppTestLifecycle();
 
 describe("transactions workflow", () => {
+  it("opens the shared transaction form from the global create command", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": { transactions: [] },
+    });
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Transactions|Activity/i }),
+    );
+    window.dispatchEvent(new Event("finance-tracker:add-transaction"));
+
+    expect(
+      await screen.findByRole("dialog", { name: "Add transaction" }),
+    ).toHaveAttribute("open");
+  });
+
+  it("searches the loaded ledger immediately and discloses advanced filters", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": {
+        transactions: [
+          transaction(),
+          {
+            ...transaction(),
+            id: 2,
+            category: "Salary",
+            description: "July pay",
+          },
+        ],
+      },
+    });
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Transactions|Activity/i }),
+    );
+    const search = await screen.findByRole("searchbox");
+    await userEvent.type(search, "salary");
+
+    expect(screen.getByText("Salary")).toBeInTheDocument();
+    expect(screen.queryByText("Groceries")).not.toBeInTheDocument();
+    await userEvent.click(
+      document.querySelector(".transaction-filter-disclosure summary")!,
+    );
+    expect(screen.getByLabelText("Transaction filter period")).toBeVisible();
+  });
+
   it("creates a transaction from a dialog and announces success", async () => {
     const fetchMock = mockFetch({
       "/api/dashboard": dashboardPayload({}),
@@ -36,7 +84,7 @@ describe("transactions workflow", () => {
 
     render(<App />);
     await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions/i }),
+      await screen.findByRole("link", { name: /Transactions|Activity/i }),
     );
     await userEvent.click(
       await screen.findByRole("button", { name: "Add entry" }),
@@ -112,7 +160,7 @@ describe("transactions workflow", () => {
 
     render(<App />);
     await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions/i }),
+      await screen.findByRole("link", { name: /Transactions|Activity/i }),
     );
     await userEvent.click(
       await screen.findByRole("button", { name: "Import CSV" }),
@@ -160,7 +208,7 @@ describe("transactions workflow", () => {
 
     render(<App />);
     await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions/i }),
+      await screen.findByRole("link", { name: /Transactions|Activity/i }),
     );
     await screen.findByText("Groceries");
     await userEvent.click(screen.getByRole("button", { name: "Actions" }));
