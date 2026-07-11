@@ -112,7 +112,10 @@ for (const width of viewports) {
       await expect(page.getByRole("button", { name: "Edit" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Delete" })).toBeVisible();
 
-      await page.locator("#content").getByRole("button", { name: "Add entry" }).click();
+      await page
+        .locator("#content")
+        .getByRole("button", { name: "Add entry" })
+        .click();
       const dialog = page.getByRole("dialog", { name: "Add transaction" });
       await expect(dialog).toBeVisible();
       await expectDialogFitsViewport(page, dialog);
@@ -438,8 +441,12 @@ async function expectDashboardFitsViewport(page: Page) {
 }
 
 async function expectQuickActionsStacked(page: Page) {
-  const addEntry = page.locator(".dashboard-primary-actions").getByRole("button", { name: "Add entry" });
-  const setBudget = page.locator(".dashboard-primary-actions").getByRole("button", { name: "Set budget" });
+  const addEntry = page
+    .locator(".dashboard-primary-actions")
+    .getByRole("button", { name: "Add entry" });
+  const setBudget = page
+    .locator(".dashboard-primary-actions")
+    .getByRole("button", { name: "Set budget" });
   const [addBox, budgetBox] = await Promise.all([
     addEntry.boundingBox(),
     setBudget.boundingBox(),
@@ -453,8 +460,12 @@ async function expectQuickActionsStacked(page: Page) {
 }
 
 async function expectQuickActionsSideBySide(page: Page) {
-  const addEntry = page.locator(".dashboard-primary-actions").getByRole("button", { name: "Add entry" });
-  const setBudget = page.locator(".dashboard-primary-actions").getByRole("button", { name: "Set budget" });
+  const addEntry = page
+    .locator(".dashboard-primary-actions")
+    .getByRole("button", { name: "Add entry" });
+  const setBudget = page
+    .locator(".dashboard-primary-actions")
+    .getByRole("button", { name: "Set budget" });
   const [addBox, budgetBox] = await Promise.all([
     addEntry.boundingBox(),
     setBudget.boundingBox(),

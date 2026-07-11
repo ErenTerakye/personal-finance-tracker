@@ -216,9 +216,9 @@ tempCodeRunnerFile.py
 .ruff_cache/
 
 # Personal Finance Tracker local outputs
-data/
-reports/
-exports/
+/data/
+/reports/
+/exports/
 *.sqlite3
 *.sqlite3-journal
 playwright-report/
@@ -252,3 +252,7 @@ Desktop.ini
 # IDE settings
 .vscode/
 .idea/
+
+# OpenAI / AI Agent settings
+.openai/
+
