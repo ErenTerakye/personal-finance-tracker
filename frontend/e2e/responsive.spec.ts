@@ -40,6 +40,7 @@ for (const width of viewports) {
       await expectQuickActionsStacked(page);
       await expectThemeToggleIconCentered(page);
       await expectMobileNavigationIsCompact(page, width);
+      await expectAdaptiveCompactCommandBar(page, width);
       await page.getByRole("button", { name: /Choose period/ }).click();
       await expectElementsFitViewport(page, [".period-popover"]);
 
@@ -493,6 +494,46 @@ async function expectThemeToggleIconCentered(page: Page) {
 
   expect(offset.x).toBeLessThanOrEqual(1);
   expect(offset.y).toBeLessThanOrEqual(1);
+}
+
+async function expectAdaptiveCompactCommandBar(page: Page, width: number) {
+  const compactBar = page.locator(".compact-app-bar");
+  const rail = page.locator(".app-rail");
+
+  if (width >= 1024) {
+    await expect(compactBar).toBeHidden();
+    await expect(rail).toBeVisible();
+    return;
+  }
+
+  await expect(compactBar).toBeVisible();
+  await expect(rail).toBeHidden();
+  const menu = compactBar.getByRole("button", {
+    name: "Open navigation menu",
+  });
+  const brand = compactBar.getByRole("link", { name: "Finance Tracker" });
+  const create = compactBar.getByRole("button", { name: "Add transaction" });
+  const label = compactBar.locator(".compact-create-label");
+  const brandName = brand.locator("strong");
+
+  for (const control of [menu, brand, create]) {
+    const box = await control.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.height).toBeGreaterThanOrEqual(47.9);
+  }
+
+  if (width < 576) {
+    await expect(label).toBeHidden();
+    await expect(brandName).toBeHidden();
+  } else {
+    await expect(label).toBeVisible();
+    await expect(brandName).toBeVisible();
+  }
+
+  await expectElementsFitViewport(page, [
+    ".compact-command-start",
+    ".compact-create",
+  ]);
 }
 
 async function expectThemeState(

@@ -529,7 +529,7 @@
       inset-block-start: 0;
       z-index: 15;
       display: grid;
-      grid-template-columns: 3rem minmax(0, 1fr) 3rem;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: 0.5rem;
       min-block-size: 4rem;
@@ -539,8 +539,16 @@
       backdrop-filter: blur(16px);
     }
 
+    .compact-command-start {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-inline-size: 0;
+    }
+
     .compact-app-bar .brand {
-      justify-self: center;
+      min-inline-size: 2rem;
+      min-block-size: var(--tap-target);
     }
 
     .compact-app-bar .brand > span:last-child {
@@ -558,6 +566,13 @@
 
     .compact-create {
       justify-self: end;
+      inline-size: var(--tap-target);
+      padding-inline: 0;
+      flex: none;
+    }
+
+    .compact-create-label {
+      display: none;
     }
 
     .app-shell > main {
@@ -635,6 +650,22 @@
 
     .drawer-create {
       inline-size: 100%;
+    }
+  }
+
+  @media (min-width: 36rem) and (max-width: 63.999rem) {
+    .compact-app-bar .brand > span:last-child,
+    .compact-create-label {
+      display: block;
+    }
+
+    .compact-app-bar .brand strong {
+      white-space: nowrap;
+    }
+
+    .compact-create {
+      inline-size: auto;
+      padding-inline: 0.9rem;
     }
   }
 

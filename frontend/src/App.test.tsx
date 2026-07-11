@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import App from "./app/App";
@@ -76,6 +76,35 @@ describe("app composition", () => {
     expect(
       await screen.findByRole("dialog", { name: "Add transaction" }),
     ).toBeInTheDocument();
+  });
+
+  it("keeps compact header commands connected to their workflows", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": { transactions: [] },
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { level: 1 });
+    const compactHeader =
+      document.querySelector<HTMLElement>(".compact-app-bar");
+    expect(compactHeader).not.toBeNull();
+
+    await userEvent.click(
+      within(compactHeader!).getByRole("button", {
+        name: "Add transaction",
+      }),
+    );
+    expect(window.location.pathname).toBe("/transactions");
+    expect(
+      await screen.findByRole("dialog", { name: "Add transaction" }),
+    ).toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(
+      within(compactHeader!).getByRole("link", { name: "Finance Tracker" }),
+    );
+    expect(window.location.pathname).toBe("/");
   });
 
   it("uses view transitions for route changes when motion is allowed", async () => {

@@ -146,25 +146,30 @@ export function AppShell({
       </aside>
 
       <header className="compact-app-bar">
+        <div className="compact-command-start">
+          <button
+            ref={drawerTriggerRef}
+            className="icon-button"
+            type="button"
+            aria-expanded={drawerOpen}
+            aria-controls="app-drawer"
+            aria-label={t("common.openMenu")}
+            onClick={() => setDrawerOpen(true)}
+          >
+            <Menu aria-hidden="true" />
+          </button>
+          <Brand onNavigate={onNavigate} compact />
+        </div>
         <button
-          ref={drawerTriggerRef}
-          className="icon-button"
-          type="button"
-          aria-expanded={drawerOpen}
-          aria-controls="app-drawer"
-          aria-label={t("common.openMenu")}
-          onClick={() => setDrawerOpen(true)}
-        >
-          <Menu aria-hidden="true" />
-        </button>
-        <Brand onNavigate={onNavigate} compact />
-        <button
-          className="icon-button compact-create"
+          className="button primary compact-create"
           type="button"
           aria-label={t("common.addTransaction")}
           onClick={onCreateTransaction}
         >
           <Plus aria-hidden="true" />
+          <span className="compact-create-label">
+            {t("common.addTransaction")}
+          </span>
         </button>
       </header>
 
