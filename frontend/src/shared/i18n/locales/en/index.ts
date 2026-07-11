@@ -7,7 +7,6 @@ export const en = {
     openMenu: "Open navigation menu",
     closeMenu: "Close navigation menu",
     preferences: "Preferences",
-    addTransaction: "Add transaction",
     databaseStorage: "Database storage",
     hostedDemoStorage: "Hosted demo storage",
     closeDialog: "Close dialog",
@@ -78,7 +77,6 @@ export const en = {
     attentionEmpty:
       "Nothing needs attention. Spending is within the budgets set for this period.",
     viewAllActivity: "View all activity",
-    secondaryAnalysis: "Category mix and reports",
     changePeriod: "Change dashboard period",
     toolsLabel: "Dashboard period and export tools",
     downloadLabel: "Download dashboard artifacts",

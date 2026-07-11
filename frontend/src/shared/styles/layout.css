@@ -90,11 +90,11 @@
     letter-spacing: 0.04em;
   }
 
-  nav {
+  .app-header nav {
     min-inline-size: 0;
   }
 
-  nav ul {
+  .app-header nav ul {
     display: flex;
     gap: 0.25rem;
     max-inline-size: 100%;
@@ -109,7 +109,7 @@
     scrollbar-gutter: stable;
   }
 
-  nav a {
+  .app-header nav a {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -128,12 +128,12 @@
       box-shadow 150ms ease;
   }
 
-  nav a:hover:not([aria-current="page"]) {
+  .app-header nav a:hover:not([aria-current="page"]) {
     color: var(--ink);
     background: color-mix(in srgb, var(--surface-2) 68%, transparent);
   }
 
-  nav a[aria-current="page"] {
+  .app-header nav a[aria-current="page"] {
     color: var(--ink);
     background: var(--surface);
     box-shadow: inset 0 0 0 1px var(--rule);

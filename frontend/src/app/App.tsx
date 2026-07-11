@@ -29,6 +29,7 @@ function AppContent() {
   const [selectedPeriod, setSelectedPeriod] = useState(initialPeriod);
   const [notice, setNotice] = useState("");
   const [createTransactionRequest, setCreateTransactionRequest] = useState(0);
+  const [createBudgetRequest, setCreateBudgetRequest] = useState(0);
   const mainRef = useRef<HTMLElement | null>(null);
   const didMount = useRef(false);
   const settings = useAppSettings();
@@ -64,6 +65,12 @@ function AppContent() {
   function navigate(nextView: View) {
     if (nextView === view) {
       return;
+    }
+    if (nextView !== "transactions") {
+      setCreateTransactionRequest(0);
+    }
+    if (nextView !== "budgets") {
+      setCreateBudgetRequest(0);
     }
     const nextPath = pathForView(nextView);
     const currentIndex = view === "not-found" ? 0 : viewOrder.indexOf(view);
@@ -121,6 +128,14 @@ function AppContent() {
           selectedPeriod={selectedPeriod}
           setSelectedPeriod={changePeriod}
           onNavigate={navigate}
+          onCreateTransaction={() => {
+            setCreateTransactionRequest((request) => request + 1);
+            navigate("transactions");
+          }}
+          onCreateBudget={() => {
+            setCreateBudgetRequest((request) => request + 1);
+            navigate("budgets");
+          }}
         />
       ) : null}
       {view === "transactions" ? (
@@ -135,6 +150,7 @@ function AppContent() {
           selectedPeriod={selectedPeriod}
           setSelectedPeriod={changePeriod}
           setNotice={setNotice}
+          createRequestId={createBudgetRequest}
         />
       ) : null}
       {view === "rules" ? (

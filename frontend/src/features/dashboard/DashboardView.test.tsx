@@ -74,6 +74,74 @@ describe("dashboard workflow", () => {
         name: "Download dashboard artifacts",
       }),
     ).toHaveTextContent("Export");
+
+    const actions = screen.getByLabelText("Next actions");
+    expect(
+      within(actions)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["Add entry", "Set budget"]);
+    expect(actions.closest(".dashboard-command-row")).toContainElement(toolbar);
+    expect(document.querySelector(".quick-actions")).not.toBeInTheDocument();
+  });
+
+  it("opens creation forms directly from the dashboard command row", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": { transactions: [] },
+      "/api/budgets": { budgets: [] },
+      "/api/budgets/status": { statuses: [] },
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "June 2026" });
+    await userEvent.click(
+      within(screen.getByLabelText("Next actions")).getByRole("button", {
+        name: "Add entry",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Add transaction" }),
+    ).toHaveAttribute("open");
+  });
+
+  it("opens the selected-period budget form from the dashboard", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/budgets": { budgets: [] },
+      "/api/budgets/status": { statuses: [] },
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "June 2026" });
+    await userEvent.click(
+      within(screen.getByLabelText("Next actions")).getByRole("button", {
+        name: "Set budget",
+      }),
+    );
+
+    const dialog = await screen.findByRole("dialog", { name: "Set budget" });
+    expect(dialog).toHaveAttribute("open");
+    expect(within(dialog).getByLabelText("Month")).toHaveValue("7");
+    expect(within(dialog).getByLabelText("Year")).toHaveValue(2026);
+  });
+
+  it("uses Add entry consistently for every global create command", async () => {
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "June 2026" });
+
+    expect(document.querySelector(".rail-create")).toHaveTextContent(
+      "Add entry",
+    );
+    expect(document.querySelector(".compact-create")).toHaveAccessibleName(
+      "Add entry",
+    );
+    expect(document.querySelector(".drawer-create")).toHaveTextContent(
+      "Add entry",
+    );
   });
 
   it("presents the period as one cashflow story with a quiet attention state", async () => {
@@ -93,6 +161,25 @@ describe("dashboard workflow", () => {
       screen.getByRole("button", { name: "View all activity" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("table")).toBeInTheDocument();
+  });
+
+  it("keeps recent activity and expense mix visible in the analysis pair", async () => {
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+
+    const activityHeading = await screen.findByRole("heading", {
+      name: "Recent activity",
+    });
+    const mixHeading = screen.getByRole("heading", { name: "Expense mix" });
+    const analysisPair = document.querySelector(".dashboard-analysis-pair");
+
+    expect(analysisPair).toContainElement(activityHeading.closest("article"));
+    expect(analysisPair).toContainElement(mixHeading.closest("article"));
+    expect(
+      screen.queryByText("Category mix and reports"),
+    ).not.toBeInTheDocument();
+    expect(mixHeading.closest("details")).toBeNull();
   });
 
   it("groups the supporting cashflow metrics in a semantic definition list", async () => {

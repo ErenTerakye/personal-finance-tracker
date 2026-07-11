@@ -368,19 +368,6 @@
     border-inline-start: 3px solid var(--cash);
   }
 
-  .secondary-analysis {
-    margin-block-start: 1.5rem;
-    border-block: 1px solid var(--rule);
-  }
-
-  .secondary-analysis > summary {
-    min-block-size: var(--tap-target);
-    padding-block: 1rem;
-    color: var(--ink);
-    cursor: pointer;
-    font-weight: var(--font-weight-semibold);
-  }
-
   .budget-summary-panel {
     grid-column: 1 / -1;
   }
@@ -510,8 +497,7 @@
     background: #f4f1e9;
   }
 
-  .rail-navigation ul,
-  .drawer-navigation ul {
+  .rail-navigation ul {
     display: grid;
     gap: 0.35rem;
     margin: 0;
@@ -522,8 +508,7 @@
     box-shadow: none;
   }
 
-  .rail-navigation a,
-  .drawer-navigation a {
+  .rail-navigation a {
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -531,12 +516,9 @@
     min-block-size: 3rem;
     padding-inline: 0.85rem;
     border-radius: var(--radius-sm);
+    color: var(--muted-dark);
     text-decoration: none;
     font-weight: var(--font-weight-semibold);
-  }
-
-  .rail-navigation a {
-    color: var(--muted-dark);
   }
 
   .rail-navigation a:hover {
@@ -584,6 +566,10 @@
   }
 
   .compact-app-bar {
+    display: none;
+  }
+
+  .compact-primary-navigation {
     display: none;
   }
 
@@ -654,7 +640,67 @@
     }
 
     .app-shell > main {
-      padding-block-start: 1.5rem;
+      padding-block: 1.5rem calc(6rem + env(safe-area-inset-bottom));
+    }
+
+    .compact-primary-navigation {
+      position: fixed;
+      inset: auto 0 0;
+      z-index: 20;
+      display: block;
+      padding-block-end: env(safe-area-inset-bottom);
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      border-block-start: 1px solid var(--rule);
+      box-shadow: 0 -0.5rem 1.5rem rgb(5 12 19 / 0.08);
+      backdrop-filter: blur(16px);
+    }
+
+    .bottom-navigation ul {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      max-inline-size: 52rem;
+      min-block-size: 4.5rem;
+      margin: 0 auto;
+      padding: 0.35rem max(0.35rem, env(safe-area-inset-right)) 0.3rem
+        max(0.35rem, env(safe-area-inset-left));
+      list-style: none;
+    }
+
+    .bottom-navigation li {
+      min-inline-size: 0;
+    }
+
+    .bottom-navigation a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+      min-inline-size: 0;
+      min-block-size: 3.75rem;
+      padding-inline: 0.25rem;
+      color: var(--muted);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      line-height: 1.1;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .bottom-navigation a:hover:not([aria-current="page"]) {
+      color: var(--ink);
+      background: color-mix(in srgb, var(--surface-2) 68%, transparent);
+    }
+
+    .bottom-navigation a[aria-current="page"] {
+      color: var(--action);
+      background: color-mix(in srgb, var(--action) 12%, transparent);
+    }
+
+    .bottom-navigation a:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: -2px;
     }
 
     .app-drawer {
@@ -682,7 +728,7 @@
 
     .drawer-sheet {
       display: grid;
-      grid-template-rows: auto auto auto 1fr auto;
+      grid-template-rows: auto auto 1fr;
       gap: 1.25rem;
       inline-size: min(22rem, 86vw);
       block-size: 100svh;
@@ -721,11 +767,6 @@
       color: var(--muted);
     }
 
-    .drawer-navigation a[aria-current="page"] {
-      color: var(--action);
-      background: color-mix(in srgb, var(--action) 12%, transparent);
-    }
-
     .drawer-create {
       inline-size: 100%;
     }
@@ -753,6 +794,12 @@
     }
   }
 
+  @media (pointer: coarse) and (max-width: 63.999rem) {
+    .bottom-navigation a {
+      min-block-size: 3.75rem;
+    }
+  }
+
   @media (forced-colors: active) {
     .app-rail {
       border-inline-end: 1px solid CanvasText;
@@ -760,6 +807,15 @@
 
     .rail-navigation a[aria-current="page"] {
       outline: 2px solid Highlight;
+    }
+
+    .compact-primary-navigation {
+      border-block-start-color: CanvasText;
+    }
+
+    .bottom-navigation a[aria-current="page"] {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
     }
   }
 }

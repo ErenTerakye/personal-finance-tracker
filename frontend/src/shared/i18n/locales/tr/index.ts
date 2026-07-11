@@ -7,7 +7,6 @@ export const tr = {
     openMenu: "Navigasyon menüsünü aç",
     closeMenu: "Navigasyon menüsünü kapat",
     preferences: "Tercihler",
-    addTransaction: "İşlem ekle",
     databaseStorage: "Veritabanı depolama alanı",
     hostedDemoStorage: "Barındırılan demo depolama alanı",
     closeDialog: "İletişim kutusunu kapat",
@@ -78,7 +77,6 @@ export const tr = {
     attentionEmpty:
       "Dikkat gerektiren bir durum yok. Harcamalar bu dönem için belirlenen bütçeler içinde.",
     viewAllActivity: "Tüm hareketleri gör",
-    secondaryAnalysis: "Kategori dağılımı ve raporlar",
     changePeriod: "Kontrol paneli dönemini değiştir",
     toolsLabel: "Kontrol paneli dönem ve dışa aktarma araçları",
     downloadLabel: "Kontrol paneli belgelerini indir",

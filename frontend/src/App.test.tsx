@@ -60,6 +60,71 @@ describe("app composition", () => {
     expect(document.title).toBe("Plan | Personal Finance Tracker");
   });
 
+  it("keeps compact primary navigation separate from drawer utilities", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        media: query,
+        matches: query === "(max-width: 63.999rem)",
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/budgets": { budgets: [] },
+      "/api/budgets/status": { statuses: [] },
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { level: 1 });
+
+    const compactNavigation = document.querySelector<HTMLElement>(
+      ".compact-primary-navigation",
+    );
+    expect(compactNavigation).not.toBeNull();
+
+    const links = within(compactNavigation!).getAllByRole("link");
+    expect(links).toHaveLength(4);
+    expect(links.map((link) => link.textContent)).toEqual([
+      "Overview",
+      "Activity",
+      "Plan",
+      "Automations",
+    ]);
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/",
+      "/transactions",
+      "/budgets",
+      "/rules",
+    ]);
+    expect(links[0]).toHaveAttribute("aria-current", "page");
+
+    const drawer = document.querySelector<HTMLElement>("#app-drawer");
+    expect(drawer).not.toBeNull();
+    expect(
+      within(drawer!).queryByRole("navigation", { hidden: true }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(drawer!).getByRole("button", { name: "Add entry", hidden: true }),
+    ).toBeInTheDocument();
+    expect(within(drawer!).getByText("Preferences")).toBeInTheDocument();
+
+    await userEvent.click(
+      within(compactNavigation!).getByRole("link", {
+        name: "Plan",
+      }),
+    );
+    expect(window.location.pathname).toBe("/budgets");
+    expect(
+      await screen.findByRole("heading", { name: "Budgets" }),
+    ).toBeInTheDocument();
+  });
+
   it("opens the transaction form from the global create command", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
@@ -69,7 +134,7 @@ describe("app composition", () => {
     render(<App />);
     await screen.findByRole("heading", { level: 1 });
     await userEvent.click(
-      screen.getAllByRole("button", { name: "Add transaction" })[0],
+      document.querySelector<HTMLButtonElement>(".rail-create")!,
     );
 
     expect(window.location.pathname).toBe("/transactions");
@@ -92,7 +157,7 @@ describe("app composition", () => {
 
     await userEvent.click(
       within(compactHeader!).getByRole("button", {
-        name: "Add transaction",
+        name: "Add entry",
       }),
     );
     expect(window.location.pathname).toBe("/transactions");

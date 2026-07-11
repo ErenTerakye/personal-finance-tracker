@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { ArrowRight, Download, FileText, ImageDown } from "lucide-react";
+import { Download, FileText, ImageDown, PiggyBank, Plus } from "lucide-react";
 import { artifactUrls } from "../../api/artifacts";
 import { CategoryBars, CashflowTrend } from "../../shared/charts";
 import { PeriodControl } from "../../shared/components/PeriodControl";
@@ -21,10 +21,14 @@ export function DashboardView({
   selectedPeriod,
   setSelectedPeriod,
   onNavigate,
+  onCreateTransaction,
+  onCreateBudget,
 }: {
   selectedPeriod: { month: number; year: number };
   setSelectedPeriod: (period: { month: number; year: number }) => void;
   onNavigate: (view: View) => void;
+  onCreateTransaction: () => void;
+  onCreateBudget: () => void;
 }) {
   const { t, locale, tUpper } = useI18n();
   const dashboard = useDashboard(selectedPeriod.month, selectedPeriod.year);
@@ -87,16 +91,40 @@ export function DashboardView({
                 amount: money(Math.abs(net)),
               })}
         </p>
-        <div
-          className="dashboard-heading-tools dashboard-actions"
-          aria-label={t("dashboard.toolsLabel")}
-        >
-          <PeriodControl
-            label={t("dashboard.changePeriod")}
-            value={selectedPeriod}
-            onChange={setSelectedPeriod}
-          />
-          <ReportMenu month={selectedPeriod.month} year={selectedPeriod.year} />
+        <div className="dashboard-command-row">
+          <div
+            className="dashboard-heading-tools dashboard-actions"
+            aria-label={t("dashboard.toolsLabel")}
+          >
+            <PeriodControl
+              label={t("dashboard.changePeriod")}
+              value={selectedPeriod}
+              onChange={setSelectedPeriod}
+            />
+            <ReportMenu
+              month={selectedPeriod.month}
+              year={selectedPeriod.year}
+            />
+          </div>
+          <div
+            className="dashboard-primary-actions action-cluster"
+            aria-label={t("dashboard.detail.actions")}
+          >
+            <ActionButton
+              icon={Plus}
+              variant="primary"
+              onClick={onCreateTransaction}
+            >
+              {t("common.addEntry")}
+            </ActionButton>
+            <ActionButton
+              icon={PiggyBank}
+              variant="secondary"
+              onClick={onCreateBudget}
+            >
+              {t("common.setBudget")}
+            </ActionButton>
+          </div>
         </div>
       </section>
 
@@ -141,25 +169,6 @@ export function DashboardView({
             })}
           </p>
         </div>
-        <div
-          className="quick-actions"
-          aria-label={t("dashboard.detail.actions")}
-        >
-          <ActionButton
-            icon={ArrowRight}
-            variant="primary"
-            onClick={() => onNavigate("transactions")}
-          >
-            {t("common.addEntry")}
-          </ActionButton>
-          <ActionButton
-            icon={ArrowRight}
-            variant="secondary"
-            onClick={() => onNavigate("budgets")}
-          >
-            {t("common.setBudget")}
-          </ActionButton>
-        </div>
       </section>
 
       <section className="dashboard-lead" aria-label={t("dashboard.title")}>
@@ -188,6 +197,12 @@ export function DashboardView({
             <p className="quiet-state">{t("dashboard.attentionEmpty")}</p>
           )}
         </Panel>
+      </section>
+
+      <section
+        className="analysis-grid dashboard-analysis-pair"
+        aria-label={t("dashboard.title")}
+      >
         <Panel
           title={t("dashboard.sections.activityTitle")}
           detail={t("dashboard.sections.activityDetail")}
@@ -203,10 +218,6 @@ export function DashboardView({
         >
           <ActivityList transactions={data.recent_transactions} />
         </Panel>
-      </section>
-
-      <details className="secondary-analysis deferred-section">
-        <summary>{t("dashboard.secondaryAnalysis")}</summary>
         <Panel
           title={t("dashboard.sections.mixTitle")}
           detail={t("dashboard.sections.mixDetail")}
@@ -216,7 +227,7 @@ export function DashboardView({
             items={categories}
           />
         </Panel>
-      </details>
+      </section>
     </>
   );
 }

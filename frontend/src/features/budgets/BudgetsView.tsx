@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Download, PiggyBank, Trash2, Upload } from "lucide-react";
 import type { BudgetFilters } from "../../api/client";
 import { artifactUrls } from "../../api/artifacts";
@@ -31,10 +31,12 @@ export function BudgetsView({
   selectedPeriod,
   setSelectedPeriod,
   setNotice,
+  createRequestId,
 }: {
   selectedPeriod: { month: number; year: number };
   setSelectedPeriod: (period: { month: number; year: number }) => void;
   setNotice: (notice: string) => void;
+  createRequestId: number;
 }) {
   const [filters, setFilters] = useState<BudgetFilters>(() =>
     readBudgetFilters(selectedPeriod),
@@ -43,6 +45,7 @@ export function BudgetsView({
   const [dialog, setDialog] = useState<BudgetDialog>(null);
   const [pendingDelete, setPendingDelete] = useState<BudgetRecord | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const handledCreateRequest = useRef(0);
   const { t, tUpper } = useI18n();
   const budgetResource = useBudgets(filters, selectedPeriod);
   const budgets = budgetResource.data?.budgets ?? [];
@@ -98,6 +101,12 @@ export function BudgetsView({
       year: selectedPeriod.year,
     }));
   }, [selectedPeriod.month, selectedPeriod.year]);
+
+  useEffect(() => {
+    if (createRequestId <= handledCreateRequest.current) return;
+    handledCreateRequest.current = createRequestId;
+    openCreate();
+  }, [createRequestId]);
 
   function openCreate() {
     setForm(

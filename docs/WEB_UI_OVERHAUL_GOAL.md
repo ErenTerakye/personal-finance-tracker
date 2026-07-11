@@ -174,8 +174,8 @@ The overview is an editorial summary, not a wall of widgets.
    needs attention, the UI says so instead of reserving empty warning space.
 5. **Recent activity:** A short, scannable ledger preview supports a direct path to the full activity
    view.
-6. **Secondary analysis:** Category mix and report downloads are available after the primary story,
-   through disclosure or contextual menus rather than competing above the fold.
+6. **Secondary analysis:** Recent activity and category mix remain visible together in an equal-width
+   responsive layout after the attention queue, while report downloads stay in a contextual menu.
 
 Remove redundant KPI repetition. A metric appears once unless the second occurrence answers a
 different question.

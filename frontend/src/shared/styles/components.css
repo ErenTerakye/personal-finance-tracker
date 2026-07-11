@@ -405,18 +405,6 @@
     align-items: stretch;
   }
 
-  .quick-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.55rem;
-    min-inline-size: 0;
-    align-self: stretch;
-  }
-
-  .quick-actions .button {
-    min-block-size: 100%;
-  }
-
   .dashboard-lead,
   .kpi-grid,
   .analysis-grid {
@@ -431,8 +419,13 @@
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
   }
 
-  .analysis-grid .panel:first-child {
+  .dashboard-priorities .panel:first-child {
     grid-column: 1 / -1;
+  }
+
+  .dashboard-analysis-pair {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
   }
 
   .tracker-grid,

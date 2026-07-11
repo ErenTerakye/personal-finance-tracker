@@ -4,6 +4,36 @@ const colorSchemeStorageKey = "finance-tracker-color-scheme";
 const viewports = [320, 390, 430, 768, 1024, 1280, 1440, 1800, 1920];
 const themeViewports = [390, 1280];
 
+test("compact bottom navigation localizes without duplicating drawer links", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockApi(page);
+  await page.goto("/");
+
+  const navigation = page.locator(".bottom-navigation");
+  await expect(navigation.getByRole("link")).toHaveCount(4);
+  await expect(
+    navigation.getByRole("link", { name: "Overview" }),
+  ).toHaveAttribute("aria-current", "page");
+
+  await openCompactMenu(page, 390);
+  const drawer = page.locator("#app-drawer");
+  await expect(drawer.getByRole("navigation")).toHaveCount(0);
+  await expect(drawer.getByRole("button", { name: "Add entry" })).toBeVisible();
+  await drawer.locator(".lang-toggle").click();
+
+  await expect(
+    navigation.getByRole("link", { name: "Genel Bakış" }),
+  ).toBeVisible();
+  await expect(
+    navigation.getByRole("link", { name: "Hareketler" }),
+  ).toBeVisible();
+  await expect(
+    navigation.getByRole("link", { name: "Otomasyonlar" }),
+  ).toBeVisible();
+});
+
 for (const width of viewports) {
   test.describe(`responsive layout at ${width}px`, () => {
     test.beforeEach(async ({ page }) => {
@@ -593,17 +623,19 @@ async function expectTableModeMatchesContainer(page: Page) {
 }
 
 async function expectMobileNavigationIsCompact(page: Page, width: number) {
-  if (width > 760) {
+  const navigation = page.locator(".bottom-navigation");
+  if (width >= 1024) {
+    await expect(navigation).toHaveCount(0);
     return;
   }
-  await openCompactMenu(page, width);
-  const nav = page.getByRole("navigation", { name: "Primary" });
-  await expect(nav.getByRole("link", { name: "Activity" })).toBeVisible();
+  await expect(
+    navigation.getByRole("link", { name: "Activity" }),
+  ).toBeVisible();
 
-  const layout = await nav.evaluate((node) => {
+  const layout = await navigation.evaluate((node) => {
     const links = [...node.querySelectorAll("a")].map((link) => {
       const rect = link.getBoundingClientRect();
-      return { top: rect.top, width: rect.width, height: rect.height };
+      return { bottom: rect.bottom, width: rect.width, height: rect.height };
     });
     return {
       links,
@@ -611,7 +643,19 @@ async function expectMobileNavigationIsCompact(page: Page, width: number) {
   });
 
   expect(layout.links).toHaveLength(4);
-  expect(layout.links.every(({ height }) => height >= 44)).toBe(true);
+  expect(layout.links.every(({ height }) => height >= 48)).toBe(true);
+  expect(
+    Math.max(...layout.links.map(({ width }) => width)) -
+      Math.min(...layout.links.map(({ width }) => width)),
+  ).toBeLessThanOrEqual(1);
+  expect(
+    new Set(layout.links.map(({ bottom }) => Math.round(bottom))).size,
+  ).toBe(1);
+
+  await openCompactMenu(page, width);
+  const drawer = page.locator("#app-drawer");
+  await expect(drawer.getByRole("navigation")).toHaveCount(0);
+  await expect(drawer.getByRole("button", { name: "Add entry" })).toBeVisible();
   await page.keyboard.press("Escape");
 }
 

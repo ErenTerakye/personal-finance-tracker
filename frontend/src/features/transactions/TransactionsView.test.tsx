@@ -87,7 +87,10 @@ describe("transactions workflow", () => {
       await screen.findByRole("link", { name: /Transactions|Activity/i }),
     );
     await userEvent.click(
-      await screen.findByRole("button", { name: "Add entry" }),
+      within(document.querySelector<HTMLElement>(".page-actions")!).getByRole(
+        "button",
+        { name: "Add entry" },
+      ),
     );
     const dialog = screen.getByRole("dialog", { name: "Add transaction" });
     await userEvent.type(within(dialog).getByLabelText("Amount"), "45.90");

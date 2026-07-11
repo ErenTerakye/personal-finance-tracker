@@ -59,6 +59,7 @@ export function AppShell({
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const drawerTriggerRef = useRef<HTMLButtonElement | null>(null);
   const hostedDemo = isHostedDemo();
+  const compactLayout = useMediaQuery("(max-width: 63.999rem)");
 
   useEffect(() => {
     const drawer = drawerRef.current;
@@ -66,7 +67,9 @@ export function AppShell({
     if (drawerOpen) {
       drawer.showPopover?.();
       window.requestAnimationFrame(() =>
-        drawer.querySelector<HTMLElement>("a[aria-current='page']")?.focus(),
+        drawer
+          .querySelector<HTMLElement>(".drawer-sheet > header button")
+          ?.focus(),
       );
     } else if (drawer.matches(":popover-open")) {
       drawer.hidePopover?.();
@@ -74,11 +77,8 @@ export function AppShell({
     }
   }, [drawerOpen]);
 
-  const navigation = (compact: boolean) => (
-    <nav
-      aria-label={t("common.primaryNavigation")}
-      className={compact ? "drawer-navigation" : "rail-navigation"}
-    >
+  const navigation = (className: string) => (
+    <nav aria-label={t("common.primaryNavigation")} className={className}>
       <ul>
         {viewOrder.map((item) => {
           const Icon = navIcons[item];
@@ -96,7 +96,6 @@ export function AppShell({
                 onClick={(event) => {
                   if (!shouldHandleNavigation(event)) return;
                   event.preventDefault();
-                  setDrawerOpen(false);
                   onNavigate(item);
                 }}
               >
@@ -117,14 +116,14 @@ export function AppShell({
       </a>
       <aside className="app-rail" aria-label={t("common.workspaceNavigation")}>
         <Brand onNavigate={onNavigate} />
-        {navigation(false)}
+        {!compactLayout && navigation("rail-navigation")}
         <button
           className="rail-create button"
           type="button"
           onClick={onCreateTransaction}
         >
           <Plus aria-hidden="true" size={19} />
-          <span>{t("common.addTransaction")}</span>
+          <span>{t("common.addEntry")}</span>
         </button>
         <div className="rail-utilities">
           <span
@@ -163,13 +162,11 @@ export function AppShell({
         <button
           className="button primary compact-create"
           type="button"
-          aria-label={t("common.addTransaction")}
+          aria-label={t("common.addEntry")}
           onClick={onCreateTransaction}
         >
           <Plus aria-hidden="true" />
-          <span className="compact-create-label">
-            {t("common.addTransaction")}
-          </span>
+          <span className="compact-create-label">{t("common.addEntry")}</span>
         </button>
       </header>
 
@@ -197,7 +194,6 @@ export function AppShell({
               <X aria-hidden="true" />
             </button>
           </header>
-          {navigation(true)}
           <button
             className="button drawer-create"
             type="button"
@@ -207,7 +203,7 @@ export function AppShell({
             }}
           >
             <Plus aria-hidden="true" size={19} />
-            {t("common.addTransaction")}
+            {t("common.addEntry")}
           </button>
           <footer>
             <span>
@@ -219,6 +215,15 @@ export function AppShell({
           </footer>
         </div>
       </div>
+
+      {compactLayout && (
+        <div
+          className="compact-primary-navigation"
+          inert={drawerOpen || undefined}
+        >
+          {navigation("bottom-navigation")}
+        </div>
+      )}
 
       <main
         id="content"
@@ -282,6 +287,26 @@ function isHostedDemo(): boolean {
   return !["localhost", "127.0.0.1", "[::1]"].includes(
     window.location.hostname,
   );
+}
+
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() =>
+    typeof window === "undefined" || typeof window.matchMedia !== "function"
+      ? false
+      : window.matchMedia(query).matches,
+  );
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mediaQuery = window.matchMedia(query);
+    const updateMatches = (event: MediaQueryListEvent) =>
+      setMatches(event.matches);
+    setMatches(mediaQuery.matches);
+    mediaQuery.addEventListener("change", updateMatches);
+    return () => mediaQuery.removeEventListener("change", updateMatches);
+  }, [query]);
+
+  return matches;
 }
 
 function shouldHandleNavigation(
