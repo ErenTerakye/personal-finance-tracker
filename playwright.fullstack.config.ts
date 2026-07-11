@@ -10,8 +10,9 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command:
-      ".venv/bin/finance-tracker web --host 127.0.0.1 --port 8010 --db-path build/e2e.sqlite3",
+    command: process.env.CI
+      ? "finance-tracker web --host 127.0.0.1 --port 8010 --db-path build/e2e.sqlite3"
+      : ".venv/bin/finance-tracker web --host 127.0.0.1 --port 8010 --db-path build/e2e.sqlite3",
     url: "http://127.0.0.1:8010/api/settings",
     reuseExistingServer: false,
   },
