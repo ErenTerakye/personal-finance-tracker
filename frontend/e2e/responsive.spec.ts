@@ -23,7 +23,9 @@ for (const width of viewports) {
       await expect(
         page.getByRole("button", { name: /Choose period/ }),
       ).toBeVisible();
-      await page.getByRole("button", { name: "Reports and exports" }).click();
+      await page
+        .getByRole("button", { name: "Download dashboard artifacts" })
+        .click();
       await expect(
         page.getByRole("link", { name: "Month report" }),
       ).toBeVisible();
@@ -391,6 +393,7 @@ async function expectDashboardFitsViewport(page: Page) {
     ".workspace",
     ".page-heading",
     ".page-actions",
+    ".dashboard-heading-tools",
     ".period-control",
     ".period-control > button",
     ".dashboard-summary",

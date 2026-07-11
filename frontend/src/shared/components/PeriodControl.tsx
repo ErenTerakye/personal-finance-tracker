@@ -35,6 +35,20 @@ export function PeriodControl({
     closePopover(popoverId);
   }
 
+  const periodTrigger = (
+    <button
+      className="period-chip"
+      type="button"
+      popoverTarget={popoverId}
+      aria-label={t("periodControl.choosePeriod", {
+        period: periodLabel(value.month, value.year),
+      })}
+    >
+      <CalendarDays aria-hidden="true" size={17} />
+      <span>{periodLabel(value.month, value.year)}</span>
+    </button>
+  );
+
   return (
     <div className="period-control" aria-label={label}>
       <IconButton
@@ -45,17 +59,7 @@ export function PeriodControl({
         variant="secondary"
         onClick={() => onChange(previous)}
       />
-      <button
-        className="period-chip"
-        type="button"
-        popoverTarget={popoverId}
-        aria-label={t("periodControl.choosePeriod", {
-          period: periodLabel(value.month, value.year),
-        })}
-      >
-        <CalendarDays aria-hidden="true" size={17} />
-        <span>{periodLabel(value.month, value.year)}</span>
-      </button>
+      {periodTrigger}
       <IconButton
         icon={ChevronRight}
         label={t("periodControl.nextMonth", {

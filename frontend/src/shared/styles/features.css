@@ -1,4 +1,50 @@
 @layer features {
+  .dashboard-context-header {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 0;
+  }
+
+  .dashboard-context-header > .eyebrow,
+  .dashboard-context-header > .dashboard-narrative {
+    margin: 0;
+  }
+
+  .dashboard-context-header .dashboard-narrative {
+    margin-block-start: 0.5rem;
+  }
+
+  .dashboard-heading-tools {
+    margin-block-start: 1rem;
+  }
+
+  .dashboard-heading-tools .period-control {
+    gap: 0;
+    overflow: clip;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .dashboard-heading-tools .period-control > .icon-button,
+  .dashboard-heading-tools .period-control > .period-chip {
+    min-block-size: calc(var(--tap-target) + 0.25rem);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .dashboard-heading-tools .period-control > .period-chip {
+    border-inline: 1px solid var(--rule);
+  }
+
+  .dashboard-heading-tools .period-control > :focus-visible {
+    position: relative;
+    z-index: 1;
+  }
+
   @container workspace-main (min-width: 44rem) {
     .kpi-grid {
       grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
@@ -50,6 +96,16 @@
 
     .artifact-actions {
       grid-template-columns: 1fr;
+    }
+
+    .dashboard-actions {
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .dashboard-actions .report-menu,
+    .dashboard-actions .report-menu > button {
+      inline-size: 100%;
     }
 
     .filter-actions {

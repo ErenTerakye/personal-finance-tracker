@@ -6,7 +6,6 @@ import { PeriodControl } from "../../shared/components/PeriodControl";
 import {
   ActivityList,
   BudgetPressureList,
-  PageHeader,
   Panel,
 } from "../../shared/components/lists";
 import { ActionButton, DownloadLink } from "../../shared/components/actions";
@@ -75,31 +74,31 @@ export function DashboardView({
 
   return (
     <>
-      <PageHeader
-        eyebrow={tUpper("dashboard.eyebrow")}
-        title={displayPeriodLabel}
-        summary={
-          net >= 0
+      <section
+        className="page-heading dashboard-heading dashboard-context-header"
+        aria-labelledby="page-title"
+      >
+        <p className="eyebrow">{tUpper("dashboard.eyebrow")}</p>
+        <h1 id="page-title">{displayPeriodLabel}</h1>
+        <p className="dashboard-narrative">
+          {net >= 0
             ? t("dashboard.narrative.positive", { amount: money(net) })
             : t("dashboard.narrative.negative", {
                 amount: money(Math.abs(net)),
-              })
-        }
-        className="dashboard-heading"
-        actions={
-          <div className="dashboard-actions">
-            <PeriodControl
-              label={t("dashboard.changePeriod")}
-              value={selectedPeriod}
-              onChange={setSelectedPeriod}
-            />
-            <ReportMenu
-              month={selectedPeriod.month}
-              year={selectedPeriod.year}
-            />
-          </div>
-        }
-      />
+              })}
+        </p>
+        <div
+          className="dashboard-heading-tools dashboard-actions"
+          aria-label={t("dashboard.toolsLabel")}
+        >
+          <PeriodControl
+            label={t("dashboard.changePeriod")}
+            value={selectedPeriod}
+            onChange={setSelectedPeriod}
+          />
+          <ReportMenu month={selectedPeriod.month} year={selectedPeriod.year} />
+        </div>
+      </section>
 
       <section
         className="dashboard-summary"
@@ -119,15 +118,19 @@ export function DashboardView({
                 )}
           </p>
           <dl className="cashflow-comparison">
-            <div>
+            <div className="cashflow-metric cashflow-metric-income">
               <dt>{t("dashboard.kpi.income")}</dt>
               <dd>{money(data.report.total_income)}</dd>
             </div>
-            <div>
+            <div className="cashflow-metric cashflow-metric-expenses">
               <dt>{t("dashboard.kpi.expenses")}</dt>
               <dd>{money(data.report.total_expenses)}</dd>
             </div>
-            <div>
+            <div
+              className={`cashflow-metric cashflow-metric-savings ${
+                Number(data.savings_rate) < 0 ? "negative" : "positive"
+              }`}
+            >
               <dt>{t("dashboard.kpi.savingsRate")}</dt>
               <dd>{percent(data.savings_rate)}</dd>
             </div>
@@ -223,9 +226,14 @@ function ReportMenu({ month, year }: { month: number; year: number }) {
   const { t } = useI18n();
   return (
     <div className="report-menu">
-      <button className="button secondary" type="button" popoverTarget={id}>
+      <button
+        className="button secondary"
+        type="button"
+        popoverTarget={id}
+        aria-label={t("dashboard.downloadLabel")}
+      >
         <Download aria-hidden="true" size={18} />
-        <span>{t("dashboard.reportMenu")}</span>
+        <span>{t("dashboard.exportAction")}</span>
       </button>
       <div
         className="artifact-popover"

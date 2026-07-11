@@ -9,7 +9,7 @@
   }
 
   .report-menu {
-    inline-size: 100%;
+    inline-size: fit-content;
   }
 
   .report-menu > button {
@@ -30,6 +30,7 @@
     border: 1px solid var(--rule);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
+    position-try-fallbacks: flip-block, flip-inline;
   }
 
   @supports (position-area: block-end) {
@@ -119,7 +120,9 @@
   }
 
   .dashboard-actions {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 28rem) max-content;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .artifact-actions {
@@ -278,6 +281,7 @@
   }
 
   .period-chip {
+    anchor-name: --period-picker;
     min-inline-size: 0;
     padding-inline: 0.85rem;
     color: var(--ink);
@@ -298,6 +302,17 @@
     border: 1px solid var(--rule);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
+    position-try-fallbacks: flip-block, flip-inline;
+  }
+
+  @supports (position-area: block-end) {
+    .period-popover {
+      position: fixed;
+      position-anchor: --period-picker;
+      position-area: block-end span-inline-end;
+      inset: auto;
+      margin-block-start: 0.5rem;
+    }
   }
 
   .period-picker {

@@ -111,6 +111,7 @@
     .panel,
     .filter-bar,
     .kpi-card,
+    .balance-story,
     .button,
     .icon-button,
     .brand-mark {
@@ -118,9 +119,14 @@
       box-shadow: none;
     }
 
-    .dashboard-summary .kpi-card:first-child {
+    .dashboard-summary .kpi-card:first-child,
+    .balance-story {
       color: CanvasText;
       background: Canvas;
+    }
+
+    .cashflow-metric::before {
+      background: CanvasText;
     }
 
     .chart-line,
@@ -219,10 +225,14 @@
   }
 
   .balance-story {
+    container: balance-story / inline-size;
     grid-column: 1 / -1;
+    min-inline-size: 0;
     padding: clamp(1.25rem, 4cqi, 2.75rem);
     background: linear-gradient(135deg, var(--surface), var(--surface-2));
-    border-block: 1px solid var(--rule-strong);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+    overflow: clip;
   }
 
   .balance-story > strong {
@@ -233,6 +243,8 @@
     font-size: clamp(2.6rem, 9cqi, 5.5rem);
     font-weight: 600;
     letter-spacing: -0.055em;
+    line-height: var(--line-tight);
+    overflow-wrap: anywhere;
   }
 
   .balance-story.positive > strong {
@@ -243,7 +255,77 @@
     color: var(--expenses);
   }
 
-  .cashflow-comparison,
+  .cashflow-comparison {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.65rem;
+    margin-block-start: 1.5rem;
+  }
+
+  .cashflow-comparison > div {
+    --metric-accent: var(--muted);
+
+    position: relative;
+    min-inline-size: 0;
+    padding-block: clamp(0.65rem, 2cqi, 0.9rem);
+    padding-inline: clamp(1rem, 3cqi, 1.35rem) 0;
+  }
+
+  .cashflow-metric::before {
+    position: absolute;
+    inset-block: 0.65rem;
+    inset-inline-start: 0;
+    inline-size: 0.3rem;
+    background: var(--metric-accent);
+    border-radius: 999px;
+    content: "";
+  }
+
+  .cashflow-metric-income {
+    --metric-accent: var(--cash);
+  }
+
+  .cashflow-metric-expenses,
+  .cashflow-metric-savings.negative {
+    --metric-accent: var(--expenses);
+  }
+
+  .cashflow-metric-savings.positive {
+    --metric-accent: var(--cash);
+  }
+
+  .cashflow-comparison :is(dt, dd) {
+    margin: 0;
+  }
+
+  .cashflow-comparison dt {
+    color: var(--muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .cashflow-comparison dd {
+    margin-block-start: 0.25rem;
+    color: var(--metric-accent);
+    font-family: var(--font-mono);
+    font-size: clamp(1.1rem, 5cqi, var(--font-size-xl));
+    font-weight: 600;
+    line-height: var(--line-tight);
+    overflow-wrap: anywhere;
+  }
+
+  .balance-story > p:last-child {
+    margin-block: 0;
+    padding-block-start: 1rem;
+    color: var(--muted);
+    border-block-start: 1px solid var(--rule);
+  }
+
+  @container balance-story (min-width: 36rem) {
+    .cashflow-comparison {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
   .budget-totals {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
@@ -253,24 +335,20 @@
     border-block: 1px solid var(--rule);
   }
 
-  .cashflow-comparison > div,
   .budget-totals > div {
     padding: 1rem;
     background: var(--surface);
   }
 
-  .cashflow-comparison :is(dt, dd),
   .budget-totals :is(dt, dd) {
     margin: 0;
   }
 
-  .cashflow-comparison dt,
   .budget-totals dt {
     color: var(--muted);
     font-size: var(--font-size-sm);
   }
 
-  .cashflow-comparison dd,
   .budget-totals dd {
     margin-block-start: 0.25rem;
     color: var(--ink);
