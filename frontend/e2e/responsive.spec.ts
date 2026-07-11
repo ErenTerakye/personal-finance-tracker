@@ -69,7 +69,11 @@ for (const width of viewports) {
         ".dashboard-actions",
         ".artifact-actions .button",
       ]);
-      await expectQuickActionsStacked(page);
+      if (width <= 430 || width === 1024) {
+        await expectQuickActionsStacked(page);
+      } else {
+        await expectQuickActionsSideBySide(page);
+      }
       await expectThemeToggleIconCentered(page);
       await expectMobileNavigationIsCompact(page, width);
       await expectAdaptiveCompactCommandBar(page, width);
@@ -108,7 +112,7 @@ for (const width of viewports) {
       await expect(page.getByRole("button", { name: "Edit" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Delete" })).toBeVisible();
 
-      await page.getByRole("button", { name: "Add entry" }).click();
+      await page.locator("#content").getByRole("button", { name: "Add entry" }).click();
       const dialog = page.getByRole("dialog", { name: "Add transaction" });
       await expect(dialog).toBeVisible();
       await expectDialogFitsViewport(page, dialog);
@@ -434,8 +438,8 @@ async function expectDashboardFitsViewport(page: Page) {
 }
 
 async function expectQuickActionsStacked(page: Page) {
-  const addEntry = page.getByRole("button", { name: "Add entry" });
-  const setBudget = page.getByRole("button", { name: "Set budget" });
+  const addEntry = page.locator(".dashboard-primary-actions").getByRole("button", { name: "Add entry" });
+  const setBudget = page.locator(".dashboard-primary-actions").getByRole("button", { name: "Set budget" });
   const [addBox, budgetBox] = await Promise.all([
     addEntry.boundingBox(),
     setBudget.boundingBox(),
@@ -446,6 +450,20 @@ async function expectQuickActionsStacked(page: Page) {
   expect(budgetBox!.y).toBeGreaterThan(addBox!.y + addBox!.height);
   expect(Math.abs(budgetBox!.x - addBox!.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(budgetBox!.width - addBox!.width)).toBeLessThanOrEqual(1);
+}
+
+async function expectQuickActionsSideBySide(page: Page) {
+  const addEntry = page.locator(".dashboard-primary-actions").getByRole("button", { name: "Add entry" });
+  const setBudget = page.locator(".dashboard-primary-actions").getByRole("button", { name: "Set budget" });
+  const [addBox, budgetBox] = await Promise.all([
+    addEntry.boundingBox(),
+    setBudget.boundingBox(),
+  ]);
+
+  expect(addBox).not.toBeNull();
+  expect(budgetBox).not.toBeNull();
+  expect(Math.abs(budgetBox!.y - addBox!.y)).toBeLessThanOrEqual(1);
+  expect(budgetBox!.x).toBeGreaterThan(addBox!.x + addBox!.width);
 }
 
 async function expectElementsFitViewport(page: Page, selectors: string[]) {
@@ -545,7 +563,7 @@ async function expectAdaptiveCompactCommandBar(page: Page, width: number) {
     name: "Open navigation menu",
   });
   const brand = compactBar.getByRole("link", { name: "Finance Tracker" });
-  const create = compactBar.getByRole("button", { name: "Add transaction" });
+  const create = compactBar.getByRole("button", { name: "Add entry" });
   const label = compactBar.locator(".compact-create-label");
   const brandName = brand.locator("strong");
 

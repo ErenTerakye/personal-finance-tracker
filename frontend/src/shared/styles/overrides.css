@@ -4,12 +4,32 @@
     view-transition-name: none; /* Disable full-document snapshotting to avoid header layout shifts */
   }
 
-  .app-header {
-    view-transition-name: app-header;
-  }
-
   main {
     view-transition-name: main-content;
+  }
+
+  .compact-app-bar {
+    view-transition-name: compact-app-bar;
+  }
+
+  .compact-primary-navigation {
+    view-transition-name: compact-primary-navigation;
+  }
+
+  .app-rail {
+    view-transition-name: app-rail;
+  }
+
+  /* Keep layout elements stationary and on top during view transitions */
+  ::view-transition-group(compact-primary-navigation),
+  ::view-transition-group(compact-app-bar),
+  ::view-transition-group(app-rail) {
+    animation: none;
+    z-index: 30;
+  }
+
+  ::view-transition-group(main-content) {
+    z-index: 1;
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -509,6 +529,8 @@
   }
 
   .rail-navigation a {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -521,6 +543,15 @@
     font-weight: var(--font-weight-semibold);
   }
 
+  .rail-navigation a::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    content: "";
+    background: transparent;
+  }
+
   .rail-navigation a:hover {
     color: var(--ink-dark);
     background: color-mix(in srgb, white 7%, transparent);
@@ -528,7 +559,11 @@
 
   .rail-navigation a[aria-current="page"] {
     color: #fff;
+  }
+
+  .rail-navigation a[aria-current="page"]::before {
     background: color-mix(in srgb, var(--action-light) 68%, #12202c);
+    view-transition-name: active-nav-indicator;
   }
 
   .rail-create {
@@ -671,6 +706,8 @@
     }
 
     .bottom-navigation a {
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -688,6 +725,15 @@
       text-decoration: none;
     }
 
+    .bottom-navigation a::before {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      content: "";
+      background: transparent;
+    }
+
     .bottom-navigation a:hover:not([aria-current="page"]) {
       color: var(--ink);
       background: color-mix(in srgb, var(--surface-2) 68%, transparent);
@@ -695,7 +741,11 @@
 
     .bottom-navigation a[aria-current="page"] {
       color: var(--action);
+    }
+
+    .bottom-navigation a[aria-current="page"]::before {
       background: color-mix(in srgb, var(--action) 12%, transparent);
+      view-transition-name: active-nav-indicator;
     }
 
     .bottom-navigation a:focus-visible {
