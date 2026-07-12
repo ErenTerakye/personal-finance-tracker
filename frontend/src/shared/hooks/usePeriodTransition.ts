@@ -48,15 +48,26 @@ export function usePeriodTransition<T>(
     const reduceMotion = window.matchMedia?.(
       "(prefers-reduced-motion: reduce)",
     ).matches;
+    const compactLayout = window.matchMedia?.("(max-width: 63.999rem)").matches;
 
-    if (!presented || !direction || !startViewTransition || reduceMotion) {
+    if (
+      !presented ||
+      !direction ||
+      !startViewTransition ||
+      reduceMotion ||
+      compactLayout
+    ) {
       commit();
       return;
     }
 
-    startViewTransition.call(document, {
+    document.documentElement.classList.add("period-view-transition");
+    const transition = startViewTransition.call(document, {
       update: () => flushSync(commit),
       types: [`period-${direction}`],
+    });
+    transition.finished.finally(() => {
+      document.documentElement.classList.remove("period-view-transition");
     });
   }, [requestedKey, requestedPeriod, resource, presented]);
 

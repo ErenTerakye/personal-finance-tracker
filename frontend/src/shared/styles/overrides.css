@@ -1,16 +1,65 @@
 @layer overrides {
-  /*
-   * Keep persistent application chrome out of view-transition snapshots.
-   * Snapshotting a backdrop-filter freezes its composited backdrop, which
-   * makes the compact bars briefly lose their glass effect during period
-   * changes. Only content that actually changes receives a transition name.
-   */
+  /* Disable the implicit root snapshot and name only deliberate layers. */
   html {
     view-transition-name: none;
   }
 
   main {
     view-transition-name: main-content;
+  }
+
+  /* Period updates animate their named children, not the whole route. */
+  html.period-view-transition main {
+    view-transition-name: none;
+  }
+
+  .compact-app-bar {
+    view-transition-name: compact-app-bar;
+  }
+
+  .compact-primary-navigation {
+    view-transition-name: compact-primary-navigation;
+  }
+
+  .app-rail {
+    view-transition-name: app-rail;
+  }
+
+  /*
+   * View-transition snapshots render in the top layer, above normal z-index
+   * stacking. Promote persistent chrome too so content snapshots cannot cover
+   * it, and recreate translucent compositing on the transition group instead
+   * of relying on a frozen backdrop-filter snapshot.
+   */
+  ::view-transition-group(compact-primary-navigation),
+  ::view-transition-group(compact-app-bar),
+  ::view-transition-group(app-rail) {
+    z-index: 30;
+    animation: none;
+  }
+
+  ::view-transition-image-pair(compact-primary-navigation),
+  ::view-transition-image-pair(compact-app-bar) {
+    isolation: isolate;
+    backdrop-filter: blur(16px);
+  }
+
+  ::view-transition-image-pair(compact-primary-navigation) {
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+  }
+
+  ::view-transition-image-pair(compact-app-bar) {
+    background: color-mix(in srgb, var(--paper) 90%, transparent);
+  }
+
+  ::view-transition-old(compact-primary-navigation),
+  ::view-transition-new(compact-primary-navigation),
+  ::view-transition-old(compact-app-bar),
+  ::view-transition-new(compact-app-bar),
+  ::view-transition-old(app-rail),
+  ::view-transition-new(app-rail) {
+    mix-blend-mode: normal;
+    animation: none;
   }
 
   ::view-transition-group(main-content) {

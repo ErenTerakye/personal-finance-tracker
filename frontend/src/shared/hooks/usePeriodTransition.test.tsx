@@ -73,7 +73,9 @@ describe("usePeriodTransition", () => {
   });
 
   it("updates without a transition for reduced motion or same-period data", () => {
-    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(prefers-reduced-motion: reduce)",
+    }));
     const startViewTransition = installViewTransition();
     const { result, rerender } = renderHook(
       ({ period, resource }: Props) => usePeriodTransition(period, resource),
@@ -95,6 +97,30 @@ describe("usePeriodTransition", () => {
     });
 
     expect(result.current.data).toBe("filtered");
+    expect(startViewTransition).not.toHaveBeenCalled();
+  });
+
+  it("keeps compact glass navigation live during period updates", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 63.999rem)",
+    }));
+    const startViewTransition = installViewTransition();
+    const { result, rerender } = renderHook(
+      ({ period, resource }: Props) => usePeriodTransition(period, resource),
+      {
+        initialProps: {
+          period: { month: 6, year: 2026 },
+          resource: success("June"),
+        },
+      },
+    );
+
+    rerender({
+      period: { month: 7, year: 2026 },
+      resource: success("July"),
+    });
+
+    expect(result.current.data).toBe("July");
     expect(startViewTransition).not.toHaveBeenCalled();
   });
 });
