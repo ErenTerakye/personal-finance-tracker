@@ -50,7 +50,7 @@ export function PeriodControl({
   );
 
   return (
-    <div className="period-control" aria-label={label}>
+    <div className="period-control" role="group" aria-label={label}>
       <IconButton
         icon={ChevronLeft}
         label={t("periodControl.prevMonth", {

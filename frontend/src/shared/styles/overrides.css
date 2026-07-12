@@ -158,25 +158,27 @@
   }
 
   .activity-workspace {
+    container: activity-workspace / inline-size;
     display: grid;
     gap: 1rem;
   }
 
   .activity-tools {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-items: end;
     gap: 0.75rem;
   }
 
   .transaction-search {
-    flex: 1 1 20rem;
+    min-inline-size: 0;
   }
 
   .search-control {
     display: flex;
     align-items: center;
     gap: 0.6rem;
+    block-size: var(--tap-target);
     min-block-size: var(--tap-target);
     padding-inline: 0.8rem;
     background: var(--surface);
@@ -186,20 +188,33 @@
 
   .search-control input {
     flex: 1;
+    block-size: 100%;
     min-inline-size: 0;
+    min-block-size: 0;
     border: 0;
     background: transparent;
   }
 
-  .transaction-filter-disclosure {
-    border-block: 1px solid var(--rule);
-    padding-block: 0.75rem;
+  .transaction-filter-toggle {
+    inline-size: 100%;
+    block-size: var(--tap-target);
+    min-block-size: var(--tap-target);
+    font-weight: var(--font-weight-semibold);
   }
 
-  .transaction-filter-disclosure > summary {
-    min-block-size: var(--tap-target);
-    cursor: pointer;
-    font-weight: var(--font-weight-semibold);
+  .transaction-filter-panel,
+  .active-filter-summary {
+    grid-column: 1 / -1;
+  }
+
+  @container activity-workspace (min-width: 40rem) {
+    .activity-tools {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .transaction-filter-toggle {
+      inline-size: fit-content;
+    }
   }
 
   .active-filter-summary {
@@ -219,10 +234,6 @@
     background: color-mix(in srgb, var(--action) 10%, transparent);
     border-radius: 99rem;
     font-size: var(--font-size-sm);
-  }
-
-  .transaction-ledger {
-    border-block-start: 1px solid var(--rule-strong);
   }
 
   .data-menu {

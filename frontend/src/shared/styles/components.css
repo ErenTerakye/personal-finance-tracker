@@ -274,10 +274,33 @@
     display: grid;
     grid-template-columns: var(--tap-target) minmax(0, 1fr) var(--tap-target);
     align-items: center;
-    gap: 0.35rem;
+    gap: 0;
     inline-size: 100%;
     min-inline-size: 0;
     max-inline-size: 100%;
+    overflow: clip;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .period-control > .icon-button,
+  .period-control > .period-chip {
+    min-block-size: calc(var(--tap-target) + 0.25rem);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .period-control > .period-chip {
+    border-inline: 1px solid var(--rule);
+  }
+
+  .period-control > :focus-visible {
+    position: relative;
+    z-index: 1;
   }
 
   .period-chip {
@@ -285,8 +308,6 @@
     min-inline-size: 0;
     padding-inline: 0.85rem;
     color: var(--ink);
-    background: var(--surface);
-    border-color: var(--rule);
     white-space: nowrap;
   }
 
@@ -499,9 +520,16 @@
 
   .filter-actions {
     display: flex;
+    grid-column: 1 / -1;
     align-items: center;
     gap: 0.45rem;
     justify-content: flex-end;
+  }
+
+  @container filter-bar (max-width: 36rem) {
+    .filter-actions .button {
+      inline-size: 100%;
+    }
   }
 
   .field {

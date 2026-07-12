@@ -1,8 +1,8 @@
 import { ListFilter, RotateCcw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { TransactionFilters } from "../../../api/client";
 import type { TransactionType } from "../../../types";
-import { IconButton } from "../../../shared/components/actions";
+import { ActionButton } from "../../../shared/components/actions";
 import { PeriodControl } from "../../../shared/components/PeriodControl";
 import { Field, FilterBar } from "../../../shared/components/fields";
 import { periodLabel } from "../../../shared/format/periods";
@@ -19,6 +19,8 @@ export function TransactionFilterForm({
   onChange: (filters: TransactionFilters) => void;
 }) {
   const [categorySearch, setCategorySearch] = useState(filters.category || "");
+  const [isOpen, setIsOpen] = useState(false);
+  const panelId = useId();
   const debouncedCategory = useDebounce(categorySearch, 250);
   const { t } = useI18n();
 
@@ -56,66 +58,80 @@ export function TransactionFilterForm({
   }
 
   return (
-    <details className="transaction-filter-disclosure">
-      <summary className="button secondary">
+    <>
+      <button
+        className="button secondary transaction-filter-toggle"
+        type="button"
+        aria-controls={panelId}
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((open) => !open)}
+      >
         <ListFilter aria-hidden="true" size={18} />
         <span>{t("transactions.filters.open")}</span>
-      </summary>
-      <FilterBar
-        title={t("transactions.filterTitle")}
-        summary={t("transactions.filterSummary", {
-          period: periodLabel(period.month, period.year),
-        })}
-      >
-        <form
-          className="filter-form"
-          aria-label={t("transactions.filterAria")}
-          onSubmit={(event) => {
-            event.preventDefault();
-          }}
-        >
-          <PeriodControl
-            label={t("transactions.filterPeriod")}
-            value={period}
-            onChange={(nextPeriod) => onChange({ ...filters, ...nextPeriod })}
-          />
-          <Field id="filter-category" label={t("common.category")}>
-            <input
-              id="filter-category"
-              type="search"
-              list="category-suggestions"
-              value={categorySearch}
-              onChange={(event) => setCategorySearch(event.target.value)}
-            />
-          </Field>
-          <Field id="filter-type" label={t("common.type")}>
-            <select
-              id="filter-type"
-              value={filters.transaction_type}
-              onChange={(event) =>
-                onChange({
-                  ...filters,
-                  transaction_type: event.target.value as TransactionType | "",
-                })
-              }
+      </button>
+      {isOpen ? (
+        <div className="transaction-filter-panel" id={panelId}>
+          <FilterBar
+            title={t("transactions.filterTitle")}
+            summary={t("transactions.filterSummary", {
+              period: periodLabel(period.month, period.year),
+            })}
+          >
+            <form
+              className="filter-form"
+              aria-label={t("transactions.filterAria")}
+              onSubmit={(event) => {
+                event.preventDefault();
+              }}
             >
-              <option value="">{t("common.all")}</option>
-              <option value="expense">{t("common.expense")}</option>
-              <option value="income">{t("common.income")}</option>
-            </select>
-          </Field>
-          <div className="filter-actions">
-            {hasActiveFilters ? (
-              <IconButton
-                icon={RotateCcw}
-                label={t("common.resetFilters")}
-                variant="ghost"
-                onClick={resetFilters}
+              <PeriodControl
+                label={t("transactions.filterPeriod")}
+                value={period}
+                onChange={(nextPeriod) =>
+                  onChange({ ...filters, ...nextPeriod })
+                }
               />
-            ) : null}
-          </div>
-        </form>
-      </FilterBar>
-    </details>
+              <Field id="filter-category" label={t("common.category")}>
+                <input
+                  id="filter-category"
+                  type="search"
+                  list="category-suggestions"
+                  value={categorySearch}
+                  onChange={(event) => setCategorySearch(event.target.value)}
+                />
+              </Field>
+              <Field id="filter-type" label={t("common.type")}>
+                <select
+                  id="filter-type"
+                  value={filters.transaction_type}
+                  onChange={(event) =>
+                    onChange({
+                      ...filters,
+                      transaction_type: event.target.value as
+                        TransactionType | "",
+                    })
+                  }
+                >
+                  <option value="">{t("common.all")}</option>
+                  <option value="expense">{t("common.expense")}</option>
+                  <option value="income">{t("common.income")}</option>
+                </select>
+              </Field>
+              <div className="filter-actions">
+                {hasActiveFilters ? (
+                  <ActionButton
+                    icon={RotateCcw}
+                    variant="ghost"
+                    onClick={resetFilters}
+                  >
+                    {t("common.resetFilters")}
+                  </ActionButton>
+                ) : null}
+              </div>
+            </form>
+          </FilterBar>
+        </div>
+      ) : null}
+    </>
   );
 }

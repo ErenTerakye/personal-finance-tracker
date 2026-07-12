@@ -56,9 +56,18 @@ describe("transactions workflow", () => {
     expect(screen.getByText("Salary")).toBeInTheDocument();
     expect(screen.queryByText("Groceries")).not.toBeInTheDocument();
     await userEvent.click(
-      document.querySelector(".transaction-filter-disclosure summary")!,
+      screen.getByRole("button", { name: "Advanced filters" }),
     );
     expect(screen.getByLabelText("Transaction filter period")).toBeVisible();
+    await userEvent.type(
+      within(
+        document.querySelector<HTMLElement>(".transaction-filter-panel")!,
+      ).getByLabelText("Category"),
+      "Food",
+    );
+    expect(
+      await screen.findByRole("button", { name: "Reset filters" }),
+    ).toBeVisible();
   });
 
   it("creates a transaction from a dialog and announces success", async () => {
@@ -87,10 +96,9 @@ describe("transactions workflow", () => {
       await screen.findByRole("link", { name: /Transactions|Activity/i }),
     );
     await userEvent.click(
-      within(document.querySelector<HTMLElement>(".page-actions")!).getByRole(
-        "button",
-        { name: "Add entry" },
-      ),
+      within(
+        document.querySelector<HTMLElement>(".compact-app-bar")!,
+      ).getByRole("button", { name: "Add entry" }),
     );
     const dialog = screen.getByRole("dialog", { name: "Add transaction" });
     await userEvent.type(within(dialog).getByLabelText("Amount"), "45.90");

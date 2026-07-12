@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Download, Plus, Search, Trash2, Upload } from "lucide-react";
+import { Download, Search, Trash2, Upload } from "lucide-react";
 import type { TransactionFilters } from "../../api/client";
 import { artifactUrls } from "../../api/artifacts";
 import { CsvImportDialog } from "../../shared/components/CsvImportDialog";
@@ -109,6 +109,13 @@ export function TransactionsView({
     transactionResource.refetch();
   });
 
+  function openCreate() {
+    setForm(defaultTransaction());
+    setEditingId(null);
+    saveMutation.reset();
+    setDialog("create");
+  }
+
   useEffect(() => {
     setFilters((current) => ({
       ...current,
@@ -128,13 +135,6 @@ export function TransactionsView({
     handledCreateRequest.current = createRequestId;
     openCreate();
   }, [createRequestId]);
-
-  function openCreate() {
-    setForm(defaultTransaction());
-    setEditingId(null);
-    saveMutation.reset();
-    setDialog("create");
-  }
 
   function openEdit(transaction: TransactionRecord) {
     setForm({
@@ -196,20 +196,6 @@ export function TransactionsView({
         eyebrow={tUpper("transactions.title")}
         title={t("transactions.title")}
         summary={t("transactions.summary")}
-        actions={
-          <div className="action-cluster">
-            <ActionButton icon={Plus} onClick={openCreate}>
-              {t("common.addEntry")}
-            </ActionButton>
-            <ActionButton
-              icon={Upload}
-              variant="secondary"
-              onClick={() => setImportOpen(true)}
-            >
-              {t("common.importCsv")}
-            </ActionButton>
-          </div>
-        }
       />
 
       {transactionResource.status === "error" ? (
@@ -241,7 +227,6 @@ export function TransactionsView({
               setFilters(next);
             }}
           />
-
           {activeFilterLabels.length ? (
             <div
               className="active-filter-summary"
@@ -289,6 +274,18 @@ export function TransactionsView({
                 </summary>
                 <div className="data-menu-panel">
                   <p>{t("transactions.exportScope")}</p>
+                  <ActionButton
+                    icon={Upload}
+                    variant="secondary"
+                    onClick={(event) => {
+                      setImportOpen(true);
+                      event.currentTarget
+                        .closest("details")
+                        ?.removeAttribute("open");
+                    }}
+                  >
+                    {t("common.importCsv")}
+                  </ActionButton>
                   <DownloadLink
                     icon={Download}
                     href={artifactUrls.transactionsCsv(filters)}
