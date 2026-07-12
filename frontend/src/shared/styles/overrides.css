@@ -1,50 +1,67 @@
 @layer overrides {
-  /* Set view transition names for page elements */
+  /*
+   * Keep persistent application chrome out of view-transition snapshots.
+   * Snapshotting a backdrop-filter freezes its composited backdrop, which
+   * makes the compact bars briefly lose their glass effect during period
+   * changes. Only content that actually changes receives a transition name.
+   */
   html {
-    view-transition-name: none; /* Disable full-document snapshotting to avoid header layout shifts */
+    view-transition-name: none;
   }
 
   main {
     view-transition-name: main-content;
   }
 
-  .compact-app-bar {
-    view-transition-name: compact-app-bar;
-  }
-
-  .compact-primary-navigation {
-    view-transition-name: compact-primary-navigation;
-  }
-
-  .app-rail {
-    view-transition-name: app-rail;
-  }
-
-  /* Keep layout elements stationary and on top during view transitions */
-  ::view-transition-group(compact-primary-navigation),
-  ::view-transition-group(compact-app-bar),
-  ::view-transition-group(app-rail) {
-    animation: none;
-    z-index: 30;
-  }
-
   ::view-transition-group(main-content) {
+    animation: none;
     z-index: 1;
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    /* Depth Zoom animations for the main content area */
-    ::view-transition-group(main-content) {
-      animation-duration: 220ms;
-      animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    /*
+     * Route content must not cross-fade. The main snapshot is transparent and
+     * period elements are promoted to separate snapshots, so blending the old
+     * and new routes makes their headings and cards visibly overlap.
+     */
+    html:active-view-transition-type(forward)
+      ::view-transition-old(main-content),
+    html:active-view-transition-type(backward)
+      ::view-transition-old(main-content),
+    html:active-view-transition-type(forward)
+      ::view-transition-old(period-heading),
+    html:active-view-transition-type(backward)
+      ::view-transition-old(period-heading),
+    html:active-view-transition-type(forward)
+      ::view-transition-old(period-narrative),
+    html:active-view-transition-type(backward)
+      ::view-transition-old(period-narrative),
+    html:active-view-transition-type(forward)
+      ::view-transition-old(period-content),
+    html:active-view-transition-type(backward)
+      ::view-transition-old(period-content) {
+      animation: none;
+      opacity: 0;
     }
 
-    ::view-transition-old(main-content) {
-      animation-name: scale-down-fade;
-    }
-
-    ::view-transition-new(main-content) {
-      animation-name: scale-up-fade;
+    html:active-view-transition-type(forward)
+      ::view-transition-new(main-content),
+    html:active-view-transition-type(backward)
+      ::view-transition-new(main-content),
+    html:active-view-transition-type(forward)
+      ::view-transition-new(period-heading),
+    html:active-view-transition-type(backward)
+      ::view-transition-new(period-heading),
+    html:active-view-transition-type(forward)
+      ::view-transition-new(period-narrative),
+    html:active-view-transition-type(backward)
+      ::view-transition-new(period-narrative),
+    html:active-view-transition-type(forward)
+      ::view-transition-new(period-content),
+    html:active-view-transition-type(backward)
+      ::view-transition-new(period-content) {
+      animation: none;
+      opacity: 1;
     }
 
     /* Morphing active navigation indicator transition */
@@ -54,55 +71,66 @@
     }
 
     ::view-transition-group(period-heading),
-    ::view-transition-group(period-metric-primary),
-    ::view-transition-group(period-metric-income),
-    ::view-transition-group(period-metric-expenses),
-    ::view-transition-group(period-metric-rate),
-    ::view-transition-group(period-metric-planned),
-    ::view-transition-group(period-metric-spent),
-    ::view-transition-group(period-metric-remaining),
-    ::view-transition-group(period-metric-uncovered),
-    ::view-transition-group(period-content),
-    ::view-transition-group(period-budget-summary),
-    ::view-transition-group(period-budget-records) {
-      animation-duration: var(--motion-control);
+    ::view-transition-group(period-narrative),
+    ::view-transition-group(period-content) {
+      animation: none;
+    }
+
+    ::view-transition-image-pair(period-heading),
+    ::view-transition-image-pair(period-narrative),
+    ::view-transition-image-pair(period-content) {
+      isolation: isolate;
+    }
+
+    ::view-transition-old(period-heading),
+    ::view-transition-new(period-heading),
+    ::view-transition-old(period-narrative),
+    ::view-transition-new(period-narrative),
+    ::view-transition-old(period-content),
+    ::view-transition-new(period-content) {
+      mix-blend-mode: normal;
+      animation-duration: 220ms;
       animation-timing-function: var(--ease-out);
     }
 
+    ::view-transition-old(period-heading),
+    ::view-transition-old(period-narrative) {
+      animation-name: period-fade-out;
+    }
+
+    ::view-transition-new(period-heading),
+    ::view-transition-new(period-narrative) {
+      animation-name: period-fade-in;
+    }
+
     html:active-view-transition-type(period-forward)
-      :is(
-        ::view-transition-old(period-content),
-        ::view-transition-old(period-budget-summary),
-        ::view-transition-old(period-budget-records)
-      ) {
+      ::view-transition-old(period-content) {
       animation-name: period-exit-forward;
     }
 
     html:active-view-transition-type(period-forward)
-      :is(
-        ::view-transition-new(period-content),
-        ::view-transition-new(period-budget-summary),
-        ::view-transition-new(period-budget-records)
-      ) {
+      ::view-transition-new(period-content) {
       animation-name: period-enter-forward;
     }
 
     html:active-view-transition-type(period-backward)
-      :is(
-        ::view-transition-old(period-content),
-        ::view-transition-old(period-budget-summary),
-        ::view-transition-old(period-budget-records)
-      ) {
+      ::view-transition-old(period-content) {
       animation-name: period-exit-backward;
     }
 
     html:active-view-transition-type(period-backward)
-      :is(
-        ::view-transition-new(period-content),
-        ::view-transition-new(period-budget-summary),
-        ::view-transition-new(period-budget-records)
-      ) {
+      ::view-transition-new(period-content) {
       animation-name: period-enter-backward;
+    }
+
+    html:active-view-transition-type(period-jump)
+      ::view-transition-old(period-content) {
+      animation-name: period-fade-out;
+    }
+
+    html:active-view-transition-type(period-jump)
+      ::view-transition-new(period-content) {
+      animation-name: period-fade-in;
     }
   }
 
@@ -130,89 +158,43 @@
     }
   }
 
-  @keyframes scale-down-fade {
-    to {
-      scale: 0.97;
-      opacity: 0;
-    }
-  }
-
-  @keyframes scale-up-fade {
-    from {
-      scale: 1.03;
-      opacity: 0;
-    }
-  }
-
   @keyframes period-exit-forward {
     to {
-      translate: -0.6rem 0;
+      translate: -0.35rem 0;
       opacity: 0;
     }
   }
 
   @keyframes period-enter-forward {
     from {
-      translate: 0.6rem 0;
+      translate: 0.35rem 0;
       opacity: 0;
     }
   }
 
   @keyframes period-exit-backward {
     to {
-      translate: 0.6rem 0;
+      translate: 0.35rem 0;
       opacity: 0;
     }
   }
 
   @keyframes period-enter-backward {
     from {
-      translate: -0.6rem 0;
+      translate: -0.35rem 0;
       opacity: 0;
     }
   }
 
-  .period-view {
-    position: relative;
+  @keyframes period-fade-out {
+    to {
+      opacity: 0;
+    }
   }
 
-  .period-view::before {
-    position: absolute;
-    z-index: 4;
-    inset: -0.25rem 0 auto;
-    block-size: 2px;
-    pointer-events: none;
-    content: "";
-    opacity: 0;
-    scale: 0 1;
-    transform-origin: left;
-    background: var(--action);
-  }
-
-  .period-view.is-period-pending::before {
-    opacity: 0.72;
-    animation: period-progress 900ms var(--ease-out) infinite;
-  }
-
-  @keyframes period-progress {
-    0% {
-      scale: 0 1;
-      transform-origin: left;
-    }
-
-    48% {
-      scale: 0.7 1;
-      transform-origin: left;
-    }
-
-    52% {
-      scale: 0.7 1;
-      transform-origin: right;
-    }
-
-    100% {
-      scale: 0 1;
-      transform-origin: right;
+  @keyframes period-fade-in {
+    from {
+      opacity: 0;
     }
   }
 
@@ -220,54 +202,92 @@
     view-transition-name: period-heading;
   }
 
+  .period-transition-narrative {
+    view-transition-name: period-narrative;
+  }
+
   .dashboard-period-view .period-transition-content {
     view-transition-name: period-content;
   }
 
-  .budgets-period-view .budget-summary-panel {
-    view-transition-name: period-budget-summary;
+  .budgets-period-view .budget-layout {
+    view-transition-name: period-content;
   }
 
-  .budgets-period-view .records-panel {
-    view-transition-name: period-budget-records;
+  .rolling-number,
+  .rolling-number-digits,
+  .rolling-number-slot,
+  .rolling-number-reel,
+  .rolling-number-static {
+    display: inline-flex;
   }
 
-  .period-metric-primary {
-    view-transition-name: period-metric-primary;
+  .rolling-number {
+    max-inline-size: 100%;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
-  .period-metric-income {
-    view-transition-name: period-metric-income;
+  .rolling-number-digits {
+    align-items: baseline;
   }
 
-  .period-metric-expenses {
-    view-transition-name: period-metric-expenses;
+  .rolling-number-slot {
+    overflow-x: visible;
+    overflow-y: clip;
+    block-size: 1em;
+    line-height: 1;
   }
 
-  .period-metric-rate {
-    view-transition-name: period-metric-rate;
+  .rolling-number-reel {
+    flex-direction: column;
+    block-size: 2em;
+    line-height: 1;
+    will-change: translate;
   }
 
-  .period-metric-planned {
-    view-transition-name: period-metric-planned;
+  .rolling-number-reel > span,
+  .rolling-number-static {
+    align-items: center;
+    block-size: 1em;
+    line-height: 1;
   }
 
-  .period-metric-spent {
-    view-transition-name: period-metric-spent;
+  .rolling-number-reel > span::before,
+  .rolling-number-static::before {
+    content: attr(data-character);
   }
 
-  .period-metric-remaining {
-    view-transition-name: period-metric-remaining;
+  @media (prefers-reduced-motion: no-preference) {
+    .rolling-number.is-rolling-up .rolling-number-reel {
+      animation: odometer-up 520ms cubic-bezier(0.22, 0.9, 0.24, 1) both;
+      animation-delay: var(--motion-control);
+    }
+
+    .rolling-number.is-rolling-down .rolling-number-reel {
+      translate: 0 -50%;
+      animation: odometer-down 520ms cubic-bezier(0.22, 0.9, 0.24, 1) both;
+      animation-delay: var(--motion-control);
+    }
   }
 
-  .period-metric-uncovered {
-    view-transition-name: period-metric-uncovered;
+  @keyframes odometer-up {
+    from {
+      translate: 0 0;
+    }
+
+    to {
+      translate: 0 -50%;
+    }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .period-view.is-period-pending::before {
-      scale: 1 1;
-      animation: none;
+  @keyframes odometer-down {
+    from {
+      translate: 0 -50%;
+    }
+
+    to {
+      translate: 0 0;
     }
   }
 

@@ -439,7 +439,7 @@
 
     .chart-tooltip {
       padding: 0.65rem 0.75rem;
-      translate: 0 calc(-100% - 0.25rem);
+      translate: -50% calc(-100% - 0.25rem);
     }
   }
 }

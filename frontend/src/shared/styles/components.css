@@ -907,7 +907,7 @@
     --tooltip-center: clamp(
       var(--tooltip-half-width),
       var(--tooltip-x),
-      calc(100% - var(--tooltip-half-width))
+      calc(100cqi - var(--tooltip-half-width))
     );
     position: absolute;
     z-index: 8;
@@ -950,6 +950,7 @@
     border-block-end: 1px solid
       color-mix(in srgb, currentColor 22%, var(--rule));
     rotate: 45deg;
+    translate: -50% 0;
   }
 
   .chart-tooltip.cash {

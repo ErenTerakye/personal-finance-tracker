@@ -172,17 +172,14 @@ describe("app composition", () => {
     expect(window.location.pathname).toBe("/");
   });
 
-  it("uses view transitions for route changes when motion is allowed", async () => {
+  it("changes routes without snapshotting outgoing page content", async () => {
     mockColorScheme("light");
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
       "/api/budgets": { budgets: [] },
       "/api/budgets/status": { statuses: [] },
     });
-    const startViewTransition = vi.fn(({ update }: { update: () => void }) => {
-      update();
-      return { finished: Promise.resolve() };
-    });
+    const startViewTransition = vi.fn();
     Object.defineProperty(document, "startViewTransition", {
       configurable: true,
       value: startViewTransition,
@@ -191,10 +188,7 @@ describe("app composition", () => {
     render(<App />);
     await userEvent.click(await screen.findByRole("link", { name: "Plan" }));
 
-    expect(startViewTransition).toHaveBeenCalledWith({
-      update: expect.any(Function),
-      types: ["forward"],
-    });
+    expect(startViewTransition).not.toHaveBeenCalled();
     expect(window.location.pathname).toBe("/budgets");
   });
 

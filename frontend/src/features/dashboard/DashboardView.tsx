@@ -17,6 +17,7 @@ import type { DashboardData } from "../../types";
 import type { View } from "../../app/routes";
 import { useDashboard } from "./useDashboard";
 import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
+import { RollingNumber } from "../../shared/components/RollingNumber";
 
 export function DashboardView({
   selectedPeriod,
@@ -99,7 +100,7 @@ export function DashboardView({
         <h1 id="page-title" className="period-transition-heading">
           {displayPeriodLabel}
         </h1>
-        <p className="dashboard-narrative">
+        <p className="dashboard-narrative period-transition-narrative">
           {net >= 0
             ? t("dashboard.narrative.positive", { amount: money(net) })
             : t("dashboard.narrative.negative", {
@@ -152,8 +153,15 @@ export function DashboardView({
         >
           <div className={`balance-story ${net < 0 ? "negative" : "positive"}`}>
             <p className="eyebrow">{tUpper("dashboard.kpi.netPosition")}</p>
-            <strong className="period-metric period-metric-primary">
-              {money(data.report.net_savings)}
+            <strong>
+              <RollingNumber
+                value={Number(data.report.net_savings)}
+                previousValue={Number(
+                  periodTransition.previousData?.report.net_savings ??
+                    data.report.net_savings,
+                )}
+                format={money}
+              />
             </strong>
             <p>
               {netDelta === 0
@@ -168,14 +176,28 @@ export function DashboardView({
             <dl className="cashflow-comparison">
               <div className="cashflow-metric cashflow-metric-income">
                 <dt>{t("dashboard.kpi.income")}</dt>
-                <dd className="period-metric period-metric-income">
-                  {money(data.report.total_income)}
+                <dd>
+                  <RollingNumber
+                    value={Number(data.report.total_income)}
+                    previousValue={Number(
+                      periodTransition.previousData?.report.total_income ??
+                        data.report.total_income,
+                    )}
+                    format={money}
+                  />
                 </dd>
               </div>
               <div className="cashflow-metric cashflow-metric-expenses">
                 <dt>{t("dashboard.kpi.expenses")}</dt>
-                <dd className="period-metric period-metric-expenses">
-                  {money(data.report.total_expenses)}
+                <dd>
+                  <RollingNumber
+                    value={Number(data.report.total_expenses)}
+                    previousValue={Number(
+                      periodTransition.previousData?.report.total_expenses ??
+                        data.report.total_expenses,
+                    )}
+                    format={money}
+                  />
                 </dd>
               </div>
               <div
@@ -184,8 +206,15 @@ export function DashboardView({
                 }`}
               >
                 <dt>{t("dashboard.kpi.savingsRate")}</dt>
-                <dd className="period-metric period-metric-rate">
-                  {percent(data.savings_rate)}
+                <dd>
+                  <RollingNumber
+                    value={Number(data.savings_rate)}
+                    previousValue={Number(
+                      periodTransition.previousData?.savings_rate ??
+                        data.savings_rate,
+                    )}
+                    format={percent}
+                  />
                 </dd>
               </div>
             </dl>

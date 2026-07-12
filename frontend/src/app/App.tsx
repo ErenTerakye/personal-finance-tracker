@@ -2,13 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AppShell } from "./AppShell";
 import { currentPeriod } from "../shared/format/periods";
 import { setCurrency } from "../shared/format/money";
-import {
-  pathForView,
-  viewFromPath,
-  viewOrder,
-  type RouteView,
-  type View,
-} from "./routes";
+import { pathForView, viewFromPath, type RouteView, type View } from "./routes";
 import { BudgetsView } from "../features/budgets/BudgetsView";
 import { DashboardView } from "../features/dashboard/DashboardView";
 import { RulesView } from "../features/rules/RulesView";
@@ -73,31 +67,11 @@ function AppContent() {
       setCreateBudgetRequest(0);
     }
     const nextPath = pathForView(nextView);
-    const currentIndex = view === "not-found" ? 0 : viewOrder.indexOf(view);
-    const direction =
-      viewOrder.indexOf(nextView) < currentIndex ? "backward" : "forward";
-    const update = () => {
-      if (window.location.pathname !== nextPath) {
-        window.history.pushState({}, "", nextPath);
-      }
-      setNotice("");
-      setView(nextView);
-    };
-
-    const transition = (document as ViewTransitionDocument).startViewTransition;
-    const reduceMotion = window.matchMedia?.(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-
-    if (!transition || reduceMotion) {
-      update();
-      return;
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, "", nextPath);
     }
-
-    transition.call(document, {
-      update,
-      types: [direction],
-    });
+    setNotice("");
+    setView(nextView);
   }
 
   function changePeriod(period: { month: number; year: number }) {
@@ -188,12 +162,6 @@ export default function App() {
     </I18nProvider>
   );
 }
-
-type ViewTransitionDocument = Document & {
-  startViewTransition?: (options: { update: () => void; types?: string[] }) => {
-    finished: Promise<void>;
-  };
-};
 
 function periodFromUrl(): { month: number; year: number } {
   const fallback = currentPeriod();

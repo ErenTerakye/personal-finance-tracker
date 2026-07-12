@@ -1,4 +1,10 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import App from "../../app/App";
@@ -52,6 +58,27 @@ describe("dashboard workflow", () => {
         String(input).startsWith("/api/dashboard"),
       );
       expect(dashboardCalls.length).toBeGreaterThan(1);
+    });
+  });
+
+  it("accumulates rapid period clicks without waiting for a render", async () => {
+    const fetchMock = mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "June 2026" });
+
+    const next = screen.getByRole("button", { name: /^Next month,/ });
+    fireEvent.click(next);
+    fireEvent.click(next);
+    fireEvent.click(next);
+
+    await waitFor(() => {
+      const dashboardCalls = fetchMock.mock.calls.map(([input]) =>
+        String(input),
+      );
+      expect(
+        dashboardCalls.some((url) => url.includes("month=10&year=2026")),
+      ).toBe(true);
     });
   });
 
@@ -192,11 +219,17 @@ describe("dashboard workflow", () => {
 
     expect(metrics).toBeInstanceOf(HTMLDListElement);
     expect(within(metrics!).getByText("Income").tagName).toBe("DT");
-    expect(within(metrics!).getByText("$2,500.00").tagName).toBe("DD");
+    expect(within(metrics!).getByText("$2,500.00").closest("dd")?.tagName).toBe(
+      "DD",
+    );
     expect(within(metrics!).getByText("Expenses").tagName).toBe("DT");
-    expect(within(metrics!).getByText("$386.40").tagName).toBe("DD");
+    expect(within(metrics!).getByText("$386.40").closest("dd")?.tagName).toBe(
+      "DD",
+    );
     expect(within(metrics!).getByText("Savings rate").tagName).toBe("DT");
-    expect(within(metrics!).getByText("84.5%").tagName).toBe("DD");
+    expect(within(metrics!).getByText("84.5%").closest("dd")?.tagName).toBe(
+      "DD",
+    );
     expect(metrics!.querySelector(".cashflow-metric-savings")).toHaveClass(
       "positive",
     );

@@ -26,6 +26,7 @@ import {
 import { BudgetFilterForm } from "./components/BudgetFilterForm";
 import { BudgetFormDialog } from "./components/BudgetFormDialog";
 import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
+import { RollingNumber } from "../../shared/components/RollingNumber";
 
 type BudgetDialog = "create" | "edit" | null;
 
@@ -171,6 +172,20 @@ export function BudgetsView({
     0,
   );
   const totalSpent = Number(periodTransition.data?.totalExpenses ?? 0);
+  const previousStatuses = periodTransition.previousData?.statuses ?? statuses;
+  const previousPlanned = previousStatuses.reduce(
+    (sum, status) => sum + Number(status.budget.amount),
+    0,
+  );
+  const previousCovered = previousStatuses.reduce(
+    (sum, status) => sum + Number(status.actual_expenses),
+    0,
+  );
+  const previousSpent = Number(
+    periodTransition.previousData?.totalExpenses ?? totalSpent,
+  );
+  const previousRemaining = previousPlanned - previousCovered;
+  const previousUncovered = Math.max(0, previousSpent - previousCovered);
   const remaining = totalPlanned - coveredSpending;
   const uncovered = Math.max(0, totalSpent - coveredSpending);
   const selectedStatus = statuses.find(
@@ -229,14 +244,22 @@ export function BudgetsView({
             <dl className="budget-totals">
               <div className="budget-total budget-total-planned">
                 <dt>{t("budgets.totalPlanned")}</dt>
-                <dd className="period-metric period-metric-planned">
-                  {money(totalPlanned)}
+                <dd>
+                  <RollingNumber
+                    value={totalPlanned}
+                    previousValue={previousPlanned}
+                    format={money}
+                  />
                 </dd>
               </div>
               <div className="budget-total budget-total-spent">
                 <dt>{t("budgets.totalSpent")}</dt>
-                <dd className="period-metric period-metric-spent">
-                  {money(totalSpent)}
+                <dd>
+                  <RollingNumber
+                    value={totalSpent}
+                    previousValue={previousSpent}
+                    format={money}
+                  />
                 </dd>
               </div>
               <div
@@ -245,16 +268,24 @@ export function BudgetsView({
                 <dt>
                   {t(remaining >= 0 ? "budgets.remaining" : "budgets.overPlan")}
                 </dt>
-                <dd className="period-metric period-metric-remaining">
-                  {money(Math.abs(remaining))}
+                <dd>
+                  <RollingNumber
+                    value={Math.abs(remaining)}
+                    previousValue={Math.abs(previousRemaining)}
+                    format={money}
+                  />
                 </dd>
               </div>
               <div
                 className={`budget-total ${uncovered > 0 ? "budget-total-warning" : "budget-total-positive"}`}
               >
                 <dt>{t("budgets.uncovered")}</dt>
-                <dd className="period-metric period-metric-uncovered">
-                  {money(uncovered)}
+                <dd>
+                  <RollingNumber
+                    value={uncovered}
+                    previousValue={previousUncovered}
+                    format={money}
+                  />
                 </dd>
               </div>
             </dl>

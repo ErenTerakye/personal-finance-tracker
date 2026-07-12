@@ -17,6 +17,7 @@ export function usePeriodTransition<T>(
 ) {
   const [presented, setPresented] = useState<{
     data: T;
+    previousData?: T;
     period: PeriodValue;
   } | null>(null);
   const committedData = useRef<T | undefined>(undefined);
@@ -30,7 +31,11 @@ export function usePeriodTransition<T>(
       return;
     }
 
-    const next = { data: resource.data, period: requestedPeriod };
+    const next = {
+      data: resource.data,
+      previousData: presented?.data,
+      period: requestedPeriod,
+    };
     const direction = presented
       ? periodDirection(presented.period, requestedPeriod)
       : null;
@@ -62,6 +67,7 @@ export function usePeriodTransition<T>(
 
   return {
     data: presented?.data,
+    previousData: presented?.previousData,
     presentedPeriod: presented?.period,
     pending,
     direction: presented

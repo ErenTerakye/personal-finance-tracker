@@ -209,12 +209,16 @@ test.describe("cashflow trend graph rendering", () => {
   test("shows exact values on desktop hover", async ({ page }) => {
     await page.goto("/");
 
-    await page.locator(".cashflow-trend .trend-bar.expenses").first().hover();
+    const hoveredBar = page
+      .locator(".cashflow-trend .trend-bar.expenses")
+      .nth(3);
+    await hoveredBar.hover();
     const tooltip = page.locator(".chart-tooltip");
 
     await expect(tooltip).toContainText("Expenses");
     await expect(tooltip).toContainText("$500.00");
     await expectElementsFitViewport(page, [".chart-tooltip"]);
+    await expectTooltipPointerAligned(hoveredBar, tooltip);
   });
 });
 
@@ -704,6 +708,26 @@ async function measureTrendBars(card: ReturnType<Page["locator"]>) {
       net: barHeight(".trend-bars .net"),
     };
   });
+}
+
+async function expectTooltipPointerAligned(
+  trigger: ReturnType<Page["locator"]>,
+  tooltip: ReturnType<Page["locator"]>,
+) {
+  const [triggerBox, tooltipBox, pointer] = await Promise.all([
+    trigger.boundingBox(),
+    tooltip.boundingBox(),
+    tooltip.evaluate((node) => {
+      const style = getComputedStyle(node, "::after");
+      return {
+        insetInlineStart: Number.parseFloat(style.insetInlineStart),
+      };
+    }),
+  ]);
+
+  const triggerCenter = triggerBox!.x + triggerBox!.width / 2;
+  const pointerCenter = tooltipBox!.x + pointer.insetInlineStart;
+  expect(Math.abs(triggerCenter - pointerCenter)).toBeLessThanOrEqual(1);
 }
 
 async function expectDialogFitsViewport(
