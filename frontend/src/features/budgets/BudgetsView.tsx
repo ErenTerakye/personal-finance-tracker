@@ -206,21 +206,25 @@ export function BudgetsView({
             <p className="loading-state">{t("budgets.pressureLoading")}</p>
           ) : (
             <dl className="budget-totals">
-              <div>
+              <div className="budget-total budget-total-planned">
                 <dt>{t("budgets.totalPlanned")}</dt>
                 <dd>{money(totalPlanned)}</dd>
               </div>
-              <div>
+              <div className="budget-total budget-total-spent">
                 <dt>{t("budgets.totalSpent")}</dt>
                 <dd>{money(totalSpent)}</dd>
               </div>
-              <div>
+              <div
+                className={`budget-total ${remaining >= 0 ? "budget-total-positive" : "budget-total-warning"}`}
+              >
                 <dt>
                   {t(remaining >= 0 ? "budgets.remaining" : "budgets.overPlan")}
                 </dt>
                 <dd>{money(Math.abs(remaining))}</dd>
               </div>
-              <div>
+              <div
+                className={`budget-total ${uncovered > 0 ? "budget-total-warning" : "budget-total-positive"}`}
+              >
                 <dt>{t("budgets.uncovered")}</dt>
                 <dd>{money(uncovered)}</dd>
               </div>

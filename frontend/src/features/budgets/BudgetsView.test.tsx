@@ -54,6 +54,9 @@ describe("budgets workflow", () => {
     expect(
       screen.getByText("Uncovered spending").nextSibling,
     ).toHaveTextContent("$50.00");
+    expect(screen.getByText("Uncovered spending").parentElement).toHaveClass(
+      "budget-total-warning",
+    );
     await userEvent.click(
       screen.getByRole("button", { name: /Food, near limit/ }),
     );

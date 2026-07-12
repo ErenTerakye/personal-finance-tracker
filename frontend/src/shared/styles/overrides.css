@@ -358,17 +358,40 @@
   }
 
   .budget-totals {
+    container: budget-totals / inline-size;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
-    gap: 1px;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
     margin-block-start: 1.5rem;
-    background: var(--rule);
-    border-block: 1px solid var(--rule);
   }
 
-  .budget-totals > div {
-    padding: 1rem;
-    background: var(--surface);
+  .budget-total {
+    --budget-total-accent: var(--muted);
+
+    min-inline-size: 0;
+    padding: 1rem 1.125rem;
+    background: color-mix(
+      in oklab,
+      var(--budget-total-accent) 7%,
+      var(--surface-2)
+    );
+    border-radius: var(--radius);
+  }
+
+  .budget-total-planned {
+    --budget-total-accent: var(--action);
+  }
+
+  .budget-total-spent {
+    --budget-total-accent: var(--ink);
+  }
+
+  .budget-total-positive {
+    --budget-total-accent: var(--cash);
+  }
+
+  .budget-total-warning {
+    --budget-total-accent: var(--warning);
   }
 
   .budget-totals :is(dt, dd) {
@@ -376,8 +399,9 @@
   }
 
   .budget-totals dt {
-    color: var(--muted);
+    color: color-mix(in oklab, var(--budget-total-accent) 48%, var(--muted));
     font-size: var(--font-size-sm);
+    font-weight: 600;
   }
 
   .budget-totals dd {
@@ -386,6 +410,26 @@
     font-family: var(--font-mono);
     font-size: var(--font-size-xl);
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  @container budget-totals (inline-size >= 36rem) {
+    .budget-totals {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @container budget-totals (inline-size >= 64rem) {
+    .budget-totals {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @supports (corner-shape: squircle) {
+    .budget-total {
+      corner-shape: squircle;
+    }
   }
 
   .dashboard-priorities {
