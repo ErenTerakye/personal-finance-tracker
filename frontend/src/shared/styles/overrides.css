@@ -52,6 +52,58 @@
       animation-duration: 220ms;
       animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
     }
+
+    ::view-transition-group(period-heading),
+    ::view-transition-group(period-metric-primary),
+    ::view-transition-group(period-metric-income),
+    ::view-transition-group(period-metric-expenses),
+    ::view-transition-group(period-metric-rate),
+    ::view-transition-group(period-metric-planned),
+    ::view-transition-group(period-metric-spent),
+    ::view-transition-group(period-metric-remaining),
+    ::view-transition-group(period-metric-uncovered),
+    ::view-transition-group(period-content),
+    ::view-transition-group(period-budget-summary),
+    ::view-transition-group(period-budget-records) {
+      animation-duration: var(--motion-control);
+      animation-timing-function: var(--ease-out);
+    }
+
+    html:active-view-transition-type(period-forward)
+      :is(
+        ::view-transition-old(period-content),
+        ::view-transition-old(period-budget-summary),
+        ::view-transition-old(period-budget-records)
+      ) {
+      animation-name: period-exit-forward;
+    }
+
+    html:active-view-transition-type(period-forward)
+      :is(
+        ::view-transition-new(period-content),
+        ::view-transition-new(period-budget-summary),
+        ::view-transition-new(period-budget-records)
+      ) {
+      animation-name: period-enter-forward;
+    }
+
+    html:active-view-transition-type(period-backward)
+      :is(
+        ::view-transition-old(period-content),
+        ::view-transition-old(period-budget-summary),
+        ::view-transition-old(period-budget-records)
+      ) {
+      animation-name: period-exit-backward;
+    }
+
+    html:active-view-transition-type(period-backward)
+      :is(
+        ::view-transition-new(period-content),
+        ::view-transition-new(period-budget-summary),
+        ::view-transition-new(period-budget-records)
+      ) {
+      animation-name: period-enter-backward;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -89,6 +141,133 @@
     from {
       scale: 1.03;
       opacity: 0;
+    }
+  }
+
+  @keyframes period-exit-forward {
+    to {
+      translate: -0.6rem 0;
+      opacity: 0;
+    }
+  }
+
+  @keyframes period-enter-forward {
+    from {
+      translate: 0.6rem 0;
+      opacity: 0;
+    }
+  }
+
+  @keyframes period-exit-backward {
+    to {
+      translate: 0.6rem 0;
+      opacity: 0;
+    }
+  }
+
+  @keyframes period-enter-backward {
+    from {
+      translate: -0.6rem 0;
+      opacity: 0;
+    }
+  }
+
+  .period-view {
+    position: relative;
+  }
+
+  .period-view::before {
+    position: absolute;
+    z-index: 4;
+    inset: -0.25rem 0 auto;
+    block-size: 2px;
+    pointer-events: none;
+    content: "";
+    opacity: 0;
+    scale: 0 1;
+    transform-origin: left;
+    background: var(--action);
+  }
+
+  .period-view.is-period-pending::before {
+    opacity: 0.72;
+    animation: period-progress 900ms var(--ease-out) infinite;
+  }
+
+  @keyframes period-progress {
+    0% {
+      scale: 0 1;
+      transform-origin: left;
+    }
+
+    48% {
+      scale: 0.7 1;
+      transform-origin: left;
+    }
+
+    52% {
+      scale: 0.7 1;
+      transform-origin: right;
+    }
+
+    100% {
+      scale: 0 1;
+      transform-origin: right;
+    }
+  }
+
+  .period-transition-heading {
+    view-transition-name: period-heading;
+  }
+
+  .dashboard-period-view .period-transition-content {
+    view-transition-name: period-content;
+  }
+
+  .budgets-period-view .budget-summary-panel {
+    view-transition-name: period-budget-summary;
+  }
+
+  .budgets-period-view .records-panel {
+    view-transition-name: period-budget-records;
+  }
+
+  .period-metric-primary {
+    view-transition-name: period-metric-primary;
+  }
+
+  .period-metric-income {
+    view-transition-name: period-metric-income;
+  }
+
+  .period-metric-expenses {
+    view-transition-name: period-metric-expenses;
+  }
+
+  .period-metric-rate {
+    view-transition-name: period-metric-rate;
+  }
+
+  .period-metric-planned {
+    view-transition-name: period-metric-planned;
+  }
+
+  .period-metric-spent {
+    view-transition-name: period-metric-spent;
+  }
+
+  .period-metric-remaining {
+    view-transition-name: period-metric-remaining;
+  }
+
+  .period-metric-uncovered {
+    view-transition-name: period-metric-uncovered;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .period-view.is-period-pending::before {
+      scale: 1 1;
+      animation: none;
     }
   }
 

@@ -51,18 +51,23 @@ export function BudgetFilterForm({
       })}
     >
       <form
-        className="filter-form"
+        className="filter-form budget-filter-form"
         aria-label={t("budgets.filterAria")}
         onSubmit={(event) => {
           event.preventDefault();
           onChange(draft);
         }}
       >
-        <PeriodControl
-          label={t("budgets.filterPeriod")}
-          value={period}
-          onChange={(nextPeriod) => setDraft({ ...draft, ...nextPeriod })}
-        />
+        <div className="field budget-filter-period">
+          <span className="field-label" id="budget-filter-period-label">
+            {t("budgets.filterPeriod")}
+          </span>
+          <PeriodControl
+            label={t("budgets.filterPeriod")}
+            value={period}
+            onChange={(nextPeriod) => setDraft({ ...draft, ...nextPeriod })}
+          />
+        </div>
         <Field id="budget-filter-category" label={t("common.category")}>
           <input
             id="budget-filter-category"

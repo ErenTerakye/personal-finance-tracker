@@ -8,6 +8,7 @@ import { ModalDialog } from "../../shared/components/dialogs";
 import { ErrorBanner } from "../../shared/components/feedback";
 import { PageHeader, Panel } from "../../shared/components/lists";
 import { money } from "../../shared/format/money";
+import { periodLabel } from "../../shared/format/periods";
 import type { BudgetInput, BudgetRecord } from "../../types";
 import { localizedNotice } from "../../shared/i18n/notices";
 import { useI18n } from "../../shared/i18n/I18nProvider";
@@ -24,6 +25,7 @@ import {
 } from "./useBudgets";
 import { BudgetFilterForm } from "./components/BudgetFilterForm";
 import { BudgetFormDialog } from "./components/BudgetFormDialog";
+import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
 
 type BudgetDialog = "create" | "edit" | null;
 
@@ -48,8 +50,13 @@ export function BudgetsView({
   const handledCreateRequest = useRef(0);
   const { t, tUpper } = useI18n();
   const budgetResource = useBudgets(filters, selectedPeriod);
-  const budgets = budgetResource.data?.budgets ?? [];
-  const statuses = budgetResource.data?.statuses ?? [];
+  const requestedPeriod = {
+    month: Number(filters.month || selectedPeriod.month),
+    year: Number(filters.year || selectedPeriod.year),
+  };
+  const periodTransition = usePeriodTransition(requestedPeriod, budgetResource);
+  const budgets = periodTransition.data?.budgets ?? [];
+  const statuses = periodTransition.data?.statuses ?? [];
   const [sortBy, setSortBy] = useState<"priority" | "category" | "spent">(
     "priority",
   );
@@ -76,6 +83,7 @@ export function BudgetsView({
   });
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const loading = budgetResource.status === "loading";
+  const initialLoading = loading && !periodTransition.data;
   const saveMutation = useSaveBudget((response, input) => {
     setNotice(localizedNotice(response, t));
     setSelectedPeriod({ month: input.month, year: input.year });
@@ -147,11 +155,11 @@ export function BudgetsView({
     await importMutation.mutate(csvText);
   }
 
-  const pressureDetail = loading
+  const pressureDetail = initialLoading
     ? t("budgets.pressureLoading")
-    : `${filters.month}/${filters.year}`;
+    : `${periodTransition.presentedPeriod?.month ?? requestedPeriod.month}/${periodTransition.presentedPeriod?.year ?? requestedPeriod.year}`;
 
-  const recordsDetail = loading
+  const recordsDetail = initialLoading
     ? t("budgets.recordsLoading")
     : t("budgets.recordsCount", { count: budgets.length });
   const totalPlanned = statuses.reduce(
@@ -162,7 +170,7 @@ export function BudgetsView({
     (sum, status) => sum + Number(status.actual_expenses),
     0,
   );
-  const totalSpent = Number(budgetResource.data?.totalExpenses ?? 0);
+  const totalSpent = Number(periodTransition.data?.totalExpenses ?? 0);
   const remaining = totalPlanned - coveredSpending;
   const uncovered = Math.max(0, totalSpent - coveredSpending);
   const selectedStatus = statuses.find(
@@ -171,7 +179,20 @@ export function BudgetsView({
   const hasCategoryFilter = Boolean(filters.category?.trim());
 
   return (
-    <>
+    <div
+      className={`period-view budgets-period-view${periodTransition.pending ? " is-period-pending" : ""}`}
+      aria-busy={periodTransition.pending}
+    >
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {!periodTransition.pending && periodTransition.presentedPeriod
+          ? t("common.periodLoaded", {
+              period: periodLabel(
+                periodTransition.presentedPeriod.month,
+                periodTransition.presentedPeriod.year,
+              ),
+            })
+          : ""}
+      </p>
       <PageHeader
         eyebrow={tUpper("budgets.title")}
         title={t("budgets.title")}
@@ -202,17 +223,21 @@ export function BudgetsView({
           detail={pressureDetail}
           className="budget-summary-panel"
         >
-          {loading ? (
+          {initialLoading ? (
             <p className="loading-state">{t("budgets.pressureLoading")}</p>
           ) : (
             <dl className="budget-totals">
               <div className="budget-total budget-total-planned">
                 <dt>{t("budgets.totalPlanned")}</dt>
-                <dd>{money(totalPlanned)}</dd>
+                <dd className="period-metric period-metric-planned">
+                  {money(totalPlanned)}
+                </dd>
               </div>
               <div className="budget-total budget-total-spent">
                 <dt>{t("budgets.totalSpent")}</dt>
-                <dd>{money(totalSpent)}</dd>
+                <dd className="period-metric period-metric-spent">
+                  {money(totalSpent)}
+                </dd>
               </div>
               <div
                 className={`budget-total ${remaining >= 0 ? "budget-total-positive" : "budget-total-warning"}`}
@@ -220,13 +245,17 @@ export function BudgetsView({
                 <dt>
                   {t(remaining >= 0 ? "budgets.remaining" : "budgets.overPlan")}
                 </dt>
-                <dd>{money(Math.abs(remaining))}</dd>
+                <dd className="period-metric period-metric-remaining">
+                  {money(Math.abs(remaining))}
+                </dd>
               </div>
               <div
                 className={`budget-total ${uncovered > 0 ? "budget-total-warning" : "budget-total-positive"}`}
               >
                 <dt>{t("budgets.uncovered")}</dt>
-                <dd>{money(uncovered)}</dd>
+                <dd className="period-metric period-metric-uncovered">
+                  {money(uncovered)}
+                </dd>
               </div>
             </dl>
           )}
@@ -270,7 +299,7 @@ export function BudgetsView({
             </div>
           }
         >
-          {loading ? (
+          {initialLoading ? (
             <p className="loading-state">{t("budgets.recordsLoading")}</p>
           ) : hasCategoryFilter && visibleStatuses.length === 0 ? (
             <p className="quiet-state">{t("budgets.empty.noMatch")}</p>
@@ -421,6 +450,6 @@ export function BudgetsView({
           </button>
         </div>
       </ModalDialog>
-    </>
+    </div>
   );
 }

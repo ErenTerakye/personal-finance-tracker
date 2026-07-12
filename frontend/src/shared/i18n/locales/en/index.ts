@@ -45,6 +45,7 @@ export const en = {
     deleteTransaction: "Delete {name} transaction",
     editBudget: "Update {name} budget",
     deleteBudget: "Delete {name} budget",
+    periodLoaded: "Loaded {period}",
   },
   nav: {
     dashboard: "Overview",

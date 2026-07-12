@@ -16,6 +16,7 @@ import { useI18n } from "../../shared/i18n/I18nProvider";
 import type { DashboardData } from "../../types";
 import type { View } from "../../app/routes";
 import { useDashboard } from "./useDashboard";
+import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
 
 export function DashboardView({
   selectedPeriod,
@@ -32,12 +33,13 @@ export function DashboardView({
 }) {
   const { t, locale, tUpper } = useI18n();
   const dashboard = useDashboard(selectedPeriod.month, selectedPeriod.year);
+  const periodTransition = usePeriodTransition(selectedPeriod, dashboard);
 
-  if (dashboard.status === "error") {
+  if (dashboard.status === "error" && !periodTransition.data) {
     return <ErrorBanner message={dashboard.error.message} />;
   }
 
-  if (dashboard.status !== "success") {
+  if (!periodTransition.data) {
     return (
       <Panel
         title={t("dashboard.empty.loadingTitle")}
@@ -48,7 +50,7 @@ export function DashboardView({
     );
   }
 
-  const data: DashboardData = dashboard.data;
+  const data: DashboardData = periodTransition.data;
 
   const overBudget = data.budget_statuses.filter(
     (status) => status.status === "over budget",
@@ -77,13 +79,26 @@ export function DashboardView({
     locale === "tr" ? periodLabel(data.month, data.year) : data.period_label;
 
   return (
-    <>
+    <div
+      className={`period-view dashboard-period-view${periodTransition.pending ? " is-period-pending" : ""}`}
+      aria-busy={periodTransition.pending}
+    >
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {!periodTransition.pending && periodTransition.presentedPeriod
+          ? t("common.periodLoaded", { period: displayPeriodLabel })
+          : ""}
+      </p>
+      {dashboard.status === "error" ? (
+        <ErrorBanner message={dashboard.error.message} />
+      ) : null}
       <section
         className="page-heading dashboard-heading dashboard-context-header"
         aria-labelledby="page-title"
       >
         <p className="eyebrow">{tUpper("dashboard.eyebrow")}</p>
-        <h1 id="page-title">{displayPeriodLabel}</h1>
+        <h1 id="page-title" className="period-transition-heading">
+          {displayPeriodLabel}
+        </h1>
         <p className="dashboard-narrative">
           {net >= 0
             ? t("dashboard.narrative.positive", { amount: money(net) })
@@ -128,107 +143,119 @@ export function DashboardView({
         </div>
       </section>
 
-      <section
-        className="dashboard-summary"
-        aria-label={t("dashboard.summaryAria", { period: displayPeriodLabel })}
-      >
-        <div className={`balance-story ${net < 0 ? "negative" : "positive"}`}>
-          <p className="eyebrow">{tUpper("dashboard.kpi.netPosition")}</p>
-          <strong>{money(data.report.net_savings)}</strong>
-          <p>
-            {netDelta === 0
-              ? t("dashboard.narrative.unchanged")
-              : t(
-                  netDelta > 0
-                    ? "dashboard.narrative.better"
-                    : "dashboard.narrative.lower",
-                  { amount: money(Math.abs(netDelta)) },
-                )}
-          </p>
-          <dl className="cashflow-comparison">
-            <div className="cashflow-metric cashflow-metric-income">
-              <dt>{t("dashboard.kpi.income")}</dt>
-              <dd>{money(data.report.total_income)}</dd>
-            </div>
-            <div className="cashflow-metric cashflow-metric-expenses">
-              <dt>{t("dashboard.kpi.expenses")}</dt>
-              <dd>{money(data.report.total_expenses)}</dd>
-            </div>
-            <div
-              className={`cashflow-metric cashflow-metric-savings ${
-                Number(data.savings_rate) < 0 ? "negative" : "positive"
-              }`}
-            >
-              <dt>{t("dashboard.kpi.savingsRate")}</dt>
-              <dd>{percent(data.savings_rate)}</dd>
-            </div>
-          </dl>
-          <p>
-            {t("dashboard.detail.entries", {
-              count: data.report.transaction_count,
-            })}
-          </p>
-        </div>
-      </section>
-
-      <section className="dashboard-lead" aria-label={t("dashboard.title")}>
-        <Panel
-          title={t("dashboard.sections.trendTitle")}
-          className="tape-panel"
-        >
-          <CashflowTrend months={data.trend.months} />
-        </Panel>
-      </section>
-
-      <section
-        className="analysis-grid dashboard-priorities"
-        aria-label={t("dashboard.title")}
-      >
-        <Panel
-          title={t("dashboard.sections.attentionTitle")}
-          detail={t("dashboard.detail.risk", {
-            over: overBudget,
-            near: nearLimit,
+      <div className="period-transition-content">
+        <section
+          className="dashboard-summary"
+          aria-label={t("dashboard.summaryAria", {
+            period: displayPeriodLabel,
           })}
         >
-          {attention.length ? (
-            <BudgetPressureList statuses={attention} />
-          ) : (
-            <p className="quiet-state">{t("dashboard.attentionEmpty")}</p>
-          )}
-        </Panel>
-      </section>
+          <div className={`balance-story ${net < 0 ? "negative" : "positive"}`}>
+            <p className="eyebrow">{tUpper("dashboard.kpi.netPosition")}</p>
+            <strong className="period-metric period-metric-primary">
+              {money(data.report.net_savings)}
+            </strong>
+            <p>
+              {netDelta === 0
+                ? t("dashboard.narrative.unchanged")
+                : t(
+                    netDelta > 0
+                      ? "dashboard.narrative.better"
+                      : "dashboard.narrative.lower",
+                    { amount: money(Math.abs(netDelta)) },
+                  )}
+            </p>
+            <dl className="cashflow-comparison">
+              <div className="cashflow-metric cashflow-metric-income">
+                <dt>{t("dashboard.kpi.income")}</dt>
+                <dd className="period-metric period-metric-income">
+                  {money(data.report.total_income)}
+                </dd>
+              </div>
+              <div className="cashflow-metric cashflow-metric-expenses">
+                <dt>{t("dashboard.kpi.expenses")}</dt>
+                <dd className="period-metric period-metric-expenses">
+                  {money(data.report.total_expenses)}
+                </dd>
+              </div>
+              <div
+                className={`cashflow-metric cashflow-metric-savings ${
+                  Number(data.savings_rate) < 0 ? "negative" : "positive"
+                }`}
+              >
+                <dt>{t("dashboard.kpi.savingsRate")}</dt>
+                <dd className="period-metric period-metric-rate">
+                  {percent(data.savings_rate)}
+                </dd>
+              </div>
+            </dl>
+            <p>
+              {t("dashboard.detail.entries", {
+                count: data.report.transaction_count,
+              })}
+            </p>
+          </div>
+        </section>
 
-      <section
-        className="analysis-grid dashboard-analysis-pair"
-        aria-label={t("dashboard.title")}
-      >
-        <Panel
-          title={t("dashboard.sections.activityTitle")}
-          detail={t("dashboard.sections.activityDetail")}
-          actions={
-            <button
-              className="button ghost"
-              type="button"
-              onClick={() => onNavigate("transactions")}
-            >
-              {t("dashboard.viewAllActivity")}
-            </button>
-          }
+        <section className="dashboard-lead" aria-label={t("dashboard.title")}>
+          <Panel
+            title={t("dashboard.sections.trendTitle")}
+            className="tape-panel"
+          >
+            <CashflowTrend months={data.trend.months} />
+          </Panel>
+        </section>
+
+        <section
+          className="analysis-grid dashboard-priorities"
+          aria-label={t("dashboard.title")}
         >
-          <ActivityList transactions={data.recent_transactions} />
-        </Panel>
-        <Panel
-          title={t("dashboard.sections.mixTitle")}
-          detail={t("dashboard.sections.mixDetail")}
+          <Panel
+            title={t("dashboard.sections.attentionTitle")}
+            detail={t("dashboard.detail.risk", {
+              over: overBudget,
+              near: nearLimit,
+            })}
+          >
+            {attention.length ? (
+              <BudgetPressureList statuses={attention} />
+            ) : (
+              <p className="quiet-state">{t("dashboard.attentionEmpty")}</p>
+            )}
+          </Panel>
+        </section>
+
+        <section
+          className="analysis-grid dashboard-analysis-pair"
+          aria-label={t("dashboard.title")}
         >
-          <CategoryBars
+          <Panel
+            title={t("dashboard.sections.activityTitle")}
+            detail={t("dashboard.sections.activityDetail")}
+            actions={
+              <button
+                className="button ghost"
+                type="button"
+                onClick={() => onNavigate("transactions")}
+              >
+                {t("dashboard.viewAllActivity")}
+              </button>
+            }
+          >
+            <ActivityList transactions={data.recent_transactions} />
+          </Panel>
+          <Panel
             title={t("dashboard.sections.mixTitle")}
-            items={categories}
-          />
-        </Panel>
-      </section>
-    </>
+            detail={t("dashboard.sections.mixDetail")}
+          >
+            <CategoryBars
+              title={t("dashboard.sections.mixTitle")}
+              items={categories}
+            />
+          </Panel>
+        </section>
+      </div>
+    </div>
   );
 }
 

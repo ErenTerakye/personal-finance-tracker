@@ -118,7 +118,7 @@ npm run dev
 
 Open `http://127.0.0.1:5173`; Vite proxies `/api` to the Python process on port 8000. Activate `.venv` before generating API types so the script can import FastAPI and the application package.
 
-The browser interface uses modern platform features progressively, including semantic landmarks, accessible forms, native dialogs and popovers, SVG charts, container queries, color-scheme-aware dark mode with a persistent local override, mobile-safe viewport units, same-document view transitions, and reduced-motion-aware animation. The support policy is Baseline 2026-capable browsers; newer features must degrade without large polyfills.
+The browser interface uses modern platform features progressively, including semantic landmarks, accessible forms, native dialogs and popovers, SVG charts, container queries, color-scheme-aware dark mode with a persistent local override, mobile-safe viewport units, same-document view transitions, and reduced-motion-aware animation. Dashboard and budget period changes keep the current data usable while loading, then morph key metrics and reveal the latest period with scoped directional transitions. The support policy is Baseline 2026-capable browsers; newer features must degrade without large polyfills.
 
 GitHub Pages can host static files only, so it cannot run the live Python/SQLite app. A static showcase is available in [docs/showcase/index.html](docs/showcase/index.html) for portfolio hosting, while real CRUD requires `finance-tracker web`.
 

@@ -45,6 +45,7 @@ export const tr = {
     deleteTransaction: "{name} işlemini sil",
     editBudget: "{name} bütçesini güncelle",
     deleteBudget: "{name} bütçesini sil",
+    periodLoaded: "{period} yüklendi",
   },
   nav: {
     dashboard: "Genel Bakış",

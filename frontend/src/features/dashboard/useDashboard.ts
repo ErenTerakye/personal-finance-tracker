@@ -7,5 +7,5 @@ export function useDashboard(month: number, year: number) {
     (signal: AbortSignal) => api.dashboard(month, year, signal),
     [month, year],
   );
-  return useResource(load, `${year}-${month}`);
+  return useResource(load, `${year}-${month}`, { retainData: true });
 }
