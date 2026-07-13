@@ -1,4 +1,4 @@
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, Plus, ReceiptText, Trash2 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { formatDate } from "../format/dates";
 import { money } from "../format/money";
@@ -12,18 +12,30 @@ export function TransactionTable({
   transactions,
   onEdit,
   onDelete,
+  onCreate,
 }: {
   transactions: TransactionRecord[];
   onEdit: (transaction: TransactionRecord) => void;
   onDelete: (transaction: TransactionRecord) => void;
+  onCreate?: () => void;
 }) {
   const { t, tUpper } = useI18n();
 
   if (!transactions.length) {
     return (
       <EmptyState
+        icon={ReceiptText}
+        eyebrow={t("transactions.empty.eyebrow")}
         title={t("transactions.empty.noTransactions")}
         message={t("transactions.empty.noTransactionsMsg")}
+        action={
+          onCreate ? (
+            <button className="button primary" type="button" onClick={onCreate}>
+              <Plus aria-hidden="true" size={18} />
+              <span>{t("common.addEntry")}</span>
+            </button>
+          ) : undefined
+        }
       />
     );
   }

@@ -59,7 +59,7 @@ export function TransactionsView({
   const [search, setSearch] = useState("");
   const ledgerHeadingRef = useRef<HTMLDivElement>(null);
   const handledCreateRequest = useRef(0);
-  const { t, tUpper } = useI18n();
+  const { t } = useI18n();
   const transactionResource = useTransactions(filters);
   const categoryResource = useTransactionCategories();
   const transactions = transactionResource.data?.transactions ?? [];
@@ -193,7 +193,6 @@ export function TransactionsView({
   return (
     <>
       <PageHeader
-        eyebrow={tUpper("transactions.title")}
         title={t("transactions.title")}
         summary={t("transactions.summary")}
       />
@@ -305,6 +304,7 @@ export function TransactionsView({
                 transactions={visibleTransactions}
                 onEdit={openEdit}
                 onDelete={setPendingDelete}
+                onCreate={openCreate}
               />
             )}
           </Panel>

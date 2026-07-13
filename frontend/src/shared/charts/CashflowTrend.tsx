@@ -44,13 +44,13 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
   );
 
   return (
-    <figure className="cashflow-trend" ref={chartRef}>
-      <figcaption>
-        <strong>{t("charts.title")}</strong>
-        <span>{t("charts.desc")}</span>
-      </figcaption>
+    <figure
+      className="cashflow-trend"
+      ref={chartRef}
+      aria-label={t("charts.ariaTitle")}
+    >
       <ol aria-label={t("charts.title")}>
-        {months.map((item) => {
+        {months.map((item, monthIndex) => {
           const positive = Number(item.net_savings) >= 0;
           const formattedNet = signedMoney(item.net_savings);
           const formattedEntries = t("charts.tooltipEntries", {
@@ -59,13 +59,16 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
 
           return (
             <li
-              key={item.label}
+              key={monthIndex}
               className={positive ? "positive" : "negative"}
               style={
                 {
                   "--income-size": trendSize(item.total_income, max),
                   "--expense-size": trendSize(item.total_expenses, max),
                   "--net-size": trendSize(item.net_savings, max),
+                  "--income-scale": trendScale(item.total_income, max),
+                  "--expense-scale": trendScale(item.total_expenses, max),
+                  "--net-scale": trendScale(item.net_savings, max),
                 } as VariableStyle
               }
             >
@@ -76,6 +79,8 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
               </time>
               <div className="trend-bars">
                 {metrics.map((metric) => {
+                  const barId = `trend-${item.label}-${metric.key}`;
+                  const isActive = active?.id === barId;
                   const tone =
                     metric.key === "net_savings" && !positive
                       ? "warning"
@@ -91,7 +96,7 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
                   return (
                     <button
                       key={metric.key}
-                      className={`trend-bar ${tone}`}
+                      className={`trend-bar ${tone} ${isActive ? "active" : ""}`.trim()}
                       type="button"
                       aria-label={`${translatedLabel} for ${periodLabel(item.month, item.year)}: ${formatMetricValue(item, metric.key)}`}
                       onBlur={handleTooltipBlur(setActive)}
@@ -110,21 +115,8 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
                       onKeyDown={(event) =>
                         handleTooltipKeyDown(event, setActive)
                       }
-                      onPointerDown={(event) =>
-                        setActive(
-                          trendTooltip(
-                            event.currentTarget,
-                            item,
-                            metric,
-                            tone,
-                            translatedLabel,
-                            t,
-                            event.pointerType === "touch",
-                          ),
-                        )
-                      }
-                      onPointerEnter={(event) => {
-                        if (event.pointerType !== "touch") {
+                      onPointerDown={(event) => {
+                        if (event.pointerType === "touch") {
                           setActive(
                             trendTooltip(
                               event.currentTarget,
@@ -133,19 +125,36 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
                               tone,
                               translatedLabel,
                               t,
+                              true,
                             ),
                           );
                         }
                       }}
-                      onPointerLeave={(event) => {
-                        if (event.pointerType !== "touch") {
-                          setActive((current) =>
-                            current?.pinned ? current : null,
-                          );
-                        }
-                      }}
                     >
-                      <span aria-hidden="true" />
+                      <span
+                        aria-hidden="true"
+                        onPointerEnter={(event) => {
+                          if (event.pointerType !== "touch") {
+                            setActive(
+                              trendTooltip(
+                                event.currentTarget,
+                                item,
+                                metric,
+                                tone,
+                                translatedLabel,
+                                t,
+                              ),
+                            );
+                          }
+                        }}
+                        onPointerLeave={(event) => {
+                          if (event.pointerType !== "touch") {
+                            setActive((current) =>
+                              current?.pinned ? current : null,
+                            );
+                          }
+                        }}
+                      />
                     </button>
                   );
                 })}
@@ -163,11 +172,15 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
 }
 
 function trendSize(value: string | number, max: number): string {
+  return `${trendScale(value, max) * 100}%`;
+}
+
+function trendScale(value: string | number, max: number): number {
   const amount = absoluteAmount(value);
   if (amount === 0) {
-    return "0%";
+    return 0;
   }
-  return `${Math.max(MIN_VISIBLE_TREND_SIZE, (amount / max) * 100)}%`;
+  return Math.max(MIN_VISIBLE_TREND_SIZE / 100, amount / max);
 }
 
 function absoluteAmount(value: string | number): number {

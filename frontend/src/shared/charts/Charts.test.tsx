@@ -6,7 +6,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { CashflowTrend, TrendLines } from ".";
+import { CashflowTrend, ExpenseMix, TrendLines } from ".";
 import type { DashboardData } from "../../types";
 import { I18nProvider } from "../i18n/I18nProvider";
 
@@ -41,9 +41,48 @@ describe("CashflowTrend", () => {
     expect(activeMonth.style.getPropertyValue("--income-size")).toBe("100%");
     expect(activeMonth.style.getPropertyValue("--expense-size")).toBe("6%");
     expect(activeMonth.style.getPropertyValue("--net-size")).toBe("99%");
+    expect(activeMonth.style.getPropertyValue("--income-scale")).toBe("1");
+    expect(activeMonth.style.getPropertyValue("--expense-scale")).toBe("0.06");
+    expect(activeMonth.style.getPropertyValue("--net-scale")).toBe("0.99");
     expect(emptyMonth.style.getPropertyValue("--income-size")).toBe("0%");
     expect(emptyMonth.style.getPropertyValue("--expense-size")).toBe("0%");
     expect(emptyMonth.style.getPropertyValue("--net-size")).toBe("0%");
+    expect(emptyMonth.style.getPropertyValue("--income-scale")).toBe("0");
+  });
+
+  it("retains each visual bar slot when the trend period changes", () => {
+    const { rerender } = render(
+      <CashflowTrend
+        months={[
+          trendMonth("2026-01", {
+            total_income: "100.00",
+            total_expenses: "40.00",
+            net_savings: "60.00",
+          }),
+        ]}
+      />,
+    );
+    const incomeBar = screen.getByRole("button", {
+      name: /Income for January 2026/,
+    });
+
+    rerender(
+      <I18nProvider>
+        <CashflowTrend
+          months={[
+            trendMonth("2026-02", {
+              total_income: "50.00",
+              total_expenses: "40.00",
+              net_savings: "10.00",
+            }),
+          ]}
+        />
+      </I18nProvider>,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /Income for February 2026/ }),
+    ).toBe(incomeBar);
   });
 
   it("shows exact details when an expense bar receives focus", async () => {
@@ -66,6 +105,38 @@ describe("CashflowTrend", () => {
     const tooltip = document.querySelector("output") as HTMLElement;
     expect(within(tooltip).getByText("Expenses")).toBeInTheDocument();
     expect(within(tooltip).getByText("1 entries")).toBeInTheDocument();
+  });
+
+  it("highlights only the hovered bar and clears it when the pointer leaves", () => {
+    render(
+      <CashflowTrend
+        months={[
+          trendMonth("2026-01", {
+            total_income: "100.00",
+            total_expenses: "12.34",
+            net_savings: "87.66",
+          }),
+        ]}
+      />,
+    );
+
+    const expenseBar = screen.getByRole("button", {
+      name: /Expenses for January 2026/,
+    });
+    const expenseFill = expenseBar.querySelector("span") as HTMLElement;
+
+    fireEvent.pointerEnter(expenseBar, { pointerType: "mouse" });
+    expect(expenseBar).not.toHaveClass("active");
+
+    fireEvent.pointerEnter(expenseFill, { pointerType: "mouse" });
+
+    expect(expenseBar).toHaveClass("active");
+    expect(
+      screen.getByRole("button", { name: /Income for January 2026/ }),
+    ).not.toHaveClass("active");
+
+    fireEvent.pointerLeave(expenseFill, { pointerType: "mouse" });
+    expect(expenseBar).not.toHaveClass("active");
   });
 
   it("pins details on touch and dismisses with Escape", () => {
@@ -145,6 +216,73 @@ describe("TrendLines", () => {
     expect(document.querySelector("output")).toHaveTextContent("$100.00");
     fireEvent.keyDown(point, { key: "Escape" });
     expect(document.querySelector("output")).not.toBeInTheDocument();
+  });
+});
+
+describe("ExpenseMix", () => {
+  it("renders an accessible donut with exact category data", () => {
+    render(
+      <ExpenseMix
+        title="Expense mix"
+        items={[
+          { label: "Housing", value: "750.00" },
+          { label: "Food", value: "250.00" },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("group", { name: /Expense mix Donut chart/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("$1,000.00")).toBeInTheDocument();
+    expect(screen.getAllByText("75.0%")).toHaveLength(2);
+
+    const table = screen.getByRole("table");
+    expect(within(table).getByText("Housing")).toBeInTheDocument();
+    expect(within(table).getByText("25.0%")).toBeInTheDocument();
+  });
+
+  it("reveals slice details on hover and keyboard focus", async () => {
+    const user = userEvent.setup();
+    render(
+      <ExpenseMix
+        title="Expense mix"
+        items={[
+          { label: "Housing", value: "750.00" },
+          { label: "Food", value: "250.00" },
+        ]}
+      />,
+    );
+
+    const housing = screen.getByRole("button", {
+      name: "Housing: $750.00, 75.0% of expenses",
+    });
+    fireEvent.pointerEnter(housing);
+    expect(document.querySelector(".expense-mix-total")).toHaveTextContent(
+      "Housing$750.0075.0%",
+    );
+
+    fireEvent.pointerLeave(
+      screen.getByRole("group", { name: /Expense mix Donut chart/ }),
+    );
+    await user.tab();
+    expect(housing).toHaveFocus();
+    expect(housing).toHaveAttribute("data-active", "true");
+  });
+
+  it("groups smaller categories to keep the chart readable", () => {
+    render(
+      <ExpenseMix
+        title="Expense mix"
+        items={Array.from({ length: 7 }, (_, index) => ({
+          label: `Category ${index + 1}`,
+          value: String(70 - index * 10),
+        }))}
+      />,
+    );
+
+    expect(screen.getAllByText("Other")).toHaveLength(2);
+    expect(screen.queryByText("Category 6")).not.toBeInTheDocument();
   });
 });
 

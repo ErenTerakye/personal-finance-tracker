@@ -72,22 +72,10 @@
     border-radius: var(--radius);
   }
 
-  .brand strong,
-  .brand em {
-    display: block;
-  }
-
   .brand strong {
+    display: block;
     font-weight: var(--font-weight-bold);
     overflow-wrap: anywhere;
-  }
-
-  .brand em {
-    color: var(--muted);
-    font-size: var(--font-size-xs);
-    font-style: normal;
-    font-weight: var(--font-weight-semibold);
-    letter-spacing: 0.04em;
   }
 
   .app-header nav {
@@ -187,35 +175,42 @@
     container: page-heading / inline-size;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
-    gap: 1rem;
+    gap: var(--space-4) var(--space-5);
     align-items: end;
-    margin-block-end: 1.25rem;
+    margin-block-end: var(--space-5);
+  }
+
+  .page-heading:not(:has(.page-actions)) {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .page-heading h1 {
-    max-inline-size: 17ch;
-    font-size: clamp(1.9rem, 5cqi, 3rem);
-    letter-spacing: 0;
+    max-inline-size: 18ch;
+    font-size: clamp(2rem, 4.5cqi, 2.75rem);
+    letter-spacing: -0.04em;
     overflow-wrap: anywhere;
   }
 
   .page-heading.dashboard-heading h1 {
-    font-size: clamp(1.85rem, 4.2cqi, 2.7rem);
+    font-size: clamp(2rem, 4.5cqi, 2.75rem);
   }
 
   .page-heading p:not(.eyebrow) {
-    max-inline-size: 60ch;
+    max-inline-size: var(--content-measure);
     margin-block-start: 0.5rem;
     color: var(--muted);
     font-size: var(--font-size-lg);
+    line-height: 1.5;
   }
 
   .eyebrow {
-    margin-block-end: 0.4rem;
+    margin-block-end: 0.45rem;
     color: var(--action);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.075em;
+    line-height: var(--line-compact);
+    text-transform: uppercase;
   }
 
   .page-actions {

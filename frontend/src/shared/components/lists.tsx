@@ -12,7 +12,7 @@ export function PageHeader({
   actions,
   className = "",
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   summary: string;
   actions?: ReactNode;
@@ -24,7 +24,7 @@ export function PageHeader({
       aria-labelledby="page-title"
     >
       <div>
-        <p className="eyebrow">{eyebrow}</p>
+        {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
         <h1 id="page-title">{title}</h1>
         <p>{summary}</p>
       </div>

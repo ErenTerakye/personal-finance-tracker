@@ -11,11 +11,13 @@ export function Field({
   label,
   hint,
   children,
+  className = "",
 }: {
   id: string;
   label: string;
   hint?: string;
   children: ReactNode;
+  className?: string;
 }) {
   const hintId = hint ? `${id}-hint` : undefined;
   const control = isValidElement<{ "aria-describedby"?: string }>(children)
@@ -27,7 +29,7 @@ export function Field({
       })
     : children;
   return (
-    <div className="field">
+    <div className={`field ${className}`.trim()}>
       <label htmlFor={id}>{label}</label>
       {hint ? (
         <p className="field-hint" id={hintId}>

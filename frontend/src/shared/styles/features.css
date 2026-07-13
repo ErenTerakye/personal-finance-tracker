@@ -27,7 +27,7 @@
   }
 
   .dashboard-primary-actions {
-    grid-template-columns: repeat(2, minmax(8rem, auto));
+    grid-template-columns: minmax(8rem, auto);
     inline-size: auto;
   }
 
@@ -166,13 +166,15 @@
     .trend-bar {
       flex: 1 1 0;
       inline-size: auto;
-      block-size: var(--bar-size, 0%);
+      block-size: 100%;
       align-self: end;
       border-radius: 999px 999px 3px 3px;
     }
 
     .trend-bar span {
       inline-size: 100%;
+      scale: 1 var(--bar-scale, 0);
+      transform-origin: center bottom;
     }
 
     .trend-bar::before {
@@ -426,6 +428,11 @@
   @media (pointer: coarse) {
     :root {
       --tap-target: 3rem;
+    }
+
+    .preset-chip,
+    .presets-toggle-btn {
+      min-block-size: var(--tap-target);
     }
 
     .trend-bar::before {

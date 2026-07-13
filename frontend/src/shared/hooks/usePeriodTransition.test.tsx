@@ -39,7 +39,7 @@ describe("usePeriodTransition", () => {
     expect(result.current.direction).toBe("forward");
   });
 
-  it("commits adjacent and jumped periods with typed view transitions", () => {
+  it("commits adjacent and jumped periods without a blocking view transition", () => {
     const startViewTransition = installViewTransition();
     const { result, rerender } = renderHook(
       ({ period, resource }: Props) => usePeriodTransition(period, resource),
@@ -56,20 +56,15 @@ describe("usePeriodTransition", () => {
       resource: success("July"),
     });
     expect(result.current.data).toBe("July");
-    expect(startViewTransition).toHaveBeenLastCalledWith({
-      update: expect.any(Function),
-      types: ["period-forward"],
-    });
+    expect(result.current.direction).toBeNull();
+    expect(startViewTransition).not.toHaveBeenCalled();
 
     rerender({
       period: { month: 3, year: 2025 },
       resource: success("March"),
     });
     expect(result.current.data).toBe("March");
-    expect(startViewTransition).toHaveBeenLastCalledWith({
-      update: expect.any(Function),
-      types: ["period-jump"],
-    });
+    expect(startViewTransition).not.toHaveBeenCalled();
   });
 
   it("updates without a transition for reduced motion or same-period data", () => {

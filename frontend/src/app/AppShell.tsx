@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  Database,
   LayoutDashboard,
   Menu,
   PiggyBank,
@@ -58,7 +57,6 @@ export function AppShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const drawerTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const hostedDemo = isHostedDemo();
   const compactLayout = useMediaQuery("(max-width: 63.999rem)");
 
   useEffect(() => {
@@ -94,7 +92,14 @@ export function AppShell({
                   onNavigate(item);
                 }}
               >
-                <Icon aria-hidden="true" size={20} />
+                <span className="navigation-icon" aria-hidden="true">
+                  <Icon
+                    size={20}
+                    strokeWidth={
+                      active && className === "bottom-navigation" ? 2.75 : 2
+                    }
+                  />
+                </span>
                 <span>{t(`nav.${item}`)}</span>
               </a>
             </li>
@@ -121,19 +126,6 @@ export function AppShell({
           <span>{t("common.addEntry")}</span>
         </button>
         <div className="rail-utilities">
-          <span
-            className="storage-status"
-            title={t(
-              hostedDemo
-                ? "common.hostedDemoStorage"
-                : "common.databaseStorage",
-            )}
-          >
-            <Database aria-hidden="true" size={17} />
-            <span>
-              {t(hostedDemo ? "common.hostedDemo" : "common.localSqlite")}
-            </span>
-          </span>
           <LanguageToggle />
           <ThemeToggle />
         </div>
@@ -254,7 +246,6 @@ function Brand({
   onNavigate: (view: View) => void;
   compact?: boolean;
 }) {
-  const { t } = useI18n();
   return (
     <a
       className={`brand ${compact ? "brand-compact" : ""}`}
@@ -271,16 +262,8 @@ function Brand({
       </span>
       <span>
         <strong>Finance Tracker</strong>
-        <em>{t("common.brandMarkSub")}</em>
       </span>
     </a>
-  );
-}
-
-function isHostedDemo(): boolean {
-  if (typeof window === "undefined") return false;
-  return !["localhost", "127.0.0.1", "[::1]"].includes(
-    window.location.hostname,
   );
 }
 

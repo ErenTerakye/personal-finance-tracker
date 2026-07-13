@@ -41,6 +41,13 @@ describe("dashboard workflow", () => {
       "href",
       "/api/charts/trends.png?months=6&end_month=7&end_year=2026",
     );
+    const reportMenu = document.querySelector(".artifact-popover");
+    const reportMenuHeading = within(reportMenu as HTMLElement).getByText(
+      "Reports and exports",
+    );
+    expect(reportMenu).toHaveAttribute("aria-labelledby", reportMenuHeading.id);
+    expect(screen.getAllByText("TXT")).toHaveLength(2);
+    expect(screen.getAllByText("PNG")).toHaveLength(2);
   });
 
   it("changes the dashboard period from the compact period control", async () => {
@@ -107,12 +114,12 @@ describe("dashboard workflow", () => {
       within(actions)
         .getAllByRole("button")
         .map((button) => button.textContent),
-    ).toEqual(["Add entry", "Set budget"]);
+    ).toEqual(["Set budget"]);
     expect(actions.closest(".dashboard-command-row")).toContainElement(toolbar);
     expect(document.querySelector(".quick-actions")).not.toBeInTheDocument();
   });
 
-  it("opens creation forms directly from the dashboard command row", async () => {
+  it("keeps one global entry action that moves creation to Activity", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
       "/api/transactions": { transactions: [] },
@@ -122,12 +129,16 @@ describe("dashboard workflow", () => {
 
     render(<App />);
     await screen.findByRole("heading", { name: "June 2026" });
-    await userEvent.click(
-      within(screen.getByLabelText("Next actions")).getByRole("button", {
+    expect(
+      within(screen.getByLabelText("Next actions")).queryByRole("button", {
         name: "Add entry",
       }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      document.querySelector<HTMLButtonElement>(".rail-create")!,
     );
 
+    expect(window.location.pathname).toBe("/transactions");
     expect(
       await screen.findByRole("dialog", { name: "Add transaction" }),
     ).toHaveAttribute("open");
@@ -187,7 +198,29 @@ describe("dashboard workflow", () => {
     expect(
       screen.getByRole("button", { name: "View all activity" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.getAllByRole("table")).toHaveLength(2);
+  });
+
+  it("uses one heading for the cashflow trend emphasis", async () => {
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+
+    const trendHeading = await screen.findByRole("heading", {
+      name: "Six-month cashflow trend",
+    });
+    const trendPanel = trendHeading.closest("article");
+
+    expect(trendHeading).toHaveAccessibleName("Six-month cashflow trend");
+    expect(trendPanel).toHaveTextContent(
+      "Income, expenses, and net savings by period.",
+    );
+    expect(
+      within(trendPanel!).getByRole("figure", {
+        name: "Six-month income, expense, and net savings trend",
+      }),
+    ).toBeInTheDocument();
+    expect(within(trendPanel!).getAllByRole("heading")).toHaveLength(1);
   });
 
   it("keeps recent activity and expense mix visible in the analysis pair", async () => {

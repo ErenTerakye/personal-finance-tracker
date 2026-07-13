@@ -98,11 +98,11 @@ Architecture: FastAPI exposes JSON endpoints under `/api`, and a React + Vite + 
 
 The browser application includes:
 
-- A compact dashboard led by a six-month cashflow trend, KPI cards, budget pressure, category mix, and recent activity.
+- A compact dashboard led by a six-month cashflow trend, KPI cards, budget pressure, an accessible expense-mix donut with exact category shares, and recent activity.
 - Route-aware navigation for `/`, `/transactions`, `/budgets`, and `/rules`, with an edge-docked, safe-area-aware bottom bar below `64rem` and an adaptive compact command bar that labels the brand and global transaction action when space permits.
 - A rules workspace for category aliases and recurring monthly transaction templates.
 - Compact period controls for month-to-month review without always exposing month/year fields.
-- Dialog-based transaction add/edit/delete and budget set/update/delete flows.
+- Task-focused transaction and budget dialogs with prominent amount entry, grouped details, responsive controls, and actionable zero-data states, plus edit/delete flows.
 - Browser transaction CSV preview with duplicate detection and category alias display before import, plus CSV export for transactions and budgets.
 - Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
 - Read-only transaction tables that collapse into mobile-friendly record lists with compact row actions.

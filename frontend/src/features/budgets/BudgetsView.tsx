@@ -5,7 +5,7 @@ import { artifactUrls } from "../../api/artifacts";
 import { CsvImportDialog } from "../../shared/components/CsvImportDialog";
 import { ActionButton, DownloadLink } from "../../shared/components/actions";
 import { ModalDialog } from "../../shared/components/dialogs";
-import { ErrorBanner } from "../../shared/components/feedback";
+import { EmptyState, ErrorBanner } from "../../shared/components/feedback";
 import { PageHeader, Panel } from "../../shared/components/lists";
 import { money } from "../../shared/format/money";
 import { periodLabel } from "../../shared/format/periods";
@@ -49,7 +49,7 @@ export function BudgetsView({
   const [pendingDelete, setPendingDelete] = useState<BudgetRecord | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const handledCreateRequest = useRef(0);
-  const { t, tUpper } = useI18n();
+  const { t } = useI18n();
   const budgetResource = useBudgets(filters, selectedPeriod);
   const requestedPeriod = {
     month: Number(filters.month || selectedPeriod.month),
@@ -209,7 +209,6 @@ export function BudgetsView({
           : ""}
       </p>
       <PageHeader
-        eyebrow={tUpper("budgets.title")}
         title={t("budgets.title")}
         summary={t("budgets.summary")}
         actions={
@@ -335,9 +334,29 @@ export function BudgetsView({
           ) : hasCategoryFilter && visibleStatuses.length === 0 ? (
             <p className="quiet-state">{t("budgets.empty.noMatch")}</p>
           ) : statuses.length === 0 && totalSpent > 0 ? (
-            <p className="quiet-state">{t("budgets.empty.uncovered")}</p>
+            <EmptyState
+              icon={PiggyBank}
+              eyebrow={t("budgets.empty.eyebrow")}
+              title={t("budgets.empty.noBudgets")}
+              message={t("budgets.empty.uncovered")}
+              action={
+                <ActionButton icon={PiggyBank} onClick={openCreate}>
+                  {t("common.setBudget")}
+                </ActionButton>
+              }
+            />
           ) : statuses.length === 0 ? (
-            <p className="quiet-state">{t("budgets.empty.noPlan")}</p>
+            <EmptyState
+              icon={PiggyBank}
+              eyebrow={t("budgets.empty.eyebrow")}
+              title={t("budgets.empty.noBudgets")}
+              message={t("budgets.empty.noPlan")}
+              action={
+                <ActionButton icon={PiggyBank} onClick={openCreate}>
+                  {t("common.setBudget")}
+                </ActionButton>
+              }
+            />
           ) : (
             <div className="budget-category-list">
               {prioritizedStatuses.map((status) => {

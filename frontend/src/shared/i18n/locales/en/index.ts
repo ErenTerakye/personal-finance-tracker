@@ -110,7 +110,6 @@ export const en = {
     },
     sections: {
       attentionTitle: "Needs attention",
-      trendTitle: "Cashflow Trend",
       contextTitle: "Trend context",
       contextDetail: "Income, expenses, and net savings",
       pressureTitle: "Budget pressure",
@@ -120,6 +119,7 @@ export const en = {
       activityDetail: "Latest activity",
     },
     empty: {
+      eyebrow: "Your ledger is ready",
       loadingTitle: "Loading dashboard",
       fetching: "Fetching transaction records",
       preparing: "Preparing the cashflow trend.",
@@ -161,6 +161,7 @@ export const en = {
       addDescription: "Record the amount, category, and date.",
       amountHint: "Use a positive amount, such as 45.90.",
       categoryHint: "Aliases are saved as their rule category.",
+      localNote: "Saved locally and reflected in your monthly overview.",
     },
   },
   budgets: {
@@ -186,6 +187,7 @@ export const en = {
     recordsLoading: "Loading budgets",
     recordsCount: "{count} records shown",
     empty: {
+      eyebrow: "Build your monthly plan",
       noMatch:
         "No budgets match this category filter. Clear the filter to see the full plan.",
       uncovered: "Spending exists for this month, but no budgets cover it yet.",
@@ -206,6 +208,8 @@ export const en = {
       setDescription: "Set the category limit for a month.",
       categoryHint: "Category matching is case-insensitive.",
       amountHint: "Use a positive amount, such as 500.00.",
+      trackingNote:
+        "Spending in this category will be tracked against this limit.",
     },
   },
   rules: {
@@ -290,6 +294,13 @@ export const en = {
     tooltipEntries: "{count} entries",
     dataTable: "Show chart data as a table",
     period: "Period",
+    emptyMixTitle: "No expenses yet",
+    emptyMixMsg: "Add an expense to see how spending is distributed.",
+    otherCategories: "Other",
+    mixDescription: "Donut chart showing expenses across {count} categories.",
+    mixSliceLabel: "{category}: {amount}, {share}% of expenses",
+    total: "Total",
+    share: "Share",
   },
   notices: {
     "transaction.created": "Transaction added to the local ledger.",

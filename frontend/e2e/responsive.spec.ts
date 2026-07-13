@@ -34,6 +34,45 @@ test("compact bottom navigation localizes without duplicating drawer links", asy
   ).toBeVisible();
 });
 
+test("keeps the export menu content-sized and anchored", async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 900 });
+  await mockApi(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "June 2026" })).toBeVisible();
+
+  const trigger = page.getByRole("button", {
+    name: "Download dashboard artifacts",
+  });
+  await trigger.click();
+
+  await expect(page.getByRole("link", { name: "Trend chart" })).toBeVisible();
+  await expectExportMenuFitsContent(page);
+  await expect
+    .poll(() =>
+      page
+        .locator(".artifact-link")
+        .first()
+        .evaluate((link) => {
+          const style = getComputedStyle(link);
+          return `${style.transitionProperty} ${style.transitionDuration}`;
+        }),
+    )
+    .toBe("all 0s");
+
+  const [triggerBox, menuBox] = await Promise.all([
+    trigger.boundingBox(),
+    page.locator(".artifact-popover").boundingBox(),
+  ]);
+  expect(triggerBox).not.toBeNull();
+  expect(menuBox).not.toBeNull();
+  expect(
+    Math.abs(triggerBox!.x + triggerBox!.width - (menuBox!.x + menuBox!.width)),
+  ).toBeLessThanOrEqual(1);
+
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".artifact-popover")).toBeHidden();
+});
+
 for (const width of viewports) {
   test.describe(`responsive layout at ${width}px`, () => {
     test.beforeEach(async ({ page }) => {
@@ -209,11 +248,27 @@ test.describe("cashflow trend graph rendering", () => {
   test("shows exact values on desktop hover", async ({ page }) => {
     await page.goto("/");
 
-    const hoveredBar = page
+    const hoveredBarSlot = page
       .locator(".cashflow-trend .trend-bar.expenses")
       .nth(3);
-    await hoveredBar.hover();
+    const hoveredBar = hoveredBarSlot.locator("span");
     const tooltip = page.locator(".chart-tooltip");
+
+    await expect(hoveredBarSlot).toHaveCSS("cursor", "default");
+
+    const slotBox = await hoveredBarSlot.boundingBox();
+    const barBox = await hoveredBar.boundingBox();
+    expect(slotBox).not.toBeNull();
+    expect(barBox).not.toBeNull();
+    expect(barBox!.height).toBeLessThan(slotBox!.height);
+
+    await page.mouse.move(
+      barBox!.x + barBox!.width / 2,
+      Math.max(slotBox!.y + 1, barBox!.y - 2),
+    );
+    await expect(tooltip).toBeHidden();
+
+    await hoveredBar.hover();
 
     await expect(tooltip).toContainText("Expenses");
     await expect(tooltip).toContainText("$500.00");
@@ -426,6 +481,30 @@ async function assertCannotPanHorizontally(page: Page) {
     return window.scrollX;
   });
   expect(scrollX).toBe(0);
+}
+
+async function expectExportMenuFitsContent(page: Page) {
+  const menu = page.locator(".artifact-popover");
+  const links = menu.locator(".artifact-link");
+  const [menuBox, linkBoxes, viewportHeight] = await Promise.all([
+    menu.boundingBox(),
+    links.evaluateAll((items) =>
+      items.map((item) => {
+        const rect = item.getBoundingClientRect();
+        return { top: rect.top, bottom: rect.bottom };
+      }),
+    ),
+    page.evaluate(() => document.documentElement.clientHeight),
+  ]);
+
+  expect(menuBox).not.toBeNull();
+  expect(linkBoxes).toHaveLength(4);
+  expect(menuBox!.height).toBeLessThanOrEqual(320);
+  expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(viewportHeight);
+
+  for (let index = 1; index < linkBoxes.length; index += 1) {
+    expect(linkBoxes[index].top - linkBoxes[index - 1].bottom).toBeLessThan(8);
+  }
 }
 
 async function expectDashboardFitsViewport(page: Page) {

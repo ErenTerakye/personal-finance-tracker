@@ -40,7 +40,9 @@ describe("app composition", () => {
     expect(screen.getByText("Six-month cashflow trend")).toBeInTheDocument();
     expect(screen.getAllByText("$2,500.00").length).toBeGreaterThan(0);
     expect(screen.getByText("over budget")).toBeInTheDocument();
-    expect(screen.getByText("Show chart data as a table")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Show chart data as a table").length,
+    ).toBeGreaterThan(0);
   });
 
   it("navigates with browser routes", async () => {
@@ -103,6 +105,11 @@ describe("app composition", () => {
       "/rules",
     ]);
     expect(links[0]).toHaveAttribute("aria-current", "page");
+    expect(links[0].querySelector("svg")).toHaveAttribute(
+      "stroke-width",
+      "2.75",
+    );
+    expect(links[1].querySelector("svg")).toHaveAttribute("stroke-width", "2");
 
     const drawer = document.querySelector<HTMLElement>("#app-drawer");
     expect(drawer).not.toBeNull();

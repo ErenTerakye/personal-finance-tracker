@@ -74,7 +74,7 @@ export function RulesView({
   });
   const previewDialogRef = useRef<HTMLDialogElement | null>(null);
 
-  const { t, tUpper, locale } = useI18n();
+  const { t, locale } = useI18n();
   const ruleResource = useCategoryRules();
   const templateResource = useRecurringTemplates();
   const settingsResource = useLedgerSettings();
@@ -277,7 +277,6 @@ export function RulesView({
   return (
     <>
       <PageHeader
-        eyebrow={tUpper("rules.title")}
         title={t("rules.title")}
         summary={t("rules.summary")}
         actions={

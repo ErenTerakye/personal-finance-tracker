@@ -1,4 +1,4 @@
-import { Save } from "lucide-react";
+import { AlignLeft, CalendarDays, Save, Tags, WalletCards } from "lucide-react";
 import type { FormEvent } from "react";
 import type { TransactionInput } from "../../../types";
 import { SubmitButton } from "../../../shared/components/actions";
@@ -40,9 +40,10 @@ export function TransactionFormDialog({
       }
       description={t("transactions.dialog.addDescription")}
       onClose={onClose}
+      className="entry-dialog"
     >
       {error ? <ErrorBanner message={error} /> : null}
-      <form className="dialog-form" onSubmit={onSubmit}>
+      <form className="dialog-form entry-form" onSubmit={onSubmit}>
         <fieldset className="segmented-field">
           <legend>{t("common.type")}</legend>
           <label>
@@ -53,7 +54,7 @@ export function TransactionFormDialog({
               checked={form.type === "expense"}
               onChange={() => onChange({ ...form, type: "expense" })}
             />
-            <span>{t("common.expense")}</span>
+            <span className="expense-option">{t("common.expense")}</span>
           </label>
           <label>
             <input
@@ -63,18 +64,22 @@ export function TransactionFormDialog({
               checked={form.type === "income"}
               onChange={() => onChange({ ...form, type: "income" })}
             />
-            <span>{t("common.income")}</span>
+            <span className="income-option">{t("common.income")}</span>
           </label>
         </fieldset>
         <Field
           id="transaction-amount"
           label={t("common.amount")}
           hint={t("transactions.dialog.amountHint")}
+          className="amount-field"
         >
           <input
             id="transaction-amount"
             aria-describedby="transaction-amount-hint"
             inputMode="decimal"
+            autoFocus={mode === "create"}
+            autoComplete="off"
+            enterKeyHint="next"
             required
             value={form.amount}
             onChange={(event) =>
@@ -82,42 +87,65 @@ export function TransactionFormDialog({
             }
           />
         </Field>
-        <Field
-          id="transaction-category"
-          label={t("common.category")}
-          hint={t("transactions.dialog.categoryHint")}
-        >
-          <input
+        <div className="entry-form-details">
+          <Field
             id="transaction-category"
-            aria-describedby="transaction-category-hint"
-            required
-            list="category-suggestions"
-            value={form.category}
-            onChange={(event) =>
-              onChange({ ...form, category: event.target.value })
-            }
-          />
-        </Field>
-        <Field id="transaction-date" label={t("common.date")}>
-          <input
-            id="transaction-date"
-            type="date"
-            required
-            value={form.date}
-            onChange={(event) =>
-              onChange({ ...form, date: event.target.value })
-            }
-          />
-        </Field>
-        <Field id="transaction-description" label={t("common.description")}>
-          <input
+            label={t("common.category")}
+            hint={t("transactions.dialog.categoryHint")}
+          >
+            <span className="input-with-icon">
+              <Tags aria-hidden="true" size={18} />
+              <input
+                id="transaction-category"
+                aria-describedby="transaction-category-hint"
+                required
+                list="category-suggestions"
+                autoComplete="off"
+                enterKeyHint="next"
+                value={form.category}
+                onChange={(event) =>
+                  onChange({ ...form, category: event.target.value })
+                }
+              />
+            </span>
+          </Field>
+          <Field id="transaction-date" label={t("common.date")}>
+            <span className="input-with-icon">
+              <CalendarDays aria-hidden="true" size={18} />
+              <input
+                id="transaction-date"
+                type="date"
+                required
+                value={form.date}
+                onChange={(event) =>
+                  onChange({ ...form, date: event.target.value })
+                }
+              />
+            </span>
+          </Field>
+          <Field
             id="transaction-description"
-            value={form.description}
-            onChange={(event) =>
-              onChange({ ...form, description: event.target.value })
-            }
-          />
-        </Field>
+            label={t("common.description")}
+            className="entry-form-wide"
+          >
+            <span className="input-with-icon">
+              <AlignLeft aria-hidden="true" size={18} />
+              <input
+                id="transaction-description"
+                autoComplete="off"
+                enterKeyHint="done"
+                value={form.description}
+                onChange={(event) =>
+                  onChange({ ...form, description: event.target.value })
+                }
+              />
+            </span>
+          </Field>
+        </div>
+        <p className="entry-form-note">
+          <WalletCards aria-hidden="true" size={16} />
+          {t("transactions.dialog.localNote")}
+        </p>
         <div className="dialog-actions">
           <button className="button secondary" type="button" onClick={onClose}>
             {t("common.cancel")}

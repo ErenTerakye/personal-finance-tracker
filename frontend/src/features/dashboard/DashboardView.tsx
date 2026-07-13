@@ -1,14 +1,21 @@
 import { useId } from "react";
-import { Download, FileText, ImageDown, PiggyBank, Plus } from "lucide-react";
+import {
+  ChevronDown,
+  Download,
+  FileText,
+  ImageDown,
+  PiggyBank,
+  type LucideIcon,
+} from "lucide-react";
 import { artifactUrls } from "../../api/artifacts";
-import { CategoryBars, CashflowTrend } from "../../shared/charts";
+import { CashflowTrend, ExpenseMix } from "../../shared/charts";
 import { PeriodControl } from "../../shared/components/PeriodControl";
 import {
   ActivityList,
   BudgetPressureList,
   Panel,
 } from "../../shared/components/lists";
-import { ActionButton, DownloadLink } from "../../shared/components/actions";
+import { ActionButton } from "../../shared/components/actions";
 import { ErrorBanner } from "../../shared/components/feedback";
 import { money, percent } from "../../shared/format/money";
 import { periodLabel } from "../../shared/format/periods";
@@ -23,13 +30,11 @@ export function DashboardView({
   selectedPeriod,
   setSelectedPeriod,
   onNavigate,
-  onCreateTransaction,
   onCreateBudget,
 }: {
   selectedPeriod: { month: number; year: number };
   setSelectedPeriod: (period: { month: number; year: number }) => void;
   onNavigate: (view: View) => void;
-  onCreateTransaction: () => void;
   onCreateBudget: () => void;
 }) {
   const { t, locale, tUpper } = useI18n();
@@ -127,13 +132,6 @@ export function DashboardView({
             aria-label={t("dashboard.detail.actions")}
           >
             <ActionButton
-              icon={Plus}
-              variant="primary"
-              onClick={onCreateTransaction}
-            >
-              {t("common.addEntry")}
-            </ActionButton>
-            <ActionButton
               icon={PiggyBank}
               variant="secondary"
               onClick={onCreateBudget}
@@ -228,7 +226,8 @@ export function DashboardView({
 
         <section className="dashboard-lead" aria-label={t("dashboard.title")}>
           <Panel
-            title={t("dashboard.sections.trendTitle")}
+            title={t("charts.title")}
+            detail={t("charts.desc")}
             className="tape-panel"
           >
             <CashflowTrend months={data.trend.months} />
@@ -277,7 +276,7 @@ export function DashboardView({
             title={t("dashboard.sections.mixTitle")}
             detail={t("dashboard.sections.mixDetail")}
           >
-            <CategoryBars
+            <ExpenseMix
               title={t("dashboard.sections.mixTitle")}
               items={categories}
             />
@@ -290,6 +289,7 @@ export function DashboardView({
 
 function ReportMenu({ month, year }: { month: number; year: number }) {
   const id = useId();
+  const titleId = `${id}-title`;
   const { t } = useI18n();
   return (
     <div className="report-menu">
@@ -301,42 +301,73 @@ function ReportMenu({ month, year }: { month: number; year: number }) {
       >
         <Download aria-hidden="true" size={18} />
         <span>{t("dashboard.exportAction")}</span>
+        <ChevronDown
+          className="report-menu-chevron"
+          aria-hidden="true"
+          size={16}
+        />
       </button>
       <div
         className="artifact-popover"
         id={id}
         popover="auto"
-        aria-label={t("dashboard.downloadLabel")}
+        role="group"
+        aria-labelledby={titleId}
       >
-        <DownloadLink
-          icon={FileText}
-          href={artifactUrls.monthlyReport(month, year)}
-          download
-        >
-          {t("dashboard.monthReport")}
-        </DownloadLink>
-        <DownloadLink
-          icon={ImageDown}
-          href={artifactUrls.monthlyChart(month, year)}
-          download
-        >
-          {t("dashboard.monthChart")}
-        </DownloadLink>
-        <DownloadLink
-          icon={FileText}
-          href={artifactUrls.trendReport(month, year)}
-          download
-        >
-          {t("dashboard.trendReport")}
-        </DownloadLink>
-        <DownloadLink
-          icon={ImageDown}
-          href={artifactUrls.trendChart(month, year)}
-          download
-        >
-          {t("dashboard.trendChart")}
-        </DownloadLink>
+        <div className="artifact-popover-header">
+          <h2 id={titleId}>{t("dashboard.reportMenu")}</h2>
+        </div>
+        <div className="artifact-popover-list">
+          <ArtifactLink
+            icon={FileText}
+            label={t("dashboard.monthReport")}
+            format="TXT"
+            href={artifactUrls.monthlyReport(month, year)}
+          />
+          <ArtifactLink
+            icon={ImageDown}
+            label={t("dashboard.monthChart")}
+            format="PNG"
+            href={artifactUrls.monthlyChart(month, year)}
+          />
+          <ArtifactLink
+            icon={FileText}
+            label={t("dashboard.trendReport")}
+            format="TXT"
+            href={artifactUrls.trendReport(month, year)}
+          />
+          <ArtifactLink
+            icon={ImageDown}
+            label={t("dashboard.trendChart")}
+            format="PNG"
+            href={artifactUrls.trendChart(month, year)}
+          />
+        </div>
       </div>
     </div>
+  );
+}
+
+function ArtifactLink({
+  icon: Icon,
+  label,
+  format,
+  href,
+}: {
+  icon: LucideIcon;
+  label: string;
+  format: "TXT" | "PNG";
+  href: string;
+}) {
+  return (
+    <a className="artifact-link" href={href} download>
+      <span className="artifact-link-icon" aria-hidden="true">
+        <Icon size={18} />
+      </span>
+      <strong>{label}</strong>
+      <span className="artifact-link-format" aria-hidden="true">
+        {format}
+      </span>
+    </a>
   );
 }

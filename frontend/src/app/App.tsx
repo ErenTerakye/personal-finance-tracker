@@ -102,10 +102,6 @@ function AppContent() {
           selectedPeriod={selectedPeriod}
           setSelectedPeriod={changePeriod}
           onNavigate={navigate}
-          onCreateTransaction={() => {
-            setCreateTransactionRequest((request) => request + 1);
-            navigate("transactions");
-          }}
           onCreateBudget={() => {
             setCreateBudgetRequest((request) => request + 1);
             navigate("budgets");

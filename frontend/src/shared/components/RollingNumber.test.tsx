@@ -40,7 +40,7 @@ describe("RollingNumber", () => {
     expect(screen.getByText("$95.00")).toBeInTheDocument();
   });
 
-  it("does not reserve leading slots when the new value has fewer digits", () => {
+  it("animates removed leading characters in collapsing slots", () => {
     const { container } = render(
       <RollingNumber value={0} previousValue={4_500} format={format} />,
     );
@@ -50,7 +50,55 @@ describe("RollingNumber", () => {
       (element) => element.dataset.character,
     );
 
-    expect(characters).toEqual(Array.from("$0.00"));
-    expect(characters).not.toContain("\u00a0");
+    expect(
+      container.querySelector(".rolling-number-slot.is-exiting"),
+    ).toBeTruthy();
+    expect(characters).toContain("4");
+    expect(screen.getByText("$0.00")).toBeInTheDocument();
+  });
+
+  it("rolls currency symbols and signs together with changed digits", () => {
+    const { container } = render(
+      <RollingNumber value={95} previousValue={-120} format={format} />,
+    );
+
+    expect(
+      container.querySelector(".rolling-number-slot.is-exiting"),
+    ).toBeTruthy();
+    expect(
+      container.querySelector('[data-character="-"]')?.closest(".is-exiting"),
+    ).toBeTruthy();
+    expect(
+      container.querySelector('[data-character="$"]')?.closest(".is-symbol"),
+    ).toBeTruthy();
+    expect(
+      container
+        .querySelector('[data-character="$"]')
+        ?.closest(".rolling-number-reel"),
+    ).toBeNull();
+  });
+
+  it("creates a fresh animation viewport for consecutive value changes", () => {
+    const { container, rerender } = render(
+      <RollingNumber
+        value={1_772.96}
+        previousValue={-466.24}
+        format={format}
+      />,
+    );
+    const firstViewport = container.querySelector(".rolling-number-digits");
+
+    rerender(
+      <RollingNumber
+        value={1_570.91}
+        previousValue={1_772.96}
+        format={format}
+      />,
+    );
+
+    expect(container.querySelector(".rolling-number-digits")).not.toBe(
+      firstViewport,
+    );
+    expect(screen.getByText("$1570.91")).toBeInTheDocument();
   });
 });

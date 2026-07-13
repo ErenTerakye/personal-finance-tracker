@@ -1,15 +1,8 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import type { ResourceState } from "./useResource";
 
 export type PeriodValue = { month: number; year: number };
 export type PeriodTransitionDirection = "backward" | "forward" | "jump";
-
-type ViewTransitionDocument = Document & {
-  startViewTransition?: (options: { update: () => void; types?: string[] }) => {
-    finished: Promise<void>;
-  };
-};
 
 export function usePeriodTransition<T>(
   requestedPeriod: PeriodValue,
@@ -36,39 +29,8 @@ export function usePeriodTransition<T>(
       previousData: presented?.data,
       period: requestedPeriod,
     };
-    const direction = presented
-      ? periodDirection(presented.period, requestedPeriod)
-      : null;
-    const commit = () => {
-      committedData.current = resource.data;
-      setPresented(next);
-    };
-    const startViewTransition = (document as ViewTransitionDocument)
-      .startViewTransition;
-    const reduceMotion = window.matchMedia?.(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    const compactLayout = window.matchMedia?.("(max-width: 63.999rem)").matches;
-
-    if (
-      !presented ||
-      !direction ||
-      !startViewTransition ||
-      reduceMotion ||
-      compactLayout
-    ) {
-      commit();
-      return;
-    }
-
-    document.documentElement.classList.add("period-view-transition");
-    const transition = startViewTransition.call(document, {
-      update: () => flushSync(commit),
-      types: [`period-${direction}`],
-    });
-    transition.finished.finally(() => {
-      document.documentElement.classList.remove("period-view-transition");
-    });
+    committedData.current = resource.data;
+    setPresented(next);
   }, [requestedKey, requestedPeriod, resource, presented]);
 
   const pending =

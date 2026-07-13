@@ -16,7 +16,11 @@
     font-family: var(--font-sans);
     font-size: var(--font-size-base);
     font-size-adjust: from-font;
+    font-kerning: normal;
+    font-optical-sizing: auto;
+    font-synthesis: none;
     line-height: var(--line-normal);
+    text-rendering: optimizeLegibility;
   }
 
   code,
@@ -40,8 +44,21 @@
   h5,
   h6 {
     color: var(--ink);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: -0.025em;
     line-height: var(--line-tight);
     text-wrap: balance;
+  }
+
+  :where(
+    .page-heading p:not(.eyebrow),
+    .panel-header p,
+    .filter-bar-header p,
+    .empty-state p,
+    .info-card p,
+    .dialog-copy
+  ) {
+    text-wrap: pretty;
   }
 
   a {

@@ -110,7 +110,6 @@ export const tr = {
     },
     sections: {
       attentionTitle: "Dikkat gerekenler",
-      trendTitle: "Cashflow Trendi",
       contextTitle: "Trend Bağlamı",
       contextDetail: "Gelir, gider ve net tasarruf",
       pressureTitle: "Bütçe Baskısı",
@@ -120,6 +119,7 @@ export const tr = {
       activityDetail: "En son hareketler",
     },
     empty: {
+      eyebrow: "Kayıt defteriniz hazır",
       loadingTitle: "Kontrol paneli yükleniyor",
       fetching: "İşlem kayıtları getiriliyor",
       preparing: "Nakit akışı trendi hazırlanıyor.",
@@ -161,6 +161,7 @@ export const tr = {
       addDescription: "Tutar, kategori ve tarihi kaydedin.",
       amountHint: "Pozitif bir tutar girin, örn: 45.90.",
       categoryHint: "Kategori takma adları kural kategorisine göre kaydedilir.",
+      localNote: "Yerel olarak kaydedilir ve aylık özetinize yansır.",
     },
   },
   budgets: {
@@ -186,6 +187,7 @@ export const tr = {
     recordsLoading: "Bütçeler yükleniyor",
     recordsCount: "{count} kayıt gösteriliyor",
     empty: {
+      eyebrow: "Aylık planınızı oluşturun",
       noMatch:
         "Bu kategori filtresiyle eşleşen bütçe yok. Tüm planı görmek için filtreyi temizleyin.",
       uncovered: "Bu ay harcama var, ancak henüz bunları kapsayan bütçe yok.",
@@ -208,6 +210,7 @@ export const tr = {
       setDescription: "Bir ay için kategori limitini belirleyin.",
       categoryHint: "Kategori eşleşmesi büyük/küçük harfe duyarsızdır.",
       amountHint: "Pozitif bir tutar girin, örn: 500.00.",
+      trackingNote: "Bu kategorideki harcamalar bu limite göre izlenecektir.",
     },
   },
   rules: {
@@ -296,6 +299,13 @@ export const tr = {
     tooltipEntries: "{count} kayıt",
     dataTable: "Grafik verilerini tablo olarak göster",
     period: "Dönem",
+    emptyMixTitle: "Henüz gider yok",
+    emptyMixMsg: "Harcamaların dağılımını görmek için bir gider ekleyin.",
+    otherCategories: "Diğer",
+    mixDescription: "Giderleri {count} kategoriye göre gösteren halka grafik.",
+    mixSliceLabel: "{category}: {amount}, giderlerin %{share} kadarı",
+    total: "Toplam",
+    share: "Pay",
   },
   notices: {
     "transaction.created": "İşlem yerel deftere eklendi.",
