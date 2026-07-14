@@ -96,6 +96,11 @@ export function AppShell({
               >
                 <span className="navigation-icon" aria-hidden="true">
                   <Icon
+                    className={
+                      bottomNavigationActive && item !== "rules"
+                        ? "navigation-filled-icon"
+                        : undefined
+                    }
                     size={20}
                     fill={
                       bottomNavigationActive && item !== "rules"
@@ -106,6 +111,15 @@ export function AppShell({
                       bottomNavigationActive && item === "rules" ? 2.75 : 2
                     }
                   />
+                  {bottomNavigationActive &&
+                  (item === "transactions" || item === "budgets") ? (
+                    <Icon
+                      className={`navigation-icon-detail navigation-icon-detail--${item}`}
+                      size={20}
+                      fill="none"
+                      strokeWidth={item === "budgets" ? 3 : 2}
+                    />
+                  ) : null}
                 </span>
                 <span>{t(`nav.${item}`)}</span>
               </a>

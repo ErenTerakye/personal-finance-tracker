@@ -125,6 +125,13 @@ describe("app composition", () => {
       "fill",
       "currentColor",
     );
+    expect(links[1].querySelector("svg")).toHaveClass(
+      "navigation-filled-icon",
+      "lucide-receipt-text",
+    );
+    expect(
+      links[1].querySelector(".navigation-icon-detail--transactions"),
+    ).toHaveAttribute("stroke-width", "2");
 
     const drawer = document.querySelector<HTMLElement>("#app-drawer");
     expect(drawer).not.toBeNull();
@@ -150,6 +157,13 @@ describe("app composition", () => {
       "fill",
       "currentColor",
     );
+    expect(links[2].querySelector("svg")).toHaveClass(
+      "navigation-filled-icon",
+      "lucide-piggy-bank",
+    );
+    expect(
+      links[2].querySelector(".navigation-icon-detail--budgets"),
+    ).toHaveAttribute("stroke-width", "3");
 
     await userEvent.click(
       within(compactNavigation!).getByRole("link", {

@@ -1187,12 +1187,33 @@
     }
 
     .bottom-navigation a[aria-current="page"] {
+      --active-navigation-icon-detail: color-mix(
+        in srgb,
+        var(--action) 15%,
+        var(--surface)
+      );
+
       color: var(--action);
     }
 
     .bottom-navigation a[aria-current="page"] .navigation-icon::before {
-      background: color-mix(in srgb, var(--action) 15%, var(--surface));
+      background: var(--active-navigation-icon-detail);
       view-transition-name: active-nav-indicator;
+    }
+
+    .bottom-navigation .navigation-icon-detail {
+      position: absolute;
+      pointer-events: none;
+      stroke: var(--active-navigation-icon-detail);
+    }
+
+    .bottom-navigation
+      .navigation-icon-detail--transactions
+      > path:last-of-type,
+    .bottom-navigation
+      .navigation-icon-detail--budgets
+      > path:not(:nth-of-type(2)) {
+      display: none;
     }
 
     .bottom-navigation a:focus-visible {
