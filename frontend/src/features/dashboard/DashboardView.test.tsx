@@ -188,7 +188,7 @@ describe("dashboard workflow", () => {
     expect(popover.style.maxBlockSize).toBe("320px");
   });
 
-  it("keeps the compact period picker out of the top layer", async () => {
+  it("opens the compact period picker as a modal bottom sheet", async () => {
     mockFetch({ "/api/dashboard": dashboardPayload({}) });
     vi.stubGlobal(
       "matchMedia",
@@ -208,22 +208,75 @@ describe("dashboard workflow", () => {
 
     await screen.findByRole("heading", { name: "June 2026" });
     const trigger = screen.getByRole("button", { name: /^Choose period,/ });
-    const popover = document.querySelector<HTMLElement>(".period-popover")!;
+    const picker =
+      document.querySelector<HTMLDialogElement>(".period-popover")!;
 
-    expect(popover).not.toHaveAttribute("popover");
-    expect(popover).toHaveAttribute("hidden");
+    expect(picker).not.toHaveAttribute("popover");
+    expect(picker).not.toHaveAttribute("open");
 
     await userEvent.click(trigger);
 
     expect(trigger).toHaveAttribute("aria-expanded", "true");
-    expect(popover).not.toHaveAttribute("hidden");
-    expect(popover).toHaveAttribute("data-open", "true");
+    expect(picker).toHaveAttribute("open");
+    expect(screen.getByRole("button", { name: "July" })).toHaveFocus();
 
-    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent(picker, new Event("cancel", { cancelable: true }));
 
     expect(trigger).toHaveAttribute("aria-expanded", "false");
-    expect(popover).toHaveAttribute("hidden");
-    expect(trigger).toHaveFocus();
+    expect(picker).not.toHaveAttribute("open");
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it("chooses a month directly from the period picker", async () => {
+    window.history.replaceState({}, "", "/?month=6&year=2026");
+    const fetchMock = mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+    });
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        media: query,
+        matches: query === "(max-width: 63.999rem)",
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+
+    render(<App />);
+
+    await screen.findByRole("heading", { name: "June 2026" });
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Choose period,/ }),
+    );
+
+    const picker = screen.getByRole("dialog", { name: "Choose a period" });
+    expect(
+      within(picker).getByRole("button", { name: "July" }),
+    ).toHaveAttribute("aria-pressed", "true");
+
+    await userEvent.click(
+      within(picker).getByRole("button", { name: "Next year, 2027" }),
+    );
+    await userEvent.click(
+      within(picker).getByRole("button", { name: "January" }),
+    );
+
+    await waitFor(() => {
+      const dashboardCalls = fetchMock.mock.calls.map(([input]) =>
+        String(input),
+      );
+      expect(
+        dashboardCalls.some((url) => url.includes("month=1&year=2027")),
+      ).toBe(true);
+    });
+    expect(picker).not.toHaveAttribute("open");
+    expect(
+      screen.getByRole("button", { name: /^Choose period,/ }),
+    ).toHaveFocus();
   });
 
   it("keeps one global entry action that moves creation to Activity", async () => {
@@ -289,7 +342,7 @@ describe("dashboard workflow", () => {
     );
   });
 
-  it("presents the period as one cashflow story with a quiet attention state", async () => {
+  it("presents the period as one cashflow story with budget setup guidance", async () => {
     mockFetch({ "/api/dashboard": dashboardPayload({}) });
 
     render(<App />);
@@ -297,15 +350,134 @@ describe("dashboard workflow", () => {
     expect(
       await screen.findByText("$2,113.60 remained after expenses this month."),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Nothing needs attention. Spending is within the budgets set for this period.",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText("No budgets for this period")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "View all activity" }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("table")).toHaveLength(2);
+  });
+
+  it("ranks risks, summarizes impact, and progressively discloses the queue", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({
+        budget_statuses: attentionStatuses(),
+      }),
+    });
+
+    render(<App />);
+
+    const heading = await screen.findByRole("heading", {
+      name: "Needs attention",
+    });
+    const panel = heading.closest("article")!;
+
+    expect(panel).toHaveTextContent(
+      "3 over budget by $1,596.40 · 4 near limit with $38.51 left",
+    );
+    expect(
+      within(panel)
+        .getAllByRole("listitem")
+        .map(
+          (item) => item.querySelector(".pressure-copy > strong")?.textContent,
+        ),
+    ).toEqual(["Rent", "Travel", "Household"]);
+    expect(within(panel).getAllByText("Review overage")).toHaveLength(3);
+    expect(
+      within(panel).getByRole("progressbar", {
+        name: "Rent budget used 193.8%",
+      }),
+    ).toHaveAttribute("value", "100");
+    expect(
+      within(panel).queryByRole("button", {
+        name: "Review Dining limit in Plan",
+      }),
+    ).not.toBeInTheDocument();
+
+    const disclosure = within(panel).getByRole("button", {
+      name: "Show 4 more",
+    });
+    expect(disclosure).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(disclosure);
+
+    expect(disclosure).toHaveAccessibleName("Show fewer");
+    expect(disclosure).toHaveAttribute("aria-expanded", "true");
+    expect(within(panel).getAllByRole("listitem")).toHaveLength(7);
+    expect(within(panel).getAllByText("Review limit")).toHaveLength(4);
+    expect(
+      within(panel).getByRole("button", {
+        name: "Review Dining limit in Plan",
+      }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(disclosure);
+    expect(within(panel).getAllByRole("listitem")).toHaveLength(3);
+    await userEvent.click(disclosure);
+
+    await userEvent.click(screen.getByRole("button", { name: /^Next month,/ }));
+
+    await waitFor(() =>
+      expect(
+        within(panel).getByRole("button", { name: "Show 4 more" }),
+      ).toHaveAttribute("aria-expanded", "false"),
+    );
+    expect(within(panel).getAllByRole("listitem")).toHaveLength(3);
+  });
+
+  it("shows a positive state when every configured budget is on track", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({
+        budget_statuses: [
+          attentionStatus(1, "Food", "ok", "60.00", "40.0", "40.00"),
+        ],
+      }),
+    });
+
+    render(<App />);
+
+    expect(
+      await screen.findByText("All budgets are on track"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Budgets checked: 1")).toBeInTheDocument();
+    expect(
+      screen.queryByText("No budgets for this period"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens the matching period and category in Plan from a risk", async () => {
+    const travelStatus = attentionStatus(
+      1,
+      "Travel & Fun",
+      "over budget",
+      "-35.00",
+      "123.3",
+      "185.00",
+    );
+    mockFetch({
+      "/api/dashboard": dashboardPayload({ budget_statuses: [travelStatus] }),
+      "/api/budgets/status": { statuses: [travelStatus] },
+      "/api/budgets": { budgets: [travelStatus.budget] },
+    });
+
+    render(<App />);
+
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: "Review Travel & Fun overage in Plan",
+      }),
+    );
+
+    expect(window.location.pathname).toBe("/budgets");
+    expect(window.location.search).toBe(
+      "?month=6&year=2026&category=Travel+%26+Fun",
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Budgets" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: "Category" })).toHaveValue(
+      "Travel & Fun",
+    );
+    expect(document.title).toBe("Plan | Personal Finance Tracker");
+    await waitFor(() => expect(document.querySelector("main")).toHaveFocus());
   });
 
   it("uses one heading for the cashflow trend emphasis", async () => {
@@ -405,6 +577,83 @@ describe("dashboard workflow", () => {
     );
   });
 });
+
+function attentionStatuses() {
+  return [
+    attentionStatus(1, "Dining", "near limit", "5.70", "96.6", "164.30"),
+    attentionStatus(
+      2,
+      "Rent",
+      "over budget",
+      "-1500.00",
+      "193.8",
+      "3100.00",
+      "1600.00",
+    ),
+    attentionStatus(
+      3,
+      "Subscriptions",
+      "near limit",
+      "5.01",
+      "90.0",
+      "44.99",
+      "50.00",
+    ),
+    attentionStatus(
+      4,
+      "Household",
+      "over budget",
+      "-6.40",
+      "103.6",
+      "186.40",
+      "180.00",
+    ),
+    attentionStatus(5, "Health", "near limit", "8.00", "92.0", "92.00"),
+    attentionStatus(
+      6,
+      "Travel",
+      "over budget",
+      "-90.00",
+      "116.4",
+      "640.00",
+      "550.00",
+    ),
+    attentionStatus(
+      7,
+      "Utilities",
+      "near limit",
+      "19.80",
+      "91.2",
+      "205.20",
+      "225.00",
+    ),
+  ];
+}
+
+function attentionStatus(
+  id: number,
+  category: string,
+  status: string,
+  remaining: string,
+  percentUsed: string,
+  actualExpenses: string,
+  amount = "100.00",
+) {
+  return {
+    budget: {
+      id,
+      category,
+      amount,
+      month: 6,
+      year: 2026,
+      created_at: "2026-06-01T12:00:00",
+    },
+    actual_expenses: actualExpenses,
+    remaining,
+    percent_used: percentUsed,
+    status,
+  };
+}
 
 function elementBounds(top: number, bottom: number): DOMRect {
   return {

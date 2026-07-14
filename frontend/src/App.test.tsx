@@ -39,7 +39,7 @@ describe("app composition", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Six-month cashflow trend")).toBeInTheDocument();
     expect(screen.getAllByText("$2,500.00").length).toBeGreaterThan(0);
-    expect(screen.getByText("over budget")).toBeInTheDocument();
+    expect(screen.getByText("Over budget")).toBeInTheDocument();
     expect(
       screen.getAllByText("Show chart data as a table").length,
     ).toBeGreaterThan(0);
@@ -267,7 +267,19 @@ describe("app composition", () => {
   });
 
   it("supports language toggling between English and Turkish", async () => {
-    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+    mockFetch({
+      "/api/dashboard": dashboardPayload({
+        budget_statuses: [
+          {
+            budget: budget(),
+            actual_expenses: "185.00",
+            remaining: "-35.00",
+            percent_used: "123.3",
+            status: "over budget",
+          },
+        ],
+      }),
+    });
 
     render(<App />);
 
@@ -279,6 +291,7 @@ describe("app composition", () => {
       screen.getByRole("button", { name: /Choose period/i }),
     ).toBeInTheDocument();
     expect(screen.getByText("CASHFLOW OVERVIEW")).toBeInTheDocument();
+    expect(screen.getByText("Over budget")).toBeInTheDocument();
     expect(document.documentElement.lang).toBe("en");
 
     // Find and click language toggle button
@@ -297,6 +310,7 @@ describe("app composition", () => {
     ).toBeInTheDocument();
     expect(langToggle).toHaveTextContent("EN");
     expect(screen.getByText("NAKİT AKIŞI ÖZETİ")).toBeInTheDocument();
+    expect(screen.getByText("Bütçe aşıldı")).toBeInTheDocument();
     expect(screen.getAllByText("Finance Tracker").length).toBeGreaterThan(0);
     expect(document.documentElement.lang).toBe("tr");
     await waitFor(() => expect(langToggle).toHaveFocus());

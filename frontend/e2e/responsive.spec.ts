@@ -89,6 +89,11 @@ for (const width of viewports) {
         page.getByRole("heading", { name: "June 2026" }),
       ).toBeVisible();
       await expect(page.getByText("Six-month cashflow trend")).toBeVisible();
+      const attentionPanel = page.locator(".attention-panel");
+      await expect(attentionPanel.getByRole("listitem")).toHaveCount(3);
+      await expect(
+        attentionPanel.getByRole("button", { name: "Show 4 more" }),
+      ).toBeVisible();
       await expect(
         page.getByRole("button", { name: /Choose period/ }),
       ).toBeVisible();
@@ -107,6 +112,9 @@ for (const width of viewports) {
       await expectElementsFitViewport(page, [
         ".dashboard-actions",
         ".artifact-actions .button",
+        ".attention-panel",
+        ".pressure-row",
+        ".pressure-review",
       ]);
       if (width <= 430 || width === 1024) {
         await expectQuickActionsStacked(page);
@@ -999,8 +1007,59 @@ function dashboardPayload() {
     },
     savings_rate: "84.5",
     recent_transactions: [transaction()],
-    budget_statuses: [budgetStatus()],
+    budget_statuses: attentionQueueStatuses(),
   };
+}
+
+function attentionQueueStatuses() {
+  return [
+    budgetStatus({
+      budget: budget({ id: 1, category: "Rent", amount: "1600.00" }),
+      actual_expenses: "3100.00",
+      remaining: "-1500.00",
+      percent_used: "193.8",
+    }),
+    budgetStatus({
+      budget: budget({ id: 2, category: "Travel", amount: "550.00" }),
+      actual_expenses: "640.00",
+      remaining: "-90.00",
+      percent_used: "116.4",
+    }),
+    budgetStatus({
+      budget: budget({ id: 3, category: "Household", amount: "180.00" }),
+      actual_expenses: "186.40",
+      remaining: "-6.40",
+      percent_used: "103.6",
+    }),
+    budgetStatus({
+      budget: budget({ id: 4, category: "Dining", amount: "170.00" }),
+      actual_expenses: "164.30",
+      remaining: "5.70",
+      percent_used: "96.6",
+      status: "near limit",
+    }),
+    budgetStatus({
+      budget: budget({ id: 5, category: "Health", amount: "100.00" }),
+      actual_expenses: "92.00",
+      remaining: "8.00",
+      percent_used: "92.0",
+      status: "near limit",
+    }),
+    budgetStatus({
+      budget: budget({ id: 6, category: "Utilities", amount: "225.00" }),
+      actual_expenses: "205.20",
+      remaining: "19.80",
+      percent_used: "91.2",
+      status: "near limit",
+    }),
+    budgetStatus({
+      budget: budget({ id: 7, category: "Subscriptions", amount: "50.00" }),
+      actual_expenses: "44.99",
+      remaining: "5.01",
+      percent_used: "90.0",
+      status: "near limit",
+    }),
+  ];
 }
 
 function trendMonth(

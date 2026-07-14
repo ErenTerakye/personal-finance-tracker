@@ -99,6 +99,37 @@ test.describe("keyboard accessibility smoke checks", () => {
     await expect(summary.locator("..")).toHaveAttribute("open", "");
     expect(await page.evaluate(() => getSelection()?.toString())).toBe("");
   });
+
+  test("expands the attention queue and reviews a budget by keyboard", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { name: "Needs attention" }),
+    ).toBeVisible();
+
+    const disclosure = page.locator(".pressure-disclosure");
+    await expect(disclosure).toHaveAccessibleName("Show 4 more");
+    await disclosure.focus();
+    await page.keyboard.press("Enter");
+    await expect(disclosure).toHaveAccessibleName("Show fewer");
+    await expect(
+      page.locator(".attention-panel").getByRole("listitem"),
+    ).toHaveCount(7);
+
+    const review = page.getByRole("button", {
+      name: "Review Rent overage in Plan",
+    });
+    await review.focus();
+    await page.keyboard.press("Enter");
+
+    await expect(page).toHaveURL(/\/budgets\?month=6&year=2026&category=Rent$/);
+    await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
+    await expect(page.getByRole("searchbox", { name: "Category" })).toHaveValue(
+      "Rent",
+    );
+    await expect(page.locator("main")).toBeFocused();
+  });
 });
 
 test.describe("accessibility display preferences", () => {
@@ -111,6 +142,21 @@ test.describe("accessibility display preferences", () => {
   }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.emulateMedia({ forcedColors: "active" });
+    await page.goto("/");
+    await expect(
+      page.getByRole("button", { name: "Review Rent overage in Plan" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Over budget", { exact: true }).first(),
+    ).toBeVisible();
+    await expect
+      .poll(() =>
+        page
+          .locator(".pressure-list")
+          .evaluate((element) => getComputedStyle(element).borderStyle),
+      )
+      .not.toBe("none");
+
     await page.goto("/transactions");
 
     const addButton = page.getByRole("button", { name: "Add entry" }).first();
@@ -127,10 +173,27 @@ test.describe("accessibility display preferences", () => {
       .not.toBe("none");
   });
 
-  test("reflows at 200 percent text size without horizontal page overflow", async ({
+  test("reflows the dashboard and forms at 200 percent text size", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto("/");
+    await page.addStyleTag({ content: "html { font-size: 200% !important; }" });
+
+    await expect(
+      page.getByRole("heading", { name: "June 2026" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Show 4 more" }),
+    ).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+        ),
+      )
+      .toBe(true);
+
     await page.goto("/rules");
     await page.addStyleTag({ content: "html { font-size: 200% !important; }" });
 
@@ -354,8 +417,59 @@ function dashboardPayload() {
     },
     savings_rate: "84.5",
     recent_transactions: [transaction()],
-    budget_statuses: [budgetStatus()],
+    budget_statuses: attentionQueueStatuses(),
   };
+}
+
+function attentionQueueStatuses() {
+  return [
+    budgetStatus({
+      budget: budget({ id: 1, category: "Rent", amount: "1600.00" }),
+      actual_expenses: "3100.00",
+      remaining: "-1500.00",
+      percent_used: "193.8",
+    }),
+    budgetStatus({
+      budget: budget({ id: 2, category: "Travel", amount: "550.00" }),
+      actual_expenses: "640.00",
+      remaining: "-90.00",
+      percent_used: "116.4",
+    }),
+    budgetStatus({
+      budget: budget({ id: 3, category: "Household", amount: "180.00" }),
+      actual_expenses: "186.40",
+      remaining: "-6.40",
+      percent_used: "103.6",
+    }),
+    budgetStatus({
+      budget: budget({ id: 4, category: "Dining", amount: "170.00" }),
+      actual_expenses: "164.30",
+      remaining: "5.70",
+      percent_used: "96.6",
+      status: "near limit",
+    }),
+    budgetStatus({
+      budget: budget({ id: 5, category: "Health", amount: "100.00" }),
+      actual_expenses: "92.00",
+      remaining: "8.00",
+      percent_used: "92.0",
+      status: "near limit",
+    }),
+    budgetStatus({
+      budget: budget({ id: 6, category: "Utilities", amount: "225.00" }),
+      actual_expenses: "205.20",
+      remaining: "19.80",
+      percent_used: "91.2",
+      status: "near limit",
+    }),
+    budgetStatus({
+      budget: budget({ id: 7, category: "Subscriptions", amount: "50.00" }),
+      actual_expenses: "44.99",
+      remaining: "5.01",
+      percent_used: "90.0",
+      status: "near limit",
+    }),
+  ];
 }
 
 function trendMonth(

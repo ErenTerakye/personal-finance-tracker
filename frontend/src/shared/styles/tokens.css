@@ -63,6 +63,7 @@
     --select-chevron: var(--select-chevron-light);
     --radius: 12px;
     --radius-sm: 7px;
+    --radius-pill: 100vmax;
     --tap-target: 3rem;
     --page-gutter: clamp(1rem, 3.5vw, 3rem);
     --space-3: 0.75rem;

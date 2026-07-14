@@ -12,6 +12,7 @@ import { ActionButton } from "../shared/components/actions";
 import { PageHeader } from "../shared/components/lists";
 import { LayoutDashboard } from "lucide-react";
 import { useAppSettings } from "./useAppSettings";
+import type { BudgetReviewTarget } from "../shared/components/lists";
 
 const initialPeriod = periodFromUrl();
 
@@ -82,6 +83,24 @@ function AppContent() {
     setSelectedPeriod(period);
   }
 
+  function reviewBudget(target: BudgetReviewTarget) {
+    const params = new URLSearchParams({
+      month: String(target.month),
+      year: String(target.year),
+      category: target.category,
+    });
+    window.history.pushState(
+      {},
+      "",
+      `${pathForView("budgets")}?${params.toString()}`,
+    );
+    setCreateTransactionRequest(0);
+    setCreateBudgetRequest(0);
+    setSelectedPeriod({ month: target.month, year: target.year });
+    setNotice("");
+    setView("budgets");
+  }
+
   if (settings.status === "idle" || settings.status === "loading") {
     return <div className="app-loading">{t("common.loading")}</div>;
   }
@@ -102,6 +121,7 @@ function AppContent() {
           selectedPeriod={selectedPeriod}
           setSelectedPeriod={changePeriod}
           onNavigate={navigate}
+          onReviewBudget={reviewBudget}
           onCreateBudget={() => {
             setCreateBudgetRequest((request) => request + 1);
             navigate("budgets");

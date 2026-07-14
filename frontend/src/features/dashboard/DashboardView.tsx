@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import {
+  CheckCircle2,
   ChevronDown,
   Download,
   FileText,
@@ -14,9 +15,12 @@ import {
   ActivityList,
   BudgetPressureList,
   Panel,
+  rankBudgetAttention,
+  summarizeBudgetAttention,
+  type BudgetReviewTarget,
 } from "../../shared/components/lists";
 import { ActionButton } from "../../shared/components/actions";
-import { ErrorBanner } from "../../shared/components/feedback";
+import { EmptyState, ErrorBanner } from "../../shared/components/feedback";
 import { money, percent } from "../../shared/format/money";
 import { useMediaQuery } from "../../shared/hooks/useMediaQuery";
 import { periodLabel } from "../../shared/format/periods";
@@ -32,11 +36,13 @@ export function DashboardView({
   setSelectedPeriod,
   onNavigate,
   onCreateBudget,
+  onReviewBudget,
 }: {
   selectedPeriod: { month: number; year: number };
   setSelectedPeriod: (period: { month: number; year: number }) => void;
   onNavigate: (view: View) => void;
   onCreateBudget: () => void;
+  onReviewBudget: (target: BudgetReviewTarget) => void;
 }) {
   const { t, locale, tUpper } = useI18n();
   const dashboard = useDashboard(selectedPeriod.month, selectedPeriod.year);
@@ -59,27 +65,36 @@ export function DashboardView({
 
   const data: DashboardData = periodTransition.data;
 
-  const overBudget = data.budget_statuses.filter(
-    (status) => status.status === "over budget",
-  ).length;
-  const nearLimit = data.budget_statuses.filter(
-    (status) => status.status === "near limit",
-  ).length;
   const categories = Object.entries(data.report.expenses_by_category)
     .map(([label, value]) => ({ label, value }))
     .sort((a, b) => Number(b.value) - Number(a.value));
   const net = Number(data.report.net_savings);
   const netDelta = Number(data.report.net_savings_delta);
-  const attention = [...data.budget_statuses]
-    .filter((status) => status.status !== "ok")
-    .sort((a, b) => {
-      const priority = (value: string) =>
-        value === "over budget" ? 2 : value === "near limit" ? 1 : 0;
-      return (
-        priority(b.status) - priority(a.status) ||
-        Number(b.percent_used) - Number(a.percent_used)
-      );
-    });
+  const attention = rankBudgetAttention(data.budget_statuses);
+  const attentionSummary = summarizeBudgetAttention(attention);
+  const attentionDetail =
+    attentionSummary.overCount && attentionSummary.nearCount
+      ? t("dashboard.attention.summaryCombined", {
+          over: attentionSummary.overCount,
+          overAmount: money(attentionSummary.overAmount),
+          near: attentionSummary.nearCount,
+          nearAmount: money(attentionSummary.nearAmount),
+        })
+      : attentionSummary.overCount
+        ? t("dashboard.attention.summaryOver", {
+            count: attentionSummary.overCount,
+            amount: money(attentionSummary.overAmount),
+          })
+        : attentionSummary.nearCount
+          ? t("dashboard.attention.summaryNear", {
+              count: attentionSummary.nearCount,
+              amount: money(attentionSummary.nearAmount),
+            })
+          : data.budget_statuses.length
+            ? t("dashboard.attention.safeDetail", {
+                count: data.budget_statuses.length,
+              })
+            : t("dashboard.attention.noBudgetsDetail");
 
   // Determine localized period label from month number if Turkish
   const displayPeriodLabel =
@@ -241,15 +256,32 @@ export function DashboardView({
         >
           <Panel
             title={t("dashboard.sections.attentionTitle")}
-            detail={t("dashboard.detail.risk", {
-              over: overBudget,
-              near: nearLimit,
-            })}
+            detail={attentionDetail}
+            className="attention-panel"
           >
             {attention.length ? (
-              <BudgetPressureList statuses={attention} />
+              <BudgetPressureList
+                key={`${selectedPeriod.year}-${selectedPeriod.month}`}
+                statuses={attention}
+                onReviewBudget={onReviewBudget}
+              />
+            ) : data.budget_statuses.length ? (
+              <EmptyState
+                icon={CheckCircle2}
+                title={t("dashboard.attention.safeTitle")}
+                message={t("dashboard.attention.safeMessage")}
+              />
             ) : (
-              <p className="quiet-state">{t("dashboard.attentionEmpty")}</p>
+              <EmptyState
+                icon={PiggyBank}
+                title={t("dashboard.attention.noBudgetsTitle")}
+                message={t("dashboard.attention.noBudgetsMessage")}
+                action={
+                  <ActionButton icon={PiggyBank} onClick={onCreateBudget}>
+                    {t("common.setBudget")}
+                  </ActionButton>
+                }
+              />
             )}
           </Panel>
         </section>

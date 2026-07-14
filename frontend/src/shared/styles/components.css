@@ -110,7 +110,7 @@
     padding: 0.5rem 0.625rem;
     color: var(--ink);
     border: 1px solid transparent;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-pill);
     line-height: var(--line-compact);
     text-decoration: none;
   }
@@ -128,7 +128,7 @@
     aspect-ratio: 1;
     color: var(--action);
     background: color-mix(in srgb, var(--action) 10%, var(--surface-2));
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-pill);
   }
 
   .artifact-link strong {
@@ -250,7 +250,7 @@
     min-block-size: var(--tap-target);
     max-inline-size: 100%;
     border: 1px solid transparent;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-pill);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     letter-spacing: 0.005em;
@@ -439,7 +439,7 @@
     overflow: clip;
     background: color-mix(in srgb, var(--surface) 92%, transparent);
     border: 0;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-pill);
     box-shadow: var(--shadow-soft);
   }
 
@@ -488,44 +488,56 @@
     white-space: nowrap;
   }
 
+  :is(
+      .period-chip,
+      .period-year-trigger,
+      .period-month-option,
+      .period-year-option
+    )[data-focus-origin="pointer"]:focus-visible {
+    outline: 0;
+  }
+
   .period-popover {
     position: fixed;
     inset-block-start: 5rem;
     inset-inline-end: max(1rem, calc((100dvw - 90rem) / 2));
-    inline-size: min(24rem, calc(100dvw - 2rem));
+    inline-size: min(21rem, calc(100dvw - 2rem));
+    max-inline-size: none;
     margin: 0;
-    padding: 0.85rem;
-    overflow-y: auto;
+    padding: 0.55rem;
+    overflow: hidden;
     color: var(--text);
     background: var(--surface);
-    border: 1px solid var(--rule);
+    border: 1px solid var(--rule-strong);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     overscroll-behavior: contain;
-    scrollbar-gutter: stable;
     position-try-fallbacks: flip-block, flip-inline;
+    opacity: 0;
+    translate: 0 -0.3rem;
+    transform-origin: top center;
+    transition:
+      opacity var(--motion-control) var(--ease-out),
+      translate var(--motion-control) var(--ease-out),
+      display var(--motion-control) allow-discrete,
+      overlay var(--motion-control) allow-discrete;
+    transition-behavior: allow-discrete;
   }
 
-  /* Compact pickers stay below the persistent app chrome in the normal
-     stacking order. Native popovers remain the desktop enhancement. */
-  @media (max-width: 63.999rem) {
-    .period-control {
-      overflow: visible;
-    }
+  .period-popover:popover-open {
+    opacity: 1;
+    translate: 0;
+  }
 
-    .period-popover:not([popover]) {
-      z-index: 10;
-      display: block;
-      max-block-size: min(20rem, calc(100dvb - 2rem));
-    }
-
-    .period-popover:not([popover])[hidden] {
-      display: none;
+  @starting-style {
+    .period-popover:popover-open {
+      opacity: 0;
+      translate: 0 -0.3rem;
     }
   }
 
   @supports (position-area: block-end) {
-    .period-popover {
+    .period-popover[popover] {
       position: fixed;
       position-anchor: --period-picker;
       position-area: block-end span-inline-end;
@@ -534,14 +546,159 @@
     }
   }
 
-  .period-picker {
-    display: grid;
-    grid-template-columns: 1fr 0.7fr;
-    gap: 0.7rem;
+  .period-sheet-header {
+    display: none;
   }
 
-  .period-picker .button {
-    grid-column: 1 / -1;
+  .period-picker {
+    display: grid;
+    gap: 0;
+  }
+
+  .period-year-stepper {
+    display: grid;
+    grid-template-columns: var(--tap-target) 1fr var(--tap-target);
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .period-year-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-block-size: var(--tap-target);
+    padding-inline: 0.75rem;
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    font-variant-numeric: tabular-nums;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+  }
+
+  .period-year-trigger svg {
+    color: var(--muted);
+    transition: rotate var(--motion-micro) var(--ease-out);
+  }
+
+  .period-year-trigger[aria-expanded="true"] svg {
+    rotate: 180deg;
+  }
+
+  .period-month-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding-block-start: 0.35rem;
+  }
+
+  .period-month-option,
+  .period-year-option {
+    min-block-size: 2.65rem;
+    min-inline-size: 0;
+    padding: 0.45rem 0.25rem;
+    color: var(--text);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+  }
+
+  :is(.period-month-option, .period-year-option)[aria-pressed="true"] {
+    color: var(--action);
+    font-weight: var(--font-weight-bold);
+    background: color-mix(in srgb, var(--action) 12%, var(--surface));
+    border-color: color-mix(in srgb, var(--action) 24%, transparent);
+  }
+
+  .period-year-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.25rem;
+    margin-block-start: 0.35rem;
+  }
+
+  .period-year-option {
+    min-block-size: 2.65rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .period-year-trigger:hover,
+    :is(.period-month-option, .period-year-option):hover:not(
+        [aria-pressed="true"]
+      ) {
+      color: var(--ink);
+      background: var(--surface-2);
+      border-color: var(--rule);
+    }
+  }
+
+  @media (max-width: 63.999rem) {
+    .period-popover:not([popover]) {
+      inset: auto 0 0;
+      inline-size: min(32rem, 100dvi);
+      max-inline-size: none;
+      max-block-size: calc(100dvb - 1rem);
+      margin: auto auto 0;
+      padding: 0.75rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom));
+      overflow-y: auto;
+      border-block-end: 0;
+      border-radius: calc(var(--radius) + 0.35rem) calc(var(--radius) + 0.35rem)
+        0 0;
+      opacity: 0;
+      translate: 0 1rem;
+    }
+
+    .period-popover:not([popover])[open] {
+      opacity: 1;
+      translate: 0;
+    }
+
+    @starting-style {
+      .period-popover:not([popover])[open] {
+        opacity: 0;
+        translate: 0 1rem;
+      }
+    }
+
+    .period-popover:not([popover])::backdrop {
+      background: color-mix(in srgb, var(--paper-dark) 54%, transparent);
+      opacity: 1;
+      transition:
+        opacity var(--motion-control) ease-out,
+        display var(--motion-control) allow-discrete,
+        overlay var(--motion-control) allow-discrete;
+    }
+
+    @starting-style {
+      .period-popover:not([popover])[open]::backdrop {
+        opacity: 0;
+      }
+    }
+
+    .period-sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-block-size: var(--tap-target);
+      padding-inline-start: 0.35rem;
+    }
+
+    .period-sheet-header h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: var(--font-size-lg);
+    }
+
+    .period-picker {
+      padding-block-start: 0.25rem;
+    }
   }
 
   .notice,
@@ -1449,30 +1606,126 @@
     }
   }
 
-  .pressure-list {
-    container: pressure-list / inline-size;
+  .pressure-queue {
+    container: attention-queue / inline-size;
     display: grid;
-    gap: 0.55rem;
+    gap: var(--space-3);
+  }
+
+  .attention-panel:has(.pressure-disclosure) {
+    padding-block-end: var(--space-3);
+  }
+
+  .pressure-surface {
+    overflow: clip;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+
+  .pressure-list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pressure-overflow {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+      grid-template-rows var(--motion-route) var(--ease-out),
+      opacity var(--motion-control) ease-out;
+  }
+
+  .pressure-overflow.is-expanded {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .pressure-overflow-inner {
+    min-block-size: 0;
+    overflow: clip;
+  }
+
+  .pressure-list-extra .pressure-row:first-child {
+    border-block-start: 1px solid var(--rule);
   }
 
   .pressure-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.5rem 0.75rem;
+    grid-template-areas:
+      "copy variance"
+      "progress progress"
+      "action action";
+    gap: 0.65rem 1rem;
     align-items: center;
-    padding: 0.75rem;
-    background: var(--surface-2);
-    border-radius: var(--radius);
+    min-inline-size: 0;
+    padding: 0.95rem;
   }
 
-  .pressure-row strong,
-  .pressure-row > div span {
+  .pressure-row:not(:first-child) {
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .pressure-row.is-highest-priority {
+    background: color-mix(in oklab, var(--expenses) 7%, var(--surface-2));
+  }
+
+  .pressure-copy {
+    grid-area: copy;
+    min-inline-size: 0;
+  }
+
+  .pressure-copy > strong,
+  .pressure-spend {
     display: block;
   }
 
-  .pressure-row > div span {
+  .pressure-copy > strong {
+    margin-block-start: 0.3rem;
+    color: var(--ink);
+    font-size: var(--font-size-lg);
+    line-height: var(--line-compact);
+    overflow-wrap: anywhere;
+  }
+
+  .pressure-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .pressure-row.over-budget .pressure-status,
+  .pressure-row.over-budget .pressure-variance {
+    color: var(--expenses);
+  }
+
+  .pressure-row.near-limit .pressure-status,
+  .pressure-row.near-limit .pressure-variance {
+    color: light-dark(#8a5700, var(--warning));
+  }
+
+  .pressure-spend {
+    margin-block-start: 0.2rem;
     color: var(--muted);
     font-size: var(--font-size-sm);
+  }
+
+  .pressure-variance {
+    grid-area: variance;
+    justify-self: end;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-md);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--line-compact);
+    text-align: end;
   }
 
   progress {
@@ -1519,7 +1772,40 @@
     background-color: var(--warning);
   }
 
-  .pressure-row em,
+  .pressure-row progress {
+    grid-area: progress;
+  }
+
+  .pressure-review {
+    grid-area: action;
+    justify-self: end;
+    justify-content: center;
+    gap: 0.35rem;
+    min-block-size: 2.25rem;
+    inline-size: auto;
+    padding-inline: 0.65rem;
+    color: var(--action);
+  }
+
+  .pressure-review svg {
+    flex: none;
+  }
+
+  .pressure-disclosure {
+    min-block-size: var(--tap-target);
+    justify-self: start;
+    margin: 0;
+    color: var(--action);
+  }
+
+  .pressure-disclosure-icon {
+    transition: rotate var(--motion-control) var(--ease-out);
+  }
+
+  .pressure-disclosure[aria-expanded="true"] .pressure-disclosure-icon {
+    rotate: 180deg;
+  }
+
   .type-chip {
     display: inline-flex;
     align-items: center;
@@ -1528,29 +1814,37 @@
     color: var(--ink);
     background: var(--surface);
     border: 1px solid var(--rule);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     font-size: var(--font-size-xs);
     font-style: normal;
     font-weight: var(--font-weight-bold);
     overflow-wrap: anywhere;
   }
 
-  .pressure-row em {
-    justify-self: end;
-    min-inline-size: max-content;
-    white-space: nowrap;
+  @container attention-queue (inline-size >= 44rem) {
+    .pressure-row {
+      grid-template-columns:
+        minmax(11rem, 1fr) minmax(8rem, auto) minmax(10rem, 0.8fr)
+        minmax(8rem, auto);
+      grid-template-areas: "copy variance progress action";
+      gap: 1rem;
+    }
   }
 
-  .pressure-row.over-budget em {
-    color: light-dark(#ffffff, var(--paper-dark));
-    background: var(--expenses);
-    border-color: var(--expenses);
+  @media (pointer: coarse) {
+    .pressure-review,
+    .pressure-disclosure {
+      min-block-size: 3rem;
+    }
   }
 
-  .pressure-row.near-limit em {
-    color: var(--ink);
-    background: color-mix(in srgb, var(--warning) 18%, var(--surface));
-    border-color: var(--warning);
+  @media (forced-colors: active) {
+    .pressure-row.over-budget .pressure-status,
+    .pressure-row.over-budget .pressure-variance,
+    .pressure-row.near-limit .pressure-status,
+    .pressure-row.near-limit .pressure-variance {
+      color: CanvasText;
+    }
   }
 
   .activity-list {
@@ -1949,7 +2243,7 @@
     color: var(--muted);
     background: var(--surface-2);
     border: 1px solid transparent;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     font-weight: var(--font-weight-bold);
     text-align: center;
   }
@@ -2003,7 +2297,7 @@
     gap: 0.3rem;
     background: var(--surface-2);
     border: 1px solid var(--rule);
-    border-radius: calc(var(--radius) + 2px);
+    border-radius: var(--radius-pill);
   }
 
   .entry-form .segmented-field legend {
@@ -2014,7 +2308,7 @@
   .entry-form .segmented-field span {
     display: grid;
     place-items: center;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-pill);
   }
 
   .entry-form .segmented-field input:checked + .expense-option {
@@ -2262,7 +2556,7 @@
     color: var(--muted);
     background: var(--surface-2);
     border: 1px solid var(--rule);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-medium);
   }
@@ -2371,7 +2665,7 @@
     font-weight: var(--font-weight-semibold);
     background: color-mix(in srgb, var(--action) 8%, transparent);
     padding: 0.15rem 0.35rem;
-    border-radius: 4px;
+    border-radius: var(--radius-pill);
     margin-inline-end: 0.35rem;
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
@@ -2400,7 +2694,7 @@
   .template-list li .template-badge {
     display: inline-block;
     padding: 0.15rem 0.35rem;
-    border-radius: 4px;
+    border-radius: var(--radius-pill);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
     margin-inline-end: 0.45rem;
@@ -2470,7 +2764,7 @@
   .skeleton-cell-badge {
     width: 10%;
     height: 1.5rem;
-    border-radius: 12px;
+    border-radius: var(--radius-pill);
   }
 
   .skeleton-cell-text {
