@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import App from "../../app/App";
 import {
   installAppTestLifecycle,
+  mockCompactLayout,
   mockFetch,
   response,
   transaction,
@@ -71,6 +72,7 @@ describe("transactions workflow", () => {
   });
 
   it("creates a transaction from a dialog and announces success", async () => {
+    mockCompactLayout();
     const fetchMock = mockFetch({
       "/api/dashboard": dashboardPayload({}),
       "/api/transactions": { transactions: [] },

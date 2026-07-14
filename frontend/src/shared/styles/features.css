@@ -123,11 +123,6 @@
     .panel-header {
       flex-wrap: nowrap;
     }
-
-    .activity-list li {
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-    }
   }
 
   @container cashflow-trend (min-width: 34rem) {

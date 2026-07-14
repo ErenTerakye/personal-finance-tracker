@@ -32,7 +32,7 @@
   .statement-tape strong,
   .line-chart text,
   .category-bar strong,
-  .activity-list li > strong,
+  .activity-amount,
   .data-table strong {
     font-size-adjust: none;
   }

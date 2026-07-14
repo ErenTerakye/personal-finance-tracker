@@ -4,7 +4,7 @@ const colorSchemeStorageKey = "finance-tracker-color-scheme";
 const viewports = [320, 390, 430, 768, 1024, 1280, 1440, 1800, 1920];
 const themeViewports = [390, 1280];
 
-test("compact bottom navigation localizes without duplicating drawer links", async ({
+test("compact bottom navigation localizes from inline header utilities", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -17,11 +17,12 @@ test("compact bottom navigation localizes without duplicating drawer links", asy
     navigation.getByRole("link", { name: "Overview" }),
   ).toHaveAttribute("aria-current", "page");
 
-  await openCompactMenu(page, 390);
-  const drawer = page.locator("#app-drawer");
-  await expect(drawer.getByRole("navigation")).toHaveCount(0);
-  await expect(drawer.getByRole("button", { name: "Add entry" })).toBeVisible();
-  await drawer.locator(".lang-toggle").click();
+  const compactBar = page.locator(".compact-app-bar");
+  await expect(page.locator("#app-drawer")).toHaveCount(0);
+  await expect(
+    compactBar.getByRole("button", { name: "Open navigation menu" }),
+  ).toHaveCount(0);
+  await compactBar.locator(".lang-toggle").click();
 
   await expect(
     navigation.getByRole("link", { name: "Genel Bakış" }),
@@ -116,11 +117,6 @@ for (const width of viewports) {
         ".pressure-row",
         ".pressure-review",
       ]);
-      if (width <= 430 || width === 1024) {
-        await expectQuickActionsStacked(page);
-      } else {
-        await expectQuickActionsSideBySide(page);
-      }
       await expectThemeToggleIconCentered(page);
       await expectMobileNavigationIsCompact(page, width);
       await expectAdaptiveCompactCommandBar(page, width);
@@ -141,10 +137,10 @@ for (const width of viewports) {
         page.getByRole("heading", { name: "Transactions" }),
       ).toBeVisible();
       await expect(page.getByText("Groceries")).toBeVisible();
+      await page.getByText("Data options", { exact: true }).click();
       await expect(
         page.getByRole("button", { name: "Import CSV" }),
       ).toBeVisible();
-      await page.getByText("Data options", { exact: true }).click();
       await expect(
         page.getByRole("link", { name: "Export CSV" }),
       ).toBeVisible();
@@ -159,10 +155,7 @@ for (const width of viewports) {
       await expect(page.getByRole("button", { name: "Edit" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Delete" })).toBeVisible();
 
-      await page
-        .locator("#content")
-        .getByRole("button", { name: "Add entry" })
-        .click();
+      await page.getByRole("button", { name: "Add entry" }).click();
       const dialog = page.getByRole("dialog", { name: "Add transaction" });
       await expect(dialog).toBeVisible();
       await expectDialogFitsViewport(page, dialog);
@@ -373,7 +366,6 @@ for (const width of themeViewports) {
 
     test("pins, persists, and clears a manual theme", async ({ page }) => {
       await page.goto("/");
-      await openCompactMenu(page, width);
 
       await expect(
         page.getByRole("button", { name: "Use dark mode" }),
@@ -396,10 +388,12 @@ for (const width of themeViewports) {
         stored: "dark",
         colorScheme: "dark",
       });
+      await expect(page.locator("html")).not.toHaveClass(
+        /theme-view-transition/,
+      );
       await assertNoHorizontalOverflow(page);
 
       await page.reload();
-      await openCompactMenu(page, width);
 
       await expect(
         page.getByRole("heading", { name: "June 2026" }),
@@ -427,7 +421,50 @@ for (const width of themeViewports) {
         stored: null,
         colorScheme: "light dark",
       });
+      await expect(page.locator("html")).not.toHaveClass(
+        /theme-view-transition/,
+      );
       await assertNoHorizontalOverflow(page);
+    });
+
+    test("switches instantly when reduced motion is preferred", async ({
+      page,
+    }) => {
+      await page.emulateMedia({
+        colorScheme: "light",
+        reducedMotion: "reduce",
+      });
+      await page.goto("/");
+      await page.evaluate(() => {
+        const state = window as Window & { themeTransitionObserved?: boolean };
+        state.themeTransitionObserved = false;
+        new MutationObserver(() => {
+          if (
+            document.documentElement.classList.contains("theme-view-transition")
+          ) {
+            state.themeTransitionObserved = true;
+          }
+        }).observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["class"],
+        });
+      });
+
+      await page.getByRole("button", { name: "Use dark mode" }).click();
+
+      await expectThemeState(page, {
+        dataTheme: "dark",
+        meta: "dark",
+        stored: "dark",
+        colorScheme: "dark",
+      });
+      expect(
+        await page.evaluate(
+          () =>
+            (window as Window & { themeTransitionObserved?: boolean })
+              .themeTransitionObserved,
+        ),
+      ).toBe(false);
     });
   });
 }
@@ -471,6 +508,24 @@ test.describe("theme system preference", () => {
       stored: "light",
       colorScheme: "light",
     });
+  });
+
+  test("updates the desktop navigation rail colors with the theme", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const rail = page.locator(".app-rail");
+    await expect(rail).toBeVisible();
+
+    const lightColors = await rail.evaluate(readElementColors);
+    await page.getByRole("button", { name: "Use dark mode" }).click();
+    const darkColors = await rail.evaluate(readElementColors);
+
+    expect(darkColors.backgroundColor).not.toBe(lightColors.backgroundColor);
+    expect(darkColors.color).not.toBe(lightColors.color);
+    expect(darkColors.borderInlineEndColor).not.toBe(
+      lightColors.borderInlineEndColor,
+    );
   });
 });
 
@@ -529,43 +584,6 @@ async function expectDashboardFitsViewport(page: Page) {
     ".cashflow-trend ol",
     ".theme-toggle",
   ]);
-}
-
-async function expectQuickActionsStacked(page: Page) {
-  const addEntry = page
-    .locator(".dashboard-primary-actions")
-    .getByRole("button", { name: "Add entry" });
-  const setBudget = page
-    .locator(".dashboard-primary-actions")
-    .getByRole("button", { name: "Set budget" });
-  const [addBox, budgetBox] = await Promise.all([
-    addEntry.boundingBox(),
-    setBudget.boundingBox(),
-  ]);
-
-  expect(addBox).not.toBeNull();
-  expect(budgetBox).not.toBeNull();
-  expect(budgetBox!.y).toBeGreaterThan(addBox!.y + addBox!.height);
-  expect(Math.abs(budgetBox!.x - addBox!.x)).toBeLessThanOrEqual(1);
-  expect(Math.abs(budgetBox!.width - addBox!.width)).toBeLessThanOrEqual(1);
-}
-
-async function expectQuickActionsSideBySide(page: Page) {
-  const addEntry = page
-    .locator(".dashboard-primary-actions")
-    .getByRole("button", { name: "Add entry" });
-  const setBudget = page
-    .locator(".dashboard-primary-actions")
-    .getByRole("button", { name: "Set budget" });
-  const [addBox, budgetBox] = await Promise.all([
-    addEntry.boundingBox(),
-    setBudget.boundingBox(),
-  ]);
-
-  expect(addBox).not.toBeNull();
-  expect(budgetBox).not.toBeNull();
-  expect(Math.abs(budgetBox!.y - addBox!.y)).toBeLessThanOrEqual(1);
-  expect(budgetBox!.x).toBeGreaterThan(addBox!.x + addBox!.width);
 }
 
 async function expectElementsFitViewport(page: Page, selectors: string[]) {
@@ -661,17 +679,24 @@ async function expectAdaptiveCompactCommandBar(page: Page, width: number) {
 
   await expect(compactBar).toBeVisible();
   await expect(rail).toBeHidden();
-  const menu = compactBar.getByRole("button", {
-    name: "Open navigation menu",
-  });
   const brand = compactBar.getByRole("link", { name: "Finance Tracker" });
+  const language = compactBar.getByRole("button", {
+    name: "Switch language",
+  });
+  const theme = compactBar.locator(".theme-toggle");
   const create = compactBar.getByRole("button", { name: "Add entry" });
   const label = compactBar.locator(".compact-create-label");
   const brandName = brand.locator("strong");
 
-  for (const control of [menu, brand, create]) {
+  await expect(page.locator("#app-drawer")).toHaveCount(0);
+  await expect(
+    compactBar.getByRole("button", { name: "Open navigation menu" }),
+  ).toHaveCount(0);
+
+  for (const control of [brand, language, theme, create]) {
     const box = await control.boundingBox();
     expect(box).not.toBeNull();
+    expect(box!.width).toBeGreaterThanOrEqual(47.9);
     expect(box!.height).toBeGreaterThanOrEqual(47.9);
   }
 
@@ -684,7 +709,8 @@ async function expectAdaptiveCompactCommandBar(page: Page, width: number) {
   }
 
   await expectElementsFitViewport(page, [
-    ".compact-command-start",
+    ".compact-app-bar .brand",
+    ".compact-utilities",
     ".compact-create",
   ]);
 }
@@ -715,6 +741,15 @@ async function expectThemeState(
   expect(state.meta).toBe(expected.meta);
   expect(state.stored).toBe(expected.stored);
   expect(state.colorScheme).toBe(expected.colorScheme);
+}
+
+function readElementColors(element: HTMLElement) {
+  const styles = getComputedStyle(element);
+  return {
+    backgroundColor: styles.backgroundColor,
+    borderInlineEndColor: styles.borderInlineEndColor,
+    color: styles.color,
+  };
 }
 
 async function expectTableModeMatchesContainer(page: Page) {
@@ -771,18 +806,6 @@ async function expectMobileNavigationIsCompact(page: Page, width: number) {
   expect(
     new Set(layout.links.map(({ bottom }) => Math.round(bottom))).size,
   ).toBe(1);
-
-  await openCompactMenu(page, width);
-  const drawer = page.locator("#app-drawer");
-  await expect(drawer.getByRole("navigation")).toHaveCount(0);
-  await expect(drawer.getByRole("button", { name: "Add entry" })).toBeVisible();
-  await page.keyboard.press("Escape");
-}
-
-async function openCompactMenu(page: Page, width: number) {
-  if (width > 1023) return;
-  const button = page.getByRole("button", { name: "Open navigation menu" });
-  if (await button.isVisible()) await button.click();
 }
 
 async function measureTrendBars(card: ReturnType<Page["locator"]>) {

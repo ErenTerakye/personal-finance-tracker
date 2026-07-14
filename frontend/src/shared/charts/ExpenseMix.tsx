@@ -16,9 +16,11 @@ type ExpenseSlice = {
 export function ExpenseMix({
   title,
   items,
+  onClickCategory,
 }: {
   title: string;
   items: { label: string; value: string }[];
+  onClickCategory?: (category: string) => void;
 }) {
   const { t } = useI18n();
   const chartId = useId();
@@ -60,15 +62,18 @@ export function ExpenseMix({
 
   return (
     <figure className="expense-mix" aria-labelledby={`${chartId}-caption`}>
+      <span id={`${chartId}-title`} className="sr-only">
+        {title}
+      </span>
       <div className="expense-mix-visual">
         <svg
           className="expense-mix-chart"
           viewBox="0 0 120 120"
           role="group"
+          focusable="false"
           aria-labelledby={`${chartId}-title ${chartId}-description`}
           onPointerLeave={() => setActiveIndex(null)}
         >
-          <title id={`${chartId}-title`}>{title}</title>
           <desc id={`${chartId}-description`}>
             {t("charts.mixDescription", { count: slices.length })}
           </desc>
@@ -92,6 +97,16 @@ export function ExpenseMix({
               onPointerEnter={() => setActiveIndex(index)}
               onFocus={() => setActiveIndex(index)}
               onBlur={() => setActiveIndex(null)}
+              onClick={(e) => {
+                e.currentTarget.blur();
+                onClickCategory?.(slice.label);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onClickCategory?.(slice.label);
+                }
+              }}
               style={
                 {
                   "--slice-size": slice.share,
@@ -116,10 +131,20 @@ export function ExpenseMix({
               key={slice.label}
               style={{ "--slice-index": index } as VariableStyle}
             >
-              <span className="expense-mix-key" aria-hidden="true" />
-              <span>{slice.label}</span>
-              <strong>{money(slice.value)}</strong>
-              <small>{slice.share.toFixed(1)}%</small>
+              <button
+                type="button"
+                className="expense-mix-legend-btn"
+                onClick={() => onClickCategory?.(slice.label)}
+                onPointerEnter={() => setActiveIndex(index)}
+                onPointerLeave={() => setActiveIndex(null)}
+                onFocus={() => setActiveIndex(index)}
+                onBlur={() => setActiveIndex(null)}
+              >
+                <span className="expense-mix-key" aria-hidden="true" />
+                <span>{slice.label}</span>
+                <strong>{money(slice.value)}</strong>
+                <small>{slice.share.toFixed(1)}%</small>
+              </button>
             </li>
           ))}
         </ul>

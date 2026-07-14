@@ -4,9 +4,6 @@ export const en = {
     toggleLanguage: "Switch language",
     primaryNavigation: "Primary",
     workspaceNavigation: "Workspace navigation",
-    openMenu: "Open navigation menu",
-    closeMenu: "Close navigation menu",
-    preferences: "Preferences",
     databaseStorage: "Database storage",
     hostedDemoStorage: "Hosted demo storage",
     closeDialog: "Close dialog",
@@ -100,7 +97,7 @@ export const en = {
       noBudgetsMessage:
         "Set a category budget to turn spending into an actionable plan.",
     },
-    viewAllActivity: "View all activity",
+    viewAllActivity: "All transactions",
     changePeriod: "Change dashboard period",
     toolsLabel: "Dashboard period and export tools",
     downloadLabel: "Download dashboard artifacts",
@@ -139,7 +136,11 @@ export const en = {
       mixTitle: "Expense mix",
       mixDetail: "Spending by category",
       activityTitle: "Recent activity",
-      activityDetail: "Latest activity",
+    },
+    activity: {
+      emptyTitle: "No recent activity",
+      emptyMessage:
+        "New ledger entries will appear here after they are posted.",
     },
     empty: {
       eyebrow: "Your ledger is ready",

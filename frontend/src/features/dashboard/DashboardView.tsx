@@ -6,6 +6,7 @@ import {
   FileText,
   ImageDown,
   PiggyBank,
+  ArrowRight,
   type LucideIcon,
 } from "lucide-react";
 import { artifactUrls } from "../../api/artifacts";
@@ -37,12 +38,14 @@ export function DashboardView({
   onNavigate,
   onCreateBudget,
   onReviewBudget,
+  onReviewCategory,
 }: {
   selectedPeriod: { month: number; year: number };
   setSelectedPeriod: (period: { month: number; year: number }) => void;
   onNavigate: (view: View) => void;
   onCreateBudget: () => void;
   onReviewBudget: (target: BudgetReviewTarget) => void;
+  onReviewCategory: (category: string) => void;
 }) {
   const { t, locale, tUpper } = useI18n();
   const dashboard = useDashboard(selectedPeriod.month, selectedPeriod.year);
@@ -292,14 +295,14 @@ export function DashboardView({
         >
           <Panel
             title={t("dashboard.sections.activityTitle")}
-            detail={t("dashboard.sections.activityDetail")}
             actions={
               <button
-                className="button ghost"
+                className="button ghost activity-view-all"
                 type="button"
                 onClick={() => onNavigate("transactions")}
               >
                 {t("dashboard.viewAllActivity")}
+                <ArrowRight aria-hidden="true" size={17} />
               </button>
             }
           >
@@ -312,6 +315,14 @@ export function DashboardView({
             <ExpenseMix
               title={t("dashboard.sections.mixTitle")}
               items={categories}
+              onClickCategory={(category) => {
+                const otherLabel = t("charts.otherCategories");
+                if (category === otherLabel) {
+                  onReviewCategory("");
+                } else {
+                  onReviewCategory(category);
+                }
+              }}
             />
           </Panel>
         </section>

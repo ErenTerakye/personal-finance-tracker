@@ -1,5 +1,6 @@
 import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import {
   applyColorSchemePreference,
   getSystemColorScheme,
@@ -9,6 +10,7 @@ import {
   type ColorScheme,
   type ColorSchemePreference,
 } from "./preference";
+import { applyThemeChangeWithTransition } from "./transition";
 import { useI18n } from "../i18n/I18nProvider";
 
 export function ThemeToggle() {
@@ -52,12 +54,17 @@ export function ThemeToggle() {
       type="button"
       aria-label={label}
       title={label}
-      onClick={() => {
-        writeColorSchemePreference(nextPreference);
-        setPreference(nextPreference);
+      onClick={(event) => {
+        applyThemeChangeWithTransition(event.currentTarget, () => {
+          writeColorSchemePreference(nextPreference);
+          applyColorSchemePreference(nextPreference);
+          flushSync(() => setPreference(nextPreference));
+        });
       }}
     >
-      <Icon aria-hidden="true" size={17} />
+      <span className="theme-toggle-icon" aria-hidden="true">
+        <Icon size={17} />
+      </span>
       <span className="sr-only">{label}</span>
     </button>
   );

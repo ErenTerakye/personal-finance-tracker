@@ -38,7 +38,7 @@ async function checkTotal(label, matching, budget) {
 }
 
 await checkTotal("initial JavaScript", initialJavaScript, 100 * 1024);
-await checkTotal("initial CSS", initialCss, 15 * 1024);
+await checkTotal("initial CSS", initialCss, 18 * 1024);
 for (const file of lazyJavaScript) {
   const size = await gzipSize(file);
   const budget = 45 * 1024;

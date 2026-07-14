@@ -8,6 +8,10 @@ export function installAppTestLifecycle() {
   afterEach(() => {
     window.localStorage?.clear();
     document.documentElement.removeAttribute("data-theme");
+    document.documentElement.classList.remove("theme-view-transition");
+    document.documentElement.style.removeProperty("--theme-reveal-x");
+    document.documentElement.style.removeProperty("--theme-reveal-y");
+    document.documentElement.style.removeProperty("--theme-reveal-radius");
     Reflect.deleteProperty(document, "startViewTransition");
     colorSchemeMeta().content = "light dark";
     window.history.pushState({}, "", "/");
@@ -100,7 +104,19 @@ export function mockColorScheme(initialScheme: "light" | "dark") {
 
   vi.stubGlobal(
     "matchMedia",
-    vi.fn(() => mediaQueryList),
+    vi.fn((query: string) => {
+      if (query === mediaQueryList.media) return mediaQueryList;
+      return {
+        media: query,
+        matches: false,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      } as unknown as MediaQueryList;
+    }),
   );
 
   return {
@@ -123,6 +139,25 @@ export function mockReducedMotion() {
         ({
           media: query,
           matches: query === "(prefers-reduced-motion: reduce)",
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        }) as unknown as MediaQueryList,
+    ),
+  );
+}
+
+export function mockCompactLayout() {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(
+      (query: string) =>
+        ({
+          media: query,
+          matches: query === "(max-width: 63.999rem)",
           onchange: null,
           addEventListener: vi.fn(),
           removeEventListener: vi.fn(),

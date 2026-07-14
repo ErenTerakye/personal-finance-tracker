@@ -1,13 +1,7 @@
-import {
-  AlertTriangle,
-  ArrowRight,
-  ChevronDown,
-  CircleAlert,
-  CircleDollarSign,
-} from "lucide-react";
+import { AlertTriangle, ChevronDown, CircleAlert } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import { formatActivityDate } from "../format/dates";
-import { money, percent } from "../format/money";
+import { money, percent, signedMoney } from "../format/money";
 import type { BudgetStatus, TransactionRecord } from "../../types";
 import { EmptyState } from "./feedback";
 import { useI18n } from "../i18n/I18nProvider";
@@ -212,7 +206,6 @@ export function BudgetPressureList({
           }
         >
           <span aria-hidden="true">{actionLabel}</span>
-          <ArrowRight aria-hidden="true" size={17} />
         </button>
       </li>
     );
@@ -274,34 +267,55 @@ export function ActivityList({
 }: {
   transactions: TransactionRecord[];
 }) {
+  const { t } = useI18n();
+
   if (!transactions.length) {
     return (
       <EmptyState
-        title="No recent activity"
-        message="New ledger entries will appear here after they are posted."
+        title={t("dashboard.activity.emptyTitle")}
+        message={t("dashboard.activity.emptyMessage")}
       />
     );
   }
 
   return (
-    <ul className="activity-list">
-      {transactions.map((transaction) => (
-        <li key={transaction.id}>
-          <div>
-            <CircleDollarSign aria-hidden="true" size={18} />
-            <span>
-              <strong>{transaction.category}</strong>
-              <em>
-                {formatActivityDate(transaction.date)}
-                {transaction.description ? ` • ${transaction.description}` : ""}
-              </em>
-            </span>
-          </div>
-          <strong className={transaction.type}>
-            {money(transaction.amount)}
-          </strong>
-        </li>
-      ))}
+    <ul className="activity-list" role="list">
+      {transactions.map((transaction) => {
+        const isIncome = transaction.type === "income";
+        const signedAmount = isIncome
+          ? Math.abs(Number(transaction.amount))
+          : -Math.abs(Number(transaction.amount));
+
+        return (
+          <li
+            className={`activity-item ${isIncome ? "income" : "expense"}`}
+            key={transaction.id}
+          >
+            <div className="activity-copy">
+              <strong className="activity-category">
+                {transaction.category}
+              </strong>
+              {transaction.description ? (
+                <span className="activity-description">
+                  {transaction.description}
+                </span>
+              ) : null}
+            </div>
+            <div className="activity-value">
+              <strong className="activity-amount">
+                {signedMoney(signedAmount)}
+              </strong>
+              <span className="activity-meta">
+                <span>{t(isIncome ? "common.income" : "common.expense")}</span>
+                <span aria-hidden="true">·</span>
+                <time dateTime={transaction.date}>
+                  {formatActivityDate(transaction.date)}
+                </time>
+              </span>
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }

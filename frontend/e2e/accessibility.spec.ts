@@ -152,7 +152,7 @@ test.describe("accessibility display preferences", () => {
     await expect
       .poll(() =>
         page
-          .locator(".pressure-list")
+          .locator(".pressure-surface")
           .evaluate((element) => getComputedStyle(element).borderStyle),
       )
       .not.toBe("none");

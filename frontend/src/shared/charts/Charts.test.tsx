@@ -5,7 +5,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CashflowTrend, ExpenseMix, TrendLines } from ".";
 import type { DashboardData } from "../../types";
 import { I18nProvider } from "../i18n/I18nProvider";
@@ -302,6 +302,35 @@ describe("ExpenseMix", () => {
 
     expect(screen.getAllByText("Other")).toHaveLength(2);
     expect(screen.queryByText("Category 6")).not.toBeInTheDocument();
+  });
+
+  it("triggers onClickCategory when a slice or legend button is clicked", async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <ExpenseMix
+        title="Expense mix"
+        items={[
+          { label: "Housing", value: "750.00" },
+          { label: "Food", value: "250.00" },
+        ]}
+        onClickCategory={handleClick}
+      />,
+    );
+
+    // Click the chart slice button
+    const housingSlice = screen.getByRole("button", {
+      name: "Housing: $750.00, 75.0% of expenses",
+    });
+    await user.click(housingSlice);
+    expect(handleClick).toHaveBeenCalledWith("Housing");
+
+    // Click the legend item button
+    const foodLegend = screen.getByRole("button", {
+      name: "Food$250.0025.0%",
+    });
+    await user.click(foodLegend);
+    expect(handleClick).toHaveBeenCalledWith("Food");
   });
 });
 

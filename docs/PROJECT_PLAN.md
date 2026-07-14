@@ -113,7 +113,7 @@ Database path defaults to `./data/finance_tracker.sqlite3`, which is local runti
 
 ## Web UI
 
-The July 2026 Web UI overhaul is delivered. The shipped information architecture is Overview, Activity, Plan, and Automations, backed by a semantic ledger-editorial design system, compact drawer/wide rail shell, progressive disclosures, deep-linkable automation tabs, self-hosted typography, and accessibility/responsive release evidence in `docs/WEB_UI_OVERHAUL_RELEASE.md`.
+The July 2026 Web UI overhaul is delivered. The shipped information architecture is Overview, Activity, Plan, and Automations, backed by a semantic ledger-editorial design system, inline compact utilities with bottom navigation, a persistent wide rail, progressive disclosures, deep-linkable automation tabs, self-hosted typography, and accessibility/responsive release evidence in `docs/WEB_UI_OVERHAUL_RELEASE.md`.
 
 The Web UI is an intentional scope expansion from the original CLI-first milestone while preserving the local-first architecture. It runs with:
 

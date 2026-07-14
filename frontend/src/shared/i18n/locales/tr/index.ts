@@ -4,9 +4,6 @@ export const tr = {
     toggleLanguage: "Dili değiştir",
     primaryNavigation: "Ana",
     workspaceNavigation: "Çalışma alanı navigasyonu",
-    openMenu: "Navigasyon menüsünü aç",
-    closeMenu: "Navigasyon menüsünü kapat",
-    preferences: "Tercihler",
     databaseStorage: "Veritabanı depolama alanı",
     hostedDemoStorage: "Barındırılan demo depolama alanı",
     closeDialog: "İletişim kutusunu kapat",
@@ -101,7 +98,7 @@ export const tr = {
       noBudgetsMessage:
         "Harcamaları uygulanabilir bir plana dönüştürmek için kategori bütçesi belirleyin.",
     },
-    viewAllActivity: "Tüm hareketleri gör",
+    viewAllActivity: "Tüm işlemler",
     changePeriod: "Kontrol paneli dönemini değiştir",
     toolsLabel: "Kontrol paneli dönem ve dışa aktarma araçları",
     downloadLabel: "Kontrol paneli belgelerini indir",
@@ -140,7 +137,10 @@ export const tr = {
       mixTitle: "Gider Dağılımı",
       mixDetail: "Kategoriye göre harcama",
       activityTitle: "Son Hareketler",
-      activityDetail: "En son hareketler",
+    },
+    activity: {
+      emptyTitle: "Henüz hareket yok",
+      emptyMessage: "Yeni defter kayıtları eklendikten sonra burada görünecek.",
     },
     empty: {
       eyebrow: "Kayıt defteriniz hazır",

@@ -6,6 +6,7 @@ import {
   installAppTestLifecycle,
   mockFetch,
   mockColorScheme,
+  mockCompactLayout,
   mockReducedMotion,
   budget,
   dashboardPayload,
@@ -62,7 +63,7 @@ describe("app composition", () => {
     expect(document.title).toBe("Plan | Personal Finance Tracker");
   });
 
-  it("keeps compact primary navigation separate from drawer utilities", async () => {
+  it("pairs compact primary navigation with inline header utilities", async () => {
     vi.stubGlobal(
       "matchMedia",
       vi.fn((query: string) => ({
@@ -133,15 +134,24 @@ describe("app composition", () => {
       links[1].querySelector(".navigation-icon-detail--transactions"),
     ).toHaveAttribute("stroke-width", "2");
 
-    const drawer = document.querySelector<HTMLElement>("#app-drawer");
-    expect(drawer).not.toBeNull();
+    const compactHeader =
+      document.querySelector<HTMLElement>(".compact-app-bar");
+    expect(compactHeader).not.toBeNull();
+    expect(document.querySelector("#app-drawer")).not.toBeInTheDocument();
     expect(
-      within(drawer!).queryByRole("navigation", { hidden: true }),
+      within(compactHeader!).queryByRole("button", {
+        name: "Open navigation menu",
+      }),
     ).not.toBeInTheDocument();
     expect(
-      within(drawer!).getByRole("button", { name: "Add entry", hidden: true }),
+      within(compactHeader!).getByRole("button", { name: "Switch language" }),
     ).toBeInTheDocument();
-    expect(within(drawer!).getByText("Preferences")).toBeInTheDocument();
+    expect(
+      within(compactHeader!).getByRole("button", { name: "Add entry" }),
+    ).toBeInTheDocument();
+    expect(
+      compactHeader!.querySelector(".theme-toggle"),
+    ).toHaveAccessibleName();
 
     await userEvent.click(
       within(compactNavigation!).getByRole("link", {
@@ -198,6 +208,7 @@ describe("app composition", () => {
   });
 
   it("keeps compact header commands connected to their workflows", async () => {
+    mockCompactLayout();
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
       "/api/transactions": { transactions: [] },

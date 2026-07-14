@@ -10,6 +10,7 @@ import { describe, expect, it, vi } from "vitest";
 import App from "../../app/App";
 import {
   installAppTestLifecycle,
+  mockCompactLayout,
   mockFetch,
   dashboardPayload,
 } from "../../test/appTestSupport";
@@ -326,18 +327,14 @@ describe("dashboard workflow", () => {
   });
 
   it("uses Add entry consistently for every global create command", async () => {
+    mockCompactLayout();
     mockFetch({ "/api/dashboard": dashboardPayload({}) });
 
     render(<App />);
     await screen.findByRole("heading", { name: "June 2026" });
 
-    expect(document.querySelector(".rail-create")).toHaveTextContent(
-      "Add entry",
-    );
+    expect(document.querySelector(".rail-create")).not.toBeInTheDocument();
     expect(document.querySelector(".compact-create")).toHaveAccessibleName(
-      "Add entry",
-    );
-    expect(document.querySelector(".drawer-create")).toHaveTextContent(
       "Add entry",
     );
   });
@@ -352,8 +349,11 @@ describe("dashboard workflow", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("No budgets for this period")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "View all activity" }),
+      screen.getByRole("button", { name: "All transactions" }),
     ).toBeInTheDocument();
+    expect(screen.queryByText("Latest activity")).not.toBeInTheDocument();
+    expect(screen.getByText("-$45.90")).toBeInTheDocument();
+    expect(screen.getByText("Expense")).toBeInTheDocument();
     expect(screen.getAllByRole("table")).toHaveLength(2);
   });
 
@@ -381,6 +381,7 @@ describe("dashboard workflow", () => {
           (item) => item.querySelector(".pressure-copy > strong")?.textContent,
         ),
     ).toEqual(["Rent", "Travel", "Household"]);
+    expect(within(panel).getAllByText("Over budget")).toHaveLength(3);
     expect(within(panel).getAllByText("Review overage")).toHaveLength(3);
     expect(
       within(panel).getByRole("progressbar", {
@@ -402,6 +403,7 @@ describe("dashboard workflow", () => {
     expect(disclosure).toHaveAccessibleName("Show fewer");
     expect(disclosure).toHaveAttribute("aria-expanded", "true");
     expect(within(panel).getAllByRole("listitem")).toHaveLength(7);
+    expect(within(panel).getAllByText("Near limit")).toHaveLength(4);
     expect(within(panel).getAllByText("Review limit")).toHaveLength(4);
     expect(
       within(panel).getByRole("button", {

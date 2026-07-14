@@ -101,6 +101,25 @@ function AppContent() {
     setView("budgets");
   }
 
+  function reviewCategory(category: string) {
+    const params = new URLSearchParams({
+      month: String(selectedPeriod.month),
+      year: String(selectedPeriod.year),
+    });
+    if (category) {
+      params.set("category", category);
+    }
+    window.history.pushState(
+      {},
+      "",
+      `${pathForView("transactions")}?${params.toString()}`,
+    );
+    setCreateTransactionRequest(0);
+    setCreateBudgetRequest(0);
+    setNotice("");
+    setView("transactions");
+  }
+
   if (settings.status === "idle" || settings.status === "loading") {
     return <div className="app-loading">{t("common.loading")}</div>;
   }
@@ -122,6 +141,7 @@ function AppContent() {
           setSelectedPeriod={changePeriod}
           onNavigate={navigate}
           onReviewBudget={reviewBudget}
+          onReviewCategory={reviewCategory}
           onCreateBudget={() => {
             setCreateBudgetRequest((request) => request + 1);
             navigate("budgets");

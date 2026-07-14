@@ -1,15 +1,12 @@
 import {
   BarChart3,
   LayoutDashboard,
-  Menu,
   PiggyBank,
   Plus,
   ReceiptText,
-  Settings2,
   SlidersHorizontal,
-  X,
 } from "lucide-react";
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode } from "react";
 import { Notice } from "../shared/components/feedback";
 import { useMediaQuery } from "../shared/hooks/useMediaQuery";
 import { useI18n } from "../shared/i18n/I18nProvider";
@@ -55,26 +52,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   const { t } = useI18n();
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const drawerRef = useRef<HTMLDivElement | null>(null);
-  const drawerTriggerRef = useRef<HTMLButtonElement | null>(null);
   const compactLayout = useMediaQuery("(max-width: 63.999rem)");
-
-  useEffect(() => {
-    const drawer = drawerRef.current;
-    if (!drawer) return;
-    if (drawerOpen) {
-      drawer.showPopover?.();
-      window.requestAnimationFrame(() =>
-        drawer
-          .querySelector<HTMLElement>(".drawer-sheet > header button")
-          ?.focus(),
-      );
-    } else if (drawer.matches(":popover-open")) {
-      drawer.hidePopover?.();
-      drawerTriggerRef.current?.focus();
-    }
-  }, [drawerOpen]);
 
   const navigation = (className: string) => (
     <nav aria-label={t("common.primaryNavigation")} className={className}>
@@ -136,110 +114,56 @@ export function AppShell({
       <a className="skip-link" href="#content">
         {t("common.skipLink")}
       </a>
-      <aside className="app-rail" aria-label={t("common.workspaceNavigation")}>
-        <Brand onNavigate={onNavigate} />
-        {!compactLayout && navigation("rail-navigation")}
-        <button
-          className="rail-create button"
-          type="button"
-          onClick={onCreateTransaction}
+      {!compactLayout && (
+        <aside
+          className="app-rail"
+          aria-label={t("common.workspaceNavigation")}
         >
-          <Plus aria-hidden="true" size={19} />
-          <span>{t("common.addEntry")}</span>
-        </button>
-        <div className="rail-utilities">
-          <LanguageToggle />
-          <ThemeToggle />
-        </div>
-      </aside>
-
-      <header className="compact-app-bar">
-        <div className="compact-command-start">
+          <Brand onNavigate={onNavigate} />
+          {navigation("rail-navigation")}
           <button
-            ref={drawerTriggerRef}
-            className="icon-button"
+            className="rail-create button"
             type="button"
-            aria-expanded={drawerOpen}
-            aria-controls="app-drawer"
-            aria-label={t("common.openMenu")}
-            onClick={() => setDrawerOpen(true)}
-          >
-            <Menu aria-hidden="true" />
-          </button>
-          <Brand onNavigate={onNavigate} compact />
-        </div>
-        <button
-          className="button primary compact-create"
-          type="button"
-          aria-label={t("common.addEntry")}
-          onClick={onCreateTransaction}
-        >
-          <Plus aria-hidden="true" />
-          <span className="compact-create-label">{t("common.addEntry")}</span>
-        </button>
-      </header>
-
-      <div
-        id="app-drawer"
-        ref={drawerRef}
-        className="app-drawer"
-        popover="manual"
-        onClick={(event) => {
-          if (event.target === event.currentTarget) setDrawerOpen(false);
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") setDrawerOpen(false);
-        }}
-      >
-        <div className="drawer-sheet">
-          <header>
-            <Brand onNavigate={onNavigate} compact />
-            <button
-              className="icon-button"
-              type="button"
-              aria-label={t("common.closeMenu")}
-              onClick={() => setDrawerOpen(false)}
-            >
-              <X aria-hidden="true" />
-            </button>
-          </header>
-          <button
-            className="button drawer-create"
-            type="button"
-            onClick={() => {
-              setDrawerOpen(false);
-              onCreateTransaction();
-            }}
+            onClick={onCreateTransaction}
           >
             <Plus aria-hidden="true" size={19} />
-            {t("common.addEntry")}
+            <span>{t("common.addEntry")}</span>
           </button>
-          <footer>
-            <span>
-              <Settings2 aria-hidden="true" size={17} />
-              {t("common.preferences")}
-            </span>
+          <div className="rail-utilities">
             <LanguageToggle />
             <ThemeToggle />
-          </footer>
-        </div>
-      </div>
+          </div>
+        </aside>
+      )}
 
       {compactLayout && (
-        <div
-          className="compact-primary-navigation"
-          inert={drawerOpen || undefined}
-        >
+        <header className="compact-app-bar">
+          <Brand onNavigate={onNavigate} compact />
+          <div className="compact-utilities">
+            <LanguageToggle />
+            <ThemeToggle />
+            <button
+              className="button primary compact-create"
+              type="button"
+              aria-label={t("common.addEntry")}
+              onClick={onCreateTransaction}
+            >
+              <Plus aria-hidden="true" />
+              <span className="compact-create-label">
+                {t("common.addEntry")}
+              </span>
+            </button>
+          </div>
+        </header>
+      )}
+
+      {compactLayout && (
+        <div className="compact-primary-navigation">
           {navigation("bottom-navigation")}
         </div>
       )}
 
-      <main
-        id="content"
-        tabIndex={-1}
-        ref={mainRef}
-        inert={drawerOpen ? true : undefined}
-      >
+      <main id="content" tabIndex={-1} ref={mainRef}>
         <Notice message={notice} />
         <div
           className="sr-only"

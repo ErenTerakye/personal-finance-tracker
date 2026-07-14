@@ -4,12 +4,61 @@
     view-transition-name: none;
   }
 
+  /* Theme changes temporarily take one coherent snapshot of the app. */
+  html.theme-view-transition {
+    view-transition-name: root;
+  }
+
+  html.theme-view-transition
+    :is(
+      main,
+      .compact-app-bar,
+      .compact-primary-navigation,
+      .app-rail,
+      .period-heading,
+      .period-narrative,
+      .period-content
+    ),
+  html.theme-view-transition
+    :is(.rail-navigation, .bottom-navigation)
+    a[aria-current="page"]::before {
+    view-transition-name: none;
+  }
+
+  html.theme-view-transition .theme-toggle-icon {
+    view-transition-name: theme-toggle-icon;
+  }
+
   /*
    * The transition snapshots sit above the live document. Keep them visual-only
    * so rapid navigation continues to hit the controls underneath.
    */
   ::view-transition {
     pointer-events: none;
+  }
+
+  html.theme-view-transition::view-transition-image-pair(root) {
+    isolation: auto;
+  }
+
+  html.theme-view-transition::view-transition-image-pair(theme-toggle-icon) {
+    isolation: isolate;
+  }
+
+  html.theme-view-transition::view-transition-group(root) {
+    animation: none;
+  }
+
+  html.theme-view-transition::view-transition-group(theme-toggle-icon) {
+    z-index: 3;
+    animation: none;
+  }
+
+  html.theme-view-transition::view-transition-old(root),
+  html.theme-view-transition::view-transition-new(root),
+  html.theme-view-transition::view-transition-old(theme-toggle-icon),
+  html.theme-view-transition::view-transition-new(theme-toggle-icon) {
+    mix-blend-mode: normal;
   }
 
   main {
@@ -76,6 +125,24 @@
   }
 
   @media (prefers-reduced-motion: no-preference) {
+    html.theme-view-transition::view-transition-old(root) {
+      z-index: 1;
+      animation: none;
+    }
+
+    html.theme-view-transition::view-transition-new(root) {
+      z-index: 2;
+      animation: theme-reveal 420ms var(--ease-out) both;
+    }
+
+    html.theme-view-transition::view-transition-old(theme-toggle-icon) {
+      animation: theme-icon-out 220ms var(--ease-out) both;
+    }
+
+    html.theme-view-transition::view-transition-new(theme-toggle-icon) {
+      animation: theme-icon-in 220ms var(--ease-out) both;
+    }
+
     .rolling-number:is(.is-rolling-up, .is-rolling-down)
       .rolling-number-digits {
       animation: rolling-number-lifecycle var(--motion-value) linear both;
@@ -259,6 +326,35 @@
   @keyframes period-exit-forward {
     to {
       translate: -0.35rem 0;
+      opacity: 0;
+    }
+  }
+
+  @keyframes theme-reveal {
+    from {
+      clip-path: circle(0 at var(--theme-reveal-x) var(--theme-reveal-y));
+    }
+
+    to {
+      clip-path: circle(
+        var(--theme-reveal-radius) at var(--theme-reveal-x)
+          var(--theme-reveal-y)
+      );
+    }
+  }
+
+  @keyframes theme-icon-out {
+    to {
+      rotate: -90deg;
+      scale: 0.65;
+      opacity: 0;
+    }
+  }
+
+  @keyframes theme-icon-in {
+    from {
+      rotate: 90deg;
+      scale: 0.65;
       opacity: 0;
     }
   }
@@ -955,22 +1051,22 @@
     gap: 1.5rem;
     inline-size: 16rem;
     padding: 1.25rem 1rem;
-    color: var(--text-dark);
-    background: #12202c;
-    border-inline-end: 1px solid color-mix(in srgb, white 12%, transparent);
+    color: var(--text);
+    background: var(--surface);
+    border-inline-end: 1px solid var(--rule);
   }
 
   .app-rail .brand {
-    color: var(--ink-dark);
+    color: var(--ink);
   }
 
   .app-rail .brand em {
-    color: var(--muted-dark);
+    color: var(--muted);
   }
 
   .app-rail .brand-mark {
-    color: #12202c;
-    background: #f4f1e9;
+    color: var(--surface);
+    background: var(--ink);
   }
 
   .rail-navigation ul {
@@ -994,7 +1090,7 @@
     min-block-size: 3rem;
     padding-inline: 0.85rem;
     border-radius: var(--radius-pill);
-    color: var(--muted-dark);
+    color: var(--muted);
     font-size: var(--font-size-sm);
     text-decoration: none;
     font-weight: var(--font-weight-semibold);
@@ -1019,16 +1115,16 @@
   }
 
   .rail-navigation a:hover {
-    color: var(--ink-dark);
-    background: color-mix(in srgb, white 7%, transparent);
+    color: var(--ink);
+    background: var(--surface-2);
   }
 
   .rail-navigation a[aria-current="page"] {
-    color: #fff;
+    color: var(--surface);
   }
 
   .rail-navigation a[aria-current="page"]::before {
-    background: color-mix(in srgb, var(--action-light) 68%, #12202c);
+    background: var(--action);
     view-transition-name: active-nav-indicator;
   }
 
@@ -1050,7 +1146,7 @@
     align-items: center;
     gap: 0.5rem;
     min-inline-size: 0;
-    color: var(--muted-dark);
+    color: var(--muted);
     font-size: var(--font-size-sm);
   }
 
@@ -1061,9 +1157,9 @@
   }
 
   .app-rail :is(.lang-toggle, .theme-toggle) {
-    color: var(--ink-dark);
+    color: var(--ink);
     background: transparent;
-    border-color: var(--rule-strong-dark);
+    border-color: var(--rule-strong);
   }
 
   .compact-app-bar {
@@ -1071,10 +1167,6 @@
   }
 
   .compact-primary-navigation {
-    display: none;
-  }
-
-  .app-drawer {
     display: none;
   }
 
@@ -1104,15 +1196,16 @@
       backdrop-filter: blur(16px);
     }
 
-    .compact-command-start {
+    .compact-utilities {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      justify-content: flex-end;
+      gap: 0.375rem;
       min-inline-size: 0;
     }
 
     .compact-app-bar .brand {
-      min-inline-size: 2rem;
+      min-inline-size: var(--tap-target);
       min-block-size: var(--tap-target);
     }
 
@@ -1127,6 +1220,10 @@
     .compact-app-bar .brand-mark {
       inline-size: 2rem;
       block-size: 2rem;
+    }
+
+    .compact-app-bar :is(.lang-toggle, .theme-toggle) {
+      flex: none;
     }
 
     .compact-create {
@@ -1252,74 +1349,6 @@
       outline: 2px solid var(--focus);
       outline-offset: -2px;
     }
-
-    .app-drawer {
-      position: fixed;
-      inset: 0;
-      inline-size: 100%;
-      block-size: 100%;
-      max-inline-size: none;
-      max-block-size: none;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: transparent;
-      border: 0;
-    }
-
-    .app-drawer:popover-open {
-      display: block;
-    }
-
-    .app-drawer::backdrop {
-      background: rgb(5 12 19 / 0.56);
-      backdrop-filter: blur(2px);
-    }
-
-    .drawer-sheet {
-      display: grid;
-      grid-template-rows: auto auto 1fr;
-      gap: 1.25rem;
-      inline-size: min(22rem, 86vw);
-      block-size: 100svh;
-      padding: 1rem;
-      color: var(--text);
-      background: var(--surface);
-      box-shadow: 1rem 0 3rem rgb(0 0 0 / 0.24);
-      transition: translate var(--motion-route) var(--ease-out);
-    }
-
-    @starting-style {
-      .app-drawer:popover-open .drawer-sheet {
-        translate: -100% 0;
-      }
-    }
-
-    .drawer-sheet > header,
-    .drawer-sheet > footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-    }
-
-    .drawer-sheet > footer {
-      align-self: end;
-      padding-block-start: 1rem;
-      border-block-start: 1px solid var(--rule);
-    }
-
-    .drawer-sheet > footer > span {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-inline-end: auto;
-      color: var(--muted);
-    }
-
-    .drawer-create {
-      inline-size: 100%;
-    }
   }
 
   @media (min-width: 36rem) and (max-width: 63.999rem) {
@@ -1332,15 +1361,13 @@
       white-space: nowrap;
     }
 
+    .compact-app-bar .brand {
+      min-inline-size: 0;
+    }
+
     .compact-create {
       inline-size: auto;
       padding-inline: 0.9rem;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .drawer-sheet {
-      transition: none;
     }
   }
 
