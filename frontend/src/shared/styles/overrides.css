@@ -1312,6 +1312,12 @@
     }
   }
 
+  @media (pointer: coarse) and (max-width: 63.999rem) {
+    .bottom-navigation a {
+      min-block-size: 3.75rem;
+    }
+  }
+
   @media (forced-colors: active) {
     .app-rail {
       border-inline-end: 1px solid CanvasText;

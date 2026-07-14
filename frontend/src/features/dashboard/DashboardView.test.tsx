@@ -188,6 +188,44 @@ describe("dashboard workflow", () => {
     expect(popover.style.maxBlockSize).toBe("320px");
   });
 
+  it("keeps the compact period picker out of the top layer", async () => {
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        media: query,
+        matches: query === "(max-width: 63.999rem)",
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+
+    render(<App />);
+
+    await screen.findByRole("heading", { name: "June 2026" });
+    const trigger = screen.getByRole("button", { name: /^Choose period,/ });
+    const popover = document.querySelector<HTMLElement>(".period-popover")!;
+
+    expect(popover).not.toHaveAttribute("popover");
+    expect(popover).toHaveAttribute("hidden");
+
+    await userEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(popover).not.toHaveAttribute("hidden");
+    expect(popover).toHaveAttribute("data-open", "true");
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(popover).toHaveAttribute("hidden");
+    expect(trigger).toHaveFocus();
+  });
+
   it("keeps one global entry action that moves creation to Activity", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({}),

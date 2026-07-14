@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { monthNames, periodLabel } from "../format/periods";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useI18n } from "../i18n/I18nProvider";
 import { IconButton } from "./actions";
 
@@ -22,7 +23,11 @@ export function PeriodControl({
   const monthId = useId();
   const yearId = useId();
   const [draft, setDraft] = useState(value);
+  const [compactOpen, setCompactOpen] = useState(false);
   const latestValue = useRef(value);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const compactLayout = useMediaQuery("(max-width: 63.999rem)");
   const previous = shiftPeriod(value, -1);
   const next = shiftPeriod(value, 1);
   const { t } = useI18n();
@@ -35,11 +40,39 @@ export function PeriodControl({
     latestValue.current = value;
   }, [value]);
 
+  useEffect(() => {
+    if (!compactLayout || !compactOpen) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (
+        popoverRef.current?.contains(target) ||
+        triggerRef.current?.contains(target)
+      )
+        return;
+      setCompactOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setCompactOpen(false);
+      triggerRef.current?.focus();
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [compactLayout, compactOpen]);
+
   function applyDraft() {
     const period = { month: Number(draft.month), year: Number(draft.year) };
     latestValue.current = period;
     onChange(period);
-    closePopover(popoverId);
+    if (compactLayout) setCompactOpen(false);
+    else closePopover(popoverId);
   }
 
   function step(delta: -1 | 1) {
@@ -51,12 +84,18 @@ export function PeriodControl({
 
   const periodTrigger = (
     <button
+      ref={triggerRef}
       className="period-chip"
       type="button"
-      popoverTarget={popoverId}
+      popoverTarget={compactLayout ? undefined : popoverId}
+      aria-controls={popoverId}
+      aria-expanded={compactLayout ? compactOpen : undefined}
       aria-label={t("periodControl.choosePeriod", {
         period: periodLabel(value.month, value.year),
       })}
+      onClick={
+        compactLayout ? () => setCompactOpen((open) => !open) : undefined
+      }
     >
       <CalendarDays aria-hidden="true" size={17} />
       <span>{periodLabel(value.month, value.year)}</span>
@@ -82,7 +121,14 @@ export function PeriodControl({
         variant="secondary"
         onClick={() => step(1)}
       />
-      <div className="period-popover" id={popoverId} popover="auto">
+      <div
+        ref={popoverRef}
+        className="period-popover"
+        id={popoverId}
+        popover={compactLayout ? undefined : "auto"}
+        hidden={compactLayout ? !compactOpen : undefined}
+        data-open={compactLayout && compactOpen ? "true" : undefined}
+      >
         <div className="period-picker">
           <div className="field compact-field">
             <label htmlFor={monthId}>{t("periodControl.monthLabel")}</label>

@@ -428,6 +428,7 @@
   }
 
   .period-control {
+    anchor-scope: --period-picker;
     display: grid;
     grid-template-columns: var(--tap-target) minmax(0, 1fr) var(--tap-target);
     align-items: center;
@@ -494,12 +495,33 @@
     inline-size: min(24rem, calc(100dvw - 2rem));
     margin: 0;
     padding: 0.85rem;
+    overflow-y: auto;
     color: var(--text);
     background: var(--surface);
     border: 1px solid var(--rule);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     position-try-fallbacks: flip-block, flip-inline;
+  }
+
+  /* Compact pickers stay below the persistent app chrome in the normal
+     stacking order. Native popovers remain the desktop enhancement. */
+  @media (max-width: 63.999rem) {
+    .period-control {
+      overflow: visible;
+    }
+
+    .period-popover:not([popover]) {
+      z-index: 10;
+      display: block;
+      max-block-size: min(20rem, calc(100dvb - 2rem));
+    }
+
+    .period-popover:not([popover])[hidden] {
+      display: none;
+    }
   }
 
   @supports (position-area: block-end) {
