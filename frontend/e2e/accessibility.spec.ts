@@ -87,6 +87,18 @@ test.describe("keyboard accessibility smoke checks", () => {
     await expect(dialog).toBeHidden();
     await expect(addButton).toBeFocused();
   });
+
+  test("does not select chart disclosure text after rapid activation", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const summary = page.locator(".chart-data > summary").first();
+    await summary.click({ clickCount: 3 });
+
+    await expect(summary.locator("..")).toHaveAttribute("open", "");
+    expect(await page.evaluate(() => getSelection()?.toString())).toBe("");
+  });
 });
 
 test.describe("accessibility display preferences", () => {

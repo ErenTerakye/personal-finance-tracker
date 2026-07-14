@@ -22,7 +22,8 @@
     transition: rotate var(--motion-micro) var(--ease-out);
   }
 
-  .report-menu:has(.artifact-popover:popover-open) .report-menu-chevron {
+  .report-menu:has(.artifact-popover:is(:popover-open, [data-open="true"]))
+    .report-menu-chevron {
     rotate: 180deg;
   }
 
@@ -57,6 +58,23 @@
       position-area: block-end span-inline-start;
       inset: auto;
       margin-block-start: 0.5rem;
+    }
+  }
+
+  /* Compact layouts keep the panel in the document's stacking order so it
+     follows Export naturally and scrolls behind persistent app chrome. */
+  @media (max-width: 63.999rem) {
+    .artifact-popover:not([popover]) {
+      z-index: 10;
+      display: grid;
+      align-content: start;
+      inline-size: min(28rem, calc(100dvi - (2 * var(--page-gutter))));
+      max-block-size: 20rem;
+      position-try-fallbacks: flip-inline;
+    }
+
+    .artifact-popover:not([popover])[hidden] {
+      display: none;
     }
   }
 
@@ -128,33 +146,21 @@
     letter-spacing: 0.04em;
   }
 
-  @supports (transition-behavior: allow-discrete) {
-    .artifact-popover {
+  @media (prefers-reduced-motion: no-preference) {
+    .artifact-popover:is(:popover-open, [data-open="true"]) {
+      animation: artifact-popover-enter var(--motion-control) var(--ease-out);
+    }
+  }
+
+  @keyframes artifact-popover-enter {
+    from {
       opacity: 0;
       transform: translateY(-0.3rem) scale(0.98);
-      transform-origin: top right;
-      transition:
-        opacity var(--motion-control) var(--ease-out),
-        transform var(--motion-control) var(--ease-out),
-        display var(--motion-control) allow-discrete,
-        overlay var(--motion-control) allow-discrete;
-    }
-
-    .artifact-popover:popover-open {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-
-      @starting-style {
-        opacity: 0;
-        transform: translateY(-0.3rem) scale(0.98);
-      }
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .artifact-popover,
     .report-menu-chevron {
-      transform: none;
       transition: none;
     }
   }
@@ -174,7 +180,13 @@
     cursor: pointer;
     font-weight: var(--font-weight-semibold);
     list-style: none;
+    -webkit-user-select: none;
     user-select: none;
+  }
+
+  .chart-data summary:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
   }
 
   .chart-data summary::-webkit-details-marker {

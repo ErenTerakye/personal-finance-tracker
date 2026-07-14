@@ -6,7 +6,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import App from "../../app/App";
 import {
   installAppTestLifecycle,
@@ -117,6 +117,75 @@ describe("dashboard workflow", () => {
     ).toEqual(["Set budget"]);
     expect(actions.closest(".dashboard-command-row")).toContainElement(toolbar);
     expect(document.querySelector(".quick-actions")).not.toBeInTheDocument();
+  });
+
+  it("keeps the compact export panel in normal stacking as its anchor scrolls", async () => {
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        media: query,
+        matches: query === "(max-width: 63.999rem)",
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      callback(0);
+      return 1;
+    });
+
+    render(<App />);
+
+    await screen.findByRole("heading", { name: "June 2026" });
+    const appBar = document.querySelector<HTMLElement>(".compact-app-bar")!;
+    const popover = document.querySelector<HTMLElement>(".artifact-popover")!;
+    const trigger = screen.getByRole("button", {
+      name: "Download dashboard artifacts",
+    });
+    const bottomNavigation = document.querySelector<HTMLElement>(
+      ".compact-primary-navigation",
+    )!;
+
+    Object.defineProperties(popover, {
+      scrollHeight: { configurable: true, value: 256 },
+    });
+    vi.spyOn(appBar, "getBoundingClientRect").mockReturnValue(
+      elementBounds(0, 64),
+    );
+    vi.spyOn(bottomNavigation, "getBoundingClientRect").mockReturnValue(
+      elementBounds(447, 520),
+    );
+    vi.spyOn(popover, "getBoundingClientRect").mockReturnValue(
+      elementBounds(-47, 139),
+    );
+    let triggerBounds = elementBounds(40, 88);
+    vi.spyOn(trigger, "getBoundingClientRect").mockImplementation(
+      () => triggerBounds,
+    );
+
+    await userEvent.click(trigger);
+    fireEvent.scroll(document);
+
+    expect(popover).not.toHaveAttribute("popover");
+    expect(popover).toHaveAttribute("data-open", "true");
+    expect(popover.style.maxBlockSize).toBe("320px");
+    expect(popover.style.clipPath).toBe("");
+
+    triggerBounds = elementBounds(252, 300);
+    fireEvent.scroll(document);
+
+    expect(popover.style.maxBlockSize).toBe("131px");
+
+    triggerBounds = elementBounds(23, 71);
+    fireEvent.scroll(document);
+
+    expect(popover).toHaveAttribute("data-open", "true");
+    expect(popover.style.maxBlockSize).toBe("320px");
   });
 
   it("keeps one global entry action that moves creation to Activity", async () => {
@@ -298,3 +367,17 @@ describe("dashboard workflow", () => {
     );
   });
 });
+
+function elementBounds(top: number, bottom: number): DOMRect {
+  return {
+    bottom,
+    height: bottom - top,
+    left: 0,
+    right: 100,
+    top,
+    width: 100,
+    x: 0,
+    y: top,
+    toJSON: () => ({}),
+  };
+}

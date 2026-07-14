@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   ChevronDown,
   Download,
@@ -18,6 +18,7 @@ import {
 import { ActionButton } from "../../shared/components/actions";
 import { ErrorBanner } from "../../shared/components/feedback";
 import { money, percent } from "../../shared/format/money";
+import { useMediaQuery } from "../../shared/hooks/useMediaQuery";
 import { periodLabel } from "../../shared/format/periods";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import type { DashboardData } from "../../types";
@@ -287,17 +288,132 @@ export function DashboardView({
   );
 }
 
+function sizeCompactReportPopover(
+  trigger: HTMLButtonElement,
+  popover: HTMLDivElement,
+): void {
+  const appBar = document.querySelector<HTMLElement>(".compact-app-bar");
+  const bottomNavigation = document.querySelector<HTMLElement>(
+    ".compact-primary-navigation",
+  );
+  if (
+    !appBar ||
+    !bottomNavigation ||
+    getComputedStyle(appBar).display === "none" ||
+    getComputedStyle(bottomNavigation).display === "none"
+  ) {
+    popover.style.removeProperty("max-block-size");
+    return;
+  }
+
+  const gap = 8;
+  const safeTop = appBar.getBoundingClientRect().bottom + gap;
+  const safeBottom = bottomNavigation.getBoundingClientRect().top - gap;
+  const anchoredTop = Math.max(
+    trigger.getBoundingClientRect().bottom + gap,
+    safeTop,
+  );
+  const rootFontSize =
+    Number.parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+    16;
+  popover.style.maxBlockSize = `${Math.min(
+    20 * rootFontSize,
+    Math.max(0, safeBottom - anchoredTop),
+  )}px`;
+}
+
 function ReportMenu({ month, year }: { month: number; year: number }) {
   const id = useId();
   const titleId = `${id}-title`;
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const compactLayout = useMediaQuery("(max-width: 63.999rem)");
+  const [compactOpen, setCompactOpen] = useState(false);
   const { t } = useI18n();
+
+  useEffect(() => {
+    const popover = popoverRef.current;
+    if (!popover) return;
+
+    let animationFrame = 0;
+    const syncCompactPosition = (event?: Event) => {
+      if (event?.target instanceof Node && popover.contains(event.target))
+        return;
+
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(() => {
+        const trigger = triggerRef.current;
+        const open = compactLayout
+          ? popover.dataset.open === "true"
+          : popover.matches(":popover-open");
+        if (!trigger || !open) return;
+
+        sizeCompactReportPopover(trigger, popover);
+      });
+    };
+
+    popover.addEventListener("toggle", syncCompactPosition);
+    document.addEventListener("scroll", syncCompactPosition, true);
+    window.addEventListener("resize", syncCompactPosition);
+    window.visualViewport?.addEventListener("resize", syncCompactPosition);
+    syncCompactPosition();
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      popover.removeEventListener("toggle", syncCompactPosition);
+      document.removeEventListener("scroll", syncCompactPosition, true);
+      window.removeEventListener("resize", syncCompactPosition);
+      window.visualViewport?.removeEventListener("resize", syncCompactPosition);
+    };
+  }, [compactLayout, compactOpen]);
+
+  useEffect(() => {
+    if (!compactLayout || !compactOpen) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (
+        popoverRef.current?.contains(target) ||
+        triggerRef.current?.contains(target)
+      )
+        return;
+      setCompactOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setCompactOpen(false);
+      triggerRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [compactLayout, compactOpen]);
+
+  const prepareCompactPopover = () => {
+    const trigger = triggerRef.current;
+    const popover = popoverRef.current;
+    if (!trigger || !popover || popover.matches(":popover-open")) return;
+    sizeCompactReportPopover(trigger, popover);
+  };
+
   return (
     <div className="report-menu">
       <button
+        ref={triggerRef}
         className="button secondary"
         type="button"
-        popoverTarget={id}
+        popoverTarget={compactLayout ? undefined : id}
         aria-label={t("dashboard.downloadLabel")}
+        aria-controls={id}
+        aria-expanded={compactLayout ? compactOpen : undefined}
+        onClick={
+          compactLayout
+            ? () => setCompactOpen((open) => !open)
+            : prepareCompactPopover
+        }
       >
         <Download aria-hidden="true" size={18} />
         <span>{t("dashboard.exportAction")}</span>
@@ -308,11 +424,19 @@ function ReportMenu({ month, year }: { month: number; year: number }) {
         />
       </button>
       <div
+        ref={popoverRef}
         className="artifact-popover"
         id={id}
-        popover="auto"
+        popover={compactLayout ? undefined : "auto"}
+        hidden={compactLayout ? !compactOpen : undefined}
+        data-open={compactLayout && compactOpen ? "true" : undefined}
         role="group"
         aria-labelledby={titleId}
+        onClick={(event) => {
+          if (compactLayout && event.target instanceof Element) {
+            if (event.target.closest("a")) setCompactOpen(false);
+          }
+        }}
       >
         <div className="artifact-popover-header">
           <h2 id={titleId}>{t("dashboard.reportMenu")}</h2>

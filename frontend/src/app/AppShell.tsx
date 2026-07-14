@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { Notice } from "../shared/components/feedback";
+import { useMediaQuery } from "../shared/hooks/useMediaQuery";
 import { useI18n } from "../shared/i18n/I18nProvider";
 import { ThemeToggle } from "../shared/theme/ThemeToggle";
 import { RouteView, View, viewMeta, viewOrder } from "./routes";
@@ -286,26 +287,6 @@ function Brand({
       </span>
     </a>
   );
-}
-
-function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(() =>
-    typeof window === "undefined" || typeof window.matchMedia !== "function"
-      ? false
-      : window.matchMedia(query).matches,
-  );
-
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") return;
-    const mediaQuery = window.matchMedia(query);
-    const updateMatches = (event: MediaQueryListEvent) =>
-      setMatches(event.matches);
-    setMatches(mediaQuery.matches);
-    mediaQuery.addEventListener("change", updateMatches);
-    return () => mediaQuery.removeEventListener("change", updateMatches);
-  }, [query]);
-
-  return matches;
 }
 
 function shouldHandleNavigation(
