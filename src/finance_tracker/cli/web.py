@@ -23,6 +23,10 @@ def web(
     ] = "127.0.0.1",
     port: Annotated[int, typer.Option("--port", help="Port for the local web server")] = 8000,
     db_path: DbPathOption = None,
+    reload: Annotated[
+        bool,
+        typer.Option("--reload", help="Enable auto-reload for development"),
+    ] = False,
 ) -> None:
     """Run the local browser-based finance dashboard."""
     resolved_path = resolve_db_path(db_path)
@@ -47,4 +51,15 @@ def web(
             fg=typer.colors.YELLOW,
             err=True,
         )
-    uvicorn.run(create_app(resolved_path), host=host, port=port)
+    if reload:
+        import os
+        os.environ["FINANCE_TRACKER_DB"] = str(resolved_path)
+        uvicorn.run(
+            "finance_tracker.web.app:create_app",
+            host=host,
+            port=port,
+            factory=True,
+            reload=True,
+        )
+    else:
+        uvicorn.run(create_app(resolved_path), host=host, port=port)

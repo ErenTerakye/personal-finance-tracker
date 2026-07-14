@@ -160,39 +160,55 @@
   }
 
   .chart-data {
+    interpolate-size: allow-keywords;
     margin-block-start: 1rem;
     border-block-start: 1px solid var(--rule);
     padding-block-start: 0.75rem;
   }
 
   .chart-data summary {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
     color: var(--action);
     cursor: pointer;
     font-weight: var(--font-weight-semibold);
+    list-style: none;
+    user-select: none;
   }
 
-  @supports (interpolate-size: allow-keywords) {
-    .chart-data {
-      interpolate-size: allow-keywords;
-    }
+  .chart-data summary::-webkit-details-marker {
+    display: none;
+  }
 
-    .chart-data::details-content {
-      block-size: 0;
-      overflow: clip;
-      opacity: 0;
-      translate: 0 -0.35rem;
-      transition:
-        block-size var(--motion-control) var(--ease-out),
-        content-visibility var(--motion-control) allow-discrete,
-        opacity var(--motion-micro) ease-out,
-        translate var(--motion-control) var(--ease-out);
-    }
+  .chart-data summary::before {
+    flex: none;
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    border-inline-end: 0.125rem solid currentColor;
+    border-block-end: 0.125rem solid currentColor;
+    rotate: -45deg;
+    transition: rotate var(--motion-micro) var(--ease-out);
+    content: "";
+  }
 
-    .chart-data[open]::details-content {
-      block-size: auto;
-      opacity: 1;
-      translate: 0;
-    }
+  .chart-data[open] > summary::before {
+    rotate: 45deg;
+  }
+
+  .chart-data::details-content {
+    block-size: 0;
+    overflow: clip;
+    opacity: 0;
+    transition:
+      block-size var(--motion-control) var(--ease-out),
+      content-visibility var(--motion-control) allow-discrete,
+      opacity var(--motion-micro) ease-out;
+  }
+
+  .chart-data[open]::details-content {
+    block-size: auto;
+    opacity: 1;
   }
 
   .chart-data table {
@@ -215,8 +231,6 @@
   .button,
   .icon-button,
   .period-chip {
-    position: relative;
-    isolation: isolate;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -230,45 +244,10 @@
     letter-spacing: 0.005em;
     line-height: var(--line-compact);
     text-decoration: none;
-    overflow: clip;
-    scale: 1;
     transition:
-      background-color var(--motion-micro) ease-out,
-      border-color var(--motion-micro) ease-out,
-      color var(--motion-micro) ease-out,
-      box-shadow var(--motion-micro) ease-out,
-      opacity var(--motion-micro) ease-out,
-      scale var(--motion-control) var(--ease-out);
-  }
-
-  .button::before,
-  .icon-button::before,
-  .period-chip::before {
-    position: absolute;
-    z-index: -1;
-    inset: 1px;
-    background: radial-gradient(
-      120% 100% at 50% 0%,
-      color-mix(in oklab, currentColor 10%, transparent),
-      transparent 72%
-    );
-    border-radius: calc(var(--radius-sm) - 1px);
-    opacity: 0;
-    scale: 0.92 0.86;
-    transform-origin: 50% 0%;
-    transition:
-      opacity var(--motion-micro) ease-out,
-      scale var(--motion-control) var(--ease-out);
-    content: "";
-    pointer-events: none;
-  }
-
-  :is(.button, .icon-button, .period-chip) > svg {
-    translate: 0 0;
-    scale: 1;
-    transition:
-      translate var(--motion-control) var(--ease-out),
-      scale var(--motion-control) var(--ease-out);
+      background-color var(--motion-control) var(--ease-out),
+      border-color var(--motion-control) var(--ease-out),
+      color var(--motion-micro) ease-out;
   }
 
   .button {
@@ -333,62 +312,47 @@
     border-color: transparent;
   }
 
-  :is(.button, .icon-button, .period-chip):focus-visible::before {
-    opacity: 0.72;
-    scale: 1;
-  }
-
-  .button.primary:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--action) 84%, var(--button-hover-mix));
-    border-color: color-mix(
-      in srgb,
-      var(--action) 84%,
-      var(--button-hover-mix)
-    );
-  }
-
-  .button.secondary:hover:not(:disabled),
-  .icon-button.secondary:hover:not(:disabled),
-  .period-chip:hover:not(:disabled) {
-    border-color: var(--rule-strong);
-    background: color-mix(in srgb, var(--surface) 76%, var(--surface-2));
-  }
-
-  .button.danger:hover:not(:disabled),
-  .icon-button.danger:hover:not(:disabled) {
-    background: color-mix(
-      in srgb,
-      var(--expenses) 86%,
-      var(--button-hover-mix)
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--expenses) 86%,
-      var(--button-hover-mix)
-    );
-  }
-
-  .button.ghost:hover:not(:disabled),
-  .icon-button.ghost:hover:not(:disabled) {
-    color: var(--ink);
-    background: var(--surface-2);
-  }
-
   @media (hover: hover) and (pointer: fine) {
-    :is(.button, .icon-button, .period-chip):hover:not(:disabled)::before {
-      opacity: 0.72;
-      scale: 1;
+    .button.primary:hover:not(:disabled),
+    .icon-button.primary:hover:not(:disabled) {
+      background: color-mix(
+        in srgb,
+        var(--action) 84%,
+        var(--button-hover-mix)
+      );
+      border-color: color-mix(
+        in srgb,
+        var(--action) 84%,
+        var(--button-hover-mix)
+      );
     }
 
-    :is(.button, .icon-button, .period-chip):hover:not(:disabled) > svg {
-      translate: 0 -0.0625rem;
-      scale: 1.08;
+    .button.secondary:hover:not(:disabled),
+    .icon-button.secondary:hover:not(:disabled),
+    .period-chip:hover:not(:disabled) {
+      border-color: var(--rule-strong);
+      background: color-mix(in srgb, var(--surface) 76%, var(--surface-2));
     }
-  }
 
-  :is(.button, .icon-button, .period-chip):active:not(:disabled) {
-    scale: 0.985;
-    transition-duration: var(--motion-micro);
+    .button.danger:hover:not(:disabled),
+    .icon-button.danger:hover:not(:disabled) {
+      background: color-mix(
+        in srgb,
+        var(--expenses) 86%,
+        var(--button-hover-mix)
+      );
+      border-color: color-mix(
+        in srgb,
+        var(--expenses) 86%,
+        var(--button-hover-mix)
+      );
+    }
+
+    .button.ghost:hover:not(:disabled),
+    .icon-button.ghost:hover:not(:disabled) {
+      color: var(--ink);
+      background: var(--surface-2);
+    }
   }
 
   .button:disabled,
@@ -438,26 +402,17 @@
     box-shadow: var(--shadow-soft);
   }
 
-  .theme-toggle:hover,
-  .lang-toggle:hover {
-    background: var(--surface);
-    border-color: var(--rule-strong);
-  }
-
   .theme-toggle svg,
   .lang-toggle svg {
     display: block;
-    rotate: 0deg;
-    scale: 1;
-    transition:
-      rotate var(--motion-control) var(--ease-out),
-      scale var(--motion-control) var(--ease-out);
   }
 
-  .theme-toggle:hover svg,
-  .lang-toggle:hover svg {
-    rotate: 6deg;
-    scale: 1.08;
+  @media (hover: hover) and (pointer: fine) {
+    .theme-toggle:hover,
+    .lang-toggle:hover {
+      background: var(--surface);
+      border-color: var(--rule-strong);
+    }
   }
 
   .period-control {
@@ -470,7 +425,7 @@
     max-inline-size: 100%;
     overflow: clip;
     background: color-mix(in srgb, var(--surface) 92%, transparent);
-    border: 1px solid var(--rule);
+    border: 0;
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-soft);
   }
@@ -479,13 +434,32 @@
   .period-control > .period-chip {
     min-block-size: calc(var(--tap-target) + 0.25rem);
     background: transparent;
-    border: 0;
+    border: 1px solid var(--rule);
     border-radius: 0;
     box-shadow: none;
   }
 
-  .period-control > .period-chip {
-    border-inline: 1px solid var(--rule);
+  .period-control
+    > :is(.icon-button, .period-chip)
+    + :is(.icon-button, .period-chip) {
+    margin-inline-start: -1px;
+  }
+
+  .period-control > .icon-button:first-child {
+    border-start-start-radius: inherit;
+    border-end-start-radius: inherit;
+  }
+
+  .period-control > .period-chip + .icon-button {
+    border-start-end-radius: inherit;
+    border-end-end-radius: inherit;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .period-control > :is(.icon-button, .period-chip):hover:not(:disabled) {
+      position: relative;
+      z-index: 1;
+    }
   }
 
   .period-control > :focus-visible {
@@ -1435,7 +1409,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .expense-mix-slice,
-    .chart-data::details-content {
+    .chart-data::details-content,
+    .chart-data summary::before {
       transition: none;
     }
   }
@@ -2256,14 +2231,6 @@
     border-radius: 999px;
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-medium);
-    transition: all 120ms ease;
-  }
-
-  .preset-chip:hover {
-    color: var(--ink);
-    background: var(--surface-3);
-    border-color: var(--rule-strong);
-    transform: translateY(-1px);
   }
 
   .preset-grid {
@@ -2285,14 +2252,15 @@
     border: 1px solid var(--rule);
     border-radius: var(--radius-sm);
     font-size: var(--font-size-xs);
-    transition: all 120ms ease;
   }
 
-  .preset-grid-card:hover {
-    color: var(--ink);
-    background: var(--surface-3);
-    border-color: var(--rule-strong);
-    transform: translateY(-1px);
+  @media (hover: hover) and (pointer: fine) {
+    .preset-chip:hover,
+    .preset-grid-card:hover {
+      color: var(--ink);
+      background: var(--surface-3);
+      border-color: var(--rule-strong);
+    }
   }
 
   .preset-grid-card strong {

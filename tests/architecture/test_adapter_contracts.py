@@ -11,7 +11,7 @@ from finance_tracker.web.app import create_app
 
 CLI_PARAMETER_NAMES = {
     "init": ("db_path",),
-    "web": ("host", "port", "db_path"),
+    "web": ("host", "port", "db_path", "reload"),
     "add": ("transaction_type", "amount", "category", "description", "transaction_date", "db_path"),
     "list": ("month", "year", "category", "transaction_type", "db_path"),
     "delete": ("transaction_id", "db_path"),
@@ -92,6 +92,7 @@ OPTION_SPELLINGS = {
     "months": ("--months",),
     "port": ("--port",),
     "preview": ("--preview",),
+    "reload": ("--reload",),
     "transaction_date": ("--date",),
     "transaction_type": ("--type", "-t"),
     "year": ("--year", "-y"),
@@ -117,7 +118,7 @@ REQUIRED_OPTIONS = {
 
 CLI_PARAMETER_DEFAULTS = {
     "init": {"db_path": None},
-    "web": {"host": "127.0.0.1", "port": 8000, "db_path": None},
+    "web": {"host": "127.0.0.1", "port": 8000, "db_path": None, "reload": False},
     "add": {"description": "", "transaction_date": None, "db_path": None},
     "list": {
         "month": None,

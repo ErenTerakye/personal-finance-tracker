@@ -222,6 +222,12 @@
       transition: none;
     }
 
+    .button,
+    .icon-button,
+    .period-chip {
+      transition: none;
+    }
+
     .chart-point {
       transition: none;
     }

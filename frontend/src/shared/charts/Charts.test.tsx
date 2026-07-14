@@ -220,6 +220,25 @@ describe("TrendLines", () => {
 });
 
 describe("ExpenseMix", () => {
+  it("toggles its chart data table with the native disclosure control", async () => {
+    const user = userEvent.setup();
+    render(
+      <ExpenseMix
+        title="Expense mix"
+        items={[{ label: "Housing", value: "750.00" }]}
+      />,
+    );
+
+    const summary = screen.getByText("Show chart data as a table");
+    const disclosure = summary.closest("details");
+
+    expect(disclosure).not.toHaveAttribute("open");
+    await user.click(summary);
+    expect(disclosure).toHaveAttribute("open");
+    await user.click(summary);
+    expect(disclosure).not.toHaveAttribute("open");
+  });
+
   it("renders an accessible donut with exact category data", () => {
     render(
       <ExpenseMix

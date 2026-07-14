@@ -78,6 +78,7 @@ describe("app composition", () => {
     );
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": { transactions: [] },
       "/api/budgets": { budgets: [] },
       "/api/budgets/status": { statuses: [] },
     });
@@ -106,10 +107,24 @@ describe("app composition", () => {
     ]);
     expect(links[0]).toHaveAttribute("aria-current", "page");
     expect(links[0].querySelector("svg")).toHaveAttribute(
-      "stroke-width",
-      "2.75",
+      "fill",
+      "currentColor",
     );
+    expect(links[0].querySelector("svg")).toHaveAttribute("stroke-width", "2");
+    expect(links[1].querySelector("svg")).toHaveAttribute("fill", "none");
     expect(links[1].querySelector("svg")).toHaveAttribute("stroke-width", "2");
+
+    await userEvent.click(
+      within(compactNavigation!).getByRole("link", {
+        name: "Activity",
+      }),
+    );
+    await waitFor(() => expect(window.location.pathname).toBe("/transactions"));
+    expect(links[1]).toHaveAttribute("aria-current", "page");
+    expect(links[1].querySelector("svg")).toHaveAttribute(
+      "fill",
+      "currentColor",
+    );
 
     const drawer = document.querySelector<HTMLElement>("#app-drawer");
     expect(drawer).not.toBeNull();
@@ -130,6 +145,24 @@ describe("app composition", () => {
     expect(
       await screen.findByRole("heading", { name: "Budgets" }),
     ).toBeInTheDocument();
+    expect(links[2]).toHaveAttribute("aria-current", "page");
+    expect(links[2].querySelector("svg")).toHaveAttribute(
+      "fill",
+      "currentColor",
+    );
+
+    await userEvent.click(
+      within(compactNavigation!).getByRole("link", {
+        name: "Automations",
+      }),
+    );
+    await waitFor(() => expect(window.location.pathname).toBe("/rules"));
+    expect(links[3]).toHaveAttribute("aria-current", "page");
+    expect(links[3].querySelector("svg")).toHaveAttribute("fill", "none");
+    expect(links[3].querySelector("svg")).toHaveAttribute(
+      "stroke-width",
+      "2.75",
+    );
   });
 
   it("opens the transaction form from the global create command", async () => {

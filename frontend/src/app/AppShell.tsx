@@ -81,6 +81,8 @@ export function AppShell({
         {viewOrder.map((item) => {
           const Icon = navIcons[item];
           const active = view === item;
+          const bottomNavigationActive =
+            active && className === "bottom-navigation";
           return (
             <li key={item}>
               <a
@@ -95,8 +97,13 @@ export function AppShell({
                 <span className="navigation-icon" aria-hidden="true">
                   <Icon
                     size={20}
+                    fill={
+                      bottomNavigationActive && item !== "rules"
+                        ? "currentColor"
+                        : "none"
+                    }
                     strokeWidth={
-                      active && className === "bottom-navigation" ? 2.75 : 2
+                      bottomNavigationActive && item === "rules" ? 2.75 : 2
                     }
                   />
                 </span>
