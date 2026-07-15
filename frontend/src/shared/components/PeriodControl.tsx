@@ -36,10 +36,12 @@ export function PeriodControl({
   value,
   onChange,
   label = "Period",
+  busy = false,
 }: {
   value: PeriodValue;
   onChange: (period: PeriodValue) => void;
   label?: string;
+  busy?: boolean;
 }) {
   const pickerId = useId();
   const yearListId = useId();
@@ -220,6 +222,9 @@ export function PeriodControl({
       >
         <CalendarDays aria-hidden="true" size={17} />
         <span>{periodLabel(value.month, value.year)}</span>
+        {busy ? (
+          <span className="period-pending-mark" aria-hidden="true" />
+        ) : null}
       </button>
       <IconButton
         icon={ChevronRight}
@@ -341,7 +346,8 @@ export function PeriodControl({
 
           {pickerView === "months" ? (
             <div
-              className="period-month-grid"
+              className="period-month-grid period-picker-grid"
+              key="months"
               role="group"
               aria-label={t("periodControl.monthLabel")}
             >
@@ -374,7 +380,8 @@ export function PeriodControl({
             </div>
           ) : (
             <div
-              className="period-year-grid"
+              className="period-year-grid period-picker-grid"
+              key="years"
               id={yearListId}
               role="group"
               aria-label={t("periodControl.yearLabel")}

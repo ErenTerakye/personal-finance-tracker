@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import App from "../../app/App";
@@ -117,7 +117,9 @@ describe("transactions workflow", () => {
     await userEvent.click(
       await screen.findByRole("link", { name: /Transactions|Activity/i }),
     );
-    window.dispatchEvent(new Event("finance-tracker:add-transaction"));
+    act(() =>
+      window.dispatchEvent(new Event("finance-tracker:add-transaction")),
+    );
 
     expect(
       await screen.findByRole("dialog", { name: "Add transaction" }),
@@ -201,7 +203,7 @@ describe("transactions workflow", () => {
     await userEvent.type(within(dialog).getByLabelText("Amount"), "45.90");
     await userEvent.type(within(dialog).getByLabelText("Category"), "Food");
     await userEvent.click(
-      within(dialog).getByRole("button", { name: "Add entry" }),
+      within(dialog).getByRole("button", { name: "Add expense" }),
     );
 
     await waitFor(() =>
@@ -209,6 +211,49 @@ describe("transactions workflow", () => {
         "Transaction added to the local ledger.",
       ),
     );
+  });
+
+  it("makes transaction direction explicit and adapts the primary action", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": { transactions: [] },
+    });
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Transactions|Activity/i }),
+    );
+    await userEvent.click(
+      screen.getAllByRole("button", { name: "Add entry" })[0],
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Add transaction",
+    });
+    expect(within(dialog).getByText("What are you recording?")).toBeVisible();
+    expect(within(dialog).getByLabelText("Expense")).toBeChecked();
+    expect(within(dialog).queryByText("Private by design")).toBeNull();
+    expect(
+      within(dialog).getByRole("button", { name: "Add expense" }),
+    ).toBeVisible();
+    const amount = within(dialog).getByLabelText("Amount");
+    await userEvent.type(amount, "0.00");
+    expect(amount).toBeInvalid();
+    await userEvent.clear(amount);
+    await userEvent.type(amount, "12a.345");
+    expect(amount).toHaveValue("12.34");
+    expect(amount).toBeValid();
+    await userEvent.clear(amount);
+    await userEvent.type(amount, "1,5");
+    expect(amount).toHaveValue("1.5");
+
+    await userEvent.click(within(dialog).getByLabelText("Income"));
+
+    expect(within(dialog).getByLabelText("Income")).toBeChecked();
+    expect(
+      within(dialog).getByRole("button", { name: "Add income" }),
+    ).toBeVisible();
+    expect(dialog).toHaveClass("entry-dialog-income");
   });
 
   it("imports transaction CSV from a dialog and shows row results", async () => {

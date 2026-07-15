@@ -210,6 +210,11 @@ describe("dashboard workflow", () => {
 
     expect(popover).toHaveAttribute("data-open", "true");
     expect(popover.style.maxBlockSize).toBe("320px");
+
+    await userEvent.keyboard("{Escape}");
+    expect(popover).not.toHaveAttribute("data-open");
+    expect(popover).toHaveAttribute("hidden");
+    expect(trigger).toHaveFocus();
   });
 
   it("opens the compact period picker as a modal bottom sheet", async () => {

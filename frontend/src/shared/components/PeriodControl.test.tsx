@@ -40,6 +40,29 @@ function renderCompactPeriodControl(
 }
 
 describe("PeriodControl", () => {
+  it("shows a visible static pending mark without disabling rapid controls", () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    render(
+      <I18nProvider>
+        <PeriodControl
+          value={{ month: 6, year: 2026 }}
+          onChange={vi.fn()}
+          busy
+        />
+      </I18nProvider>,
+    );
+
+    expect(document.querySelector(".period-pending-mark")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Next month,/ })).toBeEnabled();
+  });
+
   it("uses a native anchored popover on desktop", () => {
     vi.stubGlobal(
       "matchMedia",

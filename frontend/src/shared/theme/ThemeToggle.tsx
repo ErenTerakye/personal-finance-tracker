@@ -58,7 +58,11 @@ export function ThemeToggle() {
         setPreference(nextPreference);
       }}
     >
-      <span className="theme-toggle-icon" aria-hidden="true">
+      <span
+        className="theme-toggle-icon"
+        aria-hidden="true"
+        key={currentScheme}
+      >
         <Icon size={17} />
       </span>
       <span className="sr-only">{label}</span>

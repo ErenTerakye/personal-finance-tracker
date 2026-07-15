@@ -1,4 +1,4 @@
-import { renderHook } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ResourceState } from "./useResource";
 import {
@@ -36,10 +36,9 @@ describe("usePeriodTransition", () => {
 
     expect(result.current.data).toBe("June");
     expect(result.current.pending).toBe(true);
-    expect(result.current.direction).toBe("forward");
   });
 
-  it("commits adjacent and jumped periods without a blocking view transition", () => {
+  it("commits adjacent and jumped periods with semantic transitions", async () => {
     const startViewTransition = installViewTransition();
     const { result, rerender } = renderHook(
       ({ period, resource }: Props) => usePeriodTransition(period, resource),
@@ -55,19 +54,22 @@ describe("usePeriodTransition", () => {
       period: { month: 7, year: 2026 },
       resource: success("July"),
     });
-    expect(result.current.data).toBe("July");
-    expect(result.current.direction).toBeNull();
-    expect(startViewTransition).not.toHaveBeenCalled();
+    await waitFor(() => expect(result.current.data).toBe("July"));
+    expect(startViewTransition).toHaveBeenLastCalledWith(
+      expect.objectContaining({ types: ["period-forward"] }),
+    );
 
     rerender({
       period: { month: 3, year: 2025 },
       resource: success("March"),
     });
-    expect(result.current.data).toBe("March");
-    expect(startViewTransition).not.toHaveBeenCalled();
+    await waitFor(() => expect(result.current.data).toBe("March"));
+    expect(startViewTransition).toHaveBeenLastCalledWith(
+      expect.objectContaining({ types: ["period-jump"] }),
+    );
   });
 
-  it("updates without a transition for reduced motion or same-period data", () => {
+  it("updates without a transition for reduced motion or same-period data", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: query === "(prefers-reduced-motion: reduce)",
     }));
@@ -91,11 +93,11 @@ describe("usePeriodTransition", () => {
       resource: success("filtered"),
     });
 
-    expect(result.current.data).toBe("filtered");
+    await waitFor(() => expect(result.current.data).toBe("filtered"));
     expect(startViewTransition).not.toHaveBeenCalled();
   });
 
-  it("keeps compact glass navigation live during period updates", () => {
+  it("keeps compact glass navigation live during period updates", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: query === "(max-width: 63.999rem)",
     }));
@@ -115,8 +117,10 @@ describe("usePeriodTransition", () => {
       resource: success("July"),
     });
 
-    expect(result.current.data).toBe("July");
-    expect(startViewTransition).not.toHaveBeenCalled();
+    await waitFor(() => expect(result.current.data).toBe("July"));
+    expect(startViewTransition).toHaveBeenCalledWith(
+      expect.objectContaining({ types: ["period-forward"] }),
+    );
   });
 });
 
@@ -142,7 +146,11 @@ function installViewTransition() {
   const startViewTransition = vi.fn(
     ({ update }: { update: () => void; types?: string[] }) => {
       update();
-      return { finished: Promise.resolve() };
+      return {
+        updateCallbackDone: Promise.resolve(),
+        finished: Promise.resolve(),
+        skipTransition: vi.fn(),
+      };
     },
   );
   Object.defineProperty(document, "startViewTransition", {

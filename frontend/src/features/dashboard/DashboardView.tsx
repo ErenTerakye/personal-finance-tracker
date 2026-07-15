@@ -148,6 +148,7 @@ export function DashboardView({
               label={t("dashboard.changePeriod")}
               value={selectedPeriod}
               onChange={setSelectedPeriod}
+              busy={periodTransition.pending}
             />
             <ReportMenu
               month={selectedPeriod.month}

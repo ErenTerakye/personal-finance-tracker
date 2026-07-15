@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ResourceState } from "./useResource";
+import { runViewTransition } from "../motion/viewTransitions";
 
 export type PeriodValue = { month: number; year: number };
 export type PeriodTransitionDirection = "backward" | "forward" | "jump";
@@ -16,7 +17,7 @@ export function usePeriodTransition<T>(
   const committedData = useRef<T | undefined>(undefined);
   const requestedKey = periodKey(requestedPeriod);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (
       resource.status !== "success" ||
       resource.data === committedData.current
@@ -24,13 +25,41 @@ export function usePeriodTransition<T>(
       return;
     }
 
-    const next = {
-      data: resource.data,
-      previousData: presented?.data,
-      period: requestedPeriod,
+    const nextData = resource.data;
+    const previous = presented;
+    const direction = previous
+      ? periodDirection(previous.period, requestedPeriod)
+      : null;
+    let cancelled = false;
+
+    if (!direction) {
+      committedData.current = nextData;
+      setPresented({
+        data: nextData,
+        previousData: previous?.data,
+        period: requestedPeriod,
+      });
+      return;
+    }
+
+    // Effects run while React is finishing a commit. Moving the narrowly
+    // scoped flushSync boundary to a microtask gives View Transitions two
+    // stable snapshots without delaying the successful data presentation.
+    queueMicrotask(() => {
+      if (cancelled || committedData.current === nextData) return;
+      committedData.current = nextData;
+      const commit = () =>
+        setPresented({
+          data: nextData,
+          previousData: previous?.data,
+          period: requestedPeriod,
+        });
+      runViewTransition(`period-${direction}`, commit);
+    });
+
+    return () => {
+      cancelled = true;
     };
-    committedData.current = resource.data;
-    setPresented(next);
   }, [requestedKey, requestedPeriod, resource, presented]);
 
   const pending =
@@ -43,9 +72,6 @@ export function usePeriodTransition<T>(
     previousData: presented?.previousData,
     presentedPeriod: presented?.period,
     pending,
-    direction: presented
-      ? periodDirection(presented.period, requestedPeriod)
-      : null,
   };
 }
 

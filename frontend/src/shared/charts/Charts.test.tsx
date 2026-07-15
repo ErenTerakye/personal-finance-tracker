@@ -179,7 +179,7 @@ describe("CashflowTrend", () => {
       { key: "Escape" },
     );
 
-    expect(document.querySelector("output")).not.toBeInTheDocument();
+    expect(document.querySelector("output")).toHaveAttribute("hidden");
   });
 });
 
@@ -229,7 +229,7 @@ describe("TrendLines", () => {
     fireEvent.blur(point);
     expect(document.querySelector("output")).toHaveTextContent("$100.00");
     fireEvent.keyDown(point, { key: "Escape" });
-    expect(document.querySelector("output")).not.toBeInTheDocument();
+    expect(document.querySelector("output")).toHaveAttribute("hidden");
   });
 });
 

@@ -107,6 +107,7 @@ The browser application includes:
 - Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
 - Read-only transaction tables that collapse into mobile-friendly record lists with compact row actions.
 - A header theme action that follows your system color setting by default, can pin the opposite light/dark mode locally, and reveals theme changes from the control with a reduced-motion-aware animation.
+- Calm, progressive Overview motion: instant top-level tab handoffs, directional period context, responsive rolling values, two-way export and chart-tooltip lifecycles, immediate pending/pressed feedback, and spatial-motion-free reduced-motion states.
 - An English/Turkish language action with local browser preference persistence and locale-aware money/date formatting using the active ledger currency.
 
 During frontend development, run the Python app and Vite separately:

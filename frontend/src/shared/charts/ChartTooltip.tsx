@@ -61,24 +61,32 @@ export function useChartTooltip(
 }
 
 export function ChartTooltip({ active }: { active: TooltipData | null }) {
-  if (!active) {
+  const [lastActive, setLastActive] = useState<TooltipData | null>(active);
+  useEffect(() => {
+    if (active) setLastActive(active);
+  }, [active]);
+  const displayed = active ?? lastActive;
+
+  if (!displayed) {
     return null;
   }
 
   return (
     <output
-      className={`chart-tooltip ${active.tone}`}
+      className={`chart-tooltip ${displayed.tone}`}
+      hidden={!active}
+      aria-hidden="true"
       style={
         {
-          "--tooltip-x": `${active.x}px`,
-          "--tooltip-y": `${active.y}px`,
+          "--tooltip-x": `${displayed.x}px`,
+          "--tooltip-y": `${displayed.y}px`,
         } as VariableStyle
       }
     >
-      <span>{active.title}</span>
-      <strong>{active.value}</strong>
-      <em>{active.label}</em>
-      <small>{active.detail}</small>
+      <span>{displayed.title}</span>
+      <strong>{displayed.value}</strong>
+      <em>{displayed.label}</em>
+      <small>{displayed.detail}</small>
     </output>
   );
 }

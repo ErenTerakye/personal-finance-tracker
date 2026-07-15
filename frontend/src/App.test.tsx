@@ -237,7 +237,7 @@ describe("app composition", () => {
     expect(window.location.pathname).toBe("/");
   });
 
-  it("changes routes without snapshotting outgoing page content", async () => {
+  it("switches top-level tabs immediately without snapshotting persistent chrome", async () => {
     mockColorScheme("light");
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
@@ -255,6 +255,11 @@ describe("app composition", () => {
 
     expect(startViewTransition).not.toHaveBeenCalled();
     expect(window.location.pathname).toBe("/budgets");
+    expect(screen.getByRole("link", { name: "Plan" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(document.querySelector("main")).toHaveFocus();
   });
 
   it("skips view transitions when reduced motion is preferred", async () => {
@@ -275,6 +280,21 @@ describe("app composition", () => {
 
     expect(startViewTransition).not.toHaveBeenCalled();
     expect(window.location.pathname).toBe("/budgets");
+  });
+
+  it("does not replay motion for same-route activation", async () => {
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+    const startViewTransition = vi.fn();
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: startViewTransition,
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { level: 1 });
+    await userEvent.click(screen.getByRole("link", { name: "Overview" }));
+
+    expect(startViewTransition).not.toHaveBeenCalled();
   });
 
   it("supports language toggling between English and Turkish", async () => {

@@ -19,6 +19,14 @@ export function money(value: string | number): string {
   return currency().format(Number(value));
 }
 
+export function currencySymbol(): string {
+  return (
+    currency()
+      .formatToParts(0)
+      .find((part) => part.type === "currency")?.value ?? activeCurrencyCode
+  );
+}
+
 export function compactMoney(value: string | number): string {
   return currency("compact").format(Number(value));
 }

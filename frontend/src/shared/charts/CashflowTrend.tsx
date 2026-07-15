@@ -1,4 +1,4 @@
-import { type PointerEvent, useRef } from "react";
+import { type PointerEvent, useEffect, useRef, useState } from "react";
 import { signedMoney } from "../format/money";
 import { periodLabel, shortPeriodLabel } from "../format/periods";
 import { useI18n } from "../i18n/I18nProvider";
@@ -22,8 +22,13 @@ const MIN_VISIBLE_TREND_SIZE = 6;
 
 export function CashflowTrend({ months }: { months: TrendMonth[] }) {
   const chartRef = useRef<HTMLElement>(null);
+  const [motionReady, setMotionReady] = useState(false);
   const [active, setActive] = useChartTooltip(chartRef, [months]);
   const { t } = useI18n();
+
+  useEffect(() => {
+    setMotionReady(true);
+  }, []);
 
   function activateBar(
     node: HTMLElement,
@@ -116,7 +121,7 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
 
   return (
     <figure
-      className="cashflow-trend"
+      className={`cashflow-trend${motionReady ? " is-motion-ready" : ""}`}
       ref={chartRef}
       aria-label={t("charts.ariaTitle")}
     >

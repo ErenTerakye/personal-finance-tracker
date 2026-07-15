@@ -74,7 +74,7 @@
     --motion-micro: 140ms;
     --motion-control: 190ms;
     --motion-route: 260ms;
-    --motion-value: 520ms;
+    --motion-value: 320ms;
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-value: cubic-bezier(0.22, 0.9, 0.24, 1);
     --font-sans:

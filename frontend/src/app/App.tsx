@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { AppShell } from "./AppShell";
 import { currentPeriod } from "../shared/format/periods";
 import { setCurrency } from "../shared/format/money";
@@ -13,6 +14,7 @@ import { PageHeader } from "../shared/components/lists";
 import { LayoutDashboard } from "lucide-react";
 import { useAppSettings } from "./useAppSettings";
 import type { BudgetReviewTarget } from "../shared/components/lists";
+import { cancelActiveViewTransition } from "../shared/motion/viewTransitions";
 
 const initialPeriod = periodFromUrl();
 
@@ -26,7 +28,7 @@ function AppContent() {
   const [createTransactionRequest, setCreateTransactionRequest] = useState(0);
   const [createBudgetRequest, setCreateBudgetRequest] = useState(0);
   const mainRef = useRef<HTMLElement | null>(null);
-  const didMount = useRef(false);
+  const viewRef = useRef<RouteView>(view);
   const settings = useAppSettings();
 
   useEffect(() => {
@@ -37,7 +39,8 @@ function AppContent() {
 
   useEffect(() => {
     function handlePopState() {
-      setView(viewFromPath(window.location.pathname));
+      const nextView = viewFromPath(window.location.pathname);
+      commitRoute(nextView);
     }
 
     window.addEventListener("popstate", handlePopState);
@@ -45,34 +48,39 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+
+  useEffect(() => {
     const title =
       view === "not-found" ? t("notFound.eyebrow") : t(`nav.${view}`);
     document.title = `${title} | Personal Finance Tracker`;
   }, [view, locale, t]);
 
-  useEffect(() => {
-    if (didMount.current) {
-      window.requestAnimationFrame(() => mainRef.current?.focus());
-    }
-    didMount.current = true;
-  }, [view]);
+  function commitRoute(nextView: RouteView, afterCommit?: () => void) {
+    if (nextView === viewRef.current) return;
+    // Top-level routes behave like application tabs. Commit the content and
+    // selected navigation state together so persistent glass chrome always
+    // remains live instead of being covered by an old View Transition snapshot.
+    cancelActiveViewTransition();
+    flushSync(() => {
+      if (nextView !== "transactions") setCreateTransactionRequest(0);
+      if (nextView !== "budgets") setCreateBudgetRequest(0);
+      setNotice("");
+      viewRef.current = nextView;
+      setView(nextView);
+    });
+    mainRef.current?.focus();
+    if (afterCommit) queueMicrotask(afterCommit);
+  }
 
-  function navigate(nextView: View) {
-    if (nextView === view) {
-      return;
-    }
-    if (nextView !== "transactions") {
-      setCreateTransactionRequest(0);
-    }
-    if (nextView !== "budgets") {
-      setCreateBudgetRequest(0);
-    }
+  function navigate(nextView: View, afterCommit?: () => void) {
+    if (nextView === viewRef.current) return;
     const nextPath = pathForView(nextView);
     if (window.location.pathname !== nextPath) {
       window.history.pushState({}, "", nextPath);
     }
-    setNotice("");
-    setView(nextView);
+    commitRoute(nextView, afterCommit);
   }
 
   function changePeriod(period: { month: number; year: number }) {
@@ -94,11 +102,8 @@ function AppContent() {
       "",
       `${pathForView("budgets")}?${params.toString()}`,
     );
-    setCreateTransactionRequest(0);
-    setCreateBudgetRequest(0);
     setSelectedPeriod({ month: target.month, year: target.year });
-    setNotice("");
-    setView("budgets");
+    commitRoute("budgets");
   }
 
   function reviewCategory(category: string) {
@@ -114,10 +119,7 @@ function AppContent() {
       "",
       `${pathForView("transactions")}?${params.toString()}`,
     );
-    setCreateTransactionRequest(0);
-    setCreateBudgetRequest(0);
-    setNotice("");
-    setView("transactions");
+    commitRoute("transactions");
   }
 
   if (settings.status === "idle" || settings.status === "loading") {
@@ -131,8 +133,13 @@ function AppContent() {
       mainRef={mainRef}
       onNavigate={navigate}
       onCreateTransaction={() => {
-        setCreateTransactionRequest((request) => request + 1);
-        if (view !== "transactions") navigate("transactions");
+        if (viewRef.current === "transactions") {
+          setCreateTransactionRequest((request) => request + 1);
+          return;
+        }
+        navigate("transactions", () =>
+          setCreateTransactionRequest((request) => request + 1),
+        );
       }}
     >
       {view === "dashboard" ? (
@@ -143,8 +150,13 @@ function AppContent() {
           onReviewBudget={reviewBudget}
           onReviewCategory={reviewCategory}
           onCreateBudget={() => {
-            setCreateBudgetRequest((request) => request + 1);
-            navigate("budgets");
+            if (viewRef.current === "budgets") {
+              setCreateBudgetRequest((request) => request + 1);
+              return;
+            }
+            navigate("budgets", () =>
+              setCreateBudgetRequest((request) => request + 1),
+            );
           }}
         />
       ) : null}

@@ -120,7 +120,11 @@ export function ExpenseMix({
             />
           ))}
         </svg>
-        <div className="expense-mix-total" aria-hidden="true">
+        <div
+          className="expense-mix-total"
+          aria-hidden="true"
+          key={activeSlice?.label ?? "total"}
+        >
           <span>{activeSlice?.label ?? t("charts.total")}</span>
           <strong>{money(activeSlice?.value ?? total)}</strong>
           {activeSlice ? <small>{activeSlice.share.toFixed(1)}%</small> : null}

@@ -35,6 +35,45 @@ test("compact bottom navigation localizes from inline header utilities", async (
   ).toBeVisible();
 });
 
+test("keeps compact navigation live through rapid tab switches", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockApi(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "June 2026" })).toBeVisible();
+
+  const navigation = page.locator(".compact-primary-navigation");
+  for (const path of ["/transactions", "/budgets", "/rules", "/"]) {
+    const state = await navigation.evaluate((element, nextPath) => {
+      const link = element.querySelector<HTMLAnchorElement>(
+        `a[href="${nextPath}"]`,
+      );
+      if (!link) throw new Error(`Missing compact navigation link ${nextPath}`);
+
+      link.click();
+      const current = element.querySelector<HTMLAnchorElement>(
+        'a[aria-current="page"]',
+      );
+      return {
+        backdropFilter: getComputedStyle(element).backdropFilter,
+        currentPath: current?.getAttribute("href"),
+        periodSnapshotActive: document.documentElement.classList.contains(
+          "period-view-transition",
+        ),
+        pathname: window.location.pathname,
+      };
+    }, path);
+
+    expect(state).toEqual({
+      backdropFilter: "blur(16px)",
+      currentPath: path,
+      periodSnapshotActive: false,
+      pathname: path,
+    });
+  }
+});
+
 test("keeps category ranking hover active through row separators", async ({
   page,
 }) => {
@@ -852,9 +891,9 @@ async function measureTrendBars(card: ReturnType<Page["locator"]>) {
     const barHeight = (selector: string) =>
       node.querySelector(selector)?.getBoundingClientRect().height ?? 0;
     return {
-      cash: barHeight(".trend-bars .cash"),
-      expenses: barHeight(".trend-bars .expenses"),
-      net: barHeight(".trend-bars .net"),
+      cash: barHeight(".trend-bars .cash span"),
+      expenses: barHeight(".trend-bars .expenses span"),
+      net: barHeight(".trend-bars .net span"),
     };
   });
 }
