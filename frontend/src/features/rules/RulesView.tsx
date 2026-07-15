@@ -1,16 +1,36 @@
-import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
-import { CalendarCheck } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import "./rules.css";
+import {
+  ArrowRight,
+  CalendarCheck,
+  CalendarDays,
+  Check,
+  ChevronDown,
+  Coins,
+  GitMerge,
+  Plus,
+  Settings2,
+  Sparkles,
+  Trash2,
+  WandSparkles,
+} from "lucide-react";
 import { periodLabel } from "../../shared/format/periods";
 import { money } from "../../shared/format/money";
 import type {
   CategoryRule,
   CategoryRuleInput,
+  RecurringApplyResponse,
   RecurringTemplate,
   RecurringTemplateInput,
-  RecurringApplyResponse,
 } from "../../types";
-import { ActionButton } from "../../shared/components/actions";
+import {
+  ActionButton,
+  IconButton,
+  SubmitButton,
+} from "../../shared/components/actions";
+import { ModalDialog } from "../../shared/components/dialogs";
 import { ErrorBanner } from "../../shared/components/feedback";
+import { Field } from "../../shared/components/fields";
 import { PageHeader } from "../../shared/components/lists";
 import { localizedNotice } from "../../shared/i18n/notices";
 import { useI18n } from "../../shared/i18n/I18nProvider";
@@ -27,12 +47,8 @@ import {
   useSaveRecurringTemplate,
   useUpdateLedgerSettings,
 } from "./useRecurringTemplates";
-import { AliasRulesPanel } from "./components/AliasRulesPanel";
-import { LedgerSettingsPanel } from "./components/LedgerSettingsPanel";
-import { RecurringTemplatesPanel } from "./components/RecurringTemplatesPanel";
 
 const defaultRule: CategoryRuleInput = { alias: "", category: "" };
-
 const defaultTemplate: RecurringTemplateInput = {
   type: "expense",
   amount: "",
@@ -41,13 +57,14 @@ const defaultTemplate: RecurringTemplateInput = {
   day_of_month: 1,
 };
 
-const ruleTabs = ["categories", "recurring", "preferences"] as const;
-type RuleTab = (typeof ruleTabs)[number];
-
-function tabFromUrl(): RuleTab {
-  const tab = new URLSearchParams(window.location.search).get("tab");
-  return ruleTabs.includes(tab as RuleTab) ? (tab as RuleTab) : "categories";
-}
+type AutomationKind = "category" | "recurring";
+type RecurringStarter = Pick<
+  RecurringTemplateInput,
+  "type" | "category" | "description" | "day_of_month"
+>;
+type PendingDelete =
+  | { kind: "category"; item: CategoryRule }
+  | { kind: "recurring"; item: RecurringTemplate };
 
 export function RulesView({
   selectedPeriod,
@@ -61,57 +78,64 @@ export function RulesView({
   const [ruleForm, setRuleForm] = useState<CategoryRuleInput>(defaultRule);
   const [templateForm, setTemplateForm] =
     useState<RecurringTemplateInput>(defaultTemplate);
-  const [currency, setLocalCurrency] = useState("USD");
-  const [activeTab, setActiveTab] = useState<RuleTab>(tabFromUrl);
-  const [showApplyPreview, setShowApplyPreview] = useState(false);
+  const [currency, setCurrency] = useState("USD");
+  const [creatorOpen, setCreatorOpen] = useState(false);
+  const [creatorKind, setCreatorKind] = useState<AutomationKind | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
+    null,
+  );
   const [applyResult, setApplyResult] = useState<RecurringApplyResponse | null>(
     null,
   );
-  const tabRefs = useRef<Record<RuleTab, HTMLButtonElement | null>>({
-    categories: null,
-    recurring: null,
-    preferences: null,
-  });
-  const previewDialogRef = useRef<HTMLDialogElement | null>(null);
+  const { t, tUpper } = useI18n();
 
-  const { t, locale } = useI18n();
   const ruleResource = useCategoryRules();
   const templateResource = useRecurringTemplates();
   const settingsResource = useLedgerSettings();
   const rules = ruleResource.data?.rules ?? [];
   const templates = templateResource.data?.templates ?? [];
-  const loading =
-    ruleResource.status === "loading" ||
-    templateResource.status === "loading" ||
-    settingsResource.status === "loading";
+  const activeTemplates = templates.filter((template) => template.active);
+  const automationCount = rules.length + activeTemplates.length;
+  const selectedPeriodLabel = periodLabel(
+    selectedPeriod.month,
+    selectedPeriod.year,
+  );
 
   useEffect(() => {
     if (settingsResource.status === "success") {
-      setLocalCurrency(settingsResource.data.currency);
+      setCurrency(settingsResource.data.currency);
     }
-  }, [settingsResource.status, settingsResource.data]);
+  }, [settingsResource.data, settingsResource.status]);
 
   const load = () => {
     ruleResource.refetch();
     templateResource.refetch();
     settingsResource.refetch();
   };
+
   const saveRuleMutation = useSaveCategoryRule((response) => {
     setNotice(localizedNotice(response, t));
     setRuleForm(defaultRule);
-    load();
-  });
-  const deleteRuleMutation = useDeleteCategoryRule((response) => {
-    setNotice(localizedNotice(response, t));
+    setCreatorOpen(false);
+    setCreatorKind(null);
     load();
   });
   const saveTemplateMutation = useSaveRecurringTemplate((response) => {
     setNotice(localizedNotice(response, t));
     setTemplateForm(defaultTemplate);
+    setCreatorOpen(false);
+    setCreatorKind(null);
+    load();
+  });
+  const deleteRuleMutation = useDeleteCategoryRule((response) => {
+    setNotice(localizedNotice(response, t));
+    setPendingDelete(null);
     load();
   });
   const deleteTemplateMutation = useDeleteRecurringTemplate((response) => {
     setNotice(localizedNotice(response, t));
+    setPendingDelete(null);
     load();
   });
   const settingsMutation = useUpdateLedgerSettings((response, nextCurrency) => {
@@ -121,20 +145,8 @@ export function RulesView({
   const applyMutation = useApplyRecurringTemplates((response) => {
     setNotice(localizedNotice(response, t));
     setApplyResult(response);
-    setShowApplyPreview(false);
+    setPreviewOpen(false);
   });
-
-  useEffect(() => {
-    const syncTab = () => setActiveTab(tabFromUrl());
-    window.addEventListener("popstate", syncTab);
-    return () => window.removeEventListener("popstate", syncTab);
-  }, []);
-
-  useEffect(() => {
-    if (showApplyPreview && !previewDialogRef.current?.open) {
-      previewDialogRef.current?.showModal();
-    }
-  }, [showApplyPreview]);
 
   const resourceError =
     ruleResource.status === "error"
@@ -144,14 +156,42 @@ export function RulesView({
         : settingsResource.status === "error"
           ? settingsResource.error.message
           : "";
+  const creatorError =
+    saveRuleMutation.status === "error"
+      ? saveRuleMutation.error.message
+      : saveTemplateMutation.status === "error"
+        ? saveTemplateMutation.error.message
+        : "";
+  const actionError =
+    deleteRuleMutation.status === "error"
+      ? deleteRuleMutation.error.message
+      : deleteTemplateMutation.status === "error"
+        ? deleteTemplateMutation.error.message
+        : settingsMutation.status === "error"
+          ? settingsMutation.error.message
+          : applyMutation.status === "error"
+            ? applyMutation.error.message
+            : "";
+  const loading =
+    ruleResource.status === "loading" ||
+    templateResource.status === "loading" ||
+    settingsResource.status === "loading";
+
+  function openCreator(kind: AutomationKind | null = null) {
+    setCreatorKind(kind);
+    setCreatorOpen(true);
+  }
+
+  function closeCreator() {
+    setCreatorOpen(false);
+    setCreatorKind(null);
+    setRuleForm(defaultRule);
+    setTemplateForm(defaultTemplate);
+  }
 
   function saveRule(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void saveRuleMutation.mutate(ruleForm);
-  }
-
-  function quickAddAlias(alias: string, category: string) {
-    void saveRuleMutation.mutate({ alias, category });
   }
 
   function saveTemplate(event: FormEvent<HTMLFormElement>) {
@@ -159,283 +199,647 @@ export function RulesView({
     void saveTemplateMutation.mutate(templateForm);
   }
 
-  function quickAddTemplate(preset: RecurringTemplateInput) {
-    void saveTemplateMutation.mutate(preset);
-  }
-
   function saveCurrency(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void settingsMutation.mutate(currency);
   }
 
-  function deleteRule(rule: CategoryRule) {
-    void deleteRuleMutation.mutate(rule.id);
+  function applyRecurringStarter(starter: RecurringStarter) {
+    setTemplateForm({ ...templateForm, ...starter });
+    requestAnimationFrame(() => {
+      document.getElementById("template-amount")?.focus();
+    });
   }
 
-  function deleteTemplate(template: RecurringTemplate) {
-    void deleteTemplateMutation.mutate(template.id);
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    if (pendingDelete.kind === "category") {
+      void deleteRuleMutation.mutate(pendingDelete.item.id);
+    } else {
+      void deleteTemplateMutation.mutate(pendingDelete.item.id);
+    }
   }
 
-  function applyTemplates() {
-    void applyMutation.mutate(selectedPeriod);
-  }
-
-  function selectTab(tab: RuleTab, replace = false) {
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", tab);
-    window.history[replace ? "replaceState" : "pushState"](
-      {},
-      "",
-      `${url.pathname}${url.search}`,
-    );
-    setActiveTab(tab);
-  }
-
-  function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
-    const currentIndex = ruleTabs.indexOf(activeTab);
-    let nextIndex: number | null = null;
-    if (event.key === "ArrowRight")
-      nextIndex = (currentIndex + 1) % ruleTabs.length;
-    if (event.key === "ArrowLeft")
-      nextIndex = (currentIndex - 1 + ruleTabs.length) % ruleTabs.length;
-    if (event.key === "Home") nextIndex = 0;
-    if (event.key === "End") nextIndex = ruleTabs.length - 1;
-    if (nextIndex === null) return;
-    event.preventDefault();
-    const nextTab = ruleTabs[nextIndex];
-    selectTab(nextTab);
-    tabRefs.current[nextTab]?.focus();
-  }
-
-  const ruleError =
-    saveRuleMutation.status === "error"
-      ? saveRuleMutation.error.message
-      : deleteRuleMutation.status === "error"
-        ? deleteRuleMutation.error.message
-        : "";
-  const templateError =
-    saveTemplateMutation.status === "error"
-      ? saveTemplateMutation.error.message
-      : deleteTemplateMutation.status === "error"
-        ? deleteTemplateMutation.error.message
-        : "";
-  const actionError =
-    settingsMutation.status === "error"
-      ? settingsMutation.error.message
-      : applyMutation.status === "error"
-        ? applyMutation.error.message
-        : "";
-  const savingRule = saveRuleMutation.status === "pending";
-  const savingTemplate = saveTemplateMutation.status === "pending";
-  const savingCurrency = settingsMutation.status === "pending";
-  const applying = applyMutation.status === "pending";
-
-  const aliasesDetail = loading
-    ? t("rules.aliasesLoading")
-    : t("rules.aliasesCount", { count: rules.length });
-
-  const templatesDetail = loading
-    ? t("rules.templatesLoading")
-    : t("rules.templatesCount", { count: templates.length });
-
-  const tabLabels: Record<RuleTab, string> =
-    locale === "tr"
-      ? {
-          categories: "Kategoriler",
-          recurring: "Yinelenen",
-          preferences: "Tercihler",
-        }
-      : {
-          categories: "Categories",
-          recurring: "Recurring",
-          preferences: "Preferences",
-        };
-  const previewCopy =
-    locale === "tr"
-      ? {
-          title: "Yinelenen işlemleri önizle",
-          intro:
-            "Bu işlem seçili dönem için etkin şablonlardan işlem oluşturur. Mevcut yinelenen işlemler atlanır.",
-          empty: "Uygulanacak etkin şablon yok.",
-          cancel: "İptal",
-          confirm: "İşlemleri oluştur",
-          result: (created: number, skipped: number) =>
-            `${created} işlem oluşturuldu; ${skipped} yinelenen işlem atlandı.`,
-        }
-      : {
-          title: "Preview recurring entries",
-          intro:
-            "This creates transactions from active templates for the selected period. Existing recurring transactions will be skipped.",
-          empty: "There are no active templates to apply.",
-          cancel: "Cancel",
-          confirm: "Create transactions",
-          result: (created: number, skipped: number) =>
-            `${created} transactions created; ${skipped} duplicates skipped.`,
-        };
-  const activeTemplates = templates.filter((template) => template.active);
+  const deleting =
+    deleteRuleMutation.status === "pending" ||
+    deleteTemplateMutation.status === "pending";
 
   return (
     <>
       <PageHeader
+        eyebrow={t("rules.eyebrow")}
         title={t("rules.title")}
         summary={t("rules.summary")}
+        className="automation-page-heading"
         actions={
-          activeTab === "recurring" ? (
-            <ActionButton
-              icon={CalendarCheck}
-              onClick={() => {
-                setApplyResult(null);
-                setShowApplyPreview(true);
-              }}
-              disabled={applying}
-            >
-              {t("rules.applyFor", {
-                period: periodLabel(selectedPeriod.month, selectedPeriod.year),
-              })}
-            </ActionButton>
-          ) : undefined
+          <ActionButton icon={Plus} onClick={() => openCreator()}>
+            {t("rules.newAutomation")}
+          </ActionButton>
         }
       />
 
-      {actionError ? <ErrorBanner message={actionError} /> : null}
       {resourceError ? (
         <ErrorBanner message={resourceError} onRetry={load} />
       ) : null}
+      {actionError ? <ErrorBanner message={actionError} /> : null}
 
-      <div className="rules-tabs" role="tablist" aria-label={t("rules.title")}>
-        {ruleTabs.map((tab) => (
-          <button
-            key={tab}
-            ref={(node) => {
-              tabRefs.current[tab] = node;
-            }}
-            type="button"
-            role="tab"
-            id={`rules-tab-${tab}`}
-            aria-controls={`rules-panel-${tab}`}
-            aria-selected={activeTab === tab}
-            tabIndex={activeTab === tab ? 0 : -1}
-            onClick={() => selectTab(tab)}
-            onKeyDown={handleTabKeyDown}
-          >
-            {tabLabels[tab]}
-          </button>
-        ))}
-      </div>
-
-      <section
-        className="rules-layout"
-        role="tabpanel"
-        id="rules-panel-categories"
-        aria-labelledby="rules-tab-categories"
-        tabIndex={0}
-        hidden={activeTab !== "categories"}
-      >
-        <AliasRulesPanel
-          rules={rules}
-          detail={aliasesDetail}
-          form={ruleForm}
-          error={ruleError}
-          saving={savingRule}
-          onFormChange={setRuleForm}
-          onSave={saveRule}
-          onQuickAdd={quickAddAlias}
-          onDelete={deleteRule}
-        />
-      </section>
-
-      <section
-        className="rules-layout"
-        role="tabpanel"
-        id="rules-panel-recurring"
-        aria-labelledby="rules-tab-recurring"
-        tabIndex={0}
-        hidden={activeTab !== "recurring"}
-      >
-        <RecurringTemplatesPanel
-          templates={templates}
-          detail={templatesDetail}
-          form={templateForm}
-          error={templateError}
-          saving={savingTemplate}
-          onFormChange={setTemplateForm}
-          onSave={saveTemplate}
-          onQuickAdd={quickAddTemplate}
-          onDelete={deleteTemplate}
-        />
-        {applyResult ? (
-          <p className="notice" role="status">
-            {previewCopy.result(
-              applyResult.created_count,
-              applyResult.skipped_duplicates,
-            )}
-          </p>
-        ) : null}
-      </section>
-
-      <section
-        className="rules-layout"
-        role="tabpanel"
-        id="rules-panel-preferences"
-        aria-labelledby="rules-tab-preferences"
-        tabIndex={0}
-        hidden={activeTab !== "preferences"}
-      >
-        <LedgerSettingsPanel
-          currency={currency}
-          error={actionError}
-          saving={savingCurrency}
-          onCurrencyChange={setLocalCurrency}
-          onSave={saveCurrency}
-        />
-      </section>
-
-      {showApplyPreview ? (
-        <dialog
-          ref={previewDialogRef}
-          className="dialog-panel"
-          aria-labelledby="recurring-preview-title"
-          onCancel={() => setShowApplyPreview(false)}
-        >
-          <h2 id="recurring-preview-title">{previewCopy.title}</h2>
-          <p>{previewCopy.intro}</p>
+      <section className="automation-hero" aria-labelledby="automation-status">
+        <div className="automation-hero-mark" aria-hidden="true">
+          <WandSparkles size={28} />
+        </div>
+        <div className="automation-hero-copy">
+          <p className="automation-kicker">{t("rules.statusKicker")}</p>
+          <h2 id="automation-status">
+            {loading
+              ? t("rules.statusLoading")
+              : automationCount
+                ? t("rules.statusReady", { count: automationCount })
+                : t("rules.statusEmpty")}
+          </h2>
           <p>
-            <strong>
-              {periodLabel(selectedPeriod.month, selectedPeriod.year)}
-            </strong>
+            {automationCount
+              ? t("rules.statusDescription")
+              : t("rules.statusEmptyDescription")}
           </p>
-          {activeTemplates.length ? (
-            <ul className="template-list">
-              {activeTemplates.map((template) => (
-                <li key={template.id}>
-                  <span>
-                    <strong>
-                      {template.category} {money(template.amount)}
-                    </strong>
-                    <em>
-                      {t("rules.onDayText", { day: template.day_of_month })}
-                    </em>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>{previewCopy.empty}</p>
-          )}
-          <div className="dialog-actions">
-            <button type="button" onClick={() => setShowApplyPreview(false)}>
-              {previewCopy.cancel}
-            </button>
-            <ActionButton
-              icon={CalendarCheck}
-              onClick={applyTemplates}
-              disabled={applying || activeTemplates.length === 0}
-            >
-              {previewCopy.confirm}
-            </ActionButton>
+        </div>
+        <div className="automation-hero-facts" aria-label={t("rules.atGlance")}>
+          <span>
+            <GitMerge aria-hidden="true" size={16} />
+            {t("rules.categoryCount", { count: rules.length })}
+          </span>
+          <span>
+            <CalendarDays aria-hidden="true" size={16} />
+            {t("rules.recurringCount", { count: activeTemplates.length })}
+          </span>
+        </div>
+      </section>
+
+      {activeTemplates.length ? (
+        <section className="automation-monthly" aria-labelledby="monthly-title">
+          <div className="automation-monthly-icon" aria-hidden="true">
+            <CalendarCheck size={22} />
           </div>
-        </dialog>
+          <div>
+            <p className="automation-kicker">{t("rules.monthlyAction")}</p>
+            <h2 id="monthly-title">
+              {t("rules.monthlyReady", { period: selectedPeriodLabel })}
+            </h2>
+            <p>
+              {t("rules.monthlySimpleDescription", {
+                count: activeTemplates.length,
+              })}
+            </p>
+          </div>
+          <ActionButton
+            icon={ArrowRight}
+            onClick={() => {
+              setApplyResult(null);
+              setPreviewOpen(true);
+            }}
+          >
+            {t("rules.reviewEntries")}
+          </ActionButton>
+        </section>
       ) : null}
+
+      {applyResult ? (
+        <div className="automation-result" role="status">
+          <Check aria-hidden="true" size={18} />
+          <p>
+            {t("rules.applyResult", {
+              created: applyResult.created_count,
+              skipped: applyResult.skipped_duplicates,
+            })}
+          </p>
+        </div>
+      ) : null}
+
+      <section
+        className="automation-collection"
+        aria-labelledby="automation-list-title"
+      >
+        <header className="automation-collection-header">
+          <div>
+            <h2 id="automation-list-title">{t("rules.yourAutomations")}</h2>
+            <p>{t("rules.yourAutomationsDescription")}</p>
+          </div>
+          {automationCount ? (
+            <span className="automation-total">
+              {t("rules.automationCount", { count: automationCount })}
+            </span>
+          ) : null}
+        </header>
+
+        {loading ? (
+          <p className="automation-list-message">{t("rules.statusLoading")}</p>
+        ) : automationCount ? (
+          <ul className="automation-list">
+            {rules.map((rule) => (
+              <li key={`category-${rule.id}`}>
+                <span
+                  className="automation-item-icon category"
+                  aria-hidden="true"
+                >
+                  <GitMerge size={19} />
+                </span>
+                <span className="automation-item-copy">
+                  <span className="automation-type-label">
+                    {t("rules.categoryAutomation")}
+                  </span>
+                  <strong>
+                    {t("rules.categorySentence", {
+                      alias: rule.alias,
+                      category: rule.category,
+                    })}
+                  </strong>
+                  <small>{t("rules.categoryItemDescription")}</small>
+                </span>
+                <IconButton
+                  icon={Trash2}
+                  variant="ghost"
+                  label={t("rules.deleteNamed", { name: rule.alias })}
+                  onClick={() =>
+                    setPendingDelete({ kind: "category", item: rule })
+                  }
+                />
+              </li>
+            ))}
+            {activeTemplates.map((template) => (
+              <li key={`recurring-${template.id}`}>
+                <span
+                  className="automation-item-icon recurring"
+                  aria-hidden="true"
+                >
+                  <CalendarDays size={19} />
+                </span>
+                <span className="automation-item-copy">
+                  <span className="automation-type-label">
+                    {t("rules.recurringAutomation")}
+                  </span>
+                  <strong>
+                    {template.description || template.category}
+                    <span className={`automation-amount ${template.type}`}>
+                      {template.type === "expense" ? "−" : "+"}
+                      {money(template.amount)}
+                    </span>
+                  </strong>
+                  <small>
+                    {t("rules.recurringSentence", {
+                      type: tUpper(`common.${template.type}`),
+                      category: template.category,
+                      day: template.day_of_month,
+                    })}
+                  </small>
+                </span>
+                <IconButton
+                  icon={Trash2}
+                  variant="ghost"
+                  label={t("rules.deleteNamed", {
+                    name: template.description || template.category,
+                  })}
+                  onClick={() =>
+                    setPendingDelete({ kind: "recurring", item: template })
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="automation-empty">
+            <div className="automation-empty-icon" aria-hidden="true">
+              <Sparkles size={26} />
+            </div>
+            <h3>{t("rules.emptyListTitle")}</h3>
+            <p>{t("rules.emptyListDescription")}</p>
+            <div className="automation-empty-options">
+              <button
+                type="button"
+                className="automation-choice"
+                onClick={() => openCreator("category")}
+              >
+                <GitMerge aria-hidden="true" size={20} />
+                <span className="automation-choice-copy">
+                  <strong>{t("rules.categoryChoiceTitle")}</strong>
+                  <small>{t("rules.categoryChoiceDescription")}</small>
+                </span>
+                <ArrowRight
+                  className="automation-option-arrow"
+                  aria-hidden="true"
+                  size={18}
+                />
+              </button>
+              <button
+                type="button"
+                className="automation-choice"
+                onClick={() => openCreator("recurring")}
+              >
+                <CalendarDays aria-hidden="true" size={20} />
+                <span className="automation-choice-copy">
+                  <strong>{t("rules.recurringChoiceTitle")}</strong>
+                  <small>{t("rules.recurringChoiceDescription")}</small>
+                </span>
+                <ArrowRight
+                  className="automation-option-arrow"
+                  aria-hidden="true"
+                  size={18}
+                />
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <details className="automation-settings">
+        <summary>
+          <span className="automation-settings-title">
+            <Settings2 aria-hidden="true" size={18} />
+            <strong>{t("rules.settingsTitle")}</strong>
+          </span>
+          <span className="automation-settings-meta">
+            <small>{t("rules.settingsSummary", { currency })}</small>
+            <ChevronDown aria-hidden="true" size={18} />
+          </span>
+        </summary>
+        <form onSubmit={saveCurrency}>
+          <Field
+            id="settings-currency"
+            label={t("rules.settingsCurrency")}
+            hint={t("rules.settingsHint")}
+          >
+            <select
+              id="settings-currency"
+              name="currency"
+              required
+              value={currency}
+              onChange={(event) => setCurrency(event.target.value)}
+            >
+              <option value="USD">USD ($)</option>
+              <option value="TRY">TRY (₺)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+            </select>
+          </Field>
+          <SubmitButton
+            busy={settingsMutation.status === "pending"}
+            icon={Coins}
+          >
+            {t("rules.settingsSaveBtn")}
+          </SubmitButton>
+        </form>
+      </details>
+
+      <ModalDialog
+        open={creatorOpen}
+        title={
+          creatorKind
+            ? t(`rules.${creatorKind}CreateTitle`)
+            : t("rules.createTitle")
+        }
+        description={
+          creatorKind
+            ? t(`rules.${creatorKind}FormDescription`)
+            : t("rules.createDescription")
+        }
+        onClose={closeCreator}
+        className="automation-create-dialog"
+        initialFocusId={creatorKind === "category" ? "rule-alias" : undefined}
+      >
+        {creatorError ? <ErrorBanner message={creatorError} /> : null}
+        {!creatorKind ? (
+          <fieldset className="automation-kind-picker">
+            <legend className="sr-only">{t("rules.chooseType")}</legend>
+            <label className="automation-choice">
+              <input
+                type="radio"
+                name="automation-kind"
+                value="category"
+                onChange={() => setCreatorKind("category")}
+              />
+              <span className="automation-kind-icon" aria-hidden="true">
+                <GitMerge size={22} />
+              </span>
+              <span className="automation-choice-copy">
+                <strong>{t("rules.categoryChoiceTitle")}</strong>
+                <small>{t("rules.categoryChoiceDescription")}</small>
+              </span>
+              <ArrowRight aria-hidden="true" size={18} />
+            </label>
+            <label className="automation-choice">
+              <input
+                type="radio"
+                name="automation-kind"
+                value="recurring"
+                onChange={() => setCreatorKind("recurring")}
+              />
+              <span className="automation-kind-icon" aria-hidden="true">
+                <CalendarDays size={22} />
+              </span>
+              <span className="automation-choice-copy">
+                <strong>{t("rules.recurringChoiceTitle")}</strong>
+                <small>{t("rules.recurringChoiceDescription")}</small>
+              </span>
+              <ArrowRight aria-hidden="true" size={18} />
+            </label>
+          </fieldset>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="automation-change-kind"
+              onClick={() => setCreatorKind(null)}
+            >
+              {t("rules.changeType")}
+            </button>
+            {creatorKind === "category" ? (
+              <form className="automation-create-form" onSubmit={saveRule}>
+                <div
+                  className="automation-form-explainer"
+                  aria-label={t("rules.categoryExampleLabel")}
+                >
+                  <span>
+                    <small>{t("rules.whenImportSays")}</small>
+                    <strong>uber</strong>
+                  </span>
+                  <ArrowRight aria-hidden="true" size={16} />
+                  <span>
+                    <small>{t("rules.useCategory")}</small>
+                    <strong>Transport</strong>
+                  </span>
+                </div>
+                <Field
+                  id="rule-alias"
+                  label={t("rules.aliasField")}
+                  hint={t("rules.aliasPlainHint")}
+                >
+                  <input
+                    id="rule-alias"
+                    name="alias"
+                    required
+                    autoComplete="off"
+                    value={ruleForm.alias}
+                    onChange={(event) =>
+                      setRuleForm({ ...ruleForm, alias: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field
+                  id="rule-category"
+                  label={t("rules.resultCategory")}
+                  hint={t("rules.categoryPlainHint")}
+                >
+                  <input
+                    id="rule-category"
+                    name="category"
+                    required
+                    autoComplete="off"
+                    value={ruleForm.category}
+                    onChange={(event) =>
+                      setRuleForm({ ...ruleForm, category: event.target.value })
+                    }
+                  />
+                </Field>
+                <SubmitButton
+                  busy={saveRuleMutation.status === "pending"}
+                  icon={WandSparkles}
+                >
+                  {t("rules.createAutomation")}
+                </SubmitButton>
+              </form>
+            ) : (
+              <form className="automation-create-form" onSubmit={saveTemplate}>
+                <div className="automation-starters">
+                  <span>
+                    <strong>{t("rules.recurringStarterTitle")}</strong>
+                    <small>{t("rules.recurringStarterHint")}</small>
+                  </span>
+                  <div className="automation-starter-options">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        applyRecurringStarter({
+                          type: "expense",
+                          description: t("rules.rentExampleDescription"),
+                          category: t("rules.rentExampleCategory"),
+                          day_of_month: 1,
+                        })
+                      }
+                    >
+                      {t("rules.rentExample")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        applyRecurringStarter({
+                          type: "expense",
+                          description: t(
+                            "rules.subscriptionExampleDescription",
+                          ),
+                          category: t("rules.subscriptionExampleCategory"),
+                          day_of_month: 15,
+                        })
+                      }
+                    >
+                      {t("rules.subscriptionExample")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        applyRecurringStarter({
+                          type: "income",
+                          description: t("rules.salaryExampleDescription"),
+                          category: t("rules.salaryExampleCategory"),
+                          day_of_month: 25,
+                        })
+                      }
+                    >
+                      {t("rules.salaryExample")}
+                    </button>
+                  </div>
+                </div>
+                <fieldset className="automation-transaction-type">
+                  <legend>{t("common.type")}</legend>
+                  <label>
+                    <input
+                      type="radio"
+                      name="recurring-type"
+                      value="expense"
+                      checked={templateForm.type === "expense"}
+                      onChange={() =>
+                        setTemplateForm({ ...templateForm, type: "expense" })
+                      }
+                    />
+                    <span>{t("common.expense")}</span>
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="recurring-type"
+                      value="income"
+                      checked={templateForm.type === "income"}
+                      onChange={() =>
+                        setTemplateForm({ ...templateForm, type: "income" })
+                      }
+                    />
+                    <span>{t("common.income")}</span>
+                  </label>
+                </fieldset>
+                <Field
+                  id="template-description"
+                  label={t("rules.recurringDescriptionField")}
+                  hint={t("rules.recurringDescriptionHint")}
+                >
+                  <input
+                    id="template-description"
+                    name="description"
+                    autoComplete="off"
+                    value={templateForm.description}
+                    onChange={(event) =>
+                      setTemplateForm({
+                        ...templateForm,
+                        description: event.target.value,
+                      })
+                    }
+                  />
+                </Field>
+                <div className="automation-form-row">
+                  <Field
+                    id="template-amount"
+                    label={t("common.amount")}
+                    hint={t("rules.recurringAmountHint", { currency })}
+                  >
+                    <input
+                      id="template-amount"
+                      name="amount"
+                      inputMode="decimal"
+                      required
+                      value={templateForm.amount}
+                      onChange={(event) =>
+                        setTemplateForm({
+                          ...templateForm,
+                          amount: event.target.value,
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field
+                    id="template-day"
+                    label={t("rules.dayField")}
+                    hint={t("rules.recurringDayHint")}
+                  >
+                    <input
+                      id="template-day"
+                      name="day"
+                      min="1"
+                      max="31"
+                      type="number"
+                      required
+                      value={templateForm.day_of_month}
+                      onChange={(event) =>
+                        setTemplateForm({
+                          ...templateForm,
+                          day_of_month: Number(event.target.value),
+                        })
+                      }
+                    />
+                  </Field>
+                </div>
+                <Field
+                  id="template-category"
+                  label={t("common.category")}
+                  hint={t("rules.recurringCategoryHint")}
+                >
+                  <input
+                    id="template-category"
+                    name="category"
+                    required
+                    autoComplete="off"
+                    value={templateForm.category}
+                    onChange={(event) =>
+                      setTemplateForm({
+                        ...templateForm,
+                        category: event.target.value,
+                      })
+                    }
+                  />
+                </Field>
+                <SubmitButton
+                  busy={saveTemplateMutation.status === "pending"}
+                  icon={WandSparkles}
+                >
+                  {t("rules.createAutomation")}
+                </SubmitButton>
+              </form>
+            )}
+          </>
+        )}
+      </ModalDialog>
+
+      <ModalDialog
+        open={previewOpen}
+        title={t("rules.previewTitle", { period: selectedPeriodLabel })}
+        description={t("rules.previewDescription")}
+        onClose={() => setPreviewOpen(false)}
+        className="automation-preview-dialog"
+      >
+        <ul className="automation-preview-list">
+          {activeTemplates.map((template) => (
+            <li key={template.id}>
+              <span>
+                <strong>{template.description || template.category}</strong>
+                <small>
+                  {t("rules.recurringSentence", {
+                    type: tUpper(`common.${template.type}`),
+                    category: template.category,
+                    day: template.day_of_month,
+                  })}
+                </small>
+              </span>
+              <strong className={`automation-amount ${template.type}`}>
+                {template.type === "expense" ? "−" : "+"}
+                {money(template.amount)}
+              </strong>
+            </li>
+          ))}
+        </ul>
+        <p className="automation-duplicate-note">
+          <Check aria-hidden="true" size={16} />
+          {t("rules.duplicateNote")}
+        </p>
+        <div className="dialog-actions">
+          <button type="button" onClick={() => setPreviewOpen(false)}>
+            {t("common.cancel")}
+          </button>
+          <ActionButton
+            icon={CalendarCheck}
+            disabled={applyMutation.status === "pending"}
+            onClick={() => void applyMutation.mutate(selectedPeriod)}
+          >
+            {t("rules.createEntries", { count: activeTemplates.length })}
+          </ActionButton>
+        </div>
+      </ModalDialog>
+
+      <ModalDialog
+        open={pendingDelete !== null}
+        title={t("rules.deleteTitle")}
+        description={t("rules.deleteDescription")}
+        onClose={() => setPendingDelete(null)}
+        className="automation-delete-dialog"
+      >
+        <div className="dialog-actions">
+          <button type="button" onClick={() => setPendingDelete(null)}>
+            {t("common.cancel")}
+          </button>
+          <ActionButton
+            icon={Trash2}
+            variant="danger"
+            disabled={deleting}
+            onClick={confirmDelete}
+          >
+            {t("rules.deleteConfirm")}
+          </ActionButton>
+        </div>
+      </ModalDialog>
     </>
   );
 }

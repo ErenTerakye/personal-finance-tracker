@@ -1,17 +1,23 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Download, Search, Trash2, Upload } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Download,
+  Plus,
+  Search,
+  Scale,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import type { TransactionFilters } from "../../api/client";
 import { artifactUrls } from "../../api/artifacts";
 import { CsvImportDialog } from "../../shared/components/CsvImportDialog";
-import {
-  TransactionTable,
-  TableSkeleton,
-} from "../../shared/components/tables";
+import { TableSkeleton } from "../../shared/components/tables";
 import { ActionButton, DownloadLink } from "../../shared/components/actions";
 import { ModalDialog } from "../../shared/components/dialogs";
 import { ErrorBanner } from "../../shared/components/feedback";
-import { PageHeader, Panel } from "../../shared/components/lists";
 import { money } from "../../shared/format/money";
+import { periodLabel } from "../../shared/format/periods";
 import type {
   TransactionInput,
   TransactionRecord,
@@ -34,6 +40,7 @@ import {
 } from "./useTransactions";
 import { TransactionFilterForm } from "./components/TransactionFilterForm";
 import { TransactionFormDialog } from "./components/TransactionFormDialog";
+import { ActivityLedger } from "./components/ActivityLedger";
 
 type TransactionDialog = "create" | "edit" | null;
 
@@ -57,7 +64,8 @@ export function TransactionsView({
   );
   const [importOpen, setImportOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const ledgerHeadingRef = useRef<HTMLDivElement>(null);
+  const [sort, setSort] = useState<"newest" | "oldest">("newest");
+  const ledgerHeadingRef = useRef<HTMLElement>(null);
   const handledCreateRequest = useRef(0);
   const { t } = useI18n();
   const transactionResource = useTransactions(filters);
@@ -65,17 +73,22 @@ export function TransactionsView({
   const transactions = transactionResource.data?.transactions ?? [];
   const visibleTransactions = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
-    if (!query) return transactions;
-    return transactions.filter((transaction) =>
-      [
-        transaction.category,
-        transaction.description,
-        transaction.amount,
-        transaction.date,
-        transaction.type,
-      ].some((value) => String(value).toLocaleLowerCase().includes(query)),
-    );
-  }, [search, transactions]);
+    const matches = query
+      ? transactions.filter((transaction) =>
+          [
+            transaction.category,
+            transaction.description,
+            transaction.amount,
+            transaction.date,
+            transaction.type,
+          ].some((value) => String(value).toLocaleLowerCase().includes(query)),
+        )
+      : [...transactions];
+    return matches.sort((a, b) => {
+      const byDate = b.date.localeCompare(a.date) || b.id - a.id;
+      return sort === "oldest" ? -byDate : byDate;
+    });
+  }, [search, sort, transactions]);
   const loading = transactionResource.status === "loading";
   const categories = useMemo(
     () =>
@@ -202,12 +215,47 @@ export function TransactionsView({
     filters.transaction_type ? t(`common.${filters.transaction_type}`) : null,
   ].filter((label): label is string => Boolean(label));
 
+  const activitySummary = visibleTransactions.reduce(
+    (summary, transaction) => {
+      const amount = Number(transaction.amount);
+      if (transaction.type === "income") summary.income += amount;
+      else summary.expenses += amount;
+      return summary;
+    },
+    { income: 0, expenses: 0 },
+  );
+  const netActivity = activitySummary.income - activitySummary.expenses;
+  const hasRefinements = Boolean(search.trim() || activeFilterLabels.length);
+
   return (
     <>
-      <PageHeader
-        title={t("transactions.title")}
-        summary={t("transactions.summary")}
-      />
+      <section className="activity-hero" aria-labelledby="page-title">
+        <div className="activity-hero-copy">
+          <p className="eyebrow">{t("transactions.eyebrow")}</p>
+          <h1 id="page-title">{t("transactions.title")}</h1>
+          <p>{t("transactions.summary")}</p>
+        </div>
+        <div className="activity-hero-actions">
+          <ActionButton icon={Plus} onClick={openCreate}>
+            {t("common.addEntry")}
+          </ActionButton>
+          <ActionButton
+            icon={Upload}
+            variant="secondary"
+            onClick={() => setImportOpen(true)}
+          >
+            {t("common.importCsv")}
+          </ActionButton>
+          <DownloadLink
+            icon={Download}
+            href={artifactUrls.transactionsCsv(filters)}
+            download
+            variant="secondary"
+          >
+            {t("common.exportCsv")}
+          </DownloadLink>
+        </div>
+      </section>
 
       {transactionResource.status === "error" ? (
         <ErrorBanner
@@ -220,12 +268,51 @@ export function TransactionsView({
         className="activity-workspace"
         aria-label={t("transactions.title")}
       >
-        <div className="activity-tools">
-          <label className="transaction-search">
+        <section
+          className="activity-snapshot"
+          aria-label={t("transactions.snapshot.title")}
+        >
+          <article className="activity-stat income">
+            <span className="activity-stat-icon">
+              <ArrowDownLeft aria-hidden="true" size={20} />
+            </span>
+            <div>
+              <span>{t("transactions.snapshot.income")}</span>
+              <strong>{money(activitySummary.income)}</strong>
+            </div>
+          </article>
+          <article className="activity-stat expense">
+            <span className="activity-stat-icon">
+              <ArrowUpRight aria-hidden="true" size={20} />
+            </span>
+            <div>
+              <span>{t("transactions.snapshot.expenses")}</span>
+              <strong>{money(activitySummary.expenses)}</strong>
+            </div>
+          </article>
+          <article
+            className={`activity-stat net ${netActivity < 0 ? "negative" : "positive"}`}
+          >
+            <span className="activity-stat-icon">
+              <Scale aria-hidden="true" size={20} />
+            </span>
+            <div>
+              <span>{t("transactions.snapshot.net")}</span>
+              <strong>
+                {netActivity > 0 ? "+" : netActivity < 0 ? "−" : ""}
+                {money(Math.abs(netActivity))}
+              </strong>
+            </div>
+          </article>
+        </section>
+
+        <div className="activity-command-bar">
+          <label className="transaction-search" htmlFor="activity-search">
             <span>{t("transactions.searchLabel")}</span>
             <span className="search-control">
               <Search aria-hidden="true" size={18} />
               <input
+                id="activity-search"
                 type="search"
                 value={search}
                 placeholder={t("transactions.searchHint")}
@@ -241,12 +328,15 @@ export function TransactionsView({
               setFilters(next);
             }}
           />
-          {activeFilterLabels.length ? (
+          {hasRefinements ? (
             <div
               className="active-filter-summary"
               aria-label={t("transactions.filters.active")}
             >
               <span>{t("transactions.filters.active")}</span>
+              {search.trim() ? (
+                <span className="filter-chip">“{search.trim()}”</span>
+              ) : null}
               {activeFilterLabels.map((label) => (
                 <span className="filter-chip" key={label}>
                   {label}
@@ -255,16 +345,7 @@ export function TransactionsView({
               <button
                 className="button ghost"
                 type="button"
-                onClick={() => {
-                  const next = {
-                    month: selectedPeriod.month,
-                    year: selectedPeriod.year,
-                    transaction_type: "" as const,
-                    category: "",
-                  };
-                  writeTransactionFilters(next);
-                  setFilters(next);
-                }}
+                onClick={clearSearchAndFilters}
               >
                 {t("transactions.filters.clear")}
               </button>
@@ -272,64 +353,46 @@ export function TransactionsView({
           ) : null}
         </div>
 
-        <div
-          className="transaction-ledger"
+        <article
+          className="activity-ledger"
           ref={ledgerHeadingRef}
           tabIndex={-1}
         >
-          <Panel
-            title={t("transactions.historyTitle")}
-            detail={detailLabel}
-            actions={
-              <details className="data-menu">
-                <summary className="button secondary">
-                  <Download aria-hidden="true" size={18} />
-                  <span>{t("transactions.dataMenu")}</span>
-                </summary>
-                <div className="data-menu-panel">
-                  <p>{t("transactions.exportScope")}</p>
-                  <ActionButton
-                    icon={Upload}
-                    variant="secondary"
-                    onClick={(event) => {
-                      setImportOpen(true);
-                      event.currentTarget
-                        .closest("details")
-                        ?.removeAttribute("open");
-                    }}
-                  >
-                    {t("common.importCsv")}
-                  </ActionButton>
-                  <DownloadLink
-                    icon={Download}
-                    href={artifactUrls.transactionsCsv(filters)}
-                    download
-                    variant="secondary"
-                  >
-                    {t("common.exportCsv")}
-                  </DownloadLink>
-                </div>
-              </details>
-            }
-          >
+          <header className="activity-ledger-header">
+            <div>
+              <p className="eyebrow">
+                {periodLabel(Number(filters.month), Number(filters.year))}
+              </p>
+              <h2>{t("transactions.historyTitle")}</h2>
+              <p aria-live="polite">{detailLabel}</p>
+            </div>
+            <label className="activity-sort" htmlFor="activity-sort">
+              <span>{t("transactions.sort.label")}</span>
+              <select
+                id="activity-sort"
+                value={sort}
+                onChange={(event) => setSort(event.target.value as typeof sort)}
+              >
+                <option value="newest">{t("transactions.sort.newest")}</option>
+                <option value="oldest">{t("transactions.sort.oldest")}</option>
+              </select>
+            </label>
+          </header>
+          <div className="activity-ledger-body">
             {loading ? (
               <TableSkeleton rows={5} />
             ) : (
-              <TransactionTable
+              <ActivityLedger
                 transactions={visibleTransactions}
                 onEdit={openEdit}
                 onDelete={setPendingDelete}
                 onCreate={openCreate}
-                emptyVariant={
-                  search.trim() || activeFilterLabels.length
-                    ? "filtered"
-                    : "initial"
-                }
-                onClearEmpty={clearSearchAndFilters}
+                filtered={hasRefinements}
+                onClear={clearSearchAndFilters}
               />
             )}
-          </Panel>
-        </div>
+          </div>
+        </article>
       </section>
 
       <CsvImportDialog

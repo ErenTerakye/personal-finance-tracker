@@ -52,6 +52,7 @@ const builtCssFiles = assets.filter((name) => name.endsWith(".css"));
 if (!builtCssFiles.length) {
   throw new Error("The packaged SPA must contain a built CSS asset.");
 }
+let hasGlobalLayerOrder = false;
 for (const file of builtCssFiles) {
   const builtCss = await readFile(new URL(file, buildAssetsDirectory), "utf8");
   if (/@import\s/i.test(builtCss)) {
@@ -65,11 +66,22 @@ for (const file of builtCssFiles) {
     throw new Error(`${file} declares unexpected layer ${unexpected}.`);
   }
   const emittedOrder = [...new Set(declared)];
-  if (emittedOrder.join(",") !== layers.join(",")) {
+  const layerPositions = emittedOrder.map((name) => layers.indexOf(name));
+  const isOrdered = layerPositions.every(
+    (position, index) => index === 0 || position > layerPositions[index - 1],
+  );
+  if (!isOrdered) {
     throw new Error(
-      `${file} must emit all CSS layers in order; found ${emittedOrder.join(", ") || "none"}.`,
+      `${file} emits CSS layers out of order: ${emittedOrder.join(", ") || "none"}.`,
     );
   }
+  if (emittedOrder.join(",") === layers.join(",")) hasGlobalLayerOrder = true;
+}
+
+if (!hasGlobalLayerOrder) {
+  throw new Error(
+    "The packaged SPA must emit the complete global layer order.",
+  );
 }
 
 console.log(`CSS architecture: ${layers.length} ordered layers verified.`);

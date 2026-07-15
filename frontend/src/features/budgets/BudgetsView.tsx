@@ -1,12 +1,29 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
-import { Download, PiggyBank, Trash2, Upload } from "lucide-react";
+import {
+  type CSSProperties,
+  type FormEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronRight,
+  CircleGauge,
+  Download,
+  PiggyBank,
+  Search,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import type { BudgetFilters } from "../../api/client";
 import { artifactUrls } from "../../api/artifacts";
 import { CsvImportDialog } from "../../shared/components/CsvImportDialog";
 import { ActionButton, DownloadLink } from "../../shared/components/actions";
 import { ModalDialog } from "../../shared/components/dialogs";
 import { EmptyState, ErrorBanner } from "../../shared/components/feedback";
-import { PageHeader, Panel } from "../../shared/components/lists";
+import { PageHeader } from "../../shared/components/lists";
+import { PeriodControl } from "../../shared/components/PeriodControl";
 import { money } from "../../shared/format/money";
 import { periodLabel } from "../../shared/format/periods";
 import type { BudgetInput, BudgetRecord } from "../../types";
@@ -23,7 +40,6 @@ import {
   useDeleteBudget,
   useSaveBudget,
 } from "./useBudgets";
-import { BudgetFilterForm } from "./components/BudgetFilterForm";
 import { BudgetFormDialog } from "./components/BudgetFormDialog";
 import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
 import { RollingNumber } from "../../shared/components/RollingNumber";
@@ -156,13 +172,6 @@ export function BudgetsView({
     await importMutation.mutate(csvText);
   }
 
-  const pressureDetail = initialLoading
-    ? t("budgets.pressureLoading")
-    : `${periodTransition.presentedPeriod?.month ?? requestedPeriod.month}/${periodTransition.presentedPeriod?.year ?? requestedPeriod.year}`;
-
-  const recordsDetail = initialLoading
-    ? t("budgets.recordsLoading")
-    : t("budgets.recordsCount", { count: budgets.length });
   const totalPlanned = statuses.reduce(
     (sum, status) => sum + Number(status.budget.amount),
     0,
@@ -184,7 +193,6 @@ export function BudgetsView({
   const previousSpent = Number(
     periodTransition.previousData?.totalExpenses ?? totalSpent,
   );
-  const previousRemaining = previousPlanned - previousCovered;
   const previousUncovered = Math.max(0, previousSpent - previousCovered);
   const remaining = totalPlanned - coveredSpending;
   const uncovered = Math.max(0, totalSpent - coveredSpending);
@@ -192,6 +200,51 @@ export function BudgetsView({
     (status) => status.budget.category === selectedCategory,
   );
   const hasCategoryFilter = Boolean(filters.category?.trim());
+  const utilization =
+    totalPlanned > 0 ? (coveredSpending / totalPlanned) * 100 : 0;
+  const planProgress = Math.min(Math.max(utilization, 0), 100);
+  const overCount = statuses.filter(
+    (status) => status.status === "over budget",
+  ).length;
+  const nearCount = statuses.filter(
+    (status) => status.status === "near limit",
+  ).length;
+  const presentedPeriod = periodTransition.presentedPeriod ?? requestedPeriod;
+  const planTone =
+    overCount > 0 ? "critical" : nearCount > 0 ? "watch" : "healthy";
+  const planPulseTitle = t(`budgets.pulse.${planTone}Title`);
+  const planPulseMessage = t(`budgets.pulse.${planTone}Message`, {
+    over: overCount,
+    near: nearCount,
+  });
+
+  function updateFilters(next: BudgetFilters) {
+    writeBudgetFilters(next);
+    setFilters(next);
+    setSelectedCategory(null);
+  }
+
+  function statusPresentation(status: string) {
+    if (status === "over budget") {
+      return {
+        label: t("budgets.status.over"),
+        tone: "over-budget",
+        Icon: AlertTriangle,
+      };
+    }
+    if (status === "near limit") {
+      return {
+        label: t("budgets.status.near"),
+        tone: "near-limit",
+        Icon: CircleGauge,
+      };
+    }
+    return {
+      label: t("budgets.status.onTrack"),
+      tone: "on-track",
+      Icon: CheckCircle2,
+    };
+  }
 
   return (
     <div
@@ -209,8 +262,12 @@ export function BudgetsView({
           : ""}
       </p>
       <PageHeader
-        title={t("budgets.title")}
-        summary={t("budgets.summary")}
+        eyebrow={t("budgets.eyebrow")}
+        title={t("budgets.planTitle", {
+          period: periodLabel(presentedPeriod.month, presentedPeriod.year),
+        })}
+        summary={t("budgets.planSummary")}
+        className="plan-page-heading"
         actions={
           <div className="action-cluster">
             <ActionButton icon={PiggyBank} onClick={openCreate}>
@@ -234,206 +291,336 @@ export function BudgetsView({
         />
       ) : null}
 
-      <section className="budget-layout">
-        <Panel
-          title={t("budgets.plannedVsSpent")}
-          detail={pressureDetail}
-          className="budget-summary-panel"
-        >
+      <section className="plan-workspace">
+        <article className={`plan-pulse plan-pulse-${planTone}`}>
           {initialLoading ? (
             <p className="loading-state">{t("budgets.pressureLoading")}</p>
           ) : (
-            <dl className="budget-totals">
-              <div className="budget-total budget-total-planned">
-                <dt>{t("budgets.totalPlanned")}</dt>
-                <dd>
-                  <RollingNumber
-                    value={totalPlanned}
-                    previousValue={previousPlanned}
-                    format={money}
+            <>
+              <div className="plan-pulse-main">
+                <div
+                  className="plan-orbit"
+                  style={
+                    { "--plan-progress": `${planProgress}%` } as CSSProperties
+                  }
+                >
+                  <div>
+                    <span>{t("budgets.pulse.variance")}</span>
+                    <strong>{money(Math.abs(remaining))}</strong>
+                    <em>
+                      {remaining >= 0
+                        ? t("budgets.pulse.left")
+                        : t("budgets.pulse.over")}
+                    </em>
+                  </div>
+                  <progress
+                    className="sr-only"
+                    max="100"
+                    value={planProgress}
+                    aria-label={t("budgets.pulse.progressLabel", {
+                      percent: Math.round(utilization),
+                    })}
                   />
-                </dd>
-              </div>
-              <div className="budget-total budget-total-spent">
-                <dt>{t("budgets.totalSpent")}</dt>
-                <dd>
-                  <RollingNumber
-                    value={totalSpent}
-                    previousValue={previousSpent}
-                    format={money}
-                  />
-                </dd>
-              </div>
-              <div
-                className={`budget-total ${remaining >= 0 ? "budget-total-positive" : "budget-total-warning"}`}
-              >
-                <dt>
-                  {t(remaining >= 0 ? "budgets.remaining" : "budgets.overPlan")}
-                </dt>
-                <dd>
-                  <RollingNumber
-                    value={Math.abs(remaining)}
-                    previousValue={Math.abs(previousRemaining)}
-                    format={money}
-                  />
-                </dd>
-              </div>
-              <div
-                className={`budget-total ${uncovered > 0 ? "budget-total-warning" : "budget-total-positive"}`}
-              >
-                <dt>{t("budgets.uncovered")}</dt>
-                <dd>
-                  <RollingNumber
-                    value={uncovered}
-                    previousValue={previousUncovered}
-                    format={money}
-                  />
-                </dd>
-              </div>
-            </dl>
-          )}
-        </Panel>
-
-        <BudgetFilterForm
-          filters={filters}
-          selectedPeriod={selectedPeriod}
-          onChange={(next) => {
-            writeBudgetFilters(next);
-            setFilters(next);
-          }}
-        />
-
-        <Panel
-          title={t("budgets.pressureTitle")}
-          detail={recordsDetail}
-          className="records-panel"
-          actions={
-            <div className="action-cluster">
-              <label htmlFor="budget-sort">{t("budgets.sortBy")}</label>
-              <select
-                id="budget-sort"
-                value={sortBy}
-                onChange={(event) =>
-                  setSortBy(event.target.value as typeof sortBy)
-                }
-              >
-                <option value="priority">{t("budgets.sortPriority")}</option>
-                <option value="spent">{t("budgets.sortSpent")}</option>
-                <option value="category">{t("budgets.sortCategory")}</option>
-              </select>
-              <DownloadLink
-                icon={Download}
-                href={artifactUrls.budgetsCsv(filters)}
-                download
-                variant="secondary"
-              >
-                {t("common.exportCsv")}
-              </DownloadLink>
-            </div>
-          }
-        >
-          {initialLoading ? (
-            <p className="loading-state">{t("budgets.recordsLoading")}</p>
-          ) : hasCategoryFilter && visibleStatuses.length === 0 ? (
-            <p className="quiet-state">{t("budgets.empty.noMatch")}</p>
-          ) : statuses.length === 0 && totalSpent > 0 ? (
-            <EmptyState
-              icon={PiggyBank}
-              eyebrow={t("budgets.empty.eyebrow")}
-              title={t("budgets.empty.noBudgets")}
-              message={t("budgets.empty.uncovered")}
-              action={
-                <ActionButton icon={PiggyBank} onClick={openCreate}>
-                  {t("common.setBudget")}
-                </ActionButton>
-              }
-            />
-          ) : statuses.length === 0 ? (
-            <EmptyState
-              icon={PiggyBank}
-              eyebrow={t("budgets.empty.eyebrow")}
-              title={t("budgets.empty.noBudgets")}
-              message={t("budgets.empty.noPlan")}
-              action={
-                <ActionButton icon={PiggyBank} onClick={openCreate}>
-                  {t("common.setBudget")}
-                </ActionButton>
-              }
-            />
-          ) : (
-            <div className="budget-category-list">
-              {prioritizedStatuses.map((status) => {
-                const isSelected = selectedCategory === status.budget.category;
-                const over = Number(status.remaining) < 0;
-                return (
-                  <article
-                    className={`budget-category-row ${status.status.replaceAll(" ", "-")}`}
-                    key={status.budget.id}
-                  >
-                    <button
-                      type="button"
-                      aria-label={`${status.budget.category}, ${status.status}, ${status.percent_used}% used`}
-                      aria-expanded={isSelected}
-                      onClick={() =>
-                        setSelectedCategory(
-                          isSelected ? null : status.budget.category,
-                        )
-                      }
-                    >
+                </div>
+                <div className="plan-pulse-copy">
+                  <p className="plan-pulse-kicker">
+                    <span aria-hidden="true" />
+                    {t("budgets.pulse.label")}
+                  </p>
+                  <h2>{planPulseTitle}</h2>
+                  <p>{planPulseMessage}</p>
+                  {uncovered > 0 ? (
+                    <p className="plan-uncovered-note">
+                      <AlertTriangle aria-hidden="true" size={18} />
                       <span>
-                        <strong>{status.budget.category}</strong>
-                        <em>{status.status}</em>
+                        {t("budgets.pulse.uncoveredNote", {
+                          amount: money(uncovered),
+                        })}
                       </span>
-                      <span>
-                        {money(status.actual_expenses)} of{" "}
-                        {money(status.budget.amount)}
-                      </span>
-                      <span>
-                        {over
-                          ? `${money(Math.abs(Number(status.remaining)))} over`
-                          : `${money(status.remaining)} remaining`}
-                      </span>
-                    </button>
-                    <progress
-                      max="100"
-                      value={Math.min(Number(status.percent_used), 100)}
-                      aria-label={`${status.budget.category} budget used ${status.percent_used}%`}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+              <dl className="plan-metrics">
+                <div className="plan-metric plan-metric-planned">
+                  <dt>{t("budgets.totalPlanned")}</dt>
+                  <dd>
+                    <RollingNumber
+                      value={totalPlanned}
+                      previousValue={previousPlanned}
+                      format={money}
                     />
-                  </article>
-                );
-              })}
-            </div>
+                  </dd>
+                  <dd className="plan-metric-note">
+                    {t("budgets.metric.planned")}
+                  </dd>
+                </div>
+                <div className="plan-metric plan-metric-spent">
+                  <dt>{t("budgets.totalSpent")}</dt>
+                  <dd>
+                    <RollingNumber
+                      value={totalSpent}
+                      previousValue={previousSpent}
+                      format={money}
+                    />
+                  </dd>
+                  <dd className="plan-metric-note">
+                    {t("budgets.metric.spent")}
+                  </dd>
+                </div>
+                <div
+                  className={`plan-metric ${uncovered > 0 ? "plan-metric-alert" : "plan-metric-covered"}`}
+                >
+                  <dt>{t("budgets.uncovered")}</dt>
+                  <dd>
+                    <RollingNumber
+                      value={uncovered}
+                      previousValue={previousUncovered}
+                      format={money}
+                    />
+                  </dd>
+                  <dd className="plan-metric-note">
+                    {t(
+                      uncovered > 0
+                        ? "budgets.metric.uncovered"
+                        : "budgets.metric.covered",
+                    )}
+                  </dd>
+                </div>
+              </dl>
+            </>
           )}
-        </Panel>
+        </article>
 
-        {selectedStatus ? (
-          <aside
-            className="budget-category-detail"
-            aria-labelledby="selected-budget-title"
-          >
-            <h2 id="selected-budget-title">{selectedStatus.budget.category}</h2>
-            <p>
-              {money(selectedStatus.actual_expenses)} spent ·{" "}
-              {selectedStatus.percent_used}% of plan
-            </p>
-            <div className="action-cluster">
-              <button
-                className="button primary"
-                type="button"
-                onClick={() => openEdit(selectedStatus.budget)}
-              >
-                Edit {selectedStatus.budget.category} budget
-              </button>
-              <button
-                className="button danger"
-                type="button"
-                onClick={() => setPendingDelete(selectedStatus.budget)}
-              >
-                Delete budget
-              </button>
+        <section className="plan-board" aria-labelledby="plan-board-title">
+          <header className="plan-board-header">
+            <div>
+              <p className="eyebrow">{t("budgets.board.eyebrow")}</p>
+              <h2 id="plan-board-title">{t("budgets.board.title")}</h2>
+              <p>{t("budgets.board.summary", { count: budgets.length })}</p>
             </div>
-          </aside>
-        ) : null}
+            <DownloadLink
+              icon={Download}
+              href={artifactUrls.budgetsCsv(filters)}
+              download
+              variant="secondary"
+            >
+              {t("common.exportCsv")}
+            </DownloadLink>
+          </header>
+
+          <div className="plan-toolbar">
+            <div className="plan-period-control">
+              <span>{t("common.period")}</span>
+              <PeriodControl
+                label={t("budgets.filterPeriod")}
+                value={requestedPeriod}
+                onChange={(period) => updateFilters({ ...filters, ...period })}
+              />
+            </div>
+            <label className="plan-search" htmlFor="plan-category-search">
+              <span>{t("budgets.board.searchLabel")}</span>
+              <span className="plan-search-control">
+                <Search aria-hidden="true" size={18} />
+                <input
+                  id="plan-category-search"
+                  type="search"
+                  value={filters.category ?? ""}
+                  placeholder={t("budgets.board.searchPlaceholder")}
+                  onChange={(event) =>
+                    updateFilters({ ...filters, category: event.target.value })
+                  }
+                />
+              </span>
+            </label>
+            <fieldset className="plan-sort">
+              <legend>{t("budgets.sortBy")}</legend>
+              <div>
+                {(
+                  [
+                    ["priority", t("budgets.sortPriority")],
+                    ["spent", t("budgets.sortSpent")],
+                    ["category", t("budgets.sortCategory")],
+                  ] as const
+                ).map(([option, label]) => (
+                  <label key={option}>
+                    <input
+                      className="visually-hidden"
+                      type="radio"
+                      name="plan-sort"
+                      value={option}
+                      checked={sortBy === option}
+                      onChange={() => setSortBy(option)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </div>
+
+          <div
+            className={`plan-board-content${selectedStatus ? " has-selection" : ""}`}
+          >
+            <div className="plan-category-region">
+              {initialLoading ? (
+                <p className="loading-state">{t("budgets.recordsLoading")}</p>
+              ) : hasCategoryFilter && visibleStatuses.length === 0 ? (
+                <p className="quiet-state">{t("budgets.empty.noMatch")}</p>
+              ) : statuses.length === 0 && totalSpent > 0 ? (
+                <EmptyState
+                  icon={PiggyBank}
+                  eyebrow={t("budgets.empty.eyebrow")}
+                  title={t("budgets.empty.noBudgets")}
+                  message={t("budgets.empty.uncovered")}
+                  action={
+                    <ActionButton icon={PiggyBank} onClick={openCreate}>
+                      {t("common.setBudget")}
+                    </ActionButton>
+                  }
+                />
+              ) : statuses.length === 0 ? (
+                <EmptyState
+                  icon={PiggyBank}
+                  eyebrow={t("budgets.empty.eyebrow")}
+                  title={t("budgets.empty.noBudgets")}
+                  message={t("budgets.empty.noPlan")}
+                  action={
+                    <ActionButton icon={PiggyBank} onClick={openCreate}>
+                      {t("common.setBudget")}
+                    </ActionButton>
+                  }
+                />
+              ) : (
+                <ul className="plan-category-grid" role="list">
+                  {prioritizedStatuses.map((status) => {
+                    const isSelected =
+                      selectedCategory === status.budget.category;
+                    const over = Number(status.remaining) < 0;
+                    const presentation = statusPresentation(status.status);
+                    const StatusIcon = presentation.Icon;
+                    return (
+                      <li
+                        className={`plan-category-card ${presentation.tone}${isSelected ? " is-selected" : ""}`}
+                        key={status.budget.id}
+                      >
+                        <button
+                          type="button"
+                          aria-label={`${status.budget.category}, ${status.status}, ${status.percent_used}% used`}
+                          aria-expanded={isSelected}
+                          onClick={() =>
+                            setSelectedCategory(
+                              isSelected ? null : status.budget.category,
+                            )
+                          }
+                        >
+                          <span className="plan-category-card-topline">
+                            <span className="plan-status-badge">
+                              <StatusIcon aria-hidden="true" size={15} />
+                              {presentation.label}
+                            </span>
+                            <ChevronRight aria-hidden="true" size={18} />
+                          </span>
+                          <strong>{status.budget.category}</strong>
+                          <span className="plan-category-spend">
+                            <b>{money(status.actual_expenses)}</b>
+                            <span>
+                              {t("budgets.board.ofLimit", {
+                                limit: money(status.budget.amount),
+                              })}
+                            </span>
+                          </span>
+                          <span className="plan-card-progress">
+                            <span
+                              style={{
+                                inlineSize: `${Math.min(Number(status.percent_used), 100)}%`,
+                              }}
+                            />
+                          </span>
+                          <span className="plan-category-card-footer">
+                            <span>{status.percent_used}%</span>
+                            <b>
+                              {over
+                                ? t("budgets.board.amountOver", {
+                                    amount: money(
+                                      Math.abs(Number(status.remaining)),
+                                    ),
+                                  })
+                                : t("budgets.board.amountLeft", {
+                                    amount: money(status.remaining),
+                                  })}
+                            </b>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            {selectedStatus ? (
+              <aside
+                className={`plan-inspector ${statusPresentation(selectedStatus.status).tone}`}
+                aria-labelledby="selected-budget-title"
+              >
+                <div className="plan-inspector-heading">
+                  <span className="plan-status-badge">
+                    {statusPresentation(selectedStatus.status).label}
+                  </span>
+                  <h3 id="selected-budget-title">
+                    {selectedStatus.budget.category}
+                  </h3>
+                  <p>{t("budgets.inspector.summary")}</p>
+                </div>
+                <dl className="plan-inspector-metrics">
+                  <div>
+                    <dt>{t("budgets.inspector.limit")}</dt>
+                    <dd>{money(selectedStatus.budget.amount)}</dd>
+                  </div>
+                  <div>
+                    <dt>{t("budgets.inspector.spent")}</dt>
+                    <dd>{money(selectedStatus.actual_expenses)}</dd>
+                  </div>
+                  <div>
+                    <dt>
+                      {t(
+                        Number(selectedStatus.remaining) < 0
+                          ? "budgets.inspector.over"
+                          : "budgets.inspector.available",
+                      )}
+                    </dt>
+                    <dd>{money(Math.abs(Number(selectedStatus.remaining)))}</dd>
+                  </div>
+                </dl>
+                <p className="plan-inspector-insight">
+                  <CircleGauge aria-hidden="true" size={18} />
+                  {t("budgets.inspector.used", {
+                    percent: selectedStatus.percent_used,
+                  })}
+                </p>
+                <div className="plan-inspector-actions">
+                  <button
+                    className="button primary"
+                    type="button"
+                    onClick={() => openEdit(selectedStatus.budget)}
+                  >
+                    {t("budgets.inspector.edit", {
+                      category: selectedStatus.budget.category,
+                    })}
+                  </button>
+                  <button
+                    className="button danger"
+                    type="button"
+                    onClick={() => setPendingDelete(selectedStatus.budget)}
+                  >
+                    {t("budgets.dialog.deleteBtn")}
+                  </button>
+                </div>
+              </aside>
+            ) : null}
+          </div>
+        </section>
       </section>
 
       <CsvImportDialog

@@ -55,7 +55,6 @@
     .panel-header p,
     .filter-bar-header p,
     .empty-state p,
-    .info-card p,
     .dialog-copy
   ) {
     text-wrap: pretty;

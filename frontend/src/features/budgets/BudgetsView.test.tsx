@@ -74,13 +74,15 @@ describe("budgets workflow", () => {
     await userEvent.click(await screen.findByRole("link", { name: /Plan/i }));
 
     expect(
-      await screen.findByRole("heading", { name: "Planned versus spent" }),
+      await screen.findByRole("heading", {
+        name: "A few categories need a closer look",
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Uncovered spending").nextSibling,
     ).toHaveTextContent("$50.00");
     expect(screen.getByText("Uncovered spending").parentElement).toHaveClass(
-      "budget-total-warning",
+      "plan-metric-alert",
     );
     await userEvent.click(
       screen.getByRole("button", { name: /Food, near limit/ }),
@@ -88,6 +90,10 @@ describe("budgets workflow", () => {
     expect(
       screen.getByRole("button", { name: "Edit Food budget" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Priority" })).toBeChecked();
+    expect(
+      screen.getByRole("searchbox", { name: "Find a category" }),
+    ).toBeVisible();
   });
 
   it("previews the impact of a budget before it is saved", async () => {

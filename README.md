@@ -92,15 +92,16 @@ These screenshots are generated from the July 2026 reviewer demo using `finance-
 
 The local Web UI is an intentional portfolio-scale scope expansion: a Personal Finance Tracker for trend-first monthly review, transaction entry, and budget pressure checks. It remains local-first: the Python server reads and writes your SQLite database on your machine.
 
-The 2026 interface uses a persistent desktop rail, an edge-docked compact-screen navigation bar, inline compact utilities, pill-shaped action controls, and an adaptive month-and-year period picker—anchored on desktop and presented as a compact bottom sheet on smaller screens. It also includes an editorial cashflow overview, searchable activity ledger, planned-versus-spent workspace, and deep-linkable automation tabs. Design rationale and release evidence are recorded in [docs/WEB_UI_OVERHAUL_RELEASE.md](docs/WEB_UI_OVERHAUL_RELEASE.md).
+The 2026 interface uses a persistent desktop rail, an edge-docked compact-screen navigation bar, inline compact utilities, pill-shaped action controls, and an adaptive month-and-year period picker—anchored on desktop and presented as a compact bottom sheet on smaller screens. It also includes an editorial cashflow overview, searchable activity ledger, plan-pulse workspace with live category guardrails, and task-oriented automation management. Design rationale and release evidence are recorded in [docs/WEB_UI_OVERHAUL_RELEASE.md](docs/WEB_UI_OVERHAUL_RELEASE.md).
 
 Architecture: FastAPI exposes JSON endpoints under `/api`, and a React + Vite + TypeScript SPA is served from the same local server after `npm run build`. Money values are sent as decimal strings so the browser never depends on floating-point rounding for stored amounts.
 
 The browser application includes:
 
 - A compact dashboard led by a six-month cashflow trend, a ranked budget-attention queue with direct Plan links, an accessible expense-mix donut with exact category shares, and a scannable recent-activity list with signed amounts and explicit income/expense labels.
+- A responsive Plan workspace led by a monthly health pulse, planned/spent/uncovered metrics, live category search, visible sort choices, pressure-ranked guardrail cards, and a focused edit/delete inspector.
 - Route-aware navigation for `/`, `/transactions`, `/budgets`, and `/rules`, with an edge-docked, safe-area-aware bottom bar below `64rem` and an adaptive compact command bar that exposes language, theme, and transaction creation without a secondary drawer.
-- A rules workspace for category aliases and recurring monthly transaction templates.
+- A plain-language Automations workspace with one unified routine list, a guided create flow, safe deletion confirmation, tucked-away display settings, and deliberate monthly previews that explain duplicate handling before entries are created.
 - Compact period controls for month-to-month review without always exposing month/year fields.
 - Task-focused transaction and budget dialogs with prominent amount entry, grouped details, responsive controls, context-aware zero-data states, recoverable page-load errors, and edit/delete flows.
 - Browser transaction CSV preview with duplicate detection and category alias display before import, plus CSV export for transactions and budgets.

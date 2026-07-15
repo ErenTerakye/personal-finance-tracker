@@ -68,11 +68,11 @@ The Web UI uses four destinations—Overview, Activity, Plan, and Automations—
 - A Personal Finance Tracker dashboard with a six-month cashflow trend, KPI cards, YTD/month-over-month context, trend/category charts, recent transactions, and budget pressure.
 - Route-aware browser navigation for `/`, `/transactions`, `/budgets`, and `/rules`.
 - Compact period controls for changing monthly scope without keeping month/year fields open all the time.
-- Transaction add, edit, delete, and filters through native dialog workflows.
-- Budget set/update, delete, filters, and monthly status comparison with pressure shown first.
+- An Activity workspace with an inflow/outflow/net snapshot, immediate search, period and category filters, newest/oldest sorting, a date-grouped ledger timeline, and transaction add, edit, and delete workflows.
+- A Plan workspace with a monthly health pulse, planned/spent/uncovered metrics, live category search, priority/spend/category sorting, pressure-ranked guardrail cards, and focused budget editing and deletion.
 - Transaction and budget CSV import/export from the browser, using the same columns and validation rules as the CLI.
 - Transaction CSV preview before import, including invalid rows, duplicates, and category alias changes.
-- Category alias and recurring monthly transaction template management from the Automations view, with deep-linkable Categories, Recurring, and Preferences tabs.
+- Category alias and recurring monthly transaction template management from one plain-language Automations list, with a guided create dialog, confirmation before deletion, compact display settings, and a review step before monthly entries are created.
 - Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
 - A color theme action that follows the operating system by default and can pin a local light or dark preference.
 - An English/Turkish language action stored in local browser storage, with locale-aware date, number, and currency formatting based on the active ledger currency.

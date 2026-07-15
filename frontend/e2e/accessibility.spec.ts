@@ -3,9 +3,9 @@ import AxeBuilder from "@axe-core/playwright";
 
 const routes = [
   { path: "/", heading: "June 2026" },
-  { path: "/transactions", heading: "Transactions" },
-  { path: "/budgets", heading: "Budgets" },
-  { path: "/rules", heading: "Rules" },
+  { path: "/transactions", heading: "Activity" },
+  { path: "/budgets", heading: "Your July 2026 plan" },
+  { path: "/rules", heading: "Automations" },
 ];
 
 const viewports = [
@@ -28,7 +28,7 @@ for (const viewport of viewports) {
         await page.goto(route.path);
 
         await expect(
-          page.getByRole("heading", { name: route.heading }),
+          page.getByRole("heading", { name: route.heading, exact: true }),
         ).toBeVisible();
         const results = await new AxeBuilder({ page })
           .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
@@ -64,7 +64,7 @@ test.describe("keyboard accessibility smoke checks", () => {
 
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(
-      page.getByRole("heading", { name: "Transactions" }),
+      page.getByRole("heading", { name: "Activity", exact: true }),
     ).toBeVisible();
     await expect(page.locator("main")).toBeFocused();
   });
@@ -124,10 +124,12 @@ test.describe("keyboard accessibility smoke checks", () => {
     await page.keyboard.press("Enter");
 
     await expect(page).toHaveURL(/\/budgets\?month=6&year=2026&category=Rent$/);
-    await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
-    await expect(page.getByRole("searchbox", { name: "Category" })).toHaveValue(
-      "Rent",
-    );
+    await expect(
+      page.getByRole("heading", { name: "Your June 2026 plan" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("searchbox", { name: "Find a category" }),
+    ).toHaveValue("Rent");
     await expect(page.locator("main")).toBeFocused();
   });
 });
@@ -197,8 +199,16 @@ test.describe("accessibility display preferences", () => {
     await page.goto("/rules");
     await page.addStyleTag({ content: "html { font-size: 200% !important; }" });
 
-    await expect(page.getByRole("heading", { name: "Rules" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Alias" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Automations", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "New automation" }).click();
+    await page
+      .getByRole("radio", { name: /Clean up imported categories/i })
+      .click();
+    await expect(
+      page.getByRole("textbox", { name: "Imported category" }),
+    ).toBeVisible();
     await expect
       .poll(() =>
         page.evaluate(
@@ -230,7 +240,9 @@ test.describe("accessibility display preferences", () => {
       .getByRole("link", { name: "Plan" })
       .click();
     await expect(page).toHaveURL(/\/budgets$/);
-    await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Your July 2026 plan" }),
+    ).toBeVisible();
     await expect(page.locator("main")).toBeFocused();
   });
 });

@@ -168,6 +168,48 @@ describe("transactions workflow", () => {
     ).toBeVisible();
   });
 
+  it("summarizes cash movement and groups the timeline by day", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": {
+        transactions: [
+          transaction(),
+          {
+            ...transaction(),
+            id: 2,
+            type: "income",
+            amount: "125.00",
+            category: "Freelance",
+            description: "Invoice payment",
+            date: "2026-06-01",
+          },
+        ],
+      },
+    });
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Transactions|Activity/i }),
+    );
+
+    const snapshot = await screen.findByRole("region", {
+      name: "Activity snapshot",
+    });
+    expect(snapshot).toHaveTextContent("Money in$125.00");
+    expect(snapshot).toHaveTextContent("Money out$45.90");
+    expect(snapshot).toHaveTextContent("Net activity+$79.10");
+    expect(screen.getByText("Friday, June 12")).toBeVisible();
+    expect(screen.getByText("Monday, June 1")).toBeVisible();
+
+    await userEvent.selectOptions(
+      screen.getByLabelText("Sort activity"),
+      "oldest",
+    );
+    expect(document.querySelector(".ledger-day time")).toHaveTextContent(
+      "Monday, June 1",
+    );
+  });
+
   it("creates a transaction from a dialog and announces success", async () => {
     mockCompactLayout();
     const fetchMock = mockFetch({

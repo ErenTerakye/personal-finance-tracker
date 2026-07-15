@@ -74,6 +74,99 @@ test("keeps compact navigation live through rapid tab switches", async ({
   }
 });
 
+test("scrolls the monthly automation creator in a short viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 600 });
+  await mockApi(page);
+  await page.goto("/rules");
+
+  await page.getByRole("button", { name: "New automation" }).click();
+  await page
+    .getByRole("radio", { name: /Remember a monthly transaction/ })
+    .click();
+
+  const dialog = page.getByRole("dialog", {
+    name: "Remember a monthly transaction",
+  });
+  const scrollState = await dialog.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      clientHeight: element.clientHeight,
+      overflowY: style.overflowY,
+      scrollHeight: element.scrollHeight,
+    };
+  });
+
+  expect(scrollState.overflowY).toBe("auto");
+  expect(scrollState.scrollHeight).toBeGreaterThan(scrollState.clientHeight);
+
+  const submit = dialog.getByRole("button", { name: "Create automation" });
+  await submit.scrollIntoViewIfNeeded();
+  const [dialogBox, submitBox] = await Promise.all([
+    dialog.boundingBox(),
+    submit.boundingBox(),
+  ]);
+  expect(submitBox!.y + submitBox!.height).toBeLessThanOrEqual(
+    dialogBox!.y + dialogBox!.height,
+  );
+});
+
+test("keeps the compact app bar above period transition snapshots", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockApi(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "June 2026" })).toBeVisible();
+
+  const transitionChrome = page.evaluate(
+    () =>
+      new Promise<{
+        headerTransitionName: string;
+        headerGroupZIndex: string;
+      }>((resolve, reject) => {
+        const timeout = window.setTimeout(() => {
+          observer.disconnect();
+          reject(new Error("Period view transition did not start"));
+        }, 1_000);
+        const observer = new MutationObserver(() => {
+          if (
+            !document.documentElement.classList.contains(
+              "period-view-transition",
+            )
+          ) {
+            return;
+          }
+
+          const header =
+            document.querySelector<HTMLElement>(".compact-app-bar");
+          if (!header) throw new Error("Expected compact app bar");
+          window.clearTimeout(timeout);
+          observer.disconnect();
+          resolve({
+            headerTransitionName: getComputedStyle(header).viewTransitionName,
+            headerGroupZIndex: getComputedStyle(
+              document.documentElement,
+              "::view-transition-group(period-header)",
+            ).zIndex,
+          });
+        });
+        observer.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["class"],
+        });
+      }),
+  );
+
+  await page.getByRole("button", { name: /^Next month,/ }).click();
+
+  await expect(transitionChrome).resolves.toEqual({
+    headerTransitionName: "period-header",
+    headerGroupZIndex: "1",
+  });
+});
+
 test("keeps category ranking hover active through row separators", async ({
   page,
 }) => {
@@ -201,28 +294,35 @@ for (const width of viewports) {
       await page.goto("/transactions");
 
       await expect(
-        page.getByRole("heading", { name: "Transactions" }),
+        page.getByRole("heading", { name: "Activity", exact: true }),
       ).toBeVisible();
       await expect(page.getByText("Groceries")).toBeVisible();
-      await page.getByText("Data options", { exact: true }).click();
       await expect(
         page.getByRole("button", { name: "Import CSV" }),
       ).toBeVisible();
       await expect(
         page.getByRole("link", { name: "Export CSV" }),
       ).toBeVisible();
-      await page.getByText("Data options", { exact: true }).click();
       await assertNoHorizontalOverflow(page);
       await expectElementsFitViewport(page, [
-        ".action-cluster",
-        ".panel-actions",
+        ".activity-hero",
+        ".activity-snapshot",
+        ".activity-command-bar",
+        ".activity-ledger",
+        ".ledger-entry",
       ]);
-      await expectTableModeMatchesContainer(page);
       await page.getByRole("button", { name: "Actions" }).click();
-      await expect(page.getByRole("button", { name: "Edit" })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Delete" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Edit", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Delete", exact: true }),
+      ).toBeVisible();
 
-      await page.getByRole("button", { name: "Add entry" }).click();
+      await page
+        .locator(".activity-hero")
+        .getByRole("button", { name: "Add entry" })
+        .click();
       const dialog = page.getByRole("dialog", { name: "Add transaction" });
       await expect(dialog).toBeVisible();
       await expectDialogFitsViewport(page, dialog);
@@ -232,7 +332,7 @@ for (const width of viewports) {
       await page.goto("/budgets");
 
       await expect(
-        page.getByRole("heading", { name: "Budgets" }),
+        page.getByRole("heading", { name: "Your July 2026 plan" }),
       ).toBeVisible();
       await expect(
         page.getByText("Travel", { exact: true }).first(),
@@ -263,25 +363,45 @@ for (const width of viewports) {
       await expectDialogFitsViewport(page, dialog);
     });
 
-    test("adapts rules and recurring template controls", async ({ page }) => {
+    test("adapts the automation list and guided creator", async ({ page }) => {
       await page.goto("/rules");
 
-      await expect(page.getByRole("heading", { name: "Rules" })).toBeVisible();
       await expect(
-        page.locator(".rule-list strong", { hasText: "groceries" }),
+        page.getByRole("heading", { name: "Automations", exact: true }),
       ).toBeVisible();
-      await page.getByRole("tab", { name: "Recurring" }).click();
-      await expect(page.locator("#rules-panel-categories")).toBeHidden();
-      await expect(page.locator("#rules-panel-recurring")).toBeVisible();
-      await expect(page.getByText("Rent $1,200.00")).toBeVisible();
       await expect(
-        page.getByRole("button", { name: /Apply for/ }),
+        page.locator(".automation-list", { hasText: "groceries" }),
       ).toBeVisible();
+      await expect(
+        page.locator(".automation-list", { hasText: "Rent" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Review entries" }),
+      ).toBeVisible();
+      const automationFactSpacing = await page
+        .locator(".automation-hero-facts")
+        .evaluate((facts) => {
+          const firstFact = facts.querySelector("span");
+          if (!firstFact) throw new Error("Expected an automation fact");
+
+          return {
+            factsGap: Number.parseFloat(getComputedStyle(facts).columnGap),
+            iconLabelGap: Number.parseFloat(
+              getComputedStyle(firstFact).columnGap,
+            ),
+          };
+        });
+      expect(automationFactSpacing.factsGap).toBeGreaterThanOrEqual(12);
+      expect(automationFactSpacing.iconLabelGap).toBeGreaterThanOrEqual(6);
+      await page.getByRole("button", { name: "New automation" }).click();
+      const dialog = page.getByRole("dialog", { name: "Create an automation" });
+      await expect(dialog).toBeVisible();
+      await expectDialogFitsViewport(page, dialog);
       await assertNoHorizontalOverflow(page);
       await expectElementsFitViewport(page, [
-        ".rules-layout",
-        ".template-form",
-        ".rule-list li",
+        ".automation-hero",
+        ".automation-monthly",
+        ".automation-list li",
       ]);
     });
   });
@@ -679,25 +799,27 @@ async function expectElementsFitViewport(page: Page, selectors: string[]) {
 }
 
 async function expectBudgetPressureBarsAligned(page: Page) {
-  const bars = await page
-    .locator(".budget-category-row progress")
-    .evaluateAll((nodes) =>
-      nodes.map((node) => {
-        const rect = node.getBoundingClientRect();
-        return {
-          left: rect.left,
-          right: rect.right,
-          width: rect.width,
-        };
-      }),
-    );
+  const bars = await page.locator(".plan-card-progress").evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const rect = node.getBoundingClientRect();
+      const card = node.closest("button")?.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        height: rect.height,
+        cardLeft: card?.left ?? 0,
+        cardRight: card?.right ?? 0,
+      };
+    }),
+  );
 
   expect(bars.length).toBeGreaterThanOrEqual(3);
-  const [first] = bars;
-  for (const bar of bars.slice(1)) {
-    expect(Math.abs(bar.left - first.left)).toBeLessThanOrEqual(1);
-    expect(Math.abs(bar.right - first.right)).toBeLessThanOrEqual(1);
-    expect(Math.abs(bar.width - first.width)).toBeLessThanOrEqual(1);
+  for (const bar of bars) {
+    expect(bar.left).toBeGreaterThanOrEqual(bar.cardLeft);
+    expect(bar.right).toBeLessThanOrEqual(bar.cardRight);
+    expect(bar.width).toBeGreaterThan(40);
+    expect(bar.height).toBeGreaterThanOrEqual(6);
   }
 }
 
@@ -828,31 +950,6 @@ function readElementColors(element: HTMLElement) {
     borderInlineEndColor: styles.borderInlineEndColor,
     color: styles.color,
   };
-}
-
-async function expectTableModeMatchesContainer(page: Page) {
-  const { headerDisplay, wrapWidth, rootFontSize } = await page
-    .locator(".table-wrap")
-    .first()
-    .evaluate((node) => {
-      const tableHeader = node.querySelector(".data-table thead");
-      if (!tableHeader) {
-        throw new Error("Expected data table header inside table wrapper");
-      }
-      return {
-        headerDisplay: getComputedStyle(tableHeader).display,
-        wrapWidth: node.getBoundingClientRect().width,
-        rootFontSize: Number.parseFloat(
-          getComputedStyle(document.documentElement).fontSize,
-        ),
-      };
-    });
-
-  if (wrapWidth < rootFontSize * 48) {
-    expect(headerDisplay).toBe("none");
-    return;
-  }
-  expect(headerDisplay).not.toBe("none");
 }
 
 async function expectMobileNavigationIsCompact(page: Page, width: number) {

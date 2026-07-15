@@ -75,6 +75,12 @@ Global CSS is split into the ordered native cascade layers `tokens`, `reset`, `b
 `components`, `features`, `utilities`, and `overrides`. The source order and built output are checked
 without adding a CSS architecture dependency.
 
+The production bundle check measures minified assets after gzip as a stable compressed-transfer
+proxy. It caps render-blocking initial CSS at 24 KiB, each lazy CSS chunk at 5 KiB, and all CSS at
+28 KiB. The initial limit keeps the measured production build near 83% utilization, leaving roughly
+20% maintenance headroom while remaining intentionally tight. The lazy and aggregate limits ensure
+route splitting cannot hide stylesheet growth.
+
 The UI targets Baseline 2026 and progressively enhances native dialogs, popovers, container queries,
 same-document view transitions, and modern CSS. Core navigation, forms, dialogs, and CRUD remain
 usable without optional motion. Semantic landmarks, route focus, dialog focus restoration, live

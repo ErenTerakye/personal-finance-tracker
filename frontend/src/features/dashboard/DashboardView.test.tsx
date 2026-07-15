@@ -501,11 +501,11 @@ describe("dashboard workflow", () => {
       "?month=6&year=2026&category=Travel+%26+Fun",
     );
     expect(
-      await screen.findByRole("heading", { name: "Budgets" }),
+      await screen.findByRole("heading", { name: "Your June 2026 plan" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("searchbox", { name: "Category" })).toHaveValue(
-      "Travel & Fun",
-    );
+    expect(
+      screen.getByRole("searchbox", { name: "Find a category" }),
+    ).toHaveValue("Travel & Fun");
     expect(document.title).toBe("Plan | Personal Finance Tracker");
     await waitFor(() => expect(document.querySelector("main")).toHaveFocus());
   });

@@ -58,7 +58,7 @@ describe("app composition", () => {
 
     expect(window.location.pathname).toBe("/budgets");
     expect(
-      await screen.findByRole("heading", { name: "Budgets" }),
+      await screen.findByRole("heading", { name: "Your July 2026 plan" }),
     ).toBeInTheDocument();
     expect(document.title).toBe("Plan | Personal Finance Tracker");
   });
@@ -160,7 +160,7 @@ describe("app composition", () => {
     );
     expect(window.location.pathname).toBe("/budgets");
     expect(
-      await screen.findByRole("heading", { name: "Budgets" }),
+      await screen.findByRole("heading", { name: "Your July 2026 plan" }),
     ).toBeInTheDocument();
     expect(links[2]).toHaveAttribute("aria-current", "page");
     expect(links[2].querySelector("svg")).toHaveAttribute(

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { AppShell } from "./AppShell";
 import { currentPeriod } from "../shared/format/periods";
@@ -6,7 +6,6 @@ import { setCurrency } from "../shared/format/money";
 import { pathForView, viewFromPath, type RouteView, type View } from "./routes";
 import { BudgetsView } from "../features/budgets/BudgetsView";
 import { DashboardView } from "../features/dashboard/DashboardView";
-import { RulesView } from "../features/rules/RulesView";
 import { TransactionsView } from "../features/transactions/TransactionsView";
 import { I18nProvider, useI18n } from "../shared/i18n/I18nProvider";
 import { ActionButton } from "../shared/components/actions";
@@ -17,6 +16,10 @@ import type { BudgetReviewTarget } from "../shared/components/lists";
 import { cancelActiveViewTransition } from "../shared/motion/viewTransitions";
 
 const initialPeriod = periodFromUrl();
+const RulesView = lazy(async () => {
+  const module = await import("../features/rules/RulesView");
+  return { default: module.RulesView };
+});
 
 function AppContent() {
   const { t, locale, tUpper } = useI18n();
@@ -176,13 +179,15 @@ function AppContent() {
         />
       ) : null}
       {view === "rules" ? (
-        <RulesView
-          selectedPeriod={selectedPeriod}
-          setNotice={setNotice}
-          onCurrencyChange={(code) => {
-            setCurrency(code);
-          }}
-        />
+        <Suspense fallback={<p role="status">{t("rules.statusLoading")}</p>}>
+          <RulesView
+            selectedPeriod={selectedPeriod}
+            setNotice={setNotice}
+            onCurrencyChange={(code) => {
+              setCurrency(code);
+            }}
+          />
+        </Suspense>
       ) : null}
       {view === "not-found" ? (
         <PageHeader
