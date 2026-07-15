@@ -90,6 +90,62 @@ describe("budgets workflow", () => {
     ).toBeInTheDocument();
   });
 
+  it("previews the impact of a budget before it is saved", async () => {
+    const budgetRecord = {
+      id: 1,
+      category: "Food & Drinks",
+      amount: "300.00",
+      month: 7,
+      year: 2026,
+      created_at: null,
+    };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith("/api/budgets/status")) {
+        return response({
+          statuses: [
+            {
+              budget: budgetRecord,
+              actual_expenses: "120.00",
+              remaining: "180.00",
+              percent_used: "40.0",
+              status: "on track",
+            },
+          ],
+        });
+      }
+      if (url.startsWith("/api/budgets")) {
+        return response({ budgets: [budgetRecord] });
+      }
+      return response(dashboardPayload({}));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole("link", { name: /Plan/i }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Set budget" }),
+    );
+
+    const dialog = screen.getByRole("dialog", { name: "Set budget" });
+    const amountInput = within(dialog).getByLabelText("Amount");
+    expect(amountInput).toHaveFocus();
+    await userEvent.type(amountInput, "200");
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Food & Drinks" }),
+    );
+
+    expect(
+      within(dialog).getByText("Spent already").nextSibling,
+    ).toHaveTextContent("$120.00");
+    expect(
+      within(dialog).getByText("Room after saving").nextSibling,
+    ).toHaveTextContent("$80.00");
+    expect(
+      within(dialog).getByText(/replaces the current \$300\.00 limit/),
+    ).toBeVisible();
+  });
+
   it("imports budget CSV from a dialog and shows row results", async () => {
     const fetchMock = vi.fn(
       async (input: RequestInfo | URL, init?: RequestInit) => {

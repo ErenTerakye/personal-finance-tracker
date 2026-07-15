@@ -9,6 +9,7 @@ export function ModalDialog({
   children,
   onClose,
   className = "",
+  initialFocusId,
 }: {
   open: boolean;
   title: string;
@@ -16,6 +17,7 @@ export function ModalDialog({
   children: ReactNode;
   onClose: () => void;
   className?: string;
+  initialFocusId?: string;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -29,11 +31,14 @@ export function ModalDialog({
     }
     if (open && !dialog.open) {
       dialog.showModal();
+      if (initialFocusId) {
+        document.getElementById(initialFocusId)?.focus();
+      }
     }
     if (!open && dialog.open) {
       dialog.close();
     }
-  }, [open]);
+  }, [initialFocusId, open]);
 
   return (
     <dialog

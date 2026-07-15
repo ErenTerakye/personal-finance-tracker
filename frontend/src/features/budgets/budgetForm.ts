@@ -8,6 +8,16 @@ export function defaultBudget(period: {
   return { category: "", amount: "", month: period.month, year: period.year };
 }
 
+const AMOUNT_DRAFT_PATTERN = /^\d*(?:\.\d{0,2})?$/;
+
+export function normalizeBudgetAmountDraft(value: string): string | null {
+  const normalized = value.replaceAll(",", ".");
+  if (normalized.length > 64 || !AMOUNT_DRAFT_PATTERN.test(normalized)) {
+    return null;
+  }
+  return normalized.startsWith(".") ? `0${normalized}` : normalized;
+}
+
 export function readBudgetFilters(period: {
   month: number;
   year: number;

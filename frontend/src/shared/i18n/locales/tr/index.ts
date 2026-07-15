@@ -250,10 +250,35 @@ export const tr = {
       deleteBtn: "Bütçeyi sil",
       setTitle: "Bütçe Belirle",
       updateTitle: "Bütçeyi Güncelle",
-      setDescription: "Bir ay için kategori limitini belirleyin.",
-      categoryHint: "Kategori eşleşmesi büyük/küçük harfe duyarsızdır.",
-      amountHint: "Pozitif bir tutar girin, örn: 500.00.",
-      trackingNote: "Bu kategorideki harcamalar bu limite göre izlenecektir.",
+      setDescription:
+        "Bir harcama kategorisi için net bir aylık sınır oluşturun.",
+      updateDescription:
+        "Kaydetmeden önce aylık sınırı düzenleyin ve etkisini görün.",
+      monthlyLimit: "Aylık sınır",
+      amountHint: "En fazla iki ondalık basamaklı pozitif bir tutar girin.",
+      amountError:
+        "En fazla iki ondalık basamaklı geçerli bir pozitif tutar girin.",
+      categorySupport: "Bu sınırın kapsadığı alan",
+      categoryPlaceholder: "örn. Yeme & İçme",
+      categoryHint: "İşlemlerinizdeki kategori adıyla aynı adı kullanın.",
+      categoryError: "Bu bütçe için bir kategori seçin veya girin.",
+      suggestions: "Önerilen kategoriler",
+      periodHint: "Bu bütçe seçilen takvim ayıyla birlikte sıfırlanır.",
+      preview: "Plan önizlemesi",
+      noCategory: "Kategori seçin",
+      previewEmpty:
+        "Bu aylık planı şekillendirmek için tutar ve kategori ekleyin.",
+      spentAlready: "Şimdiye dek harcanan",
+      leftAfterSave: "Kaydettikten sonra kalan",
+      overAfterSave: "Bu sınırın üzerindeki",
+      trackingNote: "Eşleşen giderler otomatik olarak izlenir.",
+      localNote: "Planınız bu yerel defterde kalır.",
+      updateNotice:
+        "Kaydetmek, bu kategori ve ay için mevcut {amount} sınırının yerini alır.",
+      footerNote:
+        "Planınız değiştiğinde bu sınırı istediğiniz zaman ayarlayabilirsiniz.",
+      createBudget: "Bütçe oluştur",
+      saveChanges: "Değişiklikleri kaydet",
     },
   },
   rules: {

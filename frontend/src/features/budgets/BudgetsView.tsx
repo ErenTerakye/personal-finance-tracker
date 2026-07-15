@@ -458,6 +458,7 @@ export function BudgetsView({
         open={dialog !== null}
         mode={dialog ?? "create"}
         form={form}
+        statuses={statuses}
         error={
           saveMutation.status === "error" ? saveMutation.error.message : ""
         }

@@ -71,6 +71,7 @@ export function TransactionFormDialog({
       )}
       onClose={onClose}
       className={`entry-dialog entry-dialog-${form.type}`}
+      initialFocusId={mode === "create" ? "transaction-amount" : undefined}
     >
       {error ? <ErrorBanner message={error} /> : null}
       <form className="entry-composer" onSubmit={onSubmit}>

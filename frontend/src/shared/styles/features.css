@@ -423,3 +423,370 @@
     }
   }
 }
+
+@layer features {
+  .budget-planner-dialog {
+    inline-size: min(58rem, calc(100% - 1.5rem));
+    max-block-size: min(calc(100dvh - 1.5rem), 54rem);
+  }
+
+  .budget-planner {
+    display: grid;
+  }
+
+  .budget-planner-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(15.5rem, 0.75fr);
+    gap: clamp(1rem, 3vw, 1.75rem);
+    padding: clamp(1rem, 3vw, 1.75rem) clamp(1rem, 4vw, 2rem);
+  }
+
+  .budget-planner-fields {
+    display: grid;
+    align-content: start;
+    gap: 1.25rem;
+    min-inline-size: 0;
+  }
+
+  .budget-amount-stage {
+    padding: clamp(1rem, 3vw, 1.35rem);
+    background: color-mix(in srgb, var(--action) 6%, var(--surface-2));
+    border: 1px solid color-mix(in srgb, var(--action) 28%, var(--rule));
+    border-radius: var(--radius-sm);
+  }
+
+  .budget-field-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .budget-field-heading label,
+  .budget-period-stage legend {
+    color: var(--ink);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .budget-field-heading > span,
+  .budget-period-stage > p {
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .budget-amount-control {
+    display: flex;
+    align-items: center;
+    margin-block-start: 0.35rem;
+  }
+
+  .budget-amount-control > span {
+    flex: none;
+    color: var(--action);
+    font-family: var(--font-mono);
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .budget-amount-control input {
+    min-block-size: 3.8rem;
+    min-inline-size: 0;
+    padding: 0 0 0 0.65rem;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    font-family: var(--font-mono);
+    font-size: clamp(1.85rem, 6vw, 2.7rem);
+    font-weight: var(--font-weight-bold);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.045em;
+    line-height: 1;
+  }
+
+  .budget-amount-control input:focus-visible {
+    outline: 0;
+  }
+
+  .budget-amount-stage:has(input:focus-visible) {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+  }
+
+  .budget-field-hint,
+  .budget-field-error {
+    margin-block-start: 0.3rem;
+    font-size: var(--font-size-xs);
+    line-height: var(--line-compact);
+  }
+
+  .budget-field-hint {
+    color: var(--muted);
+  }
+
+  .budget-field-error {
+    display: none;
+    color: var(--expenses);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .budget-amount-stage:has(input:user-invalid) .budget-field-hint,
+  .budget-category-stage:has(input:user-invalid) .budget-field-hint {
+    display: none;
+  }
+
+  .budget-amount-stage:has(input:user-invalid) .budget-field-error,
+  .budget-category-stage:has(input:user-invalid) .budget-field-error {
+    display: block;
+  }
+
+  .budget-category-stage {
+    min-inline-size: 0;
+  }
+
+  .budget-input-shell {
+    position: relative;
+    display: block;
+    margin-block-start: 0.45rem;
+  }
+
+  .budget-input-shell > svg {
+    position: absolute;
+    z-index: 1;
+    inset-block-start: 50%;
+    inset-inline-start: 0.8rem;
+    color: var(--muted);
+    pointer-events: none;
+    translate: 0 -50%;
+  }
+
+  .budget-input-shell input,
+  .budget-input-shell select {
+    inline-size: 100%;
+    padding-inline-start: 2.55rem;
+  }
+
+  .budget-category-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-block-start: 0.75rem;
+  }
+
+  .budget-category-suggestions button {
+    min-block-size: 2.25rem;
+    padding: 0.35rem 0.7rem;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-pill);
+    font-size: var(--font-size-xs);
+  }
+
+  .budget-category-suggestions button.is-selected {
+    color: var(--action);
+  }
+
+  .budget-period-stage {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .budget-period-stage > p {
+    margin-block-start: 0.2rem;
+  }
+
+  .budget-period-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(6.5rem, 0.65fr);
+    gap: 0.65rem;
+    margin-block-start: 0.65rem;
+  }
+
+  .budget-period-controls > label {
+    display: grid;
+    align-content: start;
+    gap: 0.35rem;
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .budget-period-controls .budget-input-shell {
+    margin: 0;
+  }
+
+  .budget-plan-preview {
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 0;
+    padding: 1.2rem;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid color-mix(in srgb, var(--action) 24%, var(--rule));
+    border-radius: var(--radius);
+  }
+
+  .budget-preview-kicker {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--action);
+  }
+
+  .budget-preview-kicker > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .budget-preview-category {
+    margin-block-start: 1.5rem;
+    color: var(--muted);
+  }
+
+  .budget-preview-amount {
+    margin-block-start: 0.15rem;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: clamp(1.7rem, 4vw, 2.35rem);
+    font-weight: var(--font-weight-bold);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--line-tight);
+  }
+
+  .budget-preview-impact {
+    display: grid;
+    gap: 0.55rem;
+    margin-block-start: 1.25rem;
+    padding-block: 1rem;
+    border-block: 1px solid var(--rule);
+  }
+
+  .budget-preview-impact > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.7rem;
+  }
+
+  .budget-preview-impact dt {
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .budget-preview-impact dd {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .budget-preview-empty {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-block-start: 1.25rem;
+    padding-block: 1rem;
+    border-block: 1px solid var(--rule);
+  }
+
+  .budget-preview-benefits {
+    display: grid;
+    gap: 0.55rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .budget-preview-benefits li {
+    display: flex;
+    gap: 0.45rem;
+  }
+
+  .budget-preview-benefits svg {
+    flex: none;
+    color: var(--cash);
+  }
+
+  .budget-planner-footer {
+    position: sticky;
+    z-index: 2;
+    inset-block-end: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem clamp(1rem, 4vw, 2rem);
+    background: var(--surface);
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .budget-planner-actions {
+    display: flex;
+    flex: none;
+    gap: 0.55rem;
+  }
+
+  .budget-planner-footer > p {
+    color: var(--muted);
+  }
+
+  .budget-planner-actions .button {
+    min-block-size: 3rem;
+  }
+
+  @media (max-width: 46rem) {
+    .budget-planner-body {
+      grid-template-columns: 1fr;
+    }
+
+    .budget-plan-preview {
+      min-block-size: auto;
+    }
+
+    .budget-preview-category {
+      margin-block-start: 1rem;
+    }
+  }
+
+  @media (max-width: 34rem) {
+    .budget-planner-dialog {
+      inline-size: 100%;
+      max-inline-size: 100%;
+      max-block-size: calc(100dvh - 0.5rem);
+      margin-inline: 0;
+    }
+
+    .budget-planner-body {
+      padding-block: 1rem;
+    }
+
+    .budget-period-controls {
+      grid-template-columns: minmax(0, 1.2fr) minmax(6rem, 0.8fr);
+    }
+
+    .budget-plan-preview {
+      padding: 1rem;
+    }
+
+    .budget-planner-footer {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .budget-planner-footer > p {
+      display: none;
+    }
+
+    .budget-planner-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+    }
+  }
+}
