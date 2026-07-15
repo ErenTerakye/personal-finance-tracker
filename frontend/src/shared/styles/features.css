@@ -65,6 +65,10 @@
     align-self: end;
   }
 
+  .activity-hero + .alert {
+    margin-block-start: var(--section-gap);
+  }
+
   .activity-workspace {
     container: activity-workspace / inline-size;
     display: grid;
