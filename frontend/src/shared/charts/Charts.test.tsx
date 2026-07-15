@@ -291,9 +291,26 @@ describe("ExpenseMix", () => {
       name: "Housing: $750.00, 75.0% of expenses",
     });
     fireEvent.pointerEnter(housing);
-    expect(document.querySelector(".expense-mix-total")).toHaveTextContent(
-      "Housing$750.0075.0%",
+    const categoryDetails = document.querySelector(".expense-mix-total");
+    expect(categoryDetails).toHaveTextContent("Housing$750.0075.0%");
+
+    fireEvent.pointerEnter(
+      screen.getByRole("button", {
+        name: "Food: $250.00, 25.0% of expenses",
+      }),
     );
+    expect(document.querySelector(".expense-mix-total")).toBe(categoryDetails);
+    expect(categoryDetails).toHaveTextContent("Food$250.0025.0%");
+
+    fireEvent.pointerLeave(
+      screen.getByRole("button", {
+        name: "Food: $250.00, 25.0% of expenses",
+      }),
+    );
+    expect(document.querySelector(".expense-mix-total")).toHaveTextContent(
+      "Total$1,000.00",
+    );
+
     expect(
       screen.getByRole("button", { name: "Housing$750.0075.0%" }),
     ).not.toHaveAttribute("data-active");

@@ -98,6 +98,11 @@ export function ExpenseMix({
               })}
               data-active={activeIndex === index ? "true" : undefined}
               onPointerEnter={() => setActiveIndex(index)}
+              onPointerLeave={() =>
+                setActiveIndex((current) =>
+                  current === index ? null : current,
+                )
+              }
               onFocus={() => setActiveIndex(index)}
               onBlur={() => setActiveIndex(null)}
               onClick={(e) => {
@@ -123,7 +128,7 @@ export function ExpenseMix({
         <div
           className="expense-mix-total"
           aria-hidden="true"
-          key={activeSlice?.label ?? "total"}
+          key={activeSlice ? "category" : "total"}
         >
           <span>{activeSlice?.label ?? t("charts.total")}</span>
           <strong>{money(activeSlice?.value ?? total)}</strong>
