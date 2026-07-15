@@ -11,6 +11,31 @@ import {
 installAppTestLifecycle();
 
 describe("budgets workflow", () => {
+  it("retries a failed budget resource load", async () => {
+    let budgetAttempts = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith("/api/budgets/status")) {
+        return response({ statuses: [] });
+      }
+      if (url.startsWith("/api/budgets")) {
+        budgetAttempts += 1;
+        if (budgetAttempts === 1) throw new TypeError("Load failed");
+        return response({ budgets: [] });
+      }
+      return response(dashboardPayload({}));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole("link", { name: /Plan/i }));
+    const alert = await screen.findByRole("alert");
+    await userEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+
+    expect(await screen.findByText("No budgets for this period")).toBeVisible();
+    expect(budgetAttempts).toBe(2);
+  });
+
   it("summarizes planned, spent, remaining, and uncovered amounts", async () => {
     const budgetRecord = {
       id: 1,

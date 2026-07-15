@@ -14,6 +14,99 @@ import {
 installAppTestLifecycle();
 
 describe("transactions workflow", () => {
+  it("uses friendly localized copy for a ledger without transactions", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": { transactions: [] },
+    });
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Transactions|Activity/i }),
+    );
+
+    const emptyState = (
+      await screen.findByText("No transactions yet")
+    ).closest<HTMLElement>(".empty-state")!;
+    expect(emptyState).toHaveTextContent(
+      "Add your first entry for this period to start building your history.",
+    );
+    expect(
+      within(emptyState).getByRole("button", { name: "Add entry" }),
+    ).toBeVisible();
+    expect(emptyState).not.toHaveTextContent("TRANSACTIONS.EMPTY.EYEBROW");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Switch language" }),
+    );
+    expect(await screen.findByText("Henüz işlem yok")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Bu dönem için ilk işleminizi ekleyerek geçmişinizi oluşturmaya başlayın.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("distinguishes a search miss and clears the query to restore records", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": { transactions: [transaction()] },
+    });
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Transactions|Activity/i }),
+    );
+    const search = await screen.findByRole("searchbox");
+    await userEvent.type(search, "does not exist");
+
+    const emptyState = (
+      await screen.findByText("No matching transactions")
+    ).closest<HTMLElement>(".empty-state")!;
+    expect(emptyState).toHaveTextContent(
+      "Try a different search or clear your filters.",
+    );
+    expect(
+      within(emptyState).queryByRole("button", { name: "Add entry" }),
+    ).toBeNull();
+    await userEvent.click(
+      within(emptyState).getByRole("button", {
+        name: "Clear search and filters",
+      }),
+    );
+
+    expect(search).toHaveValue("");
+    expect(await screen.findByText("Groceries")).toBeVisible();
+  });
+
+  it("retries a failed transaction resource load", async () => {
+    let transactionAttempts = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith("/api/transactions")) {
+        transactionAttempts += 1;
+        if (transactionAttempts === 1) throw new TypeError("Load failed");
+        return response({ transactions: [] });
+      }
+      if (url.startsWith("/api/dashboard")) {
+        return response(dashboardPayload({}));
+      }
+      return response({});
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Transactions|Activity/i }),
+    );
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Load failed");
+    await userEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+
+    expect(await screen.findByText("No transactions yet")).toBeVisible();
+    expect(transactionAttempts).toBe(2);
+  });
+
   it("opens the shared transaction form from the global create command", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
@@ -54,8 +147,10 @@ describe("transactions workflow", () => {
     const search = await screen.findByRole("searchbox");
     await userEvent.type(search, "salary");
 
-    expect(screen.getByText("Salary")).toBeInTheDocument();
-    expect(screen.queryByText("Groceries")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Salary")).toBeInTheDocument();
+      expect(screen.queryByText("Groceries")).not.toBeInTheDocument();
+    });
     await userEvent.click(
       screen.getByRole("button", { name: "Advanced filters" }),
     );

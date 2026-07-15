@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { type PointerEvent, useRef } from "react";
 import { signedMoney } from "../format/money";
 import { periodLabel, shortPeriodLabel } from "../format/periods";
 import { useI18n } from "../i18n/I18nProvider";
@@ -24,6 +24,77 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
   const chartRef = useRef<HTMLElement>(null);
   const [active, setActive] = useChartTooltip(chartRef, [months]);
   const { t } = useI18n();
+
+  function activateBar(
+    node: HTMLElement,
+    item: TrendMonth,
+    metric: (typeof metrics)[number],
+    tone: (typeof metrics)[number]["tone"] | "warning",
+    translatedLabel: string,
+    pinned = false,
+  ) {
+    const next = trendTooltip(
+      node,
+      item,
+      metric,
+      tone,
+      translatedLabel,
+      t,
+      pinned,
+    );
+    setActive((current) =>
+      current?.id === next.id && current.pinned === next.pinned
+        ? current
+        : next,
+    );
+  }
+
+  function activateNearestBar(
+    event: PointerEvent<HTMLDivElement>,
+    item: TrendMonth,
+    positive: boolean,
+  ) {
+    if (event.pointerType === "touch") {
+      return;
+    }
+
+    const buttons = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>(".trend-bar"),
+    );
+    const nearestIndex = buttons.reduce(
+      (nearest, button, index) => {
+        const rect = button.getBoundingClientRect();
+        const distance = Math.hypot(
+          event.clientX - (rect.left + rect.width / 2),
+          event.clientY - (rect.top + rect.height / 2),
+        );
+        return distance < nearest.distance ? { index, distance } : nearest;
+      },
+      { index: 0, distance: Number.POSITIVE_INFINITY },
+    ).index;
+    const metric = metrics[nearestIndex];
+    const node = buttons[nearestIndex];
+    if (!metric || !node) {
+      return;
+    }
+
+    const tone =
+      metric.key === "net_savings" && !positive ? "warning" : metric.tone;
+    const labelKey =
+      metric.key === "total_income"
+        ? "income"
+        : metric.key === "total_expenses"
+          ? "expenses"
+          : "net";
+
+    activateBar(
+      node.querySelector<HTMLElement>("span") ?? node,
+      item,
+      metric,
+      tone,
+      t(`charts.${labelKey}`),
+    );
+  }
 
   if (!months.length) {
     return (
@@ -77,7 +148,17 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
               >
                 {shortPeriodLabel(item.month, item.year)}
               </time>
-              <div className="trend-bars">
+              <div
+                className="trend-bars"
+                onPointerMove={(event) =>
+                  activateNearestBar(event, item, positive)
+                }
+                onPointerLeave={(event) => {
+                  if (event.pointerType !== "touch") {
+                    setActive((current) => (current?.pinned ? current : null));
+                  }
+                }}
+              >
                 {metrics.map((metric) => {
                   const barId = `trend-${item.label}-${metric.key}`;
                   const isActive = active?.id === barId;
@@ -101,15 +182,12 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
                       aria-label={`${translatedLabel} for ${periodLabel(item.month, item.year)}: ${formatMetricValue(item, metric.key)}`}
                       onBlur={handleTooltipBlur(setActive)}
                       onFocus={(event) =>
-                        setActive(
-                          trendTooltip(
-                            event.currentTarget,
-                            item,
-                            metric,
-                            tone,
-                            translatedLabel,
-                            t,
-                          ),
+                        activateBar(
+                          event.currentTarget,
+                          item,
+                          metric,
+                          tone,
+                          translatedLabel,
                         )
                       }
                       onKeyDown={(event) =>
@@ -117,44 +195,18 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
                       }
                       onPointerDown={(event) => {
                         if (event.pointerType === "touch") {
-                          setActive(
-                            trendTooltip(
-                              event.currentTarget,
-                              item,
-                              metric,
-                              tone,
-                              translatedLabel,
-                              t,
-                              true,
-                            ),
+                          activateBar(
+                            event.currentTarget,
+                            item,
+                            metric,
+                            tone,
+                            translatedLabel,
+                            true,
                           );
                         }
                       }}
                     >
-                      <span
-                        aria-hidden="true"
-                        onPointerEnter={(event) => {
-                          if (event.pointerType !== "touch") {
-                            setActive(
-                              trendTooltip(
-                                event.currentTarget,
-                                item,
-                                metric,
-                                tone,
-                                translatedLabel,
-                                t,
-                              ),
-                            );
-                          }
-                        }}
-                        onPointerLeave={(event) => {
-                          if (event.pointerType !== "touch") {
-                            setActive((current) =>
-                              current?.pinned ? current : null,
-                            );
-                          }
-                        }}
-                      />
+                      <span aria-hidden="true" />
                     </button>
                   );
                 })}

@@ -235,6 +235,88 @@ test.describe("accessibility display preferences", () => {
   });
 });
 
+test.describe("empty and recoverable error states", () => {
+  for (const viewport of [
+    { name: "compact light", width: 390, colorScheme: "light" as const },
+    { name: "compact dark", width: 390, colorScheme: "dark" as const },
+    { name: "desktop light", width: 1280, colorScheme: "light" as const },
+    { name: "desktop dark", width: 1280, colorScheme: "dark" as const },
+  ]) {
+    test(`renders a flat accessible transaction empty state at ${viewport.name}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: viewport.width, height: 900 });
+      await page.emulateMedia({ colorScheme: viewport.colorScheme });
+      await mockApi(page, { transactions: [] });
+      await page.goto("/transactions");
+
+      const emptyState = page.locator(".empty-state");
+      await expect(emptyState).toContainText("No transactions yet");
+      await expect(emptyState).toContainText(
+        "Add your first entry for this period to start building your history.",
+      );
+      await expect(emptyState).toHaveCSS("background-image", "none");
+      await expect(emptyState).toHaveCSS("border-style", "solid");
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+        ),
+      ).toBe(true);
+
+      const results = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+      expect(
+        results.violations.filter(
+          (violation) =>
+            violation.impact === "serious" || violation.impact === "critical",
+        ),
+      ).toEqual([]);
+    });
+  }
+
+  test("keeps a forced-colors load error visible and retries by keyboard", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.emulateMedia({ forcedColors: "active" });
+    await mockApi(page);
+    let attempts = 0;
+    await page.route("**/api/transactions**", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.pathname !== "/api/transactions") {
+        await route.fallback();
+        return;
+      }
+      attempts += 1;
+      if (attempts === 1) {
+        await route.fulfill({
+          status: 503,
+          json: { detail: { error: "Load failed" } },
+        });
+        return;
+      }
+      await route.fulfill({ json: { transactions: [] } });
+    });
+    await page.goto("/transactions");
+
+    const alert = page.getByRole("alert");
+    await expect(alert).toContainText("Load failed");
+    await expect(alert).toHaveCSS("border-style", "solid");
+    const retry = alert.getByRole("button", { name: "Retry" });
+    await retry.focus();
+    await page.keyboard.press("Enter");
+
+    await expect(page.getByText("No transactions yet")).toBeVisible();
+    expect(attempts).toBe(2);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      ),
+    ).toBe(true);
+  });
+});
+
 async function dialogContainsFocus(page: Page) {
   return page.evaluate(() => {
     const active = document.activeElement;
@@ -243,7 +325,10 @@ async function dialogContainsFocus(page: Page) {
   });
 }
 
-async function mockApi(page: Page) {
+async function mockApi(
+  page: Page,
+  { transactions = [transaction()] }: { transactions?: unknown[] } = {},
+) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
     if (!url.pathname.startsWith("/api/")) {
@@ -259,7 +344,7 @@ async function mockApi(page: Page) {
       return;
     }
     if (url.pathname === "/api/transactions") {
-      await route.fulfill({ json: { transactions: [transaction()] } });
+      await route.fulfill({ json: { transactions } });
       return;
     }
     if (url.pathname === "/api/budgets/status") {

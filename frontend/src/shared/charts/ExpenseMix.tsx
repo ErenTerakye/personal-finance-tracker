@@ -25,6 +25,9 @@ export function ExpenseMix({
   const { t } = useI18n();
   const chartId = useId();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [activeLegendIndex, setActiveLegendIndex] = useState<number | null>(
+    null,
+  );
   const positiveItems = items
     .map((item) => ({ label: item.label, value: Math.abs(Number(item.value)) }))
     .filter((item) => Number.isFinite(item.value) && item.value > 0)
@@ -125,7 +128,43 @@ export function ExpenseMix({
       </div>
 
       <figcaption id={`${chartId}-caption`}>
-        <ul className="expense-mix-legend">
+        <ul
+          className="expense-mix-legend"
+          onPointerMove={(event) => {
+            if (event.pointerType === "touch") {
+              return;
+            }
+
+            const buttons = Array.from(
+              event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                ".expense-mix-legend-btn",
+              ),
+            );
+            const nearestIndex = buttons.reduce(
+              (nearest, button, index) => {
+                const rect = button.getBoundingClientRect();
+                const distance = Math.abs(
+                  event.clientY - (rect.top + rect.height / 2),
+                );
+                return distance < nearest.distance
+                  ? { index, distance }
+                  : nearest;
+              },
+              { index: 0, distance: Number.POSITIVE_INFINITY },
+            ).index;
+
+            setActiveIndex((current) =>
+              current === nearestIndex ? current : nearestIndex,
+            );
+            setActiveLegendIndex((current) =>
+              current === nearestIndex ? current : nearestIndex,
+            );
+          }}
+          onPointerLeave={() => {
+            setActiveIndex(null);
+            setActiveLegendIndex(null);
+          }}
+        >
           {slices.map((slice, index) => (
             <li
               key={slice.label}
@@ -134,9 +173,12 @@ export function ExpenseMix({
               <button
                 type="button"
                 className="expense-mix-legend-btn"
+                data-active={activeLegendIndex === index ? "true" : undefined}
                 onClick={() => onClickCategory?.(slice.label)}
-                onPointerEnter={() => setActiveIndex(index)}
-                onPointerLeave={() => setActiveIndex(null)}
+                onPointerEnter={() => {
+                  setActiveIndex(index);
+                  setActiveLegendIndex(index);
+                }}
                 onFocus={() => setActiveIndex(index)}
                 onBlur={() => setActiveIndex(null)}
               >

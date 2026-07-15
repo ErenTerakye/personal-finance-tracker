@@ -52,7 +52,12 @@ export function DashboardView({
   const periodTransition = usePeriodTransition(selectedPeriod, dashboard);
 
   if (dashboard.status === "error" && !periodTransition.data) {
-    return <ErrorBanner message={dashboard.error.message} />;
+    return (
+      <ErrorBanner
+        message={dashboard.error.message}
+        onRetry={dashboard.refetch}
+      />
+    );
   }
 
   if (!periodTransition.data) {
@@ -114,7 +119,10 @@ export function DashboardView({
           : ""}
       </p>
       {dashboard.status === "error" ? (
-        <ErrorBanner message={dashboard.error.message} />
+        <ErrorBanner
+          message={dashboard.error.message}
+          onRetry={dashboard.refetch}
+        />
       ) : null}
       <section
         className="page-heading dashboard-heading dashboard-context-header"

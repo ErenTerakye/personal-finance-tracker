@@ -35,6 +35,34 @@ test("compact bottom navigation localizes from inline header utilities", async (
   ).toBeVisible();
 });
 
+test("keeps category ranking hover active through row separators", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockApi(page);
+  await page.goto("/");
+
+  const ranking = page.locator(".expense-mix-legend");
+  await ranking.scrollIntoViewIfNeeded();
+  const firstCategory = ranking.locator(".expense-mix-legend-btn").nth(0);
+  const secondCategory = ranking.locator(".expense-mix-legend-btn").nth(1);
+  const [firstBox, secondBox] = await Promise.all([
+    firstCategory.boundingBox(),
+    secondCategory.boundingBox(),
+  ]);
+  expect(firstBox).not.toBeNull();
+  expect(secondBox).not.toBeNull();
+  expect(secondBox!.y).toBeGreaterThan(firstBox!.y + firstBox!.height);
+
+  const x = firstBox!.x + firstBox!.width / 2;
+  const gapMiddle = (firstBox!.y + firstBox!.height + secondBox!.y) / 2;
+  await page.mouse.move(x, gapMiddle);
+  await expect(firstCategory).toHaveAttribute("data-active", "true");
+
+  await page.mouse.move(x, secondBox!.y - 0.5);
+  await expect(secondCategory).toHaveAttribute("data-active", "true");
+});
+
 test("keeps the export menu content-sized and anchored", async ({ page }) => {
   await page.setViewportSize({ width: 768, height: 900 });
   await mockApi(page);
@@ -263,11 +291,8 @@ test.describe("cashflow trend graph rendering", () => {
     expect(barBox).not.toBeNull();
     expect(barBox!.height).toBeLessThan(slotBox!.height);
 
-    await page.mouse.move(
-      barBox!.x + barBox!.width / 2,
-      Math.max(slotBox!.y + 1, barBox!.y - 2),
-    );
-    await expect(tooltip).toBeHidden();
+    await page.mouse.move(barBox!.x - 2, barBox!.y + barBox!.height / 2);
+    await expect(tooltip).toBeVisible();
 
     await hoveredBar.hover();
 
@@ -388,9 +413,6 @@ for (const width of themeViewports) {
         stored: "dark",
         colorScheme: "dark",
       });
-      await expect(page.locator("html")).not.toHaveClass(
-        /theme-view-transition/,
-      );
       await assertNoHorizontalOverflow(page);
 
       await page.reload();
@@ -421,50 +443,54 @@ for (const width of themeViewports) {
         stored: null,
         colorScheme: "light dark",
       });
-      await expect(page.locator("html")).not.toHaveClass(
-        /theme-view-transition/,
-      );
       await assertNoHorizontalOverflow(page);
     });
 
-    test("switches instantly when reduced motion is preferred", async ({
+    test("switches repeatedly without a transition or layout shift", async ({
       page,
     }) => {
-      await page.emulateMedia({
-        colorScheme: "light",
-        reducedMotion: "reduce",
-      });
       await page.goto("/");
-      await page.evaluate(() => {
-        const state = window as Window & { themeTransitionObserved?: boolean };
-        state.themeTransitionObserved = false;
-        new MutationObserver(() => {
-          if (
-            document.documentElement.classList.contains("theme-view-transition")
-          ) {
-            state.themeTransitionObserved = true;
-          }
-        }).observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ["class"],
-        });
-      });
+      await expect(
+        page.getByRole("heading", { name: "June 2026" }),
+      ).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      const initialLayout = await captureThemeLayout(page);
+      const transitionObserved = page.evaluate(
+        () =>
+          new Promise<boolean>((resolve) => {
+            let observed = false;
+            const timeout = window.setTimeout(() => {
+              observer.disconnect();
+              resolve(observed);
+            }, 100);
+            const observer = new MutationObserver(() => {
+              if (document.documentElement.matches(":active-view-transition")) {
+                observed = true;
+                window.clearTimeout(timeout);
+                observer.disconnect();
+                resolve(observed);
+              }
+            });
+            observer.observe(document.documentElement, {
+              attributes: true,
+              attributeFilter: ["style", "class", "data-theme"],
+            });
+          }),
+      );
 
       await page.getByRole("button", { name: "Use dark mode" }).click();
+      await page
+        .getByRole("button", { name: "Use system color setting" })
+        .click();
 
       await expectThemeState(page, {
-        dataTheme: "dark",
-        meta: "dark",
-        stored: "dark",
-        colorScheme: "dark",
+        dataTheme: null,
+        meta: "light dark",
+        stored: null,
+        colorScheme: "light dark",
       });
-      expect(
-        await page.evaluate(
-          () =>
-            (window as Window & { themeTransitionObserved?: boolean })
-              .themeTransitionObserved,
-        ),
-      ).toBe(false);
+      expect(await captureThemeLayout(page)).toEqual(initialLayout);
+      expect(await transitionObserved).toBe(false);
     });
   });
 }
@@ -634,6 +660,19 @@ async function expectBudgetPressureBarsAligned(page: Page) {
     expect(Math.abs(bar.right - first.right)).toBeLessThanOrEqual(1);
     expect(Math.abs(bar.width - first.width)).toBeLessThanOrEqual(1);
   }
+}
+
+async function captureThemeLayout(page: Page) {
+  return page
+    .locator(
+      "main:visible, .theme-toggle:visible, .app-rail:visible, .compact-app-bar:visible, .compact-primary-navigation:visible",
+    )
+    .evaluateAll((elements) =>
+      elements.map((element) => {
+        const { x, y, width, height } = element.getBoundingClientRect();
+        return { x, y, width, height };
+      }),
+    );
 }
 
 async function expectThemeToggleIconCentered(page: Page) {

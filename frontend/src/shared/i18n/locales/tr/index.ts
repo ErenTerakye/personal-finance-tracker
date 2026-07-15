@@ -19,6 +19,7 @@ export const tr = {
     edit: "Düzenle",
     delete: "Sil",
     save: "Kaydet",
+    retry: "Yeniden dene",
     addEntry: "İşlem ekle",
     setBudget: "Bütçe belirle",
     importCsv: "CSV İçe Aktar",
@@ -172,8 +173,12 @@ export const tr = {
     },
     empty: {
       loading: "İşlem geçmişi yükleniyor.",
-      noTransactions: "İşlem bulunamadı",
-      noTransactionsMsg: "Filtreleri değiştirin veya yeni bir işlem ekleyin.",
+      noTransactions: "Henüz işlem yok",
+      noTransactionsMsg:
+        "Bu dönem için ilk işleminizi ekleyerek geçmişinizi oluşturmaya başlayın.",
+      noMatches: "Eşleşen işlem bulunamadı",
+      noMatchesMsg: "Farklı bir arama deneyin veya filtrelerinizi temizleyin.",
+      clearSearchAndFilters: "Aramayı ve filtreleri temizle",
     },
     dialog: {
       deleteTitle: "İşlemi sil",

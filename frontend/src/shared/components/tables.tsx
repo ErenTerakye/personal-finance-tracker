@@ -13,23 +13,43 @@ export function TransactionTable({
   onEdit,
   onDelete,
   onCreate,
+  emptyVariant = "initial",
+  onClearEmpty,
 }: {
   transactions: TransactionRecord[];
   onEdit: (transaction: TransactionRecord) => void;
   onDelete: (transaction: TransactionRecord) => void;
   onCreate?: () => void;
+  emptyVariant?: "initial" | "filtered";
+  onClearEmpty?: () => void;
 }) {
   const { t, tUpper } = useI18n();
 
   if (!transactions.length) {
+    const filtered = emptyVariant === "filtered";
     return (
       <EmptyState
         icon={ReceiptText}
-        eyebrow={t("transactions.empty.eyebrow")}
-        title={t("transactions.empty.noTransactions")}
-        message={t("transactions.empty.noTransactionsMsg")}
+        title={t(
+          filtered
+            ? "transactions.empty.noMatches"
+            : "transactions.empty.noTransactions",
+        )}
+        message={t(
+          filtered
+            ? "transactions.empty.noMatchesMsg"
+            : "transactions.empty.noTransactionsMsg",
+        )}
         action={
-          onCreate ? (
+          filtered && onClearEmpty ? (
+            <button
+              className="button secondary"
+              type="button"
+              onClick={onClearEmpty}
+            >
+              <span>{t("transactions.empty.clearSearchAndFilters")}</span>
+            </button>
+          ) : onCreate ? (
             <button className="button primary" type="button" onClick={onCreate}>
               <Plus aria-hidden="true" size={18} />
               <span>{t("common.addEntry")}</span>

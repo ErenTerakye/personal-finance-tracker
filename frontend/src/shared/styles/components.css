@@ -300,7 +300,7 @@
   }
 
   .button.primary {
-    color: #ffffff;
+    color: var(--surface);
     background: var(--action);
     border-color: var(--action);
     box-shadow: none;
@@ -313,7 +313,7 @@
   }
 
   .button.danger {
-    color: #ffffff;
+    color: var(--surface);
     background: var(--expenses);
     border-color: var(--expenses);
   }
@@ -382,7 +382,7 @@
   }
 
   .icon-button.primary {
-    color: #ffffff;
+    color: var(--surface);
     background: var(--action);
     border-color: var(--action);
   }
@@ -394,7 +394,7 @@
   }
 
   .icon-button.danger {
-    color: #ffffff;
+    color: var(--surface);
     background: var(--expenses);
     border-color: var(--expenses);
   }
@@ -708,22 +708,47 @@
 
   .notice,
   .alert {
-    display: flex;
     align-items: center;
     gap: 0.55rem;
     margin-block-end: 1rem;
     padding: 0.75rem 0.9rem;
-    background: var(--surface);
     border: 1px solid var(--rule);
     border-radius: var(--radius);
   }
 
   .notice {
+    display: flex;
+    background: var(--surface);
     border-inline-start: 4px solid var(--cash);
   }
 
   .alert {
-    border-inline-start: 4px solid var(--expenses);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    color: var(--text);
+    background: color-mix(in srgb, var(--expenses) 7%, var(--surface));
+    border-color: color-mix(in srgb, var(--expenses) 38%, var(--rule));
+  }
+
+  .alert-icon {
+    display: grid;
+    place-items: center;
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
+    color: var(--expenses);
+    background: color-mix(in srgb, var(--expenses) 11%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--expenses) 32%, var(--rule));
+    border-radius: 0.7rem;
+  }
+
+  .alert-message {
+    min-inline-size: 0;
+  }
+
+  .alert-action {
+    min-block-size: 2.5rem;
+    padding-inline: 0.85rem;
   }
 
   .panel,
@@ -1587,6 +1612,7 @@
   }
 
   .expense-mix-legend-btn:hover,
+  .expense-mix-legend-btn[data-active="true"],
   .expense-mix-legend-btn:focus-visible {
     background-color: var(--surface-2);
     outline: none;
@@ -2177,14 +2203,8 @@
     align-items: center;
     min-block-size: 12rem;
     padding: clamp(1.25rem, 4vw, 2.25rem);
-    background:
-      radial-gradient(
-        circle at 0 0,
-        color-mix(in srgb, var(--action) 10%, transparent),
-        transparent 48%
-      ),
-      var(--surface-2);
-    border: 1px dashed var(--rule-strong);
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
     border-radius: calc(var(--radius) + 4px);
   }
 
@@ -2523,6 +2543,24 @@
 
     .empty-state {
       grid-template-columns: 1fr;
+    }
+
+    .alert {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .alert-action {
+      grid-column: 2;
+      justify-self: start;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .alert,
+    .alert-icon,
+    .empty-state,
+    .empty-state-icon {
+      border-color: CanvasText;
     }
   }
 

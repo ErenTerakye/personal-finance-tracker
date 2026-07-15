@@ -8,10 +8,6 @@ export function installAppTestLifecycle() {
   afterEach(() => {
     window.localStorage?.clear();
     document.documentElement.removeAttribute("data-theme");
-    document.documentElement.classList.remove("theme-view-transition");
-    document.documentElement.style.removeProperty("--theme-reveal-x");
-    document.documentElement.style.removeProperty("--theme-reveal-y");
-    document.documentElement.style.removeProperty("--theme-reveal-radius");
     Reflect.deleteProperty(document, "startViewTransition");
     colorSchemeMeta().content = "light dark";
     window.history.pushState({}, "", "/");

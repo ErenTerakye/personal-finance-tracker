@@ -164,6 +164,18 @@ export function TransactionsView({
     void deleteMutation.mutate(pendingDelete.id);
   }
 
+  function clearSearchAndFilters() {
+    const next = {
+      month: selectedPeriod.month,
+      year: selectedPeriod.year,
+      transaction_type: "" as const,
+      category: "",
+    };
+    setSearch("");
+    writeTransactionFilters(next);
+    setFilters(next);
+  }
+
   async function previewTransactions(csvText: string) {
     importMutation.reset();
     previewMutation.reset();
@@ -198,7 +210,10 @@ export function TransactionsView({
       />
 
       {transactionResource.status === "error" ? (
-        <ErrorBanner message={transactionResource.error.message} />
+        <ErrorBanner
+          message={transactionResource.error.message}
+          onRetry={transactionResource.refetch}
+        />
       ) : null}
 
       <section
@@ -305,6 +320,12 @@ export function TransactionsView({
                 onEdit={openEdit}
                 onDelete={setPendingDelete}
                 onCreate={openCreate}
+                emptyVariant={
+                  search.trim() || activeFilterLabels.length
+                    ? "filtered"
+                    : "initial"
+                }
+                onClearEmpty={clearSearchAndFilters}
               />
             )}
           </Panel>

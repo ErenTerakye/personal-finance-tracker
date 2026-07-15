@@ -12,12 +12,35 @@ import {
   installAppTestLifecycle,
   mockCompactLayout,
   mockFetch,
+  response,
   dashboardPayload,
 } from "../../test/appTestSupport";
 
 installAppTestLifecycle();
 
 describe("dashboard workflow", () => {
+  it("retries a failed dashboard resource load", async () => {
+    let dashboardAttempts = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).startsWith("/api/dashboard")) {
+        dashboardAttempts += 1;
+        if (dashboardAttempts === 1) throw new TypeError("Load failed");
+        return response(dashboardPayload({}));
+      }
+      return response({});
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    const alert = await screen.findByRole("alert");
+    await userEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "June 2026" }),
+    ).toBeVisible();
+    expect(dashboardAttempts).toBe(2);
+  });
+
   it("exposes downloadable dashboard artifacts for the selected period", async () => {
     mockFetch({ "/api/dashboard": dashboardPayload({}) });
 

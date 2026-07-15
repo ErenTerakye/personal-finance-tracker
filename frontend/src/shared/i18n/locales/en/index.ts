@@ -19,6 +19,7 @@ export const en = {
     edit: "Edit",
     delete: "Delete",
     save: "Save",
+    retry: "Retry",
     addEntry: "Add entry",
     setBudget: "Set budget",
     importCsv: "Import CSV",
@@ -172,8 +173,12 @@ export const en = {
     },
     empty: {
       loading: "Loading transaction history.",
-      noTransactions: "No transactions found",
-      noTransactionsMsg: "Change the filters or add a new ledger entry.",
+      noTransactions: "No transactions yet",
+      noTransactionsMsg:
+        "Add your first entry for this period to start building your history.",
+      noMatches: "No matching transactions",
+      noMatchesMsg: "Try a different search or clear your filters.",
+      clearSearchAndFilters: "Clear search and filters",
     },
     dialog: {
       deleteTitle: "Delete transaction",

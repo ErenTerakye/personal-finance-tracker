@@ -12,6 +12,43 @@ import {
 installAppTestLifecycle();
 
 describe("rules workflow", () => {
+  it("retries all page resources after a load failure", async () => {
+    const attempts = { rules: 0, templates: 0, settings: 0 };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith("/api/category-rules")) {
+        attempts.rules += 1;
+        if (attempts.rules === 1) throw new TypeError("Load failed");
+        return response({ rules: [] });
+      }
+      if (url.startsWith("/api/recurring-templates")) {
+        attempts.templates += 1;
+        return response({ templates: [] });
+      }
+      if (url.startsWith("/api/settings")) {
+        attempts.settings += 1;
+        return response({ currency: "USD" });
+      }
+      return response(dashboardPayload({}));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Rules|Automations/i }),
+    );
+    const alert = await screen.findByRole("alert");
+    const beforeRetry = { ...attempts };
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => expect(alert).not.toBeInTheDocument());
+    expect(attempts).toEqual({
+      rules: beforeRetry.rules + 1,
+      templates: beforeRetry.templates + 1,
+      settings: beforeRetry.settings + 1,
+    });
+  });
+
   it("manages category rules and recurring templates", async () => {
     const fetchMock = vi.fn(
       async (input: RequestInfo | URL, init?: RequestInit) => {

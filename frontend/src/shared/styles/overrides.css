@@ -4,61 +4,12 @@
     view-transition-name: none;
   }
 
-  /* Theme changes temporarily take one coherent snapshot of the app. */
-  html.theme-view-transition {
-    view-transition-name: root;
-  }
-
-  html.theme-view-transition
-    :is(
-      main,
-      .compact-app-bar,
-      .compact-primary-navigation,
-      .app-rail,
-      .period-heading,
-      .period-narrative,
-      .period-content
-    ),
-  html.theme-view-transition
-    :is(.rail-navigation, .bottom-navigation)
-    a[aria-current="page"]::before {
-    view-transition-name: none;
-  }
-
-  html.theme-view-transition .theme-toggle-icon {
-    view-transition-name: theme-toggle-icon;
-  }
-
   /*
    * The transition snapshots sit above the live document. Keep them visual-only
    * so rapid navigation continues to hit the controls underneath.
    */
   ::view-transition {
     pointer-events: none;
-  }
-
-  html.theme-view-transition::view-transition-image-pair(root) {
-    isolation: auto;
-  }
-
-  html.theme-view-transition::view-transition-image-pair(theme-toggle-icon) {
-    isolation: isolate;
-  }
-
-  html.theme-view-transition::view-transition-group(root) {
-    animation: none;
-  }
-
-  html.theme-view-transition::view-transition-group(theme-toggle-icon) {
-    z-index: 3;
-    animation: none;
-  }
-
-  html.theme-view-transition::view-transition-old(root),
-  html.theme-view-transition::view-transition-new(root),
-  html.theme-view-transition::view-transition-old(theme-toggle-icon),
-  html.theme-view-transition::view-transition-new(theme-toggle-icon) {
-    mix-blend-mode: normal;
   }
 
   main {
@@ -125,24 +76,6 @@
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    html.theme-view-transition::view-transition-old(root) {
-      z-index: 1;
-      animation: none;
-    }
-
-    html.theme-view-transition::view-transition-new(root) {
-      z-index: 2;
-      animation: theme-reveal 420ms var(--ease-out) both;
-    }
-
-    html.theme-view-transition::view-transition-old(theme-toggle-icon) {
-      animation: theme-icon-out 220ms var(--ease-out) both;
-    }
-
-    html.theme-view-transition::view-transition-new(theme-toggle-icon) {
-      animation: theme-icon-in 220ms var(--ease-out) both;
-    }
-
     .rolling-number:is(.is-rolling-up, .is-rolling-down)
       .rolling-number-digits {
       animation: rolling-number-lifecycle var(--motion-value) linear both;
@@ -326,35 +259,6 @@
   @keyframes period-exit-forward {
     to {
       translate: -0.35rem 0;
-      opacity: 0;
-    }
-  }
-
-  @keyframes theme-reveal {
-    from {
-      clip-path: circle(0 at var(--theme-reveal-x) var(--theme-reveal-y));
-    }
-
-    to {
-      clip-path: circle(
-        var(--theme-reveal-radius) at var(--theme-reveal-x)
-          var(--theme-reveal-y)
-      );
-    }
-  }
-
-  @keyframes theme-icon-out {
-    to {
-      rotate: -90deg;
-      scale: 0.65;
-      opacity: 0;
-    }
-  }
-
-  @keyframes theme-icon-in {
-    from {
-      rotate: 90deg;
-      scale: 0.65;
       opacity: 0;
     }
   }

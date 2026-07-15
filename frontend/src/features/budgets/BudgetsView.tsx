@@ -228,7 +228,10 @@ export function BudgetsView({
       />
 
       {budgetResource.status === "error" ? (
-        <ErrorBanner message={budgetResource.error.message} />
+        <ErrorBanner
+          message={budgetResource.error.message}
+          onRetry={budgetResource.refetch}
+        />
       ) : null}
 
       <section className="budget-layout">

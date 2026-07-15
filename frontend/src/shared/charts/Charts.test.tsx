@@ -107,7 +107,7 @@ describe("CashflowTrend", () => {
     expect(within(tooltip).getByText("1 entries")).toBeInTheDocument();
   });
 
-  it("highlights only the hovered bar and clears it when the pointer leaves", () => {
+  it("keeps the nearest bar active while crossing the gaps between rows", () => {
     render(
       <CashflowTrend
         months={[
@@ -123,20 +123,34 @@ describe("CashflowTrend", () => {
     const expenseBar = screen.getByRole("button", {
       name: /Expenses for January 2026/,
     });
-    const expenseFill = expenseBar.querySelector("span") as HTMLElement;
+    const trendBars = expenseBar.closest(".trend-bars") as HTMLElement;
+    const incomeBar = screen.getByRole("button", {
+      name: /Income for January 2026/,
+    });
+    vi.spyOn(incomeBar, "getBoundingClientRect").mockReturnValue(
+      domRect({ top: 0, width: 6, height: 6 }),
+    );
+    vi.spyOn(expenseBar, "getBoundingClientRect").mockReturnValue(
+      domRect({ top: 10, width: 6, height: 6 }),
+    );
+    const netBar = screen.getByRole("button", {
+      name: /Net for January 2026/,
+    });
+    vi.spyOn(netBar, "getBoundingClientRect").mockReturnValue(
+      domRect({ top: 20, width: 6, height: 6 }),
+    );
 
-    fireEvent.pointerEnter(expenseBar, { pointerType: "mouse" });
-    expect(expenseBar).not.toHaveClass("active");
-
-    fireEvent.pointerEnter(expenseFill, { pointerType: "mouse" });
+    fireEvent.pointerMove(trendBars, { pointerType: "mouse", clientY: 9 });
 
     expect(expenseBar).toHaveClass("active");
-    expect(
-      screen.getByRole("button", { name: /Income for January 2026/ }),
-    ).not.toHaveClass("active");
+    expect(incomeBar).not.toHaveClass("active");
 
-    fireEvent.pointerLeave(expenseFill, { pointerType: "mouse" });
-    expect(expenseBar).not.toHaveClass("active");
+    fireEvent.pointerMove(trendBars, { pointerType: "mouse", clientY: 7 });
+    expect(incomeBar).toHaveClass("active");
+    expect(document.querySelector("output")).toBeInTheDocument();
+
+    fireEvent.pointerLeave(trendBars, { pointerType: "mouse" });
+    expect(incomeBar).not.toHaveClass("active");
   });
 
   it("pins details on touch and dismisses with Escape", () => {
@@ -280,6 +294,9 @@ describe("ExpenseMix", () => {
     expect(document.querySelector(".expense-mix-total")).toHaveTextContent(
       "Housing$750.0075.0%",
     );
+    expect(
+      screen.getByRole("button", { name: "Housing$750.0075.0%" }),
+    ).not.toHaveAttribute("data-active");
 
     fireEvent.pointerLeave(
       screen.getByRole("group", { name: /Expense mix Donut chart/ }),
@@ -287,6 +304,52 @@ describe("ExpenseMix", () => {
     await user.tab();
     expect(housing).toHaveFocus();
     expect(housing).toHaveAttribute("data-active", "true");
+  });
+
+  it("keeps the nearest category active across ranking separators", () => {
+    render(
+      <ExpenseMix
+        title="Expense mix"
+        items={[
+          { label: "Housing", value: "750.00" },
+          { label: "Food", value: "250.00" },
+        ]}
+      />,
+    );
+
+    const ranking = document.querySelector(
+      ".expense-mix-legend",
+    ) as HTMLElement;
+    const housing = screen.getByRole("button", {
+      name: "Housing$750.0075.0%",
+    });
+    const food = screen.getByRole("button", {
+      name: "Food$250.0025.0%",
+    });
+    vi.spyOn(housing, "getBoundingClientRect").mockReturnValue(
+      domRect({ top: 0, width: 100, height: 30 }),
+    );
+    vi.spyOn(food, "getBoundingClientRect").mockReturnValue(
+      domRect({ top: 40, width: 100, height: 30 }),
+    );
+
+    fireEvent.pointerMove(ranking, {
+      pointerType: "mouse",
+      clientY: 34,
+    });
+    expect(housing).toHaveAttribute("data-active", "true");
+
+    fireEvent.pointerMove(ranking, {
+      pointerType: "mouse",
+      clientY: 36,
+    });
+    expect(food).toHaveAttribute("data-active", "true");
+    expect(document.querySelector(".expense-mix-total")).toHaveTextContent(
+      "Food$250.0025.0%",
+    );
+
+    fireEvent.pointerLeave(ranking, { pointerType: "mouse" });
+    expect(food).not.toHaveAttribute("data-active");
   });
 
   it("groups smaller categories to keep the chart readable", () => {
@@ -349,5 +412,23 @@ function trendMonth(
     expenses_delta: "0.00",
     net_savings_delta: "0.00",
     ...values,
+  };
+}
+
+function domRect(values: Partial<DOMRect>): DOMRect {
+  const left = values.left ?? 0;
+  const top = values.top ?? 0;
+  const width = values.width ?? 0;
+  const height = values.height ?? 0;
+  return {
+    x: left,
+    y: top,
+    left,
+    top,
+    width,
+    height,
+    right: left + width,
+    bottom: top + height,
+    toJSON: () => ({}),
   };
 }

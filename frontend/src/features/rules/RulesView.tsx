@@ -297,8 +297,9 @@ export function RulesView({
         }
       />
 
-      {actionError || resourceError ? (
-        <ErrorBanner message={actionError || resourceError} />
+      {actionError ? <ErrorBanner message={actionError} /> : null}
+      {resourceError ? (
+        <ErrorBanner message={resourceError} onRetry={load} />
       ) : null}
 
       <div className="rules-tabs" role="tablist" aria-label={t("rules.title")}>

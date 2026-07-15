@@ -102,7 +102,7 @@ The browser application includes:
 - Route-aware navigation for `/`, `/transactions`, `/budgets`, and `/rules`, with an edge-docked, safe-area-aware bottom bar below `64rem` and an adaptive compact command bar that exposes language, theme, and transaction creation without a secondary drawer.
 - A rules workspace for category aliases and recurring monthly transaction templates.
 - Compact period controls for month-to-month review without always exposing month/year fields.
-- Task-focused transaction and budget dialogs with prominent amount entry, grouped details, responsive controls, and actionable zero-data states, plus edit/delete flows.
+- Task-focused transaction and budget dialogs with prominent amount entry, grouped details, responsive controls, context-aware zero-data states, recoverable page-load errors, and edit/delete flows.
 - Browser transaction CSV preview with duplicate detection and category alias display before import, plus CSV export for transactions and budgets.
 - Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
 - Read-only transaction tables that collapse into mobile-friendly record lists with compact row actions.
