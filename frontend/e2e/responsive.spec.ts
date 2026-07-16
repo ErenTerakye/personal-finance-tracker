@@ -785,7 +785,7 @@ test.describe("theme system preference", () => {
   });
 });
 
-test.describe("net worth header theme", () => {
+test.describe("net worth scoreboard theme", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.emulateMedia({ colorScheme: "light" });
@@ -794,12 +794,12 @@ test.describe("net worth header theme", () => {
     });
   });
 
-  test("uses the active theme tokens for header information", async ({
+  test("uses the active theme tokens for summary information", async ({
     page,
   }) => {
     await page.goto("/");
 
-    const header = page.locator(".wealth-hero");
+    const header = page.locator(".wealth-metric-card.assets");
     await expect(header).toBeVisible();
     const lightAppearance = await readNetWorthHeaderAppearance(header);
 
@@ -1066,7 +1066,7 @@ async function readNetWorthHeaderAppearance(header: Locator) {
     element.append(probe);
 
     const styles = getComputedStyle(element);
-    const secondary = element.querySelector(".wealth-as-of");
+    const secondary = element.querySelector("span");
     const secondaryStyles = secondary ? getComputedStyle(secondary) : null;
     const probeStyles = getComputedStyle(probe);
     const appearance = {

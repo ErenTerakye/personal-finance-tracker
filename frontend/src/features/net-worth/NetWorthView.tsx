@@ -1,15 +1,8 @@
 import {
   Archive,
-  ArrowDownRight,
-  ArrowUpRight,
   CalendarDays,
-  CheckCircle2,
-  ChevronRight,
-  CircleAlert,
   History,
-  Landmark,
   Pencil,
-  Plus,
   Save,
   Trash2,
   WalletCards,
@@ -23,7 +16,7 @@ import { EmptyState, ErrorBanner } from "../../shared/components/feedback";
 import { Field } from "../../shared/components/fields";
 import { Panel } from "../../shared/components/lists";
 import { formatDate, todayIso } from "../../shared/format/dates";
-import { money, signedMoney } from "../../shared/format/money";
+import { money } from "../../shared/format/money";
 import { useMutation } from "../../shared/hooks/useMutation";
 import { useResource } from "../../shared/hooks/useResource";
 import { useI18n } from "../../shared/i18n/I18nProvider";
@@ -33,10 +26,16 @@ import type {
   AccountRecord,
   BalanceSnapshot,
   NetWorthAccountAnalytics,
-  NetWorthHistory,
   NetWorthOverview,
 } from "../../types";
 import { useNetWorthData } from "./useNetWorthData";
+import {
+  isSupportedNetWorthRange,
+  PortfolioWorkspace,
+  WealthFirstUse,
+  WealthOverview,
+  WealthToolbar,
+} from "./WealthOverview";
 
 type DialogState =
   | { kind: "add" }
@@ -47,8 +46,6 @@ type DialogState =
   | { kind: "archive"; account: AccountRecord }
   | { kind: "history"; account: AccountRecord }
   | null;
-
-const supportedRanges = [6, 12, 24, 60, 120] as const;
 
 export function NetWorthView({
   setNotice,
@@ -144,7 +141,7 @@ export function NetWorthView({
         />
       ) : null}
       {accountCount === 0 ? (
-        <FirstUse onAdd={() => setDialog({ kind: "add" })} />
+        <WealthFirstUse onAdd={() => setDialog({ kind: "add" })} />
       ) : resolvedCount === 0 ? (
         <>
           <WealthToolbar
@@ -177,7 +174,7 @@ export function NetWorthView({
           />
         </>
       ) : (
-        <WealthHero
+        <WealthOverview
           data={data}
           asOf={asOf}
           months={months}
@@ -195,18 +192,8 @@ export function NetWorthView({
         />
       )}
 
-      {resolvedCount > 0 ? (
-        <>
-          <div className="wealth-insight-grid">
-            <MovementSection data={data} />
-            <CompositionSection data={data} />
-          </div>
-          <CoverageSection data={data} />
-        </>
-      ) : null}
-
       {accountCount > 0 ? (
-        <AccountsSection
+        <PortfolioWorkspace
           data={data}
           includeArchived={includeArchived}
           onIncludeArchived={setIncludeArchived}
@@ -285,580 +272,6 @@ export function NetWorthView({
         />
       ) : null}
     </div>
-  );
-}
-
-function FirstUse({ onAdd }: { onAdd: () => void }) {
-  const { t, tUpper } = useI18n();
-  return (
-    <section className="wealth-first-use" aria-labelledby="page-title">
-      <div>
-        <p className="eyebrow">{tUpper("netWorth.firstUse.eyebrow")}</p>
-        <h1 id="page-title">{t("netWorth.title")}</h1>
-        <h2>{t("netWorth.firstUse.title")}</h2>
-        <p>{t("netWorth.firstUse.message")}</p>
-        <ActionButton icon={Plus} onClick={onAdd}>
-          {t("netWorth.actions.addAccount")}
-        </ActionButton>
-      </div>
-      <Landmark aria-hidden="true" />
-    </section>
-  );
-}
-
-function WealthToolbar({
-  asOf,
-  months,
-  pending,
-  onDateChange,
-  onRangeChange,
-}: {
-  asOf: string;
-  months: number;
-  pending: boolean;
-  onDateChange: (value: string) => void;
-  onRangeChange: (value: number) => void;
-}) {
-  const { t } = useI18n();
-  return (
-    <section className="wealth-toolbar" aria-label={t("netWorth.controls")}>
-      <Field id="net-worth-as-of" label={t("netWorth.asOfLabel")}>
-        <input
-          id="net-worth-as-of"
-          name="as_of"
-          type="date"
-          max={todayIso()}
-          value={asOf || todayIso()}
-          onChange={(event) =>
-            onDateChange(
-              event.target.value === todayIso() ? "" : event.target.value,
-            )
-          }
-        />
-      </Field>
-      <fieldset>
-        <legend>{t("netWorth.rangeLabel")}</legend>
-        <div className="net-worth-range-options">
-          {supportedRanges.map((range) => (
-            <label key={range}>
-              <input
-                type="radio"
-                name="history-range"
-                value={range}
-                checked={months === range}
-                onChange={() => onRangeChange(range)}
-              />
-              <span>{t("netWorth.months", { count: range })}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      <span className="net-worth-pending" role="status">
-        {pending ? t("netWorth.refreshing") : ""}
-      </span>
-    </section>
-  );
-}
-
-function WealthHero({
-  data,
-  asOf,
-  months,
-  pending,
-  onDateChange,
-  onRangeChange,
-  onCheckIn,
-  onAdd,
-}: {
-  data: NetWorthOverview;
-  asOf: string;
-  months: number;
-  pending: boolean;
-  onDateChange: (value: string) => void;
-  onRangeChange: (value: number) => void;
-  onCheckIn: () => void;
-  onAdd: () => void;
-}) {
-  const { t, tUpper } = useI18n();
-  const total = Number(data.summary.total_net_worth);
-  const change =
-    data.comparison.change_amount === null
-      ? null
-      : Number(data.comparison.change_amount);
-  return (
-    <section
-      className={`wealth-hero ${total < 0 ? "is-negative" : total > 0 ? "is-positive" : "is-zero"}`}
-      aria-labelledby="page-title"
-    >
-      <WealthToolbar
-        asOf={asOf}
-        months={months}
-        pending={pending}
-        onDateChange={onDateChange}
-        onRangeChange={onRangeChange}
-      />
-      <div className="wealth-hero-grid">
-        <header className="wealth-position">
-          <p className="eyebrow">{tUpper("netWorth.eyebrow")}</p>
-          <h1 id="page-title">{t("netWorth.title")}</h1>
-          <p className="wealth-as-of">
-            {t("netWorth.hero.asOf", {
-              date: formatDate(data.summary.as_of),
-            })}
-          </p>
-          <strong className="wealth-total">
-            {signedMoney(data.summary.total_net_worth)}
-          </strong>
-          {data.comparison.available && change !== null ? (
-            <p
-              className={`wealth-change ${change < 0 ? "negative" : "positive"}`}
-            >
-              {change < 0 ? (
-                <ArrowDownRight aria-hidden="true" />
-              ) : (
-                <ArrowUpRight aria-hidden="true" />
-              )}
-              <span>
-                {signedMoney(change)}
-                {data.comparison.change_percent !== null
-                  ? ` · ${Number(data.comparison.change_percent).toFixed(1)}%`
-                  : ""}
-              </span>
-              <small>
-                {t("netWorth.hero.since", {
-                  date: formatDate(data.comparison.start_date),
-                })}
-              </small>
-            </p>
-          ) : (
-            <p className="wealth-change is-unavailable">
-              <small>{t("netWorth.hero.comparisonUnavailable")}</small>
-            </p>
-          )}
-          <dl className="wealth-equation">
-            <div>
-              <dt>{t("netWorth.assets")}</dt>
-              <dd>{money(data.summary.total_assets)}</dd>
-            </div>
-            <span aria-hidden="true">−</span>
-            <div>
-              <dt>{t("netWorth.liabilities")}</dt>
-              <dd>{money(data.summary.total_liabilities)}</dd>
-            </div>
-            <span aria-hidden="true">=</span>
-            <div>
-              <dt>{t("netWorth.total")}</dt>
-              <dd>{signedMoney(data.summary.total_net_worth)}</dd>
-            </div>
-          </dl>
-          <div className="wealth-actions">
-            <ActionButton icon={WalletCards} onClick={onCheckIn}>
-              {t("netWorth.actions.updateBalances")}
-            </ActionButton>
-            <ActionButton icon={Plus} variant="secondary" onClick={onAdd}>
-              {t("netWorth.actions.addAccount")}
-            </ActionButton>
-          </div>
-        </header>
-        <NetWorthHistoryChart history={data.history} />
-      </div>
-    </section>
-  );
-}
-
-function NetWorthHistoryChart({ history }: { history: NetWorthHistory }) {
-  const { t } = useI18n();
-  const [selected, setSelected] = useState(history.points.length - 1);
-  useEffect(() => setSelected(history.points.length - 1), [history]);
-  const values = history.points.map((point) => Number(point.total_net_worth));
-  const minValue = Math.min(0, ...values);
-  const maxValue = Math.max(0, ...values);
-  const span = maxValue - minValue || Math.max(Math.abs(maxValue), 1);
-  const width = 640;
-  const height = 240;
-  const padding = 28;
-  const x = (index: number) =>
-    history.points.length === 1
-      ? width / 2
-      : padding + (index / (history.points.length - 1)) * (width - padding * 2);
-  const y = (value: number) =>
-    padding + ((maxValue - value) / span) * (height - padding * 2);
-  const path = history.points
-    .map(
-      (point, index) =>
-        `${index === 0 ? "M" : "L"} ${x(index)} ${y(Number(point.total_net_worth))}`,
-    )
-    .join(" ");
-  const selectedPoint = history.points[selected];
-  return (
-    <figure className="wealth-history">
-      <div className="wealth-chart-heading">
-        <h2>{t("netWorth.history.title")}</h2>
-        <figcaption>
-          {t("netWorth.history.selected", {
-            date: formatDate(selectedPoint.as_of),
-            amount: money(selectedPoint.total_net_worth),
-          })}
-        </figcaption>
-      </div>
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-labelledby="net-worth-chart-title net-worth-chart-desc"
-      >
-        <title id="net-worth-chart-title">
-          {t("netWorth.history.chartTitle")}
-        </title>
-        <desc id="net-worth-chart-desc">{t("netWorth.history.chartDesc")}</desc>
-        {minValue < 0 && maxValue > 0 ? (
-          <line
-            className="net-worth-zero-line"
-            x1={padding}
-            x2={width - padding}
-            y1={y(0)}
-            y2={y(0)}
-          />
-        ) : null}
-        <path className="net-worth-line" d={path} />
-        {history.points.map((point, index) => (
-          <circle
-            key={point.as_of}
-            className={selected === index ? "is-selected" : ""}
-            cx={x(index)}
-            cy={y(Number(point.total_net_worth))}
-            r={selected === index ? 7 : 5}
-            tabIndex={0}
-            role="button"
-            aria-label={t("netWorth.history.pointLabel", {
-              date: formatDate(point.as_of),
-              amount: money(point.total_net_worth),
-            })}
-            onFocus={() => setSelected(index)}
-            onPointerDown={() => setSelected(index)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                setSelected(index);
-              }
-            }}
-          />
-        ))}
-      </svg>
-      <details>
-        <summary>{t("netWorth.history.tableToggle")}</summary>
-        <div className="table-scroll">
-          <table>
-            <caption>{t("netWorth.history.tableCaption")}</caption>
-            <thead>
-              <tr>
-                <th scope="col">{t("common.date")}</th>
-                <th scope="col">{t("netWorth.assets")}</th>
-                <th scope="col">{t("netWorth.liabilities")}</th>
-                <th scope="col">{t("netWorth.total")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.points.map((point) => (
-                <tr key={point.as_of}>
-                  <th scope="row">{formatDate(point.as_of)}</th>
-                  <td>{money(point.total_assets)}</td>
-                  <td>{money(point.total_liabilities)}</td>
-                  <td>{signedMoney(point.total_net_worth)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
-    </figure>
-  );
-}
-
-function MovementSection({ data }: { data: NetWorthOverview }) {
-  const { t } = useI18n();
-  const known = data.accounts.filter(
-    (account) => account.contribution_change !== null,
-  );
-  return (
-    <section className="wealth-panel" aria-labelledby="wealth-movement-title">
-      <header className="wealth-section-heading">
-        <div>
-          <p className="eyebrow">{t("netWorth.movement.eyebrow")}</p>
-          <h2 id="wealth-movement-title">{t("netWorth.movement.title")}</h2>
-        </div>
-        <p>
-          {t("netWorth.movement.detail", {
-            date: formatDate(data.comparison.start_date),
-          })}
-        </p>
-      </header>
-      {known.length ? (
-        <ol className="movement-list">
-          {known.map((account) => {
-            const change = Number(account.contribution_change);
-            return (
-              <li key={account.account_id}>
-                <div>
-                  <strong>{account.name}</strong>
-                  <span>{t(`netWorth.account.${account.type}`)}</span>
-                </div>
-                <span className={change < 0 ? "negative" : "positive"}>
-                  {change < 0 ? (
-                    <ArrowDownRight aria-hidden="true" />
-                  ) : (
-                    <ArrowUpRight aria-hidden="true" />
-                  )}
-                  {signedMoney(account.contribution_change ?? "0")}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-      ) : (
-        <p className="wealth-muted">{t("netWorth.movement.unavailable")}</p>
-      )}
-    </section>
-  );
-}
-
-function CompositionSection({ data }: { data: NetWorthOverview }) {
-  const { t } = useI18n();
-  return (
-    <section
-      className="wealth-panel"
-      aria-labelledby="wealth-composition-title"
-    >
-      <header className="wealth-section-heading">
-        <div>
-          <p className="eyebrow">{t("netWorth.composition.eyebrow")}</p>
-          <h2 id="wealth-composition-title">
-            {t("netWorth.composition.title")}
-          </h2>
-        </div>
-        <p>{t("netWorth.composition.detail")}</p>
-      </header>
-      <div className="composition-groups">
-        {(["asset", "liability"] as const).map((type) => {
-          const accounts = data.accounts.filter(
-            (account) =>
-              account.type === type && account.current_balance !== null,
-          );
-          return (
-            <section key={type}>
-              <h3>
-                {t(
-                  type === "asset" ? "netWorth.assets" : "netWorth.liabilities",
-                )}
-              </h3>
-              {accounts.length ? (
-                <ul className="composition-list">
-                  {accounts.map((account) => (
-                    <li key={account.account_id}>
-                      <div>
-                        <strong>{account.name}</strong>
-                        <span>{money(account.current_balance ?? "0")}</span>
-                      </div>
-                      <div
-                        className="composition-track"
-                        aria-label={t("netWorth.composition.share", {
-                          name: account.name,
-                          percent: account.composition_percent ?? "0",
-                        })}
-                      >
-                        <span
-                          style={{
-                            inlineSize: `${Math.max(
-                              0,
-                              Math.min(
-                                100,
-                                Number(account.composition_percent ?? 0),
-                              ),
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="wealth-muted">{t("netWorth.account.none")}</p>
-              )}
-            </section>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function CoverageSection({ data }: { data: NetWorthOverview }) {
-  const { t } = useI18n();
-  const unresolved = data.accounts.filter(
-    (account) => account.current_balance === null,
-  );
-  const dated = data.accounts
-    .filter((account) => account.current_balance_date !== null)
-    .sort((a, b) =>
-      (a.current_balance_date ?? "").localeCompare(
-        b.current_balance_date ?? "",
-      ),
-    );
-  return (
-    <section
-      className="wealth-panel coverage-panel"
-      aria-labelledby="coverage-title"
-    >
-      <header className="wealth-section-heading">
-        <div>
-          <p className="eyebrow">{t("netWorth.coveragePanel.eyebrow")}</p>
-          <h2 id="coverage-title">{t("netWorth.coveragePanel.title")}</h2>
-        </div>
-        <p>
-          {unresolved.length
-            ? t("netWorth.coverage", { count: unresolved.length })
-            : t("netWorth.coverageComplete")}
-        </p>
-      </header>
-      <div className="coverage-summary">
-        <div>
-          {unresolved.length ? (
-            <CircleAlert aria-hidden="true" />
-          ) : (
-            <CheckCircle2 aria-hidden="true" />
-          )}
-          <span>{t("netWorth.coveragePanel.resolved")}</span>
-          <strong>
-            {data.coverage.resolved_account_count}/
-            {data.summary.active_account_count}
-          </strong>
-        </div>
-        <div>
-          <CalendarDays aria-hidden="true" />
-          <span>{t("netWorth.coveragePanel.oldest")}</span>
-          <strong>
-            {data.coverage.oldest_balance_date
-              ? formatDate(data.coverage.oldest_balance_date)
-              : t("netWorth.account.unresolved")}
-          </strong>
-        </div>
-      </div>
-      <ul className="balance-date-list">
-        {unresolved.map((account) => (
-          <li key={account.account_id} className="is-unresolved">
-            <strong>{account.name}</strong>
-            <span>{t("netWorth.account.noEarlierBalance")}</span>
-          </li>
-        ))}
-        {dated.map((account) => (
-          <li key={account.account_id}>
-            <strong>{account.name}</strong>
-            <span>
-              {t("netWorth.account.balanceDate", {
-                date: formatDate(account.current_balance_date ?? ""),
-              })}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function AccountsSection({
-  data,
-  includeArchived,
-  onIncludeArchived,
-  onUpdate,
-  onManage,
-}: {
-  data: NetWorthOverview;
-  includeArchived: boolean;
-  onIncludeArchived: (value: boolean) => void;
-  onUpdate: (account: NetWorthAccountAnalytics) => void;
-  onManage: (account: NetWorthAccountAnalytics) => void;
-}) {
-  const { t } = useI18n();
-  return (
-    <section
-      className="wealth-panel accounts-workspace"
-      aria-labelledby="accounts-title"
-    >
-      <header className="wealth-section-heading">
-        <div>
-          <p className="eyebrow">{t("netWorth.accounts.eyebrow")}</p>
-          <h2 id="accounts-title">{t("netWorth.accounts.title")}</h2>
-        </div>
-        {data.summary.archived_account_count > 0 ? (
-          <label className="archived-toggle">
-            <input
-              type="checkbox"
-              checked={includeArchived}
-              onChange={(event) => onIncludeArchived(event.target.checked)}
-            />
-            <span>{t("netWorth.actions.showArchived")}</span>
-          </label>
-        ) : null}
-      </header>
-      <div className="account-groups">
-        {(["asset", "liability"] as const).map((type) => (
-          <section key={type}>
-            <h3>
-              {t(type === "asset" ? "netWorth.assets" : "netWorth.liabilities")}
-            </h3>
-            <ul className="wealth-account-list">
-              {data.accounts
-                .filter((account) => account.type === type)
-                .map((account) => (
-                  <li
-                    key={account.account_id}
-                    className={account.archived_on ? "is-archived" : ""}
-                  >
-                    <div>
-                      <strong>{account.name}</strong>
-                      <span>
-                        {account.archived_on
-                          ? t("netWorth.account.archived", {
-                              date: formatDate(account.archived_on),
-                            })
-                          : account.current_balance_date
-                            ? t("netWorth.account.balanceDate", {
-                                date: formatDate(account.current_balance_date),
-                              })
-                            : t("netWorth.account.noEarlierBalance")}
-                      </span>
-                    </div>
-                    <strong>
-                      {account.current_balance === null
-                        ? t("netWorth.account.unresolved")
-                        : money(account.current_balance)}
-                    </strong>
-                    <div className="account-actions">
-                      {!account.archived_on ? (
-                        <button
-                          className="button secondary"
-                          type="button"
-                          onClick={() => onUpdate(account)}
-                        >
-                          <WalletCards aria-hidden="true" size={17} />
-                          {t("netWorth.actions.updateBalance")}
-                        </button>
-                      ) : null}
-                      <button
-                        className="button ghost"
-                        type="button"
-                        onClick={() => onManage(account)}
-                      >
-                        {t("netWorth.actions.manage")}
-                        <ChevronRight aria-hidden="true" size={17} />
-                      </button>
-                    </div>
-                  </li>
-                ))}
-            </ul>
-          </section>
-        ))}
-      </div>
-    </section>
   );
 }
 
@@ -1584,10 +997,6 @@ function readUrlState(): { asOf: string; months: number } {
     rawDate <= todayIso();
   return {
     asOf: validDate && rawDate !== todayIso() ? rawDate : "",
-    months: supportedRanges.includes(
-      rawMonths as (typeof supportedRanges)[number],
-    )
-      ? rawMonths
-      : 12,
+    months: isSupportedNetWorthRange(rawMonths) ? rawMonths : 12,
   };
 }

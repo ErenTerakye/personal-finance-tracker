@@ -199,9 +199,10 @@ describe("net worth workflow", () => {
     });
 
     render(<App />);
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Update balances" }),
-    );
+    const updateButtons = await screen.findAllByRole("button", {
+      name: "Update balances",
+    });
+    await userEvent.click(updateButtons[1]);
     const dialog = screen.getByRole("dialog", { name: "Update balances" });
     const amountInputs = within(dialog).getAllByRole("spinbutton");
     await userEvent.type(amountInputs[0], "1150");

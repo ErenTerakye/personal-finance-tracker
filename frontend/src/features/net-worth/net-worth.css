@@ -2,107 +2,57 @@
   .net-worth-view {
     container: wealth-workspace / inline-size;
     display: grid;
-    gap: var(--section-gap);
+    gap: clamp(1rem, 2.2cqi, 1.75rem);
   }
 
   .net-worth-view.is-refreshing > :not(.error-banner) {
-    opacity: 0.9;
+    opacity: 0.82;
   }
 
-  .wealth-first-use {
-    --wealth-header-accent: color-mix(
-      in oklab,
-      var(--action) 12%,
-      var(--surface)
-    );
-
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: clamp(2rem, 8cqi, 7rem);
-    min-block-size: min(44rem, 70dvh);
-    padding: clamp(1.5rem, 6cqi, 5rem);
-    color: var(--ink);
-    background:
-      radial-gradient(
-        circle at 80% 20%,
-        var(--wealth-header-accent),
-        transparent 34%
-      ),
-      var(--surface);
-    border: 1px solid var(--rule);
-    border-radius: calc(var(--radius) * 1.8);
-    overflow: clip;
+  .wealth-page-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding-block: 0.35rem;
   }
 
-  .wealth-first-use > div {
+  .wealth-page-header > div:first-child {
     display: grid;
-    justify-items: start;
-    gap: 1rem;
+    gap: 0.35rem;
     max-inline-size: 48rem;
   }
 
-  .wealth-first-use h1 {
-    color: inherit;
-    font-size: clamp(2.8rem, 9cqi, 7rem);
-    letter-spacing: -0.065em;
-    line-height: 0.92;
-  }
-
-  .wealth-first-use p:not(.eyebrow) {
-    max-inline-size: 58ch;
-    color: var(--muted);
-    font-size: clamp(1rem, 2.5cqi, 1.3rem);
-  }
-
-  .wealth-first-use > svg {
-    inline-size: clamp(8rem, 20cqi, 18rem);
-    block-size: auto;
-    color: var(--action);
-    opacity: 0.28;
-    stroke-width: 1;
-  }
-
-  .wealth-hero {
-    --wealth-header-accent: color-mix(
-      in oklab,
-      var(--action) 12%,
-      var(--surface)
-    );
-    --wealth-header-subtle: color-mix(
-      in oklab,
-      var(--action) 4%,
-      var(--surface)
-    );
-
-    container: wealth-hero / inline-size;
+  .wealth-page-header h1 {
     color: var(--ink);
-    background:
-      radial-gradient(
-        circle at 88% 12%,
-        var(--wealth-header-accent),
-        transparent 30%
-      ),
-      var(--surface);
-    border: 1px solid var(--rule);
-    border-radius: calc(var(--radius) * 1.8);
-    box-shadow: var(--shadow-soft);
-    overflow: clip;
+    font-size: clamp(2.4rem, 7cqi, 5.4rem);
+    letter-spacing: -0.055em;
+    line-height: 0.95;
+    text-wrap: balance;
+  }
+
+  .wealth-page-header p:not(.eyebrow) {
+    color: var(--muted);
+    font-size: clamp(1rem, 1.8cqi, 1.15rem);
+    text-wrap: pretty;
+  }
+
+  .wealth-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.55rem;
   }
 
   .wealth-toolbar {
     display: grid;
-    grid-template-columns: minmax(11rem, 15rem) minmax(0, 1fr) auto;
+    grid-template-columns: minmax(12rem, 17rem) minmax(0, 1fr) auto;
     align-items: end;
-    gap: 0.75rem 1rem;
-    padding: 1rem clamp(1rem, 3cqi, 2rem);
-    color: var(--muted);
-    background: var(--wealth-header-subtle, var(--surface));
-    border-block-end: 1px solid var(--rule);
-  }
-
-  .wealth-hero .wealth-toolbar :is(label, legend, .field-hint) {
-    color: inherit;
+    gap: 0.75rem 1.25rem;
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: calc(var(--radius) * 1.2);
   }
 
   .wealth-toolbar .field,
@@ -110,10 +60,19 @@
     margin: 0;
   }
 
+  .wealth-toolbar fieldset {
+    min-inline-size: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .wealth-toolbar .field-hint {
+    max-inline-size: 35ch;
+  }
+
   .wealth-toolbar input[type="date"] {
     min-block-size: var(--tap-target);
-    color: var(--ink);
-    background: var(--surface);
+    font-size: 1rem;
   }
 
   .net-worth-range-options,
@@ -142,25 +101,26 @@
   .account-type-options span {
     display: grid;
     place-items: center;
-    min-block-size: var(--tap-target);
+    min-block-size: 2.65rem;
     padding-inline: 0.8rem;
-    color: inherit;
-    border: 1px solid currentColor;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--rule);
     border-radius: var(--radius-pill);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition:
+      color var(--motion-micro) ease-out,
+      background-color var(--motion-control) var(--ease-out),
+      border-color var(--motion-control) var(--ease-out);
   }
 
-  .net-worth-range-options input:checked + span {
-    color: var(--surface);
-    background: var(--action);
-    border-color: var(--action);
-  }
-
+  .net-worth-range-options input:checked + span,
   .account-type-options input:checked + span {
-    color: var(--action);
-    background: color-mix(in srgb, var(--action) 10%, var(--surface));
-    border-color: var(--action);
+    color: var(--surface);
+    background: var(--ink);
+    border-color: var(--ink);
   }
 
   .net-worth-range-options input:focus-visible + span,
@@ -172,270 +132,382 @@
   .net-worth-pending {
     min-inline-size: 6rem;
     min-block-size: 1.25rem;
+    color: var(--muted);
     font-size: var(--font-size-sm);
   }
 
-  .wealth-hero-grid {
+  .wealth-scoreboard {
+    container: wealth-scoreboard / inline-size;
     display: grid;
-    grid-template-columns: minmax(18rem, 0.8fr) minmax(26rem, 1.2fr);
-    gap: clamp(1.5rem, 4cqi, 4rem);
-    align-items: stretch;
-    padding: clamp(1.5rem, 5cqi, 4rem);
+    grid-template-columns: minmax(20rem, 1.45fr) repeat(3, minmax(10rem, 1fr));
+    gap: 0.75rem;
   }
 
-  .wealth-position {
-    display: grid;
-    align-content: start;
-    justify-items: start;
+  .wealth-scoreboard > article {
     min-inline-size: 0;
-  }
-
-  .wealth-position h1 {
-    color: inherit;
-    font-size: clamp(1.8rem, 5cqi, 3.5rem);
-  }
-
-  .wealth-as-of {
-    margin-block-start: 0.35rem;
-    color: var(--muted);
-  }
-
-  .wealth-total {
-    max-inline-size: 100%;
-    margin-block: clamp(1rem, 4cqi, 2.5rem) 0.75rem;
-    color: inherit;
-    font-family: var(--font-mono);
-    font-size: clamp(2.8rem, 9cqi, 6.5rem);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.07em;
-    line-height: 0.92;
-    overflow-wrap: anywhere;
-  }
-
-  .wealth-change {
-    display: grid;
-    grid-template-columns: auto auto;
-    align-items: center;
-    gap: 0.15rem 0.45rem;
-    margin: 0;
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .wealth-change svg {
-    grid-row: span 2;
-  }
-
-  .wealth-change small {
-    color: var(--muted);
-    font-family: var(--font-sans);
-  }
-
-  .wealth-change.positive {
-    color: var(--cash);
-  }
-
-  .wealth-change.negative {
-    color: var(--expenses);
-  }
-
-  .wealth-change.is-unavailable {
-    grid-template-columns: minmax(0, 1fr);
-    max-inline-size: 30rem;
-  }
-
-  .wealth-equation {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.65rem;
-    margin: 1.5rem 0 0;
-    padding-block-start: 1.25rem;
-    border-block-start: 1px solid var(--rule);
-  }
-
-  .wealth-equation div {
-    display: grid;
-    gap: 0.15rem;
-  }
-
-  .wealth-equation dt {
-    color: var(--muted);
-    font-size: var(--font-size-xs);
-    text-transform: uppercase;
-  }
-
-  .wealth-equation dd {
-    margin: 0;
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .wealth-equation > span {
-    color: var(--muted);
-  }
-
-  .wealth-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    margin-block-start: 1.5rem;
-  }
-
-  .wealth-actions .button.secondary {
-    color: var(--ink);
+    padding: clamp(1rem, 2.4cqi, 1.5rem);
     background: var(--surface);
-    border-color: var(--rule);
-  }
-
-  .wealth-history {
-    position: relative;
-    display: grid;
-    grid-template-rows: auto minmax(18rem, 1fr) auto;
-    min-inline-size: 0;
-    margin: 0;
-    padding: clamp(1rem, 3cqi, 1.6rem);
-    color: var(--ink);
-    background: var(--wealth-header-subtle);
     border: 1px solid var(--rule);
     border-radius: calc(var(--radius) * 1.25);
   }
 
-  .wealth-chart-heading {
+  .wealth-primary-metric {
+    position: relative;
+    display: grid;
+    align-content: space-between;
+    min-block-size: 15rem;
+    overflow: clip;
+    color: var(--surface);
+    background:
+      radial-gradient(
+        circle at 88% 18%,
+        color-mix(in srgb, white 22%, transparent),
+        transparent 34%
+      ),
+      var(--ink) !important;
+    border-color: var(--ink) !important;
+  }
+
+  .wealth-primary-metric::after {
+    position: absolute;
+    inset: auto -8% -35% 28%;
+    block-size: 75%;
+    border: 1px solid color-mix(in srgb, var(--surface) 28%, transparent);
+    border-radius: 50%;
+    content: "";
+    pointer-events: none;
+    rotate: -8deg;
+  }
+
+  .metric-label {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
     justify-content: space-between;
     gap: 0.5rem 1rem;
+    color: color-mix(in srgb, var(--surface) 72%, transparent);
+    font-size: var(--font-size-sm);
   }
 
-  .wealth-chart-heading h2 {
-    font-size: clamp(1.2rem, 3cqi, 1.7rem);
+  .wealth-primary-metric > strong {
+    position: relative;
+    z-index: 1;
+    margin-block: 1.25rem;
+    font-family: var(--font-mono);
+    font-size: clamp(2.4rem, 5.2cqi, 4.8rem);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.065em;
+    line-height: 0.95;
+    overflow-wrap: anywhere;
   }
 
-  .wealth-chart-heading figcaption {
+  .wealth-primary-metric > p {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: auto minmax(0, auto);
+    justify-content: start;
+    align-items: center;
+    gap: 0.1rem 0.35rem;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .wealth-primary-metric > p svg {
+    grid-row: span 2;
+  }
+
+  .wealth-primary-metric > p small {
+    color: color-mix(in srgb, var(--surface) 70%, transparent);
+    font-family: var(--font-sans);
+  }
+
+  .wealth-primary-metric > p.positive {
+    color: light-dark(#8df0d0, #50d0ad);
+  }
+
+  .wealth-primary-metric > p.negative {
+    color: light-dark(#ffaaa4, #ff8f86);
+  }
+
+  .wealth-primary-metric .metric-comparison-unavailable {
+    display: block;
+    max-inline-size: 48ch;
+    color: color-mix(in srgb, var(--surface) 72%, transparent);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-sm);
+    text-wrap: pretty;
+  }
+
+  .wealth-metric-card {
+    display: grid;
+    align-content: start;
+    gap: 0.6rem;
+    min-block-size: 10rem;
+    color: var(--ink);
+  }
+
+  .wealth-metric-card > span {
+    color: var(--muted);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .wealth-metric-card > strong {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: clamp(1.35rem, 2.6cqi, 2rem);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.035em;
+    overflow-wrap: anywhere;
+  }
+
+  .wealth-metric-card > small {
+    margin-block-start: auto;
+    color: var(--muted);
+    line-height: var(--line-compact);
+  }
+
+  .wealth-metric-card.assets {
+    border-block-start: 3px solid var(--cash);
+  }
+
+  .wealth-metric-card.liabilities {
+    border-block-start: 3px solid var(--expenses);
+  }
+
+  .wealth-metric-card.coverage {
+    border-block-start: 3px solid var(--action);
+  }
+
+  .wealth-metric-card progress {
+    inline-size: 100%;
+    block-size: 0.5rem;
+    overflow: clip;
+    accent-color: var(--action);
+    border: 0;
+    border-radius: var(--radius-pill);
+  }
+
+  .wealth-analysis-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(1rem, 2cqi, 1.5rem);
+  }
+
+  .wealth-trend-card,
+  .wealth-insight-card,
+  .portfolio-workspace {
+    min-inline-size: 0;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: calc(var(--radius) * 1.25);
+  }
+
+  .wealth-trend-card {
+    display: grid;
+    padding: clamp(1rem, 2.5cqi, 1.65rem);
+  }
+
+  .wealth-card-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+  }
+
+  .wealth-card-heading > div:first-child {
+    min-inline-size: 0;
+  }
+
+  .wealth-card-heading h2 {
+    color: var(--ink);
+    font-size: clamp(1.35rem, 3cqi, 2rem);
+    text-wrap: balance;
+  }
+
+  .trend-selection {
+    display: grid;
+    justify-items: end;
+    gap: 0.1rem;
+    min-inline-size: 10rem;
+  }
+
+  .trend-selection span {
     color: var(--muted);
     font-size: var(--font-size-sm);
   }
 
-  .wealth-history svg {
+  .trend-selection strong {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xl);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .wealth-chart {
+    min-inline-size: 0;
+    margin: 0.75rem 0 0;
+    color: var(--action);
+  }
+
+  .wealth-chart svg {
     display: block;
     inline-size: 100%;
-    block-size: 100%;
-    min-block-size: 18rem;
+    min-block-size: 24rem;
     overflow: visible;
+  }
+
+  .chart-grid-line line {
+    stroke: var(--rule);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .chart-grid-line text,
+  .chart-date-label {
+    fill: var(--muted);
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+  }
+
+  .chart-grid-line text {
+    text-anchor: end;
+  }
+
+  .net-worth-area {
+    fill: url("#net-worth-area");
+    stroke: none;
   }
 
   .net-worth-line {
     fill: none;
-    stroke: var(--action);
-    stroke-width: 4;
+    stroke: currentColor;
     stroke-linecap: round;
     stroke-linejoin: round;
+    stroke-width: 3;
     vector-effect: non-scaling-stroke;
   }
 
   .net-worth-zero-line {
     stroke: var(--rule-strong);
-    stroke-dasharray: 7 7;
+    stroke-dasharray: 6 6;
+    stroke-width: 1;
     vector-effect: non-scaling-stroke;
   }
 
-  .wealth-history circle {
+  .chart-selection-line {
+    stroke: color-mix(in srgb, var(--action) 42%, transparent);
+    stroke-dasharray: 3 4;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .wealth-chart circle {
     fill: var(--surface);
-    stroke: var(--action);
-    stroke-width: 4;
+    stroke: currentColor;
+    stroke-width: 3;
     cursor: pointer;
     vector-effect: non-scaling-stroke;
   }
 
-  .wealth-history circle.is-selected,
-  .wealth-history circle:focus-visible {
-    fill: var(--action);
-    outline: none;
-    stroke: var(--ink);
-    stroke-width: 5;
+  .wealth-chart circle.is-selected,
+  .wealth-chart circle:focus-visible {
+    fill: currentColor;
+    stroke: var(--surface);
+    stroke-width: 4;
+    filter: drop-shadow(
+      0 0 0.2rem color-mix(in srgb, var(--action) 45%, transparent)
+    );
   }
 
-  .wealth-history details {
-    margin-block-start: 0.5rem;
+  .wealth-chart-table {
+    margin-block-start: 0.35rem;
+    border-block-start: 1px solid var(--rule);
   }
 
-  .wealth-history summary {
+  .wealth-chart-table summary {
     min-block-size: var(--tap-target);
-    padding-block: 0.7rem;
+    padding-block: 0.8rem;
+    color: var(--muted);
     cursor: pointer;
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
   }
 
-  .wealth-history table {
+  .wealth-chart-table table {
     inline-size: 100%;
     border-collapse: collapse;
   }
 
-  .wealth-history :is(th, td) {
+  .wealth-chart-table :is(th, td) {
     padding: 0.65rem;
     border-block-end: 1px solid var(--rule);
     text-align: end;
     white-space: nowrap;
   }
 
-  .wealth-history th:first-child {
+  .wealth-chart-table th:first-child {
     text-align: start;
   }
 
-  .wealth-insight-grid {
+  .wealth-insight-rail {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--section-gap);
+    gap: clamp(1rem, 2cqi, 1.5rem);
   }
 
-  .wealth-panel {
-    container: wealth-panel / inline-size;
-    min-inline-size: 0;
-    padding: clamp(1rem, 3cqi, 1.75rem);
-    background: var(--surface);
-    border: 1px solid var(--rule);
-    border-radius: calc(var(--radius) * 1.25);
+  .wealth-insight-card {
+    padding: clamp(1rem, 2.4cqi, 1.4rem);
   }
 
-  .wealth-section-heading {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: end;
-    justify-content: space-between;
-    gap: 0.75rem 1rem;
-    margin-block-end: 1.25rem;
-  }
-
-  .wealth-section-heading h2 {
-    font-size: clamp(1.4rem, 5cqi, 2.2rem);
-  }
-
-  .wealth-section-heading > p {
-    max-inline-size: 42ch;
+  .insight-detail,
+  .wealth-insight-card > p {
+    margin-block-start: 0.55rem;
     color: var(--muted);
+    font-size: var(--font-size-sm);
+    text-wrap: pretty;
   }
 
   .movement-list,
-  .composition-list,
-  .balance-date-list,
-  .wealth-account-list,
-  .check-in-list {
-    display: grid;
-    gap: 0.65rem;
+  .unresolved-account-list,
+  .portfolio-list,
+  .check-in-list,
+  .snapshot-list {
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
+  .movement-list {
+    display: grid;
+    margin-block-start: 1rem;
+  }
+
   .movement-list li {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 1.75rem minmax(0, 1fr) auto;
     align-items: center;
-    gap: 1rem;
-    padding-block: 0.8rem;
+    gap: 0.65rem;
+    padding-block: 0.75rem;
     border-block-end: 1px solid var(--rule);
+  }
+
+  .movement-list li:last-child {
+    border-block-end: 0;
+  }
+
+  .movement-rank {
+    display: grid;
+    place-items: center;
+    inline-size: 1.55rem;
+    block-size: 1.55rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border-radius: 50%;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
   }
 
   .movement-list li > div {
@@ -443,55 +515,242 @@
     min-inline-size: 0;
   }
 
-  .movement-list li span {
+  .movement-list li > div span {
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .movement-list li > span:last-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .positive {
+    color: var(--cash);
+  }
+
+  .negative {
+    color: var(--expenses);
+  }
+
+  .data-health {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .data-health.needs-attention {
+    border-block-start: 3px solid var(--warning);
+  }
+
+  .data-health.is-complete {
+    border-block-start: 3px solid var(--cash);
+  }
+
+  .data-health-heading {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .health-icon {
+    display: grid;
+    place-items: center;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    color: var(--warning);
+    background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+    border-radius: 0.85rem;
+  }
+
+  .is-complete .health-icon {
+    color: var(--cash);
+    background: color-mix(in srgb, var(--cash) 10%, var(--surface));
+  }
+
+  .data-health-heading h2 {
+    color: var(--ink);
+    font-size: var(--font-size-lg);
+  }
+
+  .health-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 0;
+  }
+
+  .health-facts div {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.75rem;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+  }
+
+  .health-facts dt {
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .health-facts dd {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    overflow-wrap: anywhere;
+  }
+
+  .unresolved-account-list {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .unresolved-account-list li,
+  .health-confirmation {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
     color: var(--muted);
     font-size: var(--font-size-sm);
   }
 
-  .movement-list li > span {
+  .unresolved-account-list svg {
+    flex: none;
+    color: var(--warning);
+  }
+
+  .health-confirmation {
+    margin: 0 !important;
+    color: var(--cash) !important;
+  }
+
+  .portfolio-workspace {
+    container: portfolio / inline-size;
+    padding: clamp(1rem, 2.5cqi, 1.65rem);
+  }
+
+  .portfolio-heading {
+    align-items: start;
+    margin-block-end: 1rem;
+  }
+
+  .portfolio-heading > div:first-child p:not(.eyebrow) {
+    max-inline-size: 52ch;
+    margin-block-start: 0.35rem;
+    color: var(--muted);
+    text-wrap: pretty;
+  }
+
+  .portfolio-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.6rem 1rem;
+  }
+
+  .portfolio-filter {
+    display: inline-flex;
+    padding: 0.2rem;
+    background: var(--surface-2);
+    border-radius: var(--radius-pill);
+  }
+
+  .portfolio-filter button {
+    min-block-size: 2.5rem;
+    padding-inline: 0.8rem;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .portfolio-filter button[aria-pressed="true"] {
+    color: var(--ink);
+    background: var(--surface);
+    border-color: var(--rule);
+  }
+
+  .archived-toggle,
+  .confirmation-check {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    color: var(--cash);
-    font-family: var(--font-mono);
-    font-size: var(--font-size-base);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .movement-list li > span.negative {
-    color: var(--expenses);
-  }
-
-  .composition-groups,
-  .account-groups {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.25rem;
-  }
-
-  .composition-groups h3,
-  .account-groups h3 {
-    margin-block-end: 0.75rem;
-  }
-
-  .composition-list li {
-    display: grid;
-    gap: 0.45rem;
-  }
-
-  .composition-list li > div:first-child {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .composition-list span {
+    gap: 0.55rem;
+    min-block-size: var(--tap-target);
     color: var(--muted);
-    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+  }
+
+  .archived-toggle input,
+  .confirmation-check input {
+    flex: 0 0 auto;
+    inline-size: 1.1rem;
+    block-size: 1.1rem;
+  }
+
+  .portfolio-list {
+    display: grid;
+  }
+
+  .portfolio-list > li {
+    display: grid;
+    grid-template-columns:
+      2.75rem minmax(10rem, 1fr) minmax(8rem, 0.8fr)
+      minmax(7.5rem, 0.55fr) minmax(8rem, auto) auto;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    min-inline-size: 0;
+    padding-block: 0.9rem;
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .portfolio-list > li.is-archived {
+    opacity: 0.72;
+  }
+
+  .portfolio-account-icon {
+    display: grid;
+    place-items: center;
+    inline-size: 2.6rem;
+    block-size: 2.6rem;
+    border-radius: 0.8rem;
+  }
+
+  .portfolio-account-icon.asset {
+    color: var(--cash);
+    background: color-mix(in srgb, var(--cash) 10%, var(--surface));
+  }
+
+  .portfolio-account-icon.liability {
+    color: var(--expenses);
+    background: color-mix(in srgb, var(--expenses) 9%, var(--surface));
+  }
+
+  .portfolio-account-name,
+  .portfolio-account-share,
+  .portfolio-account-change {
+    display: grid;
+    min-inline-size: 0;
+    gap: 0.2rem;
+  }
+
+  .portfolio-account-name > span,
+  .portfolio-account-share > span,
+  .portfolio-account-change > span {
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+    overflow-wrap: anywhere;
   }
 
   .composition-track {
-    block-size: 0.55rem;
+    block-size: 0.42rem;
     background: var(--surface-2);
     border-radius: var(--radius-pill);
     overflow: clip;
@@ -500,120 +759,171 @@
   .composition-track > span {
     display: block;
     block-size: 100%;
-    background: var(--action);
+    background: var(--cash);
     border-radius: inherit;
   }
 
-  .composition-groups section:last-child .composition-track > span {
+  .composition-track.liability > span {
     background: var(--expenses);
   }
 
-  .coverage-summary {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-    margin-block-end: 1rem;
+  .portfolio-account-change strong,
+  .portfolio-account-balance {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
   }
 
-  .coverage-summary > div {
+  .portfolio-account-balance {
+    color: var(--ink);
+    font-size: var(--font-size-base);
+    text-align: end;
+  }
+
+  .portfolio-account-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.35rem;
+  }
+
+  .portfolio-account-actions .button {
+    min-block-size: 2.55rem;
+  }
+
+  .portfolio-empty {
+    padding: 2rem;
+    color: var(--muted);
+    text-align: center;
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .wealth-onboarding {
+    position: relative;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.85fr);
     align-items: center;
-    gap: 0.2rem 0.65rem;
+    gap: clamp(2rem, 8cqi, 7rem);
+    min-block-size: min(46rem, 74dvh);
+    padding: clamp(1.5rem, 6cqi, 5rem);
+    color: var(--surface);
+    background:
+      radial-gradient(
+        circle at 80% 18%,
+        color-mix(in srgb, var(--action) 38%, transparent),
+        transparent 34%
+      ),
+      var(--ink);
+    border: 1px solid var(--ink);
+    border-radius: calc(var(--radius) * 1.8);
+    overflow: clip;
+  }
+
+  .wealth-onboarding-copy {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-items: start;
+    gap: 1rem;
+    max-inline-size: 48rem;
+  }
+
+  .wealth-onboarding h1 {
+    color: inherit;
+    font-size: clamp(3.2rem, 10cqi, 8rem);
+    letter-spacing: -0.07em;
+    line-height: 0.88;
+  }
+
+  .wealth-onboarding .wealth-onboarding-lede {
+    color: inherit;
+    font-size: clamp(1.35rem, 3cqi, 2.15rem);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-tight);
+    text-wrap: balance;
+  }
+
+  .wealth-onboarding p:not(.eyebrow, .wealth-onboarding-lede) {
+    max-inline-size: 58ch;
+    color: color-mix(in srgb, var(--surface) 72%, transparent);
+    font-size: clamp(1rem, 2cqi, 1.15rem);
+    text-wrap: pretty;
+  }
+
+  .wealth-onboarding-preview {
+    position: relative;
+    display: grid;
+    gap: 0.75rem;
+    padding: 1.2rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid color-mix(in srgb, var(--surface) 50%, transparent);
+    border-radius: calc(var(--radius) * 1.4);
+    rotate: 2deg;
+  }
+
+  .onboarding-preview-total {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem;
     padding: 1rem;
     background: var(--surface-2);
     border-radius: var(--radius);
   }
 
-  .coverage-summary svg {
-    grid-row: span 2;
+  .onboarding-preview-total strong {
+    grid-column: 1 / -1;
+    font-family: var(--font-mono);
+    font-size: clamp(2rem, 5cqi, 4rem);
+  }
+
+  .onboarding-preview-total svg {
     color: var(--action);
   }
 
-  .coverage-summary span {
-    color: var(--muted);
-    font-size: var(--font-size-sm);
-  }
-
-  .balance-date-list {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
-  }
-
-  .balance-date-list li {
+  .onboarding-preview-cards {
     display: grid;
-    gap: 0.2rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .onboarding-preview-cards span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-block-size: 5rem;
     padding: 0.75rem;
     border: 1px solid var(--rule);
-    border-radius: var(--radius-sm);
-  }
-
-  .balance-date-list li.is-unresolved {
-    border-style: dashed;
-  }
-
-  .balance-date-list span,
-  .wealth-muted {
-    color: var(--muted);
-    font-size: var(--font-size-sm);
-  }
-
-  .archived-toggle,
-  .confirmation-check {
-    display: inline-flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    min-block-size: var(--tap-target);
-    padding-block: 0.65rem;
-  }
-
-  .archived-toggle input,
-  .confirmation-check input {
-    flex: 0 0 auto;
-    inline-size: 1.15rem;
-    block-size: 1.15rem;
-    margin-block-start: 0.1rem;
-    accent-color: var(--action);
-  }
-
-  .wealth-account-list > li {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.75rem 1rem;
-    padding: 1rem;
-    background: var(--surface-2);
-    border: 1px solid transparent;
     border-radius: var(--radius);
+    font-weight: var(--font-weight-semibold);
   }
 
-  .wealth-account-list > li.is-archived {
-    background: transparent;
-    border-color: var(--rule);
-    border-style: dashed;
+  .onboarding-preview-cards span:first-child svg {
+    color: var(--cash);
   }
 
-  .wealth-account-list li > div:first-child {
-    display: grid;
-    min-inline-size: 0;
-    gap: 0.2rem;
+  .onboarding-preview-cards span:last-child svg {
+    color: var(--expenses);
   }
 
-  .wealth-account-list li > div:first-child span {
+  .wealth-onboarding-preview > svg {
+    inline-size: 100%;
+    block-size: 8rem;
+    color: var(--action);
+  }
+
+  .wealth-onboarding-preview > svg path {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-width: 5;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .wealth-muted,
+  .form-hint {
     color: var(--muted);
     font-size: var(--font-size-sm);
-  }
-
-  .wealth-account-list li > strong {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .account-actions {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem;
-    padding-block-start: 0.75rem;
-    border-block-start: 1px solid var(--rule);
   }
 
   .net-worth-form {
@@ -641,6 +951,8 @@
   }
 
   .check-in-list {
+    display: grid;
+    gap: 0.65rem;
     max-block-size: min(48dvh, 34rem);
     padding-inline-end: 0.25rem;
     overflow-y: auto;
@@ -663,8 +975,7 @@
     gap: 0.2rem;
   }
 
-  .check-in-list label span,
-  .form-hint {
+  .check-in-list label span {
     color: var(--muted);
     font-size: var(--font-size-sm);
   }
@@ -701,9 +1012,6 @@
   .snapshot-list {
     display: grid;
     gap: 0.65rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
   }
 
   .snapshot-list > li {
@@ -741,38 +1049,71 @@
     color: var(--muted);
   }
 
-  @container wealth-hero (max-width: 56rem) {
-    .wealth-hero-grid {
-      grid-template-columns: 1fr;
+  @container wealth-scoreboard (max-width: 68rem) {
+    .wealth-scoreboard {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .wealth-history {
-      min-block-size: 28rem;
-    }
-  }
-
-  @container wealth-workspace (max-width: 54rem) {
-    .wealth-insight-grid {
-      grid-template-columns: 1fr;
+    .wealth-primary-metric {
+      grid-column: 1 / -1;
     }
   }
 
-  @container wealth-panel (max-width: 38rem) {
-    .composition-groups,
-    .account-groups,
-    .coverage-summary {
+  @container wealth-workspace (max-width: 62rem) {
+    .wealth-insight-rail {
       grid-template-columns: 1fr;
     }
   }
 
-  @media (max-width: 44rem) {
-    .wealth-first-use {
-      grid-template-columns: 1fr;
-      align-content: center;
+  @container portfolio (max-width: 68rem) {
+    .portfolio-list > li {
+      grid-template-columns: 2.75rem minmax(0, 1fr) auto;
     }
 
-    .wealth-first-use > svg {
-      display: none;
+    .portfolio-account-share,
+    .portfolio-account-change {
+      grid-column: 2;
+    }
+
+    .portfolio-account-balance {
+      grid-column: 3;
+      grid-row: 1;
+    }
+
+    .portfolio-account-actions {
+      grid-column: 2 / -1;
+      justify-content: flex-start;
+    }
+  }
+
+  @media (max-width: 52rem) {
+    .net-worth-view:has(.wealth-scoreboard) .wealth-page-header {
+      order: 0;
+    }
+
+    .net-worth-view:has(.wealth-scoreboard) .wealth-scoreboard {
+      order: 1;
+    }
+
+    .net-worth-view:has(.wealth-scoreboard) .wealth-toolbar {
+      order: 2;
+    }
+
+    .net-worth-view:has(.wealth-scoreboard) .wealth-analysis-grid {
+      order: 3;
+    }
+
+    .net-worth-view:has(.wealth-scoreboard) .portfolio-workspace {
+      order: 4;
+    }
+
+    .wealth-page-header {
+      align-items: start;
+      flex-direction: column;
+    }
+
+    .wealth-header-actions {
+      justify-content: flex-start;
     }
 
     .wealth-toolbar {
@@ -784,32 +1125,104 @@
       min-inline-size: 0;
     }
 
-    .wealth-hero-grid {
-      padding: 1.25rem;
-    }
-
-    .wealth-history {
-      min-block-size: 24rem;
-    }
-
-    .wealth-history svg {
-      min-block-size: 15rem;
-    }
-
-    .wealth-equation {
-      align-items: start;
-    }
-
-    .wealth-account-list > li,
-    .check-in-list li {
+    .wealth-scoreboard {
       grid-template-columns: 1fr;
     }
 
-    .wealth-account-list li > strong {
-      justify-self: start;
+    .wealth-primary-metric {
+      grid-column: auto;
     }
 
+    .wealth-insight-rail {
+      grid-template-columns: 1fr;
+    }
+
+    .wealth-onboarding {
+      grid-template-columns: 1fr;
+      align-content: center;
+    }
+
+    .wealth-onboarding-preview {
+      display: none;
+    }
+
+    .portfolio-heading {
+      display: grid;
+    }
+
+    .portfolio-controls {
+      justify-content: flex-start;
+    }
+  }
+
+  @media (max-width: 38rem) {
+    .wealth-header-actions,
+    .wealth-header-actions .button {
+      inline-size: 100%;
+    }
+
+    .wealth-scoreboard > article,
+    .wealth-trend-card,
+    .wealth-insight-card,
+    .portfolio-workspace {
+      border-radius: var(--radius);
+    }
+
+    .wealth-primary-metric {
+      min-block-size: 13rem;
+    }
+
+    .wealth-card-heading {
+      display: grid;
+    }
+
+    .trend-selection {
+      justify-items: start;
+    }
+
+    .wealth-chart svg {
+      min-block-size: 15rem;
+    }
+
+    .health-facts,
     .inspector-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .portfolio-filter {
+      inline-size: 100%;
+    }
+
+    .portfolio-filter button {
+      flex: 1;
+    }
+
+    .portfolio-list > li {
+      grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+    }
+
+    .portfolio-account-balance {
+      grid-column: 3;
+      grid-row: 1;
+      text-align: end;
+    }
+
+    .portfolio-account-share,
+    .portfolio-account-change,
+    .portfolio-account-actions {
+      grid-column: 1 / -1;
+    }
+
+    .portfolio-account-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .portfolio-account-actions .button {
+      inline-size: 100%;
+    }
+
+    .check-in-list li {
       grid-template-columns: 1fr;
     }
 
@@ -823,6 +1236,44 @@
     }
   }
 
+  @media (hover: hover) and (pointer: fine) {
+    .portfolio-filter button:hover:not([aria-pressed="true"]) {
+      color: var(--ink);
+    }
+
+    .portfolio-list > li:hover {
+      background: color-mix(in srgb, var(--surface) 84%, var(--surface-2));
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .wealth-scoreboard > article,
+    .wealth-trend-card,
+    .wealth-insight-card,
+    .portfolio-workspace {
+      animation: wealth-entry var(--motion-route) var(--ease-out) both;
+    }
+
+    .wealth-scoreboard > article:nth-child(2) {
+      animation-delay: 35ms;
+    }
+
+    .wealth-scoreboard > article:nth-child(3) {
+      animation-delay: 70ms;
+    }
+
+    .wealth-scoreboard > article:nth-child(4) {
+      animation-delay: 105ms;
+    }
+
+    @keyframes wealth-entry {
+      from {
+        opacity: 0;
+        translate: 0 0.5rem;
+      }
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .net-worth-view.is-refreshing > :not(.error-banner) {
       opacity: 1;
@@ -830,21 +1281,31 @@
   }
 
   @media (forced-colors: active) {
-    .wealth-hero,
-    .wealth-first-use {
+    .wealth-primary-metric,
+    .wealth-onboarding {
       color: CanvasText;
-      background: Canvas;
-      border: 2px solid CanvasText;
+      background: Canvas !important;
+      border: 2px solid CanvasText !important;
+    }
+
+    .wealth-primary-metric::after {
+      display: none;
     }
 
     .net-worth-line,
     .net-worth-zero-line,
-    .wealth-history circle {
+    .chart-grid-line line,
+    .chart-selection-line,
+    .wealth-chart circle {
       stroke: CanvasText;
     }
 
-    .wealth-history circle.is-selected,
-    .wealth-history circle:focus-visible {
+    .net-worth-area {
+      fill: none;
+    }
+
+    .wealth-chart circle.is-selected,
+    .wealth-chart circle:focus-visible {
       fill: Highlight;
       stroke: HighlightText;
     }

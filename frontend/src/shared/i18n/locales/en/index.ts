@@ -175,6 +175,8 @@ export const en = {
     loadingDetail: "Resolving account balances and history.",
     refreshing: "Updating balances…",
     controls: "Net worth date and history range",
+    scoreboard: "Net worth summary",
+    insights: "Net worth insights",
     asOfLabel: "As-of date",
     asOfHint: "Balances use the latest snapshot on or before this date.",
     rangeLabel: "History range",
@@ -189,6 +191,12 @@ export const en = {
     total: "Total net worth",
     assets: "Assets",
     liabilities: "Liabilities",
+    metrics: {
+      assetDetail: "Everything you own across tracked accounts.",
+      liabilityDetail: "Outstanding debt across tracked accounts.",
+      coverage: "Balance coverage",
+      coverageDetail: "{resolved} of {total} active accounts are current.",
+    },
     coverage: "{count} account(s) are not tracked yet for this date.",
     coverageComplete: "All tracked accounts have a balance for this date.",
     state: {
@@ -227,9 +235,22 @@ export const en = {
       resolved: "Accounts with a known balance",
       oldest: "Oldest balance in this view",
     },
+    health: {
+      completeTitle: "Your view is fully covered",
+      attentionTitle: "Some balances need attention",
+      ready: "Every active account contributes to this total.",
+    },
     accounts: {
-      eyebrow: "Manage the source data",
-      title: "Accounts",
+      eyebrow: "Your portfolio",
+      title: "Accounts behind the number",
+      detail:
+        "See balance, portfolio share, period movement, and freshness together.",
+      filter: "Filter accounts",
+      all: "All",
+      asset: "Assets",
+      liability: "Liabilities",
+      share: "{percent}% of group",
+      periodChange: "Period movement",
     },
     account: {
       asset: "Asset",
@@ -255,6 +276,7 @@ export const en = {
       deleteSnapshotConfirm: "Delete balance",
     },
     history: {
+      eyebrow: "Performance",
       title: "Net worth history",
       noComparison: "Add another history point to compare change.",
       increased: "Net worth increased by {amount} since the previous point.",

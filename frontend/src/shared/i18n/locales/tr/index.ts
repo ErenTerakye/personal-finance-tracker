@@ -175,6 +175,8 @@ export const tr = {
     loadingDetail: "Hesap bakiyeleri ve geçmiş çözümleniyor.",
     refreshing: "Bakiyeler güncelleniyor…",
     controls: "Net değer tarihi ve geçmiş aralığı",
+    scoreboard: "Net değer özeti",
+    insights: "Net değer içgörüleri",
     asOfLabel: "Geçerlilik tarihi",
     asOfHint: "Bu tarihte veya öncesindeki en son bakiye kullanılır.",
     rangeLabel: "Geçmiş aralığı",
@@ -189,6 +191,12 @@ export const tr = {
     total: "Toplam net değer",
     assets: "Varlıklar",
     liabilities: "Borçlar",
+    metrics: {
+      assetDetail: "Takip edilen hesaplardaki sahip olduğunuz her şey.",
+      liabilityDetail: "Takip edilen hesaplardaki toplam borç.",
+      coverage: "Bakiye kapsamı",
+      coverageDetail: "{total} aktif hesabın {resolved} tanesi güncel.",
+    },
     coverage: "{count} hesap bu tarih için henüz takip edilmiyor.",
     coverageComplete: "Tüm hesapların bu tarih için bakiyesi var.",
     state: {
@@ -227,9 +235,22 @@ export const tr = {
       resolved: "Bakiyesi bilinen hesaplar",
       oldest: "Bu görünümdeki en eski bakiye",
     },
+    health: {
+      completeTitle: "Görünümünüz tamamen kapsanıyor",
+      attentionTitle: "Bazı bakiyeler ilgi bekliyor",
+      ready: "Her aktif hesap bu toplama dahil.",
+    },
     accounts: {
-      eyebrow: "Kaynak verileri yönetin",
-      title: "Hesaplar",
+      eyebrow: "Portföyünüz",
+      title: "Rakamın arkasındaki hesaplar",
+      detail:
+        "Bakiye, portföy payı, dönem hareketi ve güncelliği birlikte görün.",
+      filter: "Hesapları filtrele",
+      all: "Tümü",
+      asset: "Varlıklar",
+      liability: "Borçlar",
+      share: "Grubun %{percent} kadarı",
+      periodChange: "Dönem hareketi",
     },
     account: {
       asset: "Varlık",
@@ -255,6 +276,7 @@ export const tr = {
       deleteSnapshotConfirm: "Bakiyeyi sil",
     },
     history: {
+      eyebrow: "Performans",
       title: "Net değer geçmişi",
       noComparison: "Değişimi karşılaştırmak için başka bir dönem ekleyin.",
       increased: "Net değer önceki noktadan bu yana {amount} arttı.",
