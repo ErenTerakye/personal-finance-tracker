@@ -306,9 +306,27 @@ export const tr = {
     checkIn: {
       title: "Bakiyeleri güncelle",
       description:
-        "Yalnızca değişen bakiyeleri girin. Değişmeyen hesaplara yeni kayıt eklenmez.",
+        "Hesaplarınızı gözden geçirin, değişenleri kaydedin ve net değerinize etkisini önceden görün.",
       current: "{amount}, son kayıt {date}",
       save: "{count} güncellemeyi kaydet",
+      projected: "Güncelleme sonrası net değer",
+      noImpact: "Henüz değişiklik yok",
+      impact: "{amount} etki",
+      guideTitle: "Son bakiyeleriniz hazır.",
+      guide:
+        "Değişen tutarları düzenleyin. Dokunmadığınız hesaplara yeni bakiye kaydı eklenmez.",
+      accountCount: "{count} hesap",
+      lastRecorded: "Son kayıt {date}",
+      previous: "Önceki",
+      newBalanceFor: "{name} için yeni bakiye",
+      unchanged: "Değişmedi",
+      new: "Yeni",
+      resetFor: "{name} değişikliğini geri al",
+      ready: "{count} güncelleme hazır",
+      readyDetail: "Bu bakiyeler {date} tarihi için kaydedilecek.",
+      noChanges: "Her şey güncel",
+      noChangesDetail: "Güncelleme hazırlamak için bir bakiyeyi değiştirin.",
+      reset: "Tümünü sıfırla",
     },
     inspector: {
       description: "{type} hesabının ayrıntıları ve geçmişi",

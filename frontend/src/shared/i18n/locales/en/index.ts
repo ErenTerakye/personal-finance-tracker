@@ -307,9 +307,27 @@ export const en = {
     checkIn: {
       title: "Update balances",
       description:
-        "Enter only balances that changed. Unchanged accounts will not receive a new snapshot.",
+        "Review your accounts, record what changed, and preview the effect on your net worth.",
       current: "{amount}, last recorded {date}",
       save: "Save {count} update(s)",
+      projected: "Net worth after updates",
+      noImpact: "No change yet",
+      impact: "{amount} impact",
+      guideTitle: "Your latest balances are ready.",
+      guide:
+        "Edit any amount that changed. Accounts you leave untouched will not receive a new snapshot.",
+      accountCount: "{count} account(s)",
+      lastRecorded: "Last recorded {date}",
+      previous: "Previous",
+      newBalanceFor: "New balance for {name}",
+      unchanged: "Unchanged",
+      new: "New",
+      resetFor: "Undo change for {name}",
+      ready: "{count} update(s) ready",
+      readyDetail: "These balances will be recorded for {date}.",
+      noChanges: "Everything is up to date",
+      noChangesDetail: "Adjust a balance to prepare an update.",
+      reset: "Reset all",
     },
     inspector: {
       description: "{type} account details and history",

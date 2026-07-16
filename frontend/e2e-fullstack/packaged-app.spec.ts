@@ -103,7 +103,10 @@ test("net worth history and archive persist through FastAPI, SQLite, and reload"
   await page.getByRole("checkbox", { name: "Show archived accounts" }).check();
   await expect(
     page
-      .getByRole("region", { name: "Accounts", exact: true })
+      .getByRole("region", {
+        name: "Accounts behind the number",
+        exact: true,
+      })
       .getByText(name, { exact: true }),
   ).toBeVisible();
 
@@ -111,7 +114,10 @@ test("net worth history and archive persist through FastAPI, SQLite, and reload"
   await page.getByRole("checkbox", { name: "Show archived accounts" }).check();
   await expect(
     page
-      .getByRole("region", { name: "Accounts", exact: true })
+      .getByRole("region", {
+        name: "Accounts behind the number",
+        exact: true,
+      })
       .getByText(name, { exact: true }),
   ).toBeVisible();
 

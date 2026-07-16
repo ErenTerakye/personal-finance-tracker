@@ -204,8 +204,12 @@ describe("net worth workflow", () => {
     });
     await userEvent.click(updateButtons[1]);
     const dialog = screen.getByRole("dialog", { name: "Update balances" });
+    expect(within(dialog).getByText("Assets")).toBeVisible();
+    expect(within(dialog).getByText("Liabilities")).toBeVisible();
+    expect(within(dialog).getByText("Net worth after updates")).toBeVisible();
     const amountInputs = within(dialog).getAllByRole("spinbutton");
     await userEvent.type(amountInputs[0], "1150");
+    expect(within(dialog).getByText("1 update(s) ready")).toBeVisible();
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Save 1 update(s)" }),
     );
