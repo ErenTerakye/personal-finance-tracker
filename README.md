@@ -14,6 +14,8 @@ A local-first finance tracker with a Typer CLI, FastAPI JSON API, React browser 
 - Create monthly recurring transaction templates and apply them explicitly when needed.
 - Import and export transactions and budgets with CSV files.
 - Store records locally in SQLite.
+- Track asset and liability accounts with dated manual balance snapshots and deterministic total
+  net worth history.
 - Generate monthly and multi-month income, expense, net savings, category, YTD, and month-over-month reports.
 - Save optional PNG charts for monthly reports and trend reports.
 - Run a polished local FastAPI JSON API and React “ledger editorial” workspace with Overview, Activity, Plan, and Automations workflows.
@@ -35,21 +37,20 @@ npm run build
 ## Quick Start
 
 ```bash
-finance-tracker init --db-path demo.sqlite3
-finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
-finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
-finance-tracker category-rule-set groceries Food --db-path demo.sqlite3
-finance-tracker recurring-add expense 1600 --category Rent --description "Monthly rent" --day 1 --db-path demo.sqlite3
-finance-tracker recurring-apply --month 7 --year 2026 --db-path demo.sqlite3
+.venv/bin/python examples/build_demo.py --force
 mkdir -p reports exports
 finance-tracker list --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker summary --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
-finance-tracker trends --months 6 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker net-worth-history --months 12 --as-of 2026-07-16 --db-path demo.sqlite3
 finance-tracker web --db-path demo.sqlite3
 ```
 
-Open the Web UI at `http://127.0.0.1:8000`. The included sample CSVs are synthetic portfolio demo data, and `demo.sqlite3` is generated local demo state created from them. It is intentionally ignored by git and can be rebuilt at any time.
+Open the Web UI at `http://127.0.0.1:8000`. The detailed fictional demo spans August 2025
+through July 2026 and includes transactions, budgets, category aliases, recurring entries,
+asset/liability histories, an archived account, and meaningful report states. `demo.sqlite3` is
+generated local state, intentionally ignored by git, and can be rebuilt at any time.
 
 The default database path is `./data/finance_tracker.sqlite3`. That file is local runtime state for your own machine and may not match the documented demo. For the reviewer demo, start the local Web UI against the generated demo database:
 
@@ -62,25 +63,28 @@ finance-tracker web --db-path demo.sqlite3
 Run a fresh local demo without touching the default database:
 
 ```bash
-finance-tracker init --db-path demo.sqlite3
-finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
-finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
-finance-tracker category-rule-set groceries Food --db-path demo.sqlite3
-finance-tracker recurring-add expense 1600 --category Rent --description "Monthly rent" --day 1 --db-path demo.sqlite3
-finance-tracker recurring-apply --month 7 --year 2026 --db-path demo.sqlite3
+.venv/bin/python examples/build_demo.py --force
 mkdir -p reports exports
 finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker category-rule-list --db-path demo.sqlite3
+finance-tracker recurring-list --db-path demo.sqlite3
+finance-tracker account-list --as-of 2026-07-16 --db-path demo.sqlite3
+finance-tracker net-worth-history --months 12 --as-of 2026-07-16 --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --preview --db-path demo.sqlite3
 finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
-finance-tracker trends --months 6 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
 finance-tracker web --db-path demo.sqlite3
 finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
 finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 ```
 
+See [examples/README.md](examples/README.md) for the scenario inventory and suggested review
+points.
+
 ## Reviewer Screenshots
 
-These screenshots are generated from the July 2026 reviewer demo using `finance-tracker web --db-path demo.sqlite3` after importing the sample CSVs and applying the documented category rule and recurring template.
+Reviewer screenshots are refreshed from the detailed July 2026 demo using
+`finance-tracker web --db-path demo.sqlite3` after running the example builder.
 
 ![Dashboard desktop screenshot](docs/assets/screenshots/dashboard-desktop.png)
 
@@ -100,7 +104,10 @@ The browser application includes:
 
 - A compact dashboard led by a six-month cashflow trend, a ranked budget-attention queue with direct Plan links, an accessible expense-mix donut with exact category shares, and a scannable recent-activity list with signed amounts and explicit income/expense labels.
 - A responsive Plan workspace led by a monthly health pulse, planned/spent/uncovered metrics, live category search, visible sort choices, pressure-ranked guardrail cards, and a focused edit/delete inspector.
-- Route-aware navigation for `/`, `/transactions`, `/budgets`, and `/rules`, with an edge-docked, safe-area-aware bottom bar below `64rem` and an adaptive compact command bar that exposes language, theme, and transaction creation without a secondary drawer.
+- Route-aware navigation for `/`, `/net-worth`, `/transactions`, `/budgets`, and `/rules`, with an edge-docked, safe-area-aware bottom bar below `64rem` and an adaptive compact command bar.
+- A dedicated Net worth workspace with as-of totals, asset/liability composition, dated balance
+  correction, account archiving safeguards, and an accessible SVG history chart with a complete data
+  table.
 - A plain-language Automations workspace with one unified routine list, a guided create flow, safe deletion confirmation, tucked-away display settings, and deliberate monthly previews that explain duplicate handling before entries are created.
 - Compact period controls for month-to-month review without always exposing month/year fields.
 - Task-focused transaction and budget dialogs with prominent amount entry, grouped details, responsive controls, context-aware zero-data states, recoverable page-load errors, and edit/delete flows.
@@ -111,7 +118,17 @@ The browser application includes:
 - Calm, progressive Overview motion: instant top-level tab handoffs, directional period context, responsive rolling values, two-way export and chart-tooltip lifecycles, immediate pending/pressed feedback, and spatial-motion-free reduced-motion states.
 - An English/Turkish language action with local browser preference persistence and locale-aware money/date formatting using the active ledger currency.
 
-During frontend development, run the Python app and Vite separately:
+For frontend development against a freshly rebuilt detailed demo, run:
+
+```bash
+npm run dev:demo
+```
+
+This rebuilds `demo.sqlite3`, starts the reload-enabled Python API, starts Vite, and cleans up the
+API process when Vite exits. It stops with a clear message instead of replacing the database when
+port 8000 or 5173 is already occupied.
+
+To preserve changes made to the current demo database, run the Python app and Vite separately:
 
 ```bash
 finance-tracker web --db-path demo.sqlite3
@@ -137,6 +154,8 @@ finance-tracker recurring-add expense 1600 --category Rent --description "Monthl
 finance-tracker recurring-apply --month 7 --year 2026
 finance-tracker budget-set Food 480 --month 7 --year 2026
 finance-tracker budget-status --month 7 --year 2026
+finance-tracker net-worth --as-of 2026-07-16
+finance-tracker net-worth-history --months 12 --as-of 2026-07-16
 finance-tracker trends --months 6 --end-month 7 --end-year 2026
 finance-tracker list --month 7 --year 2026
 finance-tracker export-csv exports/transactions.csv
@@ -167,6 +186,7 @@ Rent,1600.00,7,2026
 ## Project Structure
 
 ```text
+examples/                 # Synthetic CSV sources and deterministic demo builder
 src/finance_tracker/
   models/            # Framework-free domain objects and validation
   repositories/      # SQL queries and row mapping without commits

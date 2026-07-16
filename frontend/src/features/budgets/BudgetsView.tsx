@@ -2,9 +2,12 @@ import {
   type CSSProperties,
   type FormEvent,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
+import "./budgets.css";
+import "./budgets-overrides.css";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -15,6 +18,7 @@ import {
   Search,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
 import type { BudgetFilters } from "../../api/client";
 import { artifactUrls } from "../../api/artifacts";
@@ -99,6 +103,10 @@ export function BudgetsView({
     );
   });
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const inspectorId = useId();
+  const inspectorTitleId = useId();
+  const categoryButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const loading = budgetResource.status === "loading";
   const initialLoading = loading && !periodTransition.data;
   const saveMutation = useSaveBudget((response, input) => {
@@ -112,6 +120,8 @@ export function BudgetsView({
   const deleteMutation = useDeleteBudget((response) => {
     setNotice(localizedNotice(response, t));
     setPendingDelete(null);
+    setInspectorOpen(false);
+    setSelectedCategory(null);
     budgetResource.refetch();
   });
   const importMutation = useBudgetImport((response) => {
@@ -132,6 +142,25 @@ export function BudgetsView({
     handledCreateRequest.current = createRequestId;
     openCreate();
   }, [createRequestId]);
+
+  useEffect(() => {
+    if (!inspectorOpen) return;
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (
+        event.key !== "Escape" ||
+        event.defaultPrevented ||
+        (event.target instanceof Element && event.target.closest("dialog"))
+      ) {
+        return;
+      }
+      setInspectorOpen(false);
+      categoryButtonRefs.current.get(selectedCategory ?? "")?.focus();
+    }
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [inspectorOpen, selectedCategory]);
 
   function openCreate() {
     setForm(
@@ -221,7 +250,15 @@ export function BudgetsView({
   function updateFilters(next: BudgetFilters) {
     writeBudgetFilters(next);
     setFilters(next);
+    setInspectorOpen(false);
     setSelectedCategory(null);
+  }
+
+  function closeInspector({ restoreFocus = false } = {}) {
+    setInspectorOpen(false);
+    if (restoreFocus) {
+      categoryButtonRefs.current.get(selectedCategory ?? "")?.focus();
+    }
   }
 
   function statusPresentation(status: string) {
@@ -324,7 +361,7 @@ export function BudgetsView({
                 </div>
                 <div className="plan-pulse-copy">
                   <p className="plan-pulse-kicker">
-                    <span aria-hidden="true" />
+                    <CircleGauge aria-hidden="true" size={16} />
                     {t("budgets.pulse.label")}
                   </p>
                   <h2>{planPulseTitle}</h2>
@@ -459,9 +496,7 @@ export function BudgetsView({
             </fieldset>
           </div>
 
-          <div
-            className={`plan-board-content${selectedStatus ? " has-selection" : ""}`}
-          >
+          <div className="plan-board-content">
             <div className="plan-category-region">
               {initialLoading ? (
                 <p className="loading-state">{t("budgets.recordsLoading")}</p>
@@ -495,6 +530,7 @@ export function BudgetsView({
                 <ul className="plan-category-grid" role="list">
                   {prioritizedStatuses.map((status) => {
                     const isSelected =
+                      inspectorOpen &&
                       selectedCategory === status.budget.category;
                     const over = Number(status.remaining) < 0;
                     const presentation = statusPresentation(status.status);
@@ -505,14 +541,32 @@ export function BudgetsView({
                         key={status.budget.id}
                       >
                         <button
+                          ref={(button) => {
+                            if (button) {
+                              categoryButtonRefs.current.set(
+                                status.budget.category,
+                                button,
+                              );
+                            } else {
+                              categoryButtonRefs.current.delete(
+                                status.budget.category,
+                              );
+                            }
+                          }}
                           type="button"
                           aria-label={`${status.budget.category}, ${status.status}, ${status.percent_used}% used`}
                           aria-expanded={isSelected}
-                          onClick={() =>
-                            setSelectedCategory(
-                              isSelected ? null : status.budget.category,
-                            )
+                          aria-controls={
+                            selectedStatus ? inspectorId : undefined
                           }
+                          onClick={() => {
+                            if (isSelected) {
+                              closeInspector();
+                              return;
+                            }
+                            setSelectedCategory(status.budget.category);
+                            setInspectorOpen(true);
+                          }}
                         >
                           <span className="plan-category-card-topline">
                             <span className="plan-status-badge">
@@ -560,64 +614,89 @@ export function BudgetsView({
             </div>
 
             {selectedStatus ? (
-              <aside
-                className={`plan-inspector ${statusPresentation(selectedStatus.status).tone}`}
-                aria-labelledby="selected-budget-title"
+              <div
+                className="plan-inspector-layer"
+                aria-hidden={!inspectorOpen}
+                inert={!inspectorOpen}
               >
-                <div className="plan-inspector-heading">
-                  <span className="plan-status-badge">
-                    {statusPresentation(selectedStatus.status).label}
-                  </span>
-                  <h3 id="selected-budget-title">
-                    {selectedStatus.budget.category}
-                  </h3>
-                  <p>{t("budgets.inspector.summary")}</p>
-                </div>
-                <dl className="plan-inspector-metrics">
-                  <div>
-                    <dt>{t("budgets.inspector.limit")}</dt>
-                    <dd>{money(selectedStatus.budget.amount)}</dd>
+                <aside
+                  id={inspectorId}
+                  className={`plan-inspector ${statusPresentation(selectedStatus.status).tone}${inspectorOpen ? " is-open" : ""}`}
+                  aria-labelledby={inspectorTitleId}
+                >
+                  <div className="plan-inspector-content">
+                    <div className="plan-inspector-heading">
+                      <div>
+                        <span className="plan-status-badge">
+                          {statusPresentation(selectedStatus.status).label}
+                        </span>
+                        <h3 id={inspectorTitleId}>
+                          {selectedStatus.budget.category}
+                        </h3>
+                        <p>{t("budgets.inspector.summary")}</p>
+                      </div>
+                      <button
+                        className="icon-button secondary plan-inspector-close"
+                        type="button"
+                        aria-label={t("budgets.inspector.close")}
+                        onClick={() => closeInspector({ restoreFocus: true })}
+                      >
+                        <X aria-hidden="true" size={18} />
+                      </button>
+                    </div>
+                    <dl className="plan-inspector-metrics">
+                      <div>
+                        <dt>{t("budgets.inspector.limit")}</dt>
+                        <dd>{money(selectedStatus.budget.amount)}</dd>
+                      </div>
+                      <div>
+                        <dt>{t("budgets.inspector.spent")}</dt>
+                        <dd>{money(selectedStatus.actual_expenses)}</dd>
+                      </div>
+                      <div>
+                        <dt>
+                          {t(
+                            Number(selectedStatus.remaining) < 0
+                              ? "budgets.inspector.over"
+                              : "budgets.inspector.available",
+                          )}
+                        </dt>
+                        <dd>
+                          {money(Math.abs(Number(selectedStatus.remaining)))}
+                        </dd>
+                      </div>
+                    </dl>
+                    <div className="plan-inspector-footer">
+                      <p className="plan-inspector-insight">
+                        <CircleGauge aria-hidden="true" size={18} />
+                        {t("budgets.inspector.used", {
+                          percent: selectedStatus.percent_used,
+                        })}
+                      </p>
+                      <div className="plan-inspector-actions">
+                        <button
+                          className="button primary"
+                          type="button"
+                          onClick={() => openEdit(selectedStatus.budget)}
+                        >
+                          {t("budgets.inspector.edit", {
+                            category: selectedStatus.budget.category,
+                          })}
+                        </button>
+                        <button
+                          className="button danger"
+                          type="button"
+                          onClick={() =>
+                            setPendingDelete(selectedStatus.budget)
+                          }
+                        >
+                          {t("budgets.dialog.deleteBtn")}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <dt>{t("budgets.inspector.spent")}</dt>
-                    <dd>{money(selectedStatus.actual_expenses)}</dd>
-                  </div>
-                  <div>
-                    <dt>
-                      {t(
-                        Number(selectedStatus.remaining) < 0
-                          ? "budgets.inspector.over"
-                          : "budgets.inspector.available",
-                      )}
-                    </dt>
-                    <dd>{money(Math.abs(Number(selectedStatus.remaining)))}</dd>
-                  </div>
-                </dl>
-                <p className="plan-inspector-insight">
-                  <CircleGauge aria-hidden="true" size={18} />
-                  {t("budgets.inspector.used", {
-                    percent: selectedStatus.percent_used,
-                  })}
-                </p>
-                <div className="plan-inspector-actions">
-                  <button
-                    className="button primary"
-                    type="button"
-                    onClick={() => openEdit(selectedStatus.budget)}
-                  >
-                    {t("budgets.inspector.edit", {
-                      category: selectedStatus.budget.category,
-                    })}
-                  </button>
-                  <button
-                    className="button danger"
-                    type="button"
-                    onClick={() => setPendingDelete(selectedStatus.budget)}
-                  >
-                    {t("budgets.dialog.deleteBtn")}
-                  </button>
-                </div>
-              </aside>
+                </aside>
+              </div>
             ) : null}
           </div>
         </section>

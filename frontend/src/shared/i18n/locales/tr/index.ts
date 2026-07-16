@@ -47,12 +47,14 @@ export const tr = {
   },
   nav: {
     dashboard: "Genel Bakış",
+    netWorth: "Net değer",
     transactions: "Hareketler",
     budgets: "Plan",
     rules: "Otomasyonlar",
   },
   navShort: {
     dashboard: "Özet",
+    netWorth: "Değer",
     transactions: "İşlemler",
     budgets: "Bütçe",
     rules: "Kurallar",
@@ -111,7 +113,7 @@ export const tr = {
     trendChart: "Trend Grafiği",
     summaryAria: "{period} dönemi kontrol paneli toplamları",
     kpi: {
-      netPosition: "Net durum",
+      netPosition: "Aylık net nakit akışı",
       savingsRate: "Tasarruf oranı",
       budgetRisk: "Bütçe riski",
       income: "Gelir",
@@ -139,6 +141,20 @@ export const tr = {
       mixDetail: "Kategoriye göre harcama",
       activityTitle: "Son Hareketler",
     },
+    netWorth: {
+      title: "Güncel net değer",
+      asOf: "{date} itibarıyla; seçilen nakit akışı ayından bağımsızdır",
+      action: "Net değeri aç",
+      emptyTitle: "Net değer henüz takip edilmiyor",
+      emptyMessage:
+        "İşlem geçmişini değiştirmeden varlık ve borç bakiyelerini elle ekleyin.",
+      addAccount: "Hesap ekle",
+      netWorth: "Net değer",
+      assets: "Varlıklar",
+      liabilities: "Borçlar",
+      coverageLabel: "Kapsam",
+      coverage: "{count} hesap bugün için henüz takip edilmiyor.",
+    },
     activity: {
       emptyTitle: "Henüz hareket yok",
       emptyMessage: "Yeni defter kayıtları eklendikten sonra burada görünecek.",
@@ -148,6 +164,116 @@ export const tr = {
       loadingTitle: "Kontrol paneli yükleniyor",
       fetching: "İşlem kayıtları getiriliyor",
       preparing: "Nakit akışı trendi hazırlanıyor.",
+    },
+  },
+  netWorth: {
+    eyebrow: "Varlık durumu",
+    title: "Net değer",
+    summary:
+      "Varlık ve borç bakiyelerini bugün veya geçmiş bir tarih için elle takip edin.",
+    loading: "Net değer yükleniyor",
+    loadingDetail: "Hesap bakiyeleri ve geçmiş çözümleniyor.",
+    refreshing: "Bakiyeler güncelleniyor…",
+    controls: "Net değer tarihi ve geçmiş aralığı",
+    asOfLabel: "Geçerlilik tarihi",
+    asOfHint: "Bu tarihte veya öncesindeki en son bakiye kullanılır.",
+    rangeLabel: "Geçmiş aralığı",
+    months: "{count} ay",
+    currentPosition: "Güncel durum",
+    total: "Toplam net değer",
+    assets: "Varlıklar",
+    liabilities: "Borçlar",
+    coverage: "{count} hesap bu tarih için henüz takip edilmiyor.",
+    coverageComplete: "Tüm hesapların bu tarih için bakiyesi var.",
+    state: {
+      positive: "Seçilen tarihte varlıklar borçlardan fazla.",
+      negative:
+        "Seçilen tarihte borçlar varlıklardan fazla; işaretli toplam farkı gösterir.",
+      zero: "Seçilen tarihte varlıklar ve borçlar eşit.",
+    },
+    firstUse: {
+      eyebrow: "Elle girilen yerel bakiyeler",
+      title: "İlk hesabınızı ekleyin",
+      message:
+        "Aylık nakit akışı gelir eksi giderdir. Net değer, yalnızca bu yerel defterde saklanan tarihli varlık ve borç bakiyelerini kullanır.",
+    },
+    unresolvedAll: {
+      title: "Takip edilen bakiyeler daha sonra başlıyor",
+      message:
+        "{date} tarihinde veya öncesinde hesap bakiyesi yok; bu yüzden sıfır tam kapsamı temsil etmez.",
+    },
+    composition: {
+      title: "Hesap dağılımı",
+      detail: "Seçilen toplamı açıklayan bakiyeler.",
+    },
+    account: {
+      asset: "Varlık",
+      liability: "Borç",
+      archived: "{date} tarihinde arşivlendi",
+      unresolved: "Henüz takip edilmiyor",
+      noEarlierBalance: "Bu tarihte veya öncesinde bakiye yok",
+      balanceDate: "{date} tarihli bakiye",
+      none: "Bu grupta hesap yok.",
+    },
+    actions: {
+      addAccount: "Hesap ekle",
+      updateBalance: "Bakiyeyi güncelle",
+      history: "Geçmiş",
+      showArchived: "Arşivlenmiş hesapları göster",
+      editNameFor: "{name} adını düzenle",
+      archiveFor: "{name} hesabını arşivle",
+      archive: "Hesabı arşivle",
+      deleteAccount: "Hesabı sil",
+      deleteSnapshot: "{date} bakiyesini sil",
+      deleteSnapshotConfirm: "Bakiyeyi sil",
+    },
+    history: {
+      title: "Net değer geçmişi",
+      noComparison: "Değişimi karşılaştırmak için başka bir dönem ekleyin.",
+      increased: "Net değer önceki noktadan bu yana {amount} arttı.",
+      decreased: "Net değer önceki noktadan bu yana {amount} azaldı.",
+      unchanged: "Net değer önceki noktayla aynı.",
+      selected: "{date}: toplam net değer {amount}",
+      chartTitle: "Zaman içinde net değer",
+      chartDesc: "Her geçerlilik tarihi için toplam net değer çizgisi.",
+      pointLabel: "{date}, net değer {amount}",
+      tableToggle: "Tüm grafik verilerini göster",
+      tableCaption: "Varlık ve borç toplamlarıyla net değer geçmişi",
+    },
+    dialog: {
+      addTitle: "Hesap ekle",
+      addDescription: "İlk tarihli bakiyesiyle bir varlık veya borç oluşturun.",
+      balanceTitle: "Bakiye kaydet",
+      correctTitle: "Bu tarihli bakiyeyi düzelt",
+      balanceDescription: "{name} · {type}",
+      editTitle: "Hesap adını düzenle",
+      editDescription: "Hesap türü {type} olarak kalır ve değiştirilemez.",
+      archiveTitle: "{name} hesabını arşivle",
+      archiveDescription:
+        "Arşivleme son bir sıfır bakiye kaydeder ve önceki geçmişi korur.",
+      historyTitle: "{name} bakiye geçmişi",
+      historyDescription: "En yeni bakiyeler önce gösterilir.",
+    },
+    form: {
+      name: "Hesap adı",
+      type: "Hesap türü",
+      initialBalance: "İlk bakiye",
+      liabilityHint: "Borçları pozitif borç tutarı olarak girin.",
+      effectiveDate: "Geçerlilik tarihi",
+      replaceHint: "Kaydetmek aynı tarihteki mevcut bakiyeyi değiştirir.",
+      closingDate: "Kapanış tarihi",
+      confirmZero:
+        "Arşivlemenin kapanış tarihinde sıfır bakiye kaydedeceğini anlıyorum.",
+    },
+    confirm: {
+      deleteSnapshot:
+        "{date} tarihinde kaydedilen {amount} bakiyesi kalıcı olarak silinsin mi? Diğer tarihli bakiyeler korunur.",
+      deleteAccount:
+        "{name} ve ilk bakiyesi kalıcı olarak silinsin mi? Bu işlem geri alınamaz.",
+      deleteAccountDetail:
+        "Bu aktif hesabın tek bakiye kaydı var ve kalıcı düzeltme için silinebilir.",
+      deleteAccountSnapshot:
+        "Bu işlem {date} tarihinde kaydedilen tek {amount} bakiyesini kalıcı olarak siler.",
     },
   },
   transactions: {
@@ -251,7 +377,7 @@ export const tr = {
     recordsLoading: "Bütçeler yükleniyor",
     recordsCount: "{count} kayıt gösteriliyor",
     pulse: {
-      label: "Plan nabzı",
+      label: "Plan durumu",
       variance: "Plan farkı",
       left: "kaldı",
       over: "aşıldı",
@@ -291,6 +417,7 @@ export const tr = {
       amountLeft: "{amount} kaldı",
     },
     inspector: {
+      close: "Kategori ayrıntılarını kapat",
       summary: "Bu kategorinin aylık sınırına odaklı görünüm.",
       limit: "Aylık sınır",
       spent: "Şimdiye dek harcanan",
@@ -514,6 +641,13 @@ export const tr = {
     "settings.currency_updated": "Defter para birimi güncellendi.",
     "csv.transactions.imported": "İşlem CSV içe aktarımı tamamlandı.",
     "csv.budgets.imported": "Bütçe CSV içe aktarımı tamamlandı.",
+    "account.created": "Hesap ilk bakiyesiyle eklendi.",
+    "account.updated": "Hesap adı güncellendi.",
+    "account.archived": "Hesap kapanış sıfır bakiyesiyle arşivlendi.",
+    "account.deleted": "Hesap kalıcı olarak silindi.",
+    "balance_snapshot.created": "Bakiye kaydı oluşturuldu.",
+    "balance_snapshot.updated": "Bu tarihteki bakiye değiştirildi.",
+    "balance_snapshot.deleted": "Bakiye kaydı kalıcı olarak silindi.",
   },
   notFound: {
     eyebrow: "Sayfa bulunamadı",

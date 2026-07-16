@@ -14,15 +14,14 @@ npm ci
 npm run build
 ```
 
-- [ ] Rebuild the generated demo database from source CSV files:
+- [ ] Rebuild the detailed generated demo database from its inspectable source data:
 
 ```bash
-finance-tracker init --db-path demo.sqlite3
-finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
-finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
-finance-tracker category-rule-set groceries Food --db-path demo.sqlite3
-finance-tracker recurring-add expense 1600 --category Rent --description "Monthly rent" --day 1 --db-path demo.sqlite3
-finance-tracker recurring-apply --month 7 --year 2026 --db-path demo.sqlite3
+.venv/bin/python examples/build_demo.py --force
+finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker category-rule-list --db-path demo.sqlite3
+finance-tracker recurring-list --db-path demo.sqlite3
+finance-tracker net-worth-history --months 12 --as-of 2026-07-16 --db-path demo.sqlite3
 ```
 
 - [ ] Regenerate demo charts and exports:
@@ -30,7 +29,7 @@ finance-tracker recurring-apply --month 7 --year 2026 --db-path demo.sqlite3
 ```bash
 mkdir -p reports exports
 finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
-finance-tracker trends --months 6 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --preview --db-path demo.sqlite3
 finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
 finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
@@ -78,8 +77,8 @@ npm audit --audit-level=high
 - [ ] Confirm README badges, docs, static showcase, screenshots, packaged SPA assets, and `ROADMAP.md` describe the same release state.
 
 - [ ] Confirm the architecture cleanup evidence is current: Python import/adapter manifests pass
-  under pytest, ESLint feature/API/shared boundaries pass, the CSS layer checker passes, and no
-  legacy monolith or expired compatibility façade remains. Record the final results in
-  `docs/ARCHITECTURE_CLEANUP_EVIDENCE.md`.
+      under pytest, ESLint feature/API/shared boundaries pass, the CSS layer checker passes, and no
+      legacy monolith or expired compatibility façade remains. Record the final results in
+      `docs/ARCHITECTURE_CLEANUP_EVIDENCE.md`.
 
 - [ ] Tag the release only after checks, docs, demo flow, and screenshots are all in sync.

@@ -1,0 +1,8 @@
+@layer overrides {
+  .quiet-state {
+    padding: 1.25rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border-inline-start: 3px solid var(--cash);
+  }
+}

@@ -1,0 +1,160 @@
+@layer overrides {
+  .rolling-number,
+  .rolling-number-digits,
+  .rolling-number-slot,
+  .rolling-number-slot-content,
+  .rolling-number-reel,
+  .rolling-number-static {
+    display: inline-flex;
+  }
+
+  .rolling-number {
+    max-inline-size: 100%;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .rolling-number-digits {
+    align-items: baseline;
+  }
+
+  .rolling-number-slot {
+    display: inline-grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    overflow: clip;
+    block-size: 1em;
+    line-height: 1;
+    vertical-align: top;
+  }
+
+  .rolling-number-slot-content {
+    min-inline-size: 0;
+    block-size: 1em;
+    overflow: clip;
+    line-height: 1;
+  }
+
+  .rolling-number-slot.is-exiting {
+    display: none;
+  }
+
+  .rolling-number-reel {
+    flex-direction: column;
+    block-size: 2em;
+    line-height: 1;
+    will-change: translate;
+  }
+
+  .rolling-number-reel > span,
+  .rolling-number-static {
+    align-items: center;
+    block-size: 1em;
+    line-height: 1;
+  }
+
+  .rolling-number-reel > span::before,
+  .rolling-number-static::before {
+    content: attr(data-character);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .rolling-number:is(.is-rolling-up, .is-rolling-down)
+      .rolling-number-digits {
+      animation: rolling-number-lifecycle var(--motion-value) linear both;
+    }
+
+    .rolling-number-slot.is-entering {
+      animation: rolling-slot-enter var(--motion-value) var(--ease-value) both;
+    }
+
+    .rolling-number-slot.is-exiting {
+      display: inline-grid;
+      animation: rolling-slot-exit var(--motion-value) var(--ease-value) both;
+    }
+
+    .rolling-number-slot.is-entering > .rolling-number-slot-content {
+      animation: rolling-symbol-fade-in var(--motion-value) var(--ease-value)
+        both;
+    }
+
+    .rolling-number-slot.is-exiting > .rolling-number-slot-content {
+      animation: rolling-symbol-fade-out var(--motion-value) var(--ease-value)
+        both;
+    }
+
+    .rolling-number.is-rolling-up .rolling-number-reel {
+      animation: odometer-up var(--motion-value) var(--ease-value) both;
+    }
+
+    .rolling-number.is-rolling-down .rolling-number-reel {
+      translate: 0 -50%;
+      animation: odometer-down var(--motion-value) var(--ease-value) both;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rolling-number-reel {
+      block-size: 1em;
+      translate: none;
+    }
+
+    .rolling-number-reel > .rolling-number-previous {
+      display: none;
+    }
+  }
+
+  @keyframes rolling-number-lifecycle {
+    from {
+      --rolling-number-lifecycle: 0;
+    }
+
+    to {
+      --rolling-number-lifecycle: 1;
+    }
+  }
+
+  @keyframes rolling-slot-enter {
+    from {
+      grid-template-columns: minmax(0, 0fr);
+    }
+  }
+
+  @keyframes rolling-slot-exit {
+    to {
+      grid-template-columns: minmax(0, 0fr);
+    }
+  }
+
+  @keyframes rolling-symbol-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes rolling-symbol-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes odometer-up {
+    from {
+      translate: 0 0;
+    }
+
+    to {
+      translate: 0 -50%;
+    }
+  }
+
+  @keyframes odometer-down {
+    from {
+      translate: 0 -50%;
+    }
+
+    to {
+      translate: 0 0;
+    }
+  }
+}

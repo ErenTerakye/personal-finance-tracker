@@ -39,6 +39,12 @@ The first version stores transactions with:
 
 The SQLite schema enforces valid transaction types with a `CHECK` constraint.
 
+Asset and liability accounts are stored separately from transactions. Each account has one or more
+dated, non-negative balance snapshots; the latest snapshot on or before an as-of date determines
+its value. Liability balances are positive amounts owed and are subtracted exactly once in the
+deterministic net worth report layer. Archiving records a final zero snapshot without deleting
+history.
+
 Monthly category budgets are stored separately with:
 
 - `id`: SQLite autoincrement primary key
@@ -108,12 +114,22 @@ Supported commands:
 - `import-budgets-csv`: import monthly category budgets from CSV.
 - `export-budgets-csv`: export monthly category budgets to CSV.
 - `web`: run the local FastAPI Web UI.
+- `account-add`, `account-list`, and `account-edit`: manage tracked asset/liability accounts.
+- `account-balance-set`, `account-balance-list`, and `account-balance-delete`: manage dated balances.
+- `account-archive` and `account-delete`: close or correct eligible accounts safely.
+- `net-worth` and `net-worth-history`: report total assets minus total liabilities as of a date.
 
-Database path defaults to `./data/finance_tracker.sqlite3`, which is local runtime state and ignored by git. Users can override it with `--db-path` or `FINANCE_TRACKER_DB`; reproducible demos should use the CSV examples imported into a separate `demo.sqlite3`.
+Database path defaults to `./data/finance_tracker.sqlite3`, which is local runtime state and ignored
+by git. Users can override it with `--db-path` or `FINANCE_TRACKER_DB`; reproducible demos should
+use `examples/build_demo.py` to combine the inspectable CSV sources with rules, recurring
+templates, settings, and account histories in a separate `demo.sqlite3`.
 
 ## Web UI
 
-The July 2026 Web UI overhaul is delivered. The shipped information architecture is Overview, Activity, Plan, and Automations, backed by a semantic ledger-editorial design system, inline compact utilities with bottom navigation, a persistent wide rail, progressive disclosures, deep-linkable automation tabs, self-hosted typography, and accessibility/responsive release evidence in `docs/WEB_UI_OVERHAUL_RELEASE.md`.
+The shipped information architecture is Overview, Net worth, Activity, Plan, and Automations,
+backed by a semantic ledger-editorial design system, inline compact utilities with bottom
+navigation, a persistent wide rail, progressive disclosures, self-hosted typography, and
+accessibility/responsive verification.
 
 The Web UI is an intentional scope expansion from the original CLI-first milestone while preserving the local-first architecture. It runs with:
 
@@ -126,7 +142,8 @@ The Python app exposes JSON endpoints under `/api` and serves the compiled React
 Supported browser workflows:
 
 - Personal Finance Tracker dashboard with a six-month cashflow trend, compact period controls, monthly KPI cards, functional browser-rendered charts, recent transactions, budget pressure, and category mix.
-- Route-aware SPA navigation for `/`, `/transactions`, `/budgets`, and `/rules`.
+- Route-aware SPA navigation for `/`, `/net-worth`, `/transactions`, `/budgets`, and `/rules`.
+- Net worth as-of summaries, account/snapshot workflows, and accessible historical chart/table.
 - Transaction add, edit, delete, and filtering through native dialog workflows.
 - Budget set/update, delete, filtering, and budget status comparison with pressure as the primary view.
 - Browser CSV import/export for transactions and budgets, reusing the same CSV validation and formatting rules as the CLI.

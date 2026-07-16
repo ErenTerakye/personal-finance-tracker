@@ -25,5 +25,9 @@ class RecurringTemplateNotFoundError(FinanceTrackerError):
     """Raised when a recurring template cannot be found."""
 
 
+class AccountNotFoundError(FinanceTrackerError):
+    """Raised when an account cannot be found."""
+
+
 class CsvFormatError(FinanceTrackerError):
     """Raised when a CSV file does not match the expected format."""

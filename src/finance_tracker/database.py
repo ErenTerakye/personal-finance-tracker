@@ -3,7 +3,7 @@
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 BUSY_TIMEOUT_MS = 5_000
 
 SCHEMA_SQL = """
@@ -65,7 +65,37 @@ CREATE INDEX IF NOT EXISTS idx_recurring_templates_active
 ON recurring_templates(active);
 """
 
-MIGRATIONS: tuple[str, ...] = (SCHEMA_SQL,)
+ACCOUNT_SCHEMA_SQL = """
+CREATE TABLE accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('asset', 'liability')),
+    archived_on TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE account_balance_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL,
+    amount TEXT NOT NULL,
+    effective_date TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+    UNIQUE (account_id, effective_date)
+);
+
+CREATE INDEX idx_accounts_type_active
+ON accounts(type, archived_on);
+
+CREATE INDEX idx_account_balance_snapshots_account_date
+ON account_balance_snapshots(account_id, effective_date DESC);
+
+CREATE INDEX idx_account_balance_snapshots_date
+ON account_balance_snapshots(effective_date);
+"""
+
+MIGRATIONS: tuple[str, ...] = (SCHEMA_SQL, ACCOUNT_SCHEMA_SQL)
 
 
 def _configure(connection: sqlite3.Connection) -> None:

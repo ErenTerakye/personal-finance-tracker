@@ -303,9 +303,11 @@ describe("dashboard workflow", () => {
       ).toBe(true);
     });
     expect(picker).not.toHaveAttribute("open");
-    expect(
-      screen.getByRole("button", { name: /^Choose period,/ }),
-    ).toHaveFocus();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /^Choose period,/ }),
+      ).toHaveFocus();
+    });
   });
 
   it("keeps one global entry action that moves creation to Activity", async () => {
@@ -556,7 +558,7 @@ describe("dashboard workflow", () => {
 
     render(<App />);
 
-    await screen.findByText("NET POSITION");
+    await screen.findByText("MONTHLY NET CASHFLOW");
     const metrics = document.querySelector<HTMLElement>(".cashflow-comparison");
 
     expect(metrics).toBeInstanceOf(HTMLDListElement);

@@ -1,8 +1,10 @@
-export type View = "dashboard" | "transactions" | "budgets" | "rules";
+export type View =
+  "dashboard" | "netWorth" | "transactions" | "budgets" | "rules";
 export type RouteView = View | "not-found";
 
 export const viewOrder: readonly View[] = [
   "dashboard",
+  "netWorth",
   "transactions",
   "budgets",
   "rules",
@@ -10,6 +12,7 @@ export const viewOrder: readonly View[] = [
 
 export const viewMeta: Record<View, { path: string }> = {
   dashboard: { path: "/" },
+  netWorth: { path: "/net-worth" },
   transactions: { path: "/transactions" },
   budgets: { path: "/budgets" },
   rules: { path: "/rules" },

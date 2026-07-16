@@ -51,6 +51,16 @@ CLI_PARAMETER_NAMES = {
     "export-budgets-csv": ("path", "month", "year", "category", "db_path"),
     "settings-get": ("key", "db_path"),
     "settings-set": ("key", "value", "db_path"),
+    "account-add": ("name", "account_type", "balance", "effective_date", "db_path"),
+    "account-list": ("as_of", "include_archived", "db_path"),
+    "account-edit": ("account_id", "name", "db_path"),
+    "account-balance-set": ("account_id", "amount", "effective_date", "db_path"),
+    "account-balance-list": ("account_id", "db_path"),
+    "account-balance-delete": ("account_id", "effective_date", "confirm", "db_path"),
+    "account-archive": ("account_id", "closing_date", "confirm", "db_path"),
+    "account-delete": ("account_id", "confirm", "db_path"),
+    "net-worth": ("as_of", "db_path"),
+    "net-worth-history": ("as_of", "months", "db_path"),
 }
 
 POSITIONAL_PARAMETERS = {
@@ -74,22 +84,37 @@ POSITIONAL_PARAMETERS = {
     ("settings-get", "key"),
     ("settings-set", "key"),
     ("settings-set", "value"),
+    ("account-edit", "account_id"),
+    ("account-balance-set", "account_id"),
+    ("account-balance-set", "amount"),
+    ("account-balance-list", "account_id"),
+    ("account-balance-delete", "account_id"),
+    ("account-archive", "account_id"),
+    ("account-delete", "account_id"),
 }
 
 OPTION_SPELLINGS = {
     "active_only": ("--active-only",),
+    "account_type": ("--type",),
+    "as_of": ("--as-of",),
     "allow_duplicates": ("--allow-duplicates",),
     "amount": ("--amount", "-a"),
+    "balance": ("--balance",),
     "category": ("--category", "-c"),
     "chart": ("--chart",),
+    "closing_date": ("--date",),
+    "confirm": ("--confirm",),
     "db_path": ("--db-path",),
     "day_of_month": ("--day",),
     "description": ("--description", "-d"),
     "end_month": ("--end-month",),
     "end_year": ("--end-year",),
+    "effective_date": ("--date",),
     "host": ("--host",),
+    "include_archived": ("--include-archived",),
     "month": ("--month", "-m"),
     "months": ("--months",),
+    "name": ("--name",),
     "port": ("--port",),
     "preview": ("--preview",),
     "reload": ("--reload",),
@@ -114,6 +139,11 @@ REQUIRED_OPTIONS = {
     ("report", "year"),
     ("trends", "end_month"),
     ("trends", "end_year"),
+    ("account-add", "name"),
+    ("account-add", "account_type"),
+    ("account-add", "balance"),
+    ("account-edit", "name"),
+    ("account-balance-delete", "effective_date"),
 }
 
 CLI_PARAMETER_DEFAULTS = {
@@ -167,6 +197,16 @@ CLI_PARAMETER_DEFAULTS = {
     },
     "settings-get": {"db_path": None},
     "settings-set": {"db_path": None},
+    "account-add": {"effective_date": None, "db_path": None},
+    "account-list": {"as_of": None, "include_archived": False, "db_path": None},
+    "account-edit": {"db_path": None},
+    "account-balance-set": {"effective_date": None, "db_path": None},
+    "account-balance-list": {"db_path": None},
+    "account-balance-delete": {"confirm": False, "db_path": None},
+    "account-archive": {"closing_date": None, "confirm": False, "db_path": None},
+    "account-delete": {"confirm": False, "db_path": None},
+    "net-worth": {"as_of": None, "db_path": None},
+    "net-worth-history": {"as_of": None, "months": 12, "db_path": None},
 }
 
 HTTP_OPERATIONS = {
@@ -198,6 +238,16 @@ HTTP_OPERATIONS = {
     ("GET", "/api/charts/trends.png"),
     ("GET", "/api/settings"),
     ("PUT", "/api/settings"),
+    ("GET", "/api/accounts"),
+    ("POST", "/api/accounts"),
+    ("PATCH", "/api/accounts/{account_id}"),
+    ("DELETE", "/api/accounts/{account_id}"),
+    ("POST", "/api/accounts/{account_id}/archive"),
+    ("GET", "/api/accounts/{account_id}/balance-snapshots"),
+    ("PUT", "/api/accounts/{account_id}/balance-snapshots/{effective_date}"),
+    ("DELETE", "/api/accounts/{account_id}/balance-snapshots/{effective_date}"),
+    ("GET", "/api/net-worth"),
+    ("GET", "/api/net-worth/history"),
 }
 
 FROZEN_SCHEMAS = {
@@ -235,6 +285,19 @@ FROZEN_SCHEMAS = {
     "TransactionImportPreviewRowResponse",
     "TransactionImportPreviewResponse",
     "BudgetStatusListResponse",
+    "AccountArchiveRequest",
+    "AccountCreateRequest",
+    "AccountPatchRequest",
+    "AccountResponse",
+    "AccountListResponse",
+    "AccountMutationResponse",
+    "BalanceSnapshotRequest",
+    "BalanceSnapshotResponse",
+    "BalanceSnapshotListResponse",
+    "BalanceSnapshotMutationResponse",
+    "NetWorthSummaryResponse",
+    "NetWorthHistoryPointResponse",
+    "NetWorthHistoryResponse",
 }
 
 
@@ -254,7 +317,7 @@ def test_cli_command_and_parameter_manifest_is_frozen():
     root = get_command(app)
 
     assert set(root.commands) == set(CLI_PARAMETER_NAMES)
-    assert len(root.commands) == 26
+    assert len(root.commands) == 36
     for command_name, parameter_names in CLI_PARAMETER_NAMES.items():
         parameters = root.commands[command_name].params
         actual_names = tuple(parameter.name for parameter in parameters)
@@ -491,7 +554,7 @@ def test_openapi_operation_and_schema_manifests_are_frozen(tmp_path):
 
     assert schema["info"] == {"title": "Personal Finance Tracker", "version": "1.1.0"}
     assert _api_operations(schema) == HTTP_OPERATIONS
-    assert len(HTTP_OPERATIONS) == 28
+    assert len(HTTP_OPERATIONS) == 38
     assert set(schema["components"]["schemas"]) >= FROZEN_SCHEMAS
 
 

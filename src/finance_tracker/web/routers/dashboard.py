@@ -1,14 +1,26 @@
 """Dashboard aggregate route."""
 
+from datetime import date
+
 from fastapi import APIRouter, Request
 
-from finance_tracker.reports import build_monthly_report, build_trend_report
+from finance_tracker.reports import (
+    build_monthly_report,
+    build_net_worth_summary,
+    build_trend_report,
+)
 from finance_tracker.reports.monthly import calculate_savings_rate
-from finance_tracker.web.dependencies import budget_service, settings_service, transaction_service
+from finance_tracker.web.dependencies import (
+    account_service,
+    budget_service,
+    settings_service,
+    transaction_service,
+)
 from finance_tracker.web.responses import (
     budget_status_response,
     moneyless_decimal,
     monthly_report_response,
+    net_worth_summary_response,
     resolve_period,
     transaction_response,
     trend_report_response,
@@ -66,6 +78,8 @@ def dashboard(
         selected_period["month"], selected_period["year"]
     )
     currency = settings_service(request).get_currency()
+    today = date.today()
+    accounts, snapshots = account_service(request).report_data(today)
 
     return DashboardResponse(
         month=selected_period["month"],
@@ -78,5 +92,9 @@ def dashboard(
         ),
         recent_transactions=[transaction_response(item) for item in all_transactions[:5]],
         budget_statuses=[budget_status_response(item) for item in statuses],
+        net_worth=net_worth_summary_response(
+            build_net_worth_summary(accounts, snapshots, today),
+            currency,
+        ),
         currency=currency,
     )

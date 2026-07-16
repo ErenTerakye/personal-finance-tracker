@@ -53,6 +53,7 @@ finance_tracker = [
     "web/static/**/*.html",
     "web/static/**/*.css",
     "web/static/**/*.js",
+    "web/static/**/*.json",
     "web/static/**/*.svg",
     "web/static/**/*.ico",
 ]

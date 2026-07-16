@@ -12,7 +12,7 @@ test("compact bottom navigation localizes from inline header utilities", async (
   await page.goto("/");
 
   const navigation = page.locator(".bottom-navigation");
-  await expect(navigation.getByRole("link")).toHaveCount(4);
+  await expect(navigation.getByRole("link")).toHaveCount(5);
   await expect(
     navigation.getByRole("link", { name: "Overview" }),
   ).toHaveAttribute("aria-current", "page");
@@ -26,6 +26,9 @@ test("compact bottom navigation localizes from inline header utilities", async (
 
   await expect(
     navigation.getByRole("link", { name: "Genel Bakış" }),
+  ).toBeVisible();
+  await expect(
+    navigation.getByRole("link", { name: "Net değer" }),
   ).toBeVisible();
   await expect(
     navigation.getByRole("link", { name: "Hareketler" }),
@@ -44,7 +47,13 @@ test("keeps compact navigation live through rapid tab switches", async ({
   await expect(page.getByRole("heading", { name: "June 2026" })).toBeVisible();
 
   const navigation = page.locator(".compact-primary-navigation");
-  for (const path of ["/transactions", "/budgets", "/rules", "/"]) {
+  for (const path of [
+    "/net-worth",
+    "/transactions",
+    "/budgets",
+    "/rules",
+    "/",
+  ]) {
     const state = await navigation.evaluate((element, nextPath) => {
       const link = element.querySelector<HTMLAnchorElement>(
         `a[href="${nextPath}"]`,
@@ -110,6 +119,68 @@ test("scrolls the monthly automation creator in a short viewport", async ({
   expect(submitBox!.y + submitBox!.height).toBeLessThanOrEqual(
     dialogBox!.y + dialogBox!.height,
   );
+});
+
+test("opens category guardrails without covering or rearranging cards", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await mockApi(page);
+  await page.goto("/budgets");
+
+  const cards = page.locator(".plan-category-card");
+  const grid = page.locator(".plan-category-grid");
+  await expect(cards.first()).toBeVisible();
+  const readCardGeometry = () =>
+    grid.evaluate((gridElement) => {
+      const geometry = Array.from(
+        gridElement.querySelectorAll<HTMLElement>(".plan-category-card"),
+      )
+        .slice(0, 6)
+        .map((element) => ({
+          height: element.offsetHeight,
+          width: element.offsetWidth,
+          x: element.offsetLeft,
+          y: element.offsetTop,
+        }));
+      const firstY = geometry[0]?.y ?? 0;
+      return geometry.map((card) => ({ ...card, y: card.y - firstY }));
+    });
+  const before = await readCardGeometry();
+
+  const trigger = page.getByRole("button", { name: /Travel, .* used/ });
+  await trigger.click();
+
+  const inspector = page.locator(".plan-inspector");
+  await expect(inspector).toHaveClass(/is-open/);
+  await expect(
+    page.getByRole("button", { name: "Edit Travel budget" }),
+  ).toBeVisible();
+  await inspector.evaluate((element) =>
+    Promise.all(
+      element
+        .getAnimations()
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  );
+  expect(await readCardGeometry()).toEqual(before);
+  const [inspectorBox, gridBox] = await Promise.all([
+    inspector.boundingBox(),
+    grid.boundingBox(),
+  ]);
+  expect(inspectorBox!.y + inspectorBox!.height).toBeLessThanOrEqual(
+    gridBox!.y,
+  );
+  expect(
+    await inspector.evaluate(
+      (element) => getComputedStyle(element).transitionDuration,
+    ),
+  ).not.toBe("0s");
+
+  await page.getByRole("button", { name: "Close category details" }).click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(inspector).toBeHidden();
+  expect(await readCardGeometry()).toEqual(before);
 });
 
 test("keeps the compact app bar above period transition snapshots", async ({
@@ -972,7 +1043,7 @@ async function expectMobileNavigationIsCompact(page: Page, width: number) {
     };
   });
 
-  expect(layout.links).toHaveLength(4);
+  expect(layout.links).toHaveLength(5);
   expect(layout.links.every(({ height }) => height >= 48)).toBe(true);
   expect(
     Math.max(...layout.links.map(({ width }) => width)) -
@@ -1044,6 +1115,27 @@ async function mockApi(page: Page) {
     }
     if (url.pathname === "/api/settings") {
       await route.fulfill({ json: { currency: "USD" } });
+      return;
+    }
+    if (url.pathname === "/api/accounts") {
+      await route.fulfill({ json: { accounts: [] } });
+      return;
+    }
+    if (url.pathname === "/api/net-worth/history") {
+      await route.fulfill({
+        json: {
+          as_of: "2026-07-16",
+          months: Number(url.searchParams.get("months") ?? 12),
+          points: [],
+          change_amount: null,
+          change_percent: null,
+          currency: "USD",
+        },
+      });
+      return;
+    }
+    if (url.pathname === "/api/net-worth") {
+      await route.fulfill({ json: netWorthSummary() });
       return;
     }
     if (url.pathname === "/api/transactions") {
@@ -1206,6 +1298,22 @@ function dashboardPayload() {
     savings_rate: "84.5",
     recent_transactions: [transaction()],
     budget_statuses: attentionQueueStatuses(),
+    net_worth: netWorthSummary(),
+  };
+}
+
+function netWorthSummary() {
+  return {
+    as_of: "2026-07-16",
+    total_assets: "0.00",
+    total_liabilities: "0.00",
+    total_net_worth: "0.00",
+    active_account_count: 0,
+    archived_account_count: 0,
+    resolved_asset_count: 0,
+    resolved_liability_count: 0,
+    unresolved_account_count: 0,
+    currency: "USD",
   };
 }
 

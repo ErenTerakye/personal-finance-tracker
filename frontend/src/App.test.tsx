@@ -93,15 +93,17 @@ describe("app composition", () => {
     expect(compactNavigation).not.toBeNull();
 
     const links = within(compactNavigation!).getAllByRole("link");
-    expect(links).toHaveLength(4);
+    expect(links).toHaveLength(5);
     expect(links.map((link) => link.textContent)).toEqual([
       "Overview",
-      "Activity",
-      "Plan",
-      "Automations",
+      "Worth",
+      "Entries",
+      "Budgets",
+      "Rules",
     ]);
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/",
+      "/net-worth",
       "/transactions",
       "/budgets",
       "/rules",
@@ -121,17 +123,17 @@ describe("app composition", () => {
       }),
     );
     await waitFor(() => expect(window.location.pathname).toBe("/transactions"));
-    expect(links[1]).toHaveAttribute("aria-current", "page");
-    expect(links[1].querySelector("svg")).toHaveAttribute(
+    expect(links[2]).toHaveAttribute("aria-current", "page");
+    expect(links[2].querySelector("svg")).toHaveAttribute(
       "fill",
       "currentColor",
     );
-    expect(links[1].querySelector("svg")).toHaveClass(
+    expect(links[2].querySelector("svg")).toHaveClass(
       "navigation-filled-icon",
       "lucide-receipt-text",
     );
     expect(
-      links[1].querySelector(".navigation-icon-detail--transactions"),
+      links[2].querySelector(".navigation-icon-detail--transactions"),
     ).toHaveAttribute("stroke-width", "2");
 
     const compactHeader =
@@ -162,17 +164,17 @@ describe("app composition", () => {
     expect(
       await screen.findByRole("heading", { name: "Your July 2026 plan" }),
     ).toBeInTheDocument();
-    expect(links[2]).toHaveAttribute("aria-current", "page");
-    expect(links[2].querySelector("svg")).toHaveAttribute(
+    expect(links[3]).toHaveAttribute("aria-current", "page");
+    expect(links[3].querySelector("svg")).toHaveAttribute(
       "fill",
       "currentColor",
     );
-    expect(links[2].querySelector("svg")).toHaveClass(
+    expect(links[3].querySelector("svg")).toHaveClass(
       "navigation-filled-icon",
       "lucide-piggy-bank",
     );
     expect(
-      links[2].querySelector(".navigation-icon-detail--budgets"),
+      links[3].querySelector(".navigation-icon-detail--budgets"),
     ).toHaveAttribute("stroke-width", "3");
 
     await userEvent.click(
@@ -181,9 +183,9 @@ describe("app composition", () => {
       }),
     );
     await waitFor(() => expect(window.location.pathname).toBe("/rules"));
-    expect(links[3]).toHaveAttribute("aria-current", "page");
-    expect(links[3].querySelector("svg")).toHaveAttribute("fill", "none");
-    expect(links[3].querySelector("svg")).toHaveAttribute(
+    expect(links[4]).toHaveAttribute("aria-current", "page");
+    expect(links[4].querySelector("svg")).toHaveAttribute("fill", "none");
+    expect(links[4].querySelector("svg")).toHaveAttribute(
       "stroke-width",
       "2.75",
     );

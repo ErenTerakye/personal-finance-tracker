@@ -38,6 +38,128 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/accounts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Accounts */
+    get: operations["list_accounts_api_accounts_get"];
+    put?: never;
+    /** Create Account */
+    post: operations["create_account_api_accounts_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/accounts/{account_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Account */
+    delete: operations["delete_account_api_accounts__account_id__delete"];
+    options?: never;
+    head?: never;
+    /** Patch Account */
+    patch: operations["patch_account_api_accounts__account_id__patch"];
+    trace?: never;
+  };
+  "/api/accounts/{account_id}/archive": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Archive Account */
+    post: operations["archive_account_api_accounts__account_id__archive_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/accounts/{account_id}/balance-snapshots": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Balance Snapshots */
+    get: operations["list_balance_snapshots_api_accounts__account_id__balance_snapshots_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/accounts/{account_id}/balance-snapshots/{effective_date}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Set Balance Snapshot */
+    put: operations["set_balance_snapshot_api_accounts__account_id__balance_snapshots__effective_date__put"];
+    post?: never;
+    /** Delete Balance Snapshot */
+    delete: operations["delete_balance_snapshot_api_accounts__account_id__balance_snapshots__effective_date__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/net-worth": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Net Worth Summary */
+    get: operations["net_worth_summary_api_net_worth_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/net-worth/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Net Worth History */
+    get: operations["net_worth_history_api_net_worth_history_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/transactions": {
     parameters: {
       query?: never;
@@ -388,6 +510,75 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AccountArchiveRequest */
+    AccountArchiveRequest: {
+      /**
+       * Closing Date
+       * Format: date
+       */
+      closing_date: string;
+      /** Confirm Zero Balance */
+      confirm_zero_balance: boolean;
+    };
+    /** AccountCreateRequest */
+    AccountCreateRequest: {
+      /** Name */
+      name: string;
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: "asset" | "liability";
+      /** Initial Balance */
+      initial_balance: string;
+      /**
+       * Initial Balance Date
+       * Format: date
+       */
+      initial_balance_date: string;
+    };
+    /** AccountListResponse */
+    AccountListResponse: {
+      /** Accounts */
+      accounts: components["schemas"]["AccountResponse"][];
+    };
+    /** AccountMutationResponse */
+    AccountMutationResponse: {
+      /** Notice */
+      notice: string;
+      /** Notice Code */
+      notice_code: string;
+      account: components["schemas"]["AccountResponse"];
+    };
+    /** AccountPatchRequest */
+    AccountPatchRequest: {
+      /** Name */
+      name?: string | null;
+    };
+    /** AccountResponse */
+    AccountResponse: {
+      /** Id */
+      id: number;
+      /** Name */
+      name: string;
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: "asset" | "liability";
+      /** Archived On */
+      archived_on: string | null;
+      /** Created At */
+      created_at: string;
+      /** As Of */
+      as_of: string;
+      /** Resolved Balance */
+      resolved_balance: string | null;
+      /** Resolved Balance Date */
+      resolved_balance_date: string | null;
+      /** Currency */
+      currency: string;
+    };
     /** ApiErrorDetail */
     ApiErrorDetail: {
       /** Code */
@@ -398,6 +589,41 @@ export interface components {
       fields?: {
         [key: string]: string;
       } | null;
+    };
+    /** BalanceSnapshotListResponse */
+    BalanceSnapshotListResponse: {
+      /** Balance Snapshots */
+      balance_snapshots: components["schemas"]["BalanceSnapshotResponse"][];
+    };
+    /** BalanceSnapshotMutationResponse */
+    BalanceSnapshotMutationResponse: {
+      /** Notice */
+      notice: string;
+      /** Notice Code */
+      notice_code: string;
+      snapshot: components["schemas"]["BalanceSnapshotResponse"];
+    };
+    /** BalanceSnapshotRequest */
+    BalanceSnapshotRequest: {
+      /** Amount */
+      amount: string;
+    };
+    /** BalanceSnapshotResponse */
+    BalanceSnapshotResponse: {
+      /** Id */
+      id: number;
+      /** Account Id */
+      account_id: number;
+      /** Amount */
+      amount: string;
+      /** Effective Date */
+      effective_date: string;
+      /** Created At */
+      created_at: string;
+      /** Updated At */
+      updated_at: string;
+      /** Currency */
+      currency: string;
     };
     /** BudgetListResponse */
     BudgetListResponse: {
@@ -503,6 +729,7 @@ export interface components {
       recent_transactions: components["schemas"]["TransactionResponse"][];
       /** Budget Statuses */
       budget_statuses: components["schemas"]["BudgetStatusResponse"][];
+      net_worth: components["schemas"]["NetWorthSummaryResponse"];
       /** Currency */
       currency: string;
     };
@@ -562,6 +789,61 @@ export interface components {
       expenses_delta: string;
       /** Net Savings Delta */
       net_savings_delta: string;
+    };
+    /** NetWorthHistoryPointResponse */
+    NetWorthHistoryPointResponse: {
+      /** As Of */
+      as_of: string;
+      /** Total Assets */
+      total_assets: string;
+      /** Total Liabilities */
+      total_liabilities: string;
+      /** Total Net Worth */
+      total_net_worth: string;
+      /** Resolved Asset Count */
+      resolved_asset_count: number;
+      /** Resolved Liability Count */
+      resolved_liability_count: number;
+      /** Unresolved Account Count */
+      unresolved_account_count: number;
+    };
+    /** NetWorthHistoryResponse */
+    NetWorthHistoryResponse: {
+      /** As Of */
+      as_of: string;
+      /** Months */
+      months: number;
+      /** Points */
+      points: components["schemas"]["NetWorthHistoryPointResponse"][];
+      /** Change Amount */
+      change_amount: string | null;
+      /** Change Percent */
+      change_percent: string | null;
+      /** Currency */
+      currency: string;
+    };
+    /** NetWorthSummaryResponse */
+    NetWorthSummaryResponse: {
+      /** As Of */
+      as_of: string;
+      /** Total Assets */
+      total_assets: string;
+      /** Total Liabilities */
+      total_liabilities: string;
+      /** Total Net Worth */
+      total_net_worth: string;
+      /** Active Account Count */
+      active_account_count: number;
+      /** Archived Account Count */
+      archived_account_count: number;
+      /** Resolved Asset Count */
+      resolved_asset_count: number;
+      /** Resolved Liability Count */
+      resolved_liability_count: number;
+      /** Unresolved Account Count */
+      unresolved_account_count: number;
+      /** Currency */
+      currency: string;
     };
     /** NoticeResponse */
     NoticeResponse: {
@@ -858,6 +1140,473 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["DashboardResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_accounts_api_accounts_get: {
+    parameters: {
+      query?: {
+        as_of?: string | null;
+        include_archived?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AccountListResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_account_api_accounts_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AccountCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AccountMutationResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_account_api_accounts__account_id__delete: {
+    parameters: {
+      query?: {
+        confirm?: boolean;
+      };
+      header?: never;
+      path: {
+        account_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NoticeResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  patch_account_api_accounts__account_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        account_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AccountPatchRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AccountMutationResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  archive_account_api_accounts__account_id__archive_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        account_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AccountArchiveRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AccountMutationResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_balance_snapshots_api_accounts__account_id__balance_snapshots_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        account_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BalanceSnapshotListResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  set_balance_snapshot_api_accounts__account_id__balance_snapshots__effective_date__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        account_id: number;
+        effective_date: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BalanceSnapshotRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BalanceSnapshotMutationResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_balance_snapshot_api_accounts__account_id__balance_snapshots__effective_date__delete: {
+    parameters: {
+      query?: {
+        confirm?: boolean;
+      };
+      header?: never;
+      path: {
+        account_id: number;
+        effective_date: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NoticeResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  net_worth_summary_api_net_worth_get: {
+    parameters: {
+      query?: {
+        as_of?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NetWorthSummaryResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  net_worth_history_api_net_worth_history_get: {
+    parameters: {
+      query?: {
+        as_of?: string | null;
+        months?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NetWorthHistoryResponse"];
         };
       };
       /** @description Bad Request */

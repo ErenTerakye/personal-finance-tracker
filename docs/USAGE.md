@@ -18,7 +18,9 @@ finance-tracker init
 
 By default this creates `data/finance_tracker.sqlite3`.
 
-The default database is local runtime state and is ignored by git. Use `--db-path demo.sqlite3` for the reproducible reviewer demo built from the included synthetic sample CSVs. The `demo.sqlite3` file itself is generated local state, not source data, and can be rebuilt from the CSV files.
+The default database is local runtime state and is ignored by git. Use `--db-path demo.sqlite3` for
+the reproducible reviewer demo built from the included synthetic source data. The `demo.sqlite3`
+file itself is generated local state and can be rebuilt at any time.
 
 Use a custom path:
 
@@ -28,24 +30,25 @@ finance-tracker init --db-path demo.sqlite3
 
 ## Reviewer Demo
 
-This sequence imports the included examples, prints budget and report output, creates charts, and exports CSV files:
+This sequence builds the included example scenario, prints budget and report output, creates
+charts, and exports CSV files:
 
 ```bash
-finance-tracker init --db-path demo.sqlite3
-finance-tracker import-csv examples/sample_transactions.csv --db-path demo.sqlite3
-finance-tracker import-budgets-csv examples/sample_budgets.csv --db-path demo.sqlite3
-finance-tracker category-rule-set groceries Food --db-path demo.sqlite3
-finance-tracker recurring-add expense 1600 --category Rent --description "Monthly rent" --day 1 --db-path demo.sqlite3
-finance-tracker recurring-apply --month 7 --year 2026 --db-path demo.sqlite3
+.venv/bin/python examples/build_demo.py --force
 mkdir -p reports exports
 finance-tracker list --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
-finance-tracker trends --months 6 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker net-worth-history --months 12 --as-of 2026-07-16 --db-path demo.sqlite3
 finance-tracker web --db-path demo.sqlite3
 finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
 finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 ```
+
+The builder seeds a complete trailing year of cashflow, mixed budget states, category aliases,
+recurring templates with duplicate-safe application, and asset/liability histories. See
+[../examples/README.md](../examples/README.md) for the detailed scenario.
 
 ## Run the Local Web UI
 
@@ -63,10 +66,12 @@ For the reviewer demo, use the generated sample database:
 finance-tracker web --host 127.0.0.1 --port 8000 --db-path demo.sqlite3
 ```
 
-The Web UI uses four destinations—Overview, Activity, Plan, and Automations—and supports:
+The Web UI uses five destinations—Overview, Net worth, Activity, Plan, and Automations—and supports:
 
 - A Personal Finance Tracker dashboard with a six-month cashflow trend, KPI cards, YTD/month-over-month context, trend/category charts, recent transactions, and budget pressure.
-- Route-aware browser navigation for `/`, `/transactions`, `/budgets`, and `/rules`.
+- Route-aware browser navigation for `/`, `/net-worth`, `/transactions`, `/budgets`, and `/rules`.
+- A Net worth workspace for current or historical totals, account composition, dated balance
+  correction, archive/delete safeguards, and an accessible chart with a full table.
 - Compact period controls for changing monthly scope without keeping month/year fields open all the time.
 - An Activity workspace with an inflow/outflow/net snapshot, immediate search, period and category filters, newest/oldest sorting, a date-grouped ledger timeline, and transaction add, edit, and delete workflows.
 - A Plan workspace with a monthly health pulse, planned/spent/uncovered metrics, live category search, priority/spend/category sorting, pressure-ranked guardrail cards, and focused budget editing and deletion.
@@ -79,7 +84,17 @@ The Web UI uses four destinations—Overview, Activity, Plan, and Automations—
 
 The Python server exposes JSON under `/api` and serves the compiled React + Vite app from the same local origin. Money values in API responses are decimal strings, preserving the SQLite/`Decimal` behavior used by the CLI.
 
-For frontend development, run the API and Vite dev server in separate terminals:
+For frontend development with a fresh copy of the detailed demo:
+
+```bash
+npm run dev:demo
+```
+
+This command checks that ports 8000 and 5173 are free, rebuilds `demo.sqlite3`, starts the
+reload-enabled API and Vite, and cleans up the API process when Vite exits.
+
+To preserve changes made to the current database, run the API and Vite dev server in separate
+terminals:
 
 ```bash
 finance-tracker web --db-path demo.sqlite3
@@ -96,7 +111,8 @@ The Web UI is a local Python app. GitHub Pages cannot run the live app because P
 
 ## Reviewer Screenshots
 
-Tracked screenshots live in [assets/screenshots](assets/screenshots) and are captured from the generated July 2026 demo database after importing the sample CSVs and applying the documented category rule and recurring template:
+Tracked screenshots live in [assets/screenshots](assets/screenshots) and should be refreshed from
+the generated July 2026 demo database after running `examples/build_demo.py`:
 
 - `dashboard-desktop.png` from `/`
 - `transactions-mobile.png` from `/transactions`
@@ -106,6 +122,30 @@ Refresh them after rebuilding `demo.sqlite3` and starting the app with:
 
 ```bash
 finance-tracker web --db-path demo.sqlite3
+```
+
+## Accounts and Total Net Worth
+
+Create asset and liability accounts with an initial dated balance:
+
+```bash
+finance-tracker account-add --name "Everyday savings" --type asset --balance 12400 --date 2026-01-31
+finance-tracker account-add --name "Education loan" --type liability --balance 9200 --date 2026-01-31
+finance-tracker account-balance-set 1 13850 --date 2026-07-16
+finance-tracker account-balance-list 1
+finance-tracker account-list --as-of 2026-07-16
+finance-tracker net-worth --as-of 2026-07-16
+finance-tracker net-worth-history --months 12 --as-of 2026-07-16
+```
+
+Liability balances are positive amounts owed. Snapshot deletion and account archiving require
+`--confirm`; archiving records a closing zero balance while preserving earlier history.
+
+```bash
+finance-tracker account-edit 1 --name "Emergency savings"
+finance-tracker account-balance-delete 1 --date 2026-06-30 --confirm
+finance-tracker account-archive 2 --date 2026-07-16 --confirm
+finance-tracker account-delete 3 --confirm
 ```
 
 ## Add Transactions

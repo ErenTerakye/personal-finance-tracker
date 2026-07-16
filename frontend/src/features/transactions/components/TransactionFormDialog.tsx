@@ -6,6 +6,7 @@ import {
   Tags,
   Text,
 } from "lucide-react";
+import "./TransactionFormDialog.css";
 import type { FormEvent } from "react";
 import type { TransactionInput, TransactionType } from "../../../types";
 import { SubmitButton } from "../../../shared/components/actions";

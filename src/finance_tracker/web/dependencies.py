@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import HTTPException, Request, status
 
 from finance_tracker.services import (
+    AccountService,
     BudgetService,
     CategoryRuleService,
     RecurringTemplateService,
@@ -19,6 +20,10 @@ def initialize_web_database(db_path: Path) -> None:
     """Initialize the ledger through the public application-service boundary."""
 
     TransactionService(db_path)
+
+
+def account_service(request: Request) -> AccountService:
+    return AccountService(request.app.state.db_path, initialize=False)
 
 
 def transaction_service(request: Request) -> TransactionService:

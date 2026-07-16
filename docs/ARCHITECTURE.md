@@ -73,13 +73,19 @@ global cache, optimistic updates, automatic retries, or background revalidation.
 
 Global CSS is split into the ordered native cascade layers `tokens`, `reset`, `base`, `layout`,
 `components`, `features`, `utilities`, and `overrides`. The source order and built output are checked
-without adding a CSS architecture dependency.
+without adding a CSS architecture dependency. Persistent application-shell styles remain eager,
+while route-owned feature, component, motion, and accessibility rules are imported from their
+feature directories and emitted with the corresponding lazy route chunks.
 
 The production bundle check measures minified assets after gzip as a stable compressed-transfer
-proxy. It caps render-blocking initial CSS at 24 KiB, each lazy CSS chunk at 5 KiB, and all CSS at
-28 KiB. The initial limit keeps the measured production build near 83% utilization, leaving roughly
-20% maintenance headroom while remaining intentionally tight. The lazy and aggregate limits ensure
-route splitting cannot hide stylesheet growth.
+proxy. It caps render-blocking initial CSS at 12 KiB, each individual lazy CSS chunk at 7 KiB,
+the cumulative lazy CSS loaded by any route at 8 KiB, and all CSS at 30 KiB. Route totals are derived
+from Vite's production manifest and include shared component styles, so splitting a route across
+multiple files cannot hide stylesheet growth. Styles shared by the default dashboard and multiple
+routes remain in the initial bundle when doing so reduces route requests and aggregate compressed
+transfer without approaching the initial limit. The aggregate ceiling leaves approximately 20%
+maintenance headroom at the measured 23.70 KiB production baseline; it should be revisited from
+measured output rather than raised automatically when utilization grows.
 
 The UI targets Baseline 2026 and progressively enhances native dialogs, popovers, container queries,
 same-document view transitions, and modern CSS. Core navigation, forms, dialogs, and CRUD remain
@@ -95,7 +101,15 @@ Connections enable foreign keys, WAL, a busy timeout, and `synchronous=NORMAL` w
 3.14 transaction behavior. Money remains `Decimal` in Python and decimal text in SQLite and JSON;
 dates remain ISO text.
 
-The 26 CLI commands, 28 HTTP operations, OpenAPI schema names, CSV headers, SQLite schema/indexes,
+The 36 CLI commands, 38 HTTP operations, OpenAPI schema names, CSV headers, SQLite schema/indexes,
 browser routes, security headers, and package entrypoints frozen by
 [`ARCHITECTURE_CLEANUP_SPEC.md`](ARCHITECTURE_CLEANUP_SPEC.md) are compatibility contracts. Tests
 characterize those contracts, and generated OpenAPI output is changed only through the generator.
+
+## Demo source and generated artifacts
+
+The reviewer ledger is generated local state, not a checked-in database. `examples/build_demo.py`
+combines the inspectable transaction and budget CSVs with category rules, recurring templates,
+settings, and account balance histories through public services. `demo.sqlite3`, report images,
+exports, and screenshots remain generated artifacts; the example sources and deterministic
+integration test are the reproducibility contract.

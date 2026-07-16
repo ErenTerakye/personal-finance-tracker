@@ -1,0 +1,362 @@
+@layer overrides {
+  .app-shell {
+    min-block-size: 100dvh;
+  }
+
+  .app-shell > main {
+    container: workspace-main / inline-size;
+    min-inline-size: 0;
+    max-inline-size: 100rem;
+    margin-inline: auto;
+    padding: clamp(1.25rem, 3vw, 3.5rem) var(--page-gutter) 5rem;
+  }
+
+  .app-rail {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    display: grid;
+    grid-template-rows: auto auto auto 1fr auto;
+    gap: 1.5rem;
+    inline-size: 16rem;
+    padding: 1.25rem 1rem;
+    color: var(--text);
+    background: var(--surface);
+    border-inline-end: 1px solid var(--rule);
+  }
+
+  .app-rail .brand {
+    color: var(--ink);
+  }
+
+  .app-rail .brand em {
+    color: var(--muted);
+  }
+
+  .app-rail .brand-mark {
+    color: var(--surface);
+    background: var(--ink);
+  }
+
+  .rail-navigation ul {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: none;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .rail-navigation a {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.8rem;
+    min-block-size: 3rem;
+    padding-inline: 0.85rem;
+    border-radius: var(--radius-pill);
+    color: var(--muted);
+    font-size: var(--font-size-sm);
+    text-decoration: none;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .rail-navigation .navigation-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .rail-navigation a::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    content: "";
+    background: transparent;
+  }
+
+  .rail-navigation a:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+  }
+
+  .rail-navigation a[aria-current="page"] {
+    color: var(--surface);
+  }
+
+  .rail-navigation a[aria-current="page"]::before {
+    background: var(--action);
+  }
+
+  .rail-create {
+    inline-size: 100%;
+    justify-content: flex-start;
+  }
+
+  .rail-utilities {
+    align-self: end;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .app-rail :is(.lang-toggle, .theme-toggle) {
+    color: var(--ink);
+    background: transparent;
+    border-color: var(--rule-strong);
+  }
+
+  .compact-app-bar {
+    display: none;
+  }
+
+  .compact-primary-navigation {
+    display: none;
+  }
+
+  @media (min-width: 64rem) {
+    .app-shell > main {
+      margin-inline-start: 16rem;
+    }
+  }
+
+  @media (max-width: 63.999rem) {
+    .app-rail {
+      display: none;
+    }
+
+    .page-heading {
+      grid-template-columns: minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .page-actions {
+      inline-size: 100%;
+    }
+
+    .compact-app-bar {
+      position: sticky;
+      inset-block-start: 0;
+      z-index: 15;
+
+      /* Transition snapshots use the top layer, outside ordinary z-index. */
+      view-transition-name: period-header;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.5rem;
+      min-block-size: 4rem;
+      padding-inline: var(--page-gutter);
+      background: color-mix(in srgb, var(--paper) 90%, transparent);
+      border-block-end: 1px solid var(--rule);
+      backdrop-filter: blur(16px);
+    }
+
+    .compact-utilities {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.375rem;
+      min-inline-size: 0;
+    }
+
+    .compact-app-bar .brand {
+      min-inline-size: var(--tap-target);
+      min-block-size: var(--tap-target);
+    }
+
+    .compact-app-bar .brand > span:last-child {
+      display: none;
+    }
+
+    .compact-app-bar .brand em {
+      display: none;
+    }
+
+    .compact-app-bar .brand-mark {
+      inline-size: 2rem;
+      block-size: 2rem;
+    }
+
+    .compact-app-bar :is(.lang-toggle, .theme-toggle) {
+      flex: none;
+    }
+
+    .compact-create {
+      justify-self: end;
+      inline-size: var(--tap-target);
+      padding-inline: 0;
+      flex: none;
+    }
+
+    .compact-create-label {
+      display: none;
+    }
+
+    .app-shell > main {
+      padding-block: 1.5rem calc(6rem + env(safe-area-inset-bottom));
+    }
+
+    .compact-primary-navigation {
+      position: fixed;
+      inset: auto 0 0;
+      z-index: 20;
+      display: block;
+      padding-block-end: env(safe-area-inset-bottom);
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      border-block-start: 1px solid var(--rule);
+      box-shadow: 0 -0.5rem 1.5rem rgb(5 12 19 / 0.08);
+      backdrop-filter: blur(16px);
+    }
+
+    .bottom-navigation ul {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      max-inline-size: 52rem;
+      min-block-size: 4.5rem;
+      margin: 0 auto;
+      padding: 0.35rem max(0.35rem, env(safe-area-inset-right)) 0.3rem
+        max(0.35rem, env(safe-area-inset-left));
+      list-style: none;
+    }
+
+    .bottom-navigation li {
+      min-inline-size: 0;
+    }
+
+    .bottom-navigation a {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+      min-inline-size: 0;
+      min-block-size: 3.75rem;
+      padding-inline: 0.25rem;
+      color: var(--muted);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      line-height: 1.1;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .bottom-navigation .navigation-icon {
+      position: relative;
+      display: grid;
+      place-items: center;
+      inline-size: 3rem;
+      block-size: 2rem;
+    }
+
+    .bottom-navigation .navigation-icon::before {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: 100vmax;
+      content: "";
+      background: transparent;
+    }
+
+    .bottom-navigation a:hover:not([aria-current="page"]) {
+      color: var(--ink);
+    }
+
+    .bottom-navigation
+      a:hover:not([aria-current="page"])
+      .navigation-icon::before {
+      background: color-mix(in srgb, var(--surface-2) 68%, transparent);
+    }
+
+    .bottom-navigation a[aria-current="page"] {
+      --active-navigation-icon-detail: color-mix(
+        in srgb,
+        var(--action) 15%,
+        var(--surface)
+      );
+
+      color: var(--action);
+    }
+
+    .bottom-navigation a[aria-current="page"] .navigation-icon::before {
+      background: var(--active-navigation-icon-detail);
+    }
+
+    .bottom-navigation .navigation-icon-detail {
+      position: absolute;
+      pointer-events: none;
+      stroke: var(--active-navigation-icon-detail);
+    }
+
+    .bottom-navigation
+      .navigation-icon-detail--transactions
+      > path:last-of-type,
+    .bottom-navigation
+      .navigation-icon-detail--budgets
+      > path:not(:nth-of-type(2)) {
+      display: none;
+    }
+
+    .bottom-navigation a:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: -2px;
+    }
+  }
+
+  @media (min-width: 36rem) and (max-width: 63.999rem) {
+    .compact-app-bar .brand > span:last-child,
+    .compact-create-label {
+      display: block;
+    }
+
+    .compact-app-bar .brand strong {
+      white-space: nowrap;
+    }
+
+    .compact-app-bar .brand {
+      min-inline-size: 0;
+    }
+
+    .compact-create {
+      inline-size: auto;
+      padding-inline: 0.9rem;
+    }
+  }
+
+  @media (pointer: coarse) and (max-width: 63.999rem) {
+    .bottom-navigation a {
+      min-block-size: 3.75rem;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .app-rail {
+      border-inline-end: 1px solid CanvasText;
+    }
+
+    .rail-navigation a[aria-current="page"] {
+      outline: 2px solid Highlight;
+    }
+
+    .compact-primary-navigation {
+      border-block-start-color: CanvasText;
+    }
+
+    .bottom-navigation a[aria-current="page"] {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
+    }
+  }
+}

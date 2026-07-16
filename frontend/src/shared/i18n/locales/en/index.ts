@@ -47,12 +47,14 @@ export const en = {
   },
   nav: {
     dashboard: "Overview",
+    netWorth: "Net worth",
     transactions: "Activity",
     budgets: "Plan",
     rules: "Automations",
   },
   navShort: {
     dashboard: "Overview",
+    netWorth: "Worth",
     transactions: "Entries",
     budgets: "Budgets",
     rules: "Rules",
@@ -110,7 +112,7 @@ export const en = {
     trendChart: "Trend chart",
     summaryAria: "Dashboard totals for {period}",
     kpi: {
-      netPosition: "Net position",
+      netPosition: "Monthly net cashflow",
       savingsRate: "Savings rate",
       budgetRisk: "Budget risk",
       income: "Income",
@@ -138,6 +140,20 @@ export const en = {
       mixDetail: "Spending by category",
       activityTitle: "Recent activity",
     },
+    netWorth: {
+      title: "Current net worth",
+      asOf: "As of {date}, independent of the selected cashflow month",
+      action: "Open net worth",
+      emptyTitle: "Net worth is not tracked yet",
+      emptyMessage:
+        "Add manual asset and liability balances without changing transaction history.",
+      addAccount: "Add account",
+      netWorth: "Net worth",
+      assets: "Assets",
+      liabilities: "Liabilities",
+      coverageLabel: "Coverage",
+      coverage: "{count} account(s) are not tracked yet for today.",
+    },
     activity: {
       emptyTitle: "No recent activity",
       emptyMessage:
@@ -148,6 +164,117 @@ export const en = {
       loadingTitle: "Loading dashboard",
       fetching: "Fetching transaction records",
       preparing: "Preparing the cashflow trend.",
+    },
+  },
+  netWorth: {
+    eyebrow: "Wealth position",
+    title: "Net worth",
+    summary:
+      "Track manual asset and liability balances as of today or a past date.",
+    loading: "Loading net worth",
+    loadingDetail: "Resolving account balances and history.",
+    refreshing: "Updating balances…",
+    controls: "Net worth date and history range",
+    asOfLabel: "As-of date",
+    asOfHint: "Balances use the latest snapshot on or before this date.",
+    rangeLabel: "History range",
+    months: "{count} months",
+    currentPosition: "Current position",
+    total: "Total net worth",
+    assets: "Assets",
+    liabilities: "Liabilities",
+    coverage: "{count} account(s) are not tracked yet for this date.",
+    coverageComplete: "All tracked accounts have a balance for this date.",
+    state: {
+      positive: "Assets exceed liabilities for the selected date.",
+      negative:
+        "Liabilities exceed assets for the selected date; the signed total shows the difference.",
+      zero: "Assets and liabilities are equal for the selected date.",
+    },
+    firstUse: {
+      eyebrow: "Manual, local balances",
+      title: "Add your first account",
+      message:
+        "Monthly cashflow shows income minus expenses. Net worth uses dated balances for assets and debts, stored only in this local ledger.",
+    },
+    unresolvedAll: {
+      title: "Tracked balances begin later",
+      message:
+        "No account has a balance on or before {date}, so zero would not represent complete coverage.",
+    },
+    composition: {
+      title: "Account composition",
+      detail: "The balances that explain the selected total.",
+    },
+    account: {
+      asset: "Asset",
+      liability: "Liability",
+      archived: "Archived on {date}",
+      unresolved: "Not tracked yet",
+      noEarlierBalance: "No balance on or before this date",
+      balanceDate: "Balance from {date}",
+      none: "No accounts in this group.",
+    },
+    actions: {
+      addAccount: "Add account",
+      updateBalance: "Update balance",
+      history: "History",
+      showArchived: "Show archived accounts",
+      editNameFor: "Edit name for {name}",
+      archiveFor: "Archive {name}",
+      archive: "Archive account",
+      deleteAccount: "Delete account",
+      deleteSnapshot: "Delete balance from {date}",
+      deleteSnapshotConfirm: "Delete balance",
+    },
+    history: {
+      title: "Net worth history",
+      noComparison: "Add another history point to compare change.",
+      increased: "Net worth increased by {amount} since the previous point.",
+      decreased: "Net worth decreased by {amount} since the previous point.",
+      unchanged: "Net worth is unchanged from the previous point.",
+      selected: "{date}: {amount} total net worth",
+      chartTitle: "Net worth over time",
+      chartDesc: "A line chart of total net worth for each as-of date.",
+      pointLabel: "{date}, net worth {amount}",
+      tableToggle: "Show complete chart data",
+      tableCaption: "Net worth history with asset and liability totals",
+    },
+    dialog: {
+      addTitle: "Add account",
+      addDescription:
+        "Create an asset or liability with its first dated balance.",
+      balanceTitle: "Record a balance",
+      correctTitle: "Correct this dated balance",
+      balanceDescription: "{name} · {type}",
+      editTitle: "Edit account name",
+      editDescription: "Account type remains {type} and cannot be changed.",
+      archiveTitle: "Archive {name}",
+      archiveDescription:
+        "Archiving records a final zero balance and preserves earlier history.",
+      historyTitle: "{name} balance history",
+      historyDescription: "Newest snapshots appear first.",
+    },
+    form: {
+      name: "Account name",
+      type: "Account type",
+      initialBalance: "Initial balance",
+      liabilityHint: "Enter liabilities as a positive amount owed.",
+      effectiveDate: "Effective date",
+      replaceHint: "Saving replaces an existing balance on the same date.",
+      closingDate: "Closing date",
+      confirmZero:
+        "I understand that archiving records a zero balance on the closing date.",
+    },
+    confirm: {
+      deleteSnapshot:
+        "Permanently delete the {amount} balance recorded on {date}? Other dated balances remain.",
+      deleteAccount:
+        "Permanently delete {name} and its initial balance? This cannot be undone.",
+      deleteAccountDetail:
+        "This active account has one snapshot and is eligible for permanent correction.",
+      deleteAccountSnapshot:
+        "This permanently removes its only balance, {amount} recorded on {date}.",
     },
   },
   transactions: {
@@ -251,7 +378,7 @@ export const en = {
     recordsLoading: "Loading budgets",
     recordsCount: "{count} records shown",
     pulse: {
-      label: "Plan pulse",
+      label: "Plan status",
       variance: "Plan variance",
       left: "left",
       over: "over",
@@ -290,6 +417,7 @@ export const en = {
       amountLeft: "{amount} left",
     },
     inspector: {
+      close: "Close category details",
       summary: "A focused view of this category's monthly guardrail.",
       limit: "Monthly limit",
       spent: "Spent so far",
@@ -507,6 +635,13 @@ export const en = {
     "settings.currency_updated": "Ledger currency updated.",
     "csv.transactions.imported": "Transaction CSV import finished.",
     "csv.budgets.imported": "Budget CSV import finished.",
+    "account.created": "Account added with its initial balance.",
+    "account.updated": "Account name updated.",
+    "account.archived": "Account archived with a closing zero balance.",
+    "account.deleted": "Account permanently deleted.",
+    "balance_snapshot.created": "Balance snapshot recorded.",
+    "balance_snapshot.updated": "Balance for this date replaced.",
+    "balance_snapshot.deleted": "Balance snapshot permanently deleted.",
   },
   notFound: {
     eyebrow: "Page not found",

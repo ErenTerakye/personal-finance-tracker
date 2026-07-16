@@ -1,5 +1,20 @@
 """Public Pydantic schemas for the JSON API."""
 
+from finance_tracker.web.schemas.accounts import (
+    AccountArchiveRequest,
+    AccountCreateRequest,
+    AccountListResponse,
+    AccountMutationResponse,
+    AccountPatchRequest,
+    AccountResponse,
+    BalanceSnapshotListResponse,
+    BalanceSnapshotMutationResponse,
+    BalanceSnapshotRequest,
+    BalanceSnapshotResponse,
+    NetWorthHistoryPointResponse,
+    NetWorthHistoryResponse,
+    NetWorthSummaryResponse,
+)
 from finance_tracker.web.schemas.budgets import (
     BudgetListResponse,
     BudgetMutationResponse,
@@ -46,6 +61,12 @@ from finance_tracker.web.schemas.transactions import (
 )
 
 __all__ = [
+    "AccountArchiveRequest",
+    "AccountCreateRequest",
+    "AccountListResponse",
+    "AccountMutationResponse",
+    "AccountPatchRequest",
+    "AccountResponse",
     "ApiErrorDetail",
     "ApiModel",
     "BudgetListResponse",
@@ -54,6 +75,10 @@ __all__ = [
     "BudgetResponse",
     "BudgetStatusListResponse",
     "BudgetStatusResponse",
+    "BalanceSnapshotListResponse",
+    "BalanceSnapshotMutationResponse",
+    "BalanceSnapshotRequest",
+    "BalanceSnapshotResponse",
     "CategoryRuleListResponse",
     "CategoryRuleMutationResponse",
     "CategoryRuleRequest",
@@ -62,6 +87,9 @@ __all__ = [
     "ErrorResponse",
     "ImportSummaryResponse",
     "MonthlyReportResponse",
+    "NetWorthHistoryPointResponse",
+    "NetWorthHistoryResponse",
+    "NetWorthSummaryResponse",
     "NoticeResponse",
     "PageResponse",
     "RecurringApplyResponse",

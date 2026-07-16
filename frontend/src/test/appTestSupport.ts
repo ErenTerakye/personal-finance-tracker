@@ -227,6 +227,18 @@ export function dashboardPayload(overrides: Record<string, unknown>) {
     savings_rate: "84.5",
     recent_transactions: [transaction()],
     budget_statuses: [],
+    net_worth: {
+      as_of: "2026-07-16",
+      total_assets: "0.00",
+      total_liabilities: "0.00",
+      total_net_worth: "0.00",
+      active_account_count: 0,
+      archived_account_count: 0,
+      resolved_asset_count: 0,
+      resolved_liability_count: 0,
+      unresolved_account_count: 0,
+      currency: "USD",
+    },
     ...overrides,
   };
 }

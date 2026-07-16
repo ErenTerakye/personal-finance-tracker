@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
+    "dev:demo": "sh scripts/run_demo_dev.sh",
     "build": "tsc -b && vite build",
     "build:sites": "node scripts/build_sites.mjs",
     "test": "vitest run --config vitest.config.ts",

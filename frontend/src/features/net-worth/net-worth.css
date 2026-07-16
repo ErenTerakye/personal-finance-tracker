@@ -1,0 +1,487 @@
+@layer features {
+  .net-worth-view {
+    container: net-worth-workspace / inline-size;
+    display: grid;
+    gap: var(--section-gap);
+  }
+
+  .net-worth-view.is-refreshing > :not(.net-worth-controls) {
+    opacity: 0.88;
+  }
+
+  .net-worth-controls {
+    display: grid;
+    grid-template-columns: minmax(12rem, 18rem) minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+
+  .net-worth-controls .field,
+  .net-worth-controls fieldset {
+    margin: 0;
+  }
+
+  .net-worth-controls input,
+  .net-worth-form input {
+    min-block-size: var(--tap-target);
+    font-size: 1rem;
+  }
+
+  .net-worth-range-options,
+  .account-type-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-block-start: 0.45rem;
+  }
+
+  .net-worth-range-options label,
+  .account-type-options label {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .net-worth-range-options input,
+  .account-type-options input {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    clip-path: inset(50%);
+  }
+
+  .net-worth-range-options span,
+  .account-type-options span {
+    display: grid;
+    place-items: center;
+    min-block-size: var(--tap-target);
+    padding-inline: 0.9rem;
+    color: var(--muted);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-pill);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .net-worth-range-options input:checked + span,
+  .account-type-options input:checked + span {
+    color: var(--action);
+    background: color-mix(in srgb, var(--action) 10%, var(--surface));
+    border-color: var(--action);
+  }
+
+  .net-worth-range-options input:focus-visible + span,
+  .account-type-options input:focus-visible + span {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .net-worth-pending {
+    min-inline-size: 8rem;
+    color: var(--muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .net-worth-summary {
+    container: net-worth-summary / inline-size;
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(18rem, 1.2fr);
+    gap: clamp(1.25rem, 4cqi, 3rem);
+    align-items: center;
+    min-block-size: 18rem;
+    padding: clamp(1.4rem, 5cqi, 3rem);
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-radius: calc(var(--radius) * 1.4);
+  }
+
+  .net-worth-summary h2 {
+    margin-block-end: 0.65rem;
+    font-size: clamp(1.4rem, 4cqi, 2rem);
+  }
+
+  .net-worth-summary > div > p:not(.eyebrow) {
+    max-inline-size: 42ch;
+    color: var(--muted);
+  }
+
+  .net-worth-summary .coverage-note {
+    margin-block-start: 1rem;
+    color: var(--ink);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .net-worth-summary dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 0;
+  }
+
+  .net-worth-summary dl > div {
+    min-inline-size: 0;
+    padding: 1rem;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+
+  .net-worth-summary .net-worth-total {
+    grid-column: 1 / -1;
+    padding: clamp(1.2rem, 4cqi, 2rem);
+  }
+
+  .net-worth-summary dt {
+    color: var(--muted);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .net-worth-summary dd {
+    margin: 0.35rem 0 0;
+    font-family: var(--font-mono);
+    font-size: clamp(1.15rem, 4cqi, 1.75rem);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  .net-worth-summary .net-worth-total dd {
+    font-size: clamp(2rem, 8cqi, 4.5rem);
+    letter-spacing: -0.055em;
+    line-height: 1;
+  }
+
+  .net-worth-summary.is-negative .net-worth-total dd {
+    color: var(--expenses);
+  }
+
+  .net-worth-summary.is-positive .net-worth-total dd {
+    color: var(--cash);
+  }
+
+  .net-worth-composition,
+  .net-worth-history {
+    container-type: inline-size;
+    padding: clamp(1rem, 3cqi, 1.6rem);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: calc(var(--radius) * 1.2);
+  }
+
+  .net-worth-section-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-block-end: 1rem;
+  }
+
+  .net-worth-section-header h2 {
+    font-size: clamp(1.35rem, 4cqi, 2rem);
+  }
+
+  .net-worth-section-header p {
+    margin-block-start: 0.25rem;
+    color: var(--muted);
+  }
+
+  .archived-toggle,
+  .confirmation-check {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    min-block-size: var(--tap-target);
+    padding-block: 0.65rem;
+  }
+
+  .archived-toggle input,
+  .confirmation-check input {
+    flex: 0 0 auto;
+    inline-size: 1.15rem;
+    block-size: 1.15rem;
+    margin-block-start: 0.1rem;
+    accent-color: var(--action);
+  }
+
+  .net-worth-account-groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .account-group {
+    min-inline-size: 0;
+  }
+
+  .account-group h3 {
+    margin-block-end: 0.65rem;
+  }
+
+  .account-list,
+  .snapshot-list {
+    display: grid;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .account-list > li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(9rem, auto);
+    gap: 0.75rem 1rem;
+    padding: 1rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+
+  .account-list > li.is-archived {
+    border-style: dashed;
+  }
+
+  .account-row-copy,
+  .account-row-balance {
+    display: grid;
+    min-inline-size: 0;
+    gap: 0.2rem;
+  }
+
+  .account-row-copy strong,
+  .account-row-balance strong {
+    overflow-wrap: anywhere;
+  }
+
+  .account-row-copy span,
+  .account-row-balance span,
+  .account-group-empty {
+    color: var(--muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .account-row-balance {
+    text-align: end;
+  }
+
+  .account-row-balance strong {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .account-row-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding-block-start: 0.65rem;
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .net-worth-history figure {
+    margin: 0;
+  }
+
+  .net-worth-history figcaption {
+    margin-block-end: 0.75rem;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .net-worth-history svg {
+    display: block;
+    inline-size: 100%;
+    min-block-size: 15rem;
+    overflow: visible;
+  }
+
+  .net-worth-line {
+    fill: none;
+    stroke: var(--action);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .net-worth-zero-line {
+    stroke: var(--rule-strong);
+    stroke-dasharray: 7 7;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .net-worth-history circle {
+    fill: var(--surface);
+    stroke: var(--action);
+    stroke-width: 4;
+    cursor: pointer;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .net-worth-history circle.is-selected,
+  .net-worth-history circle:focus-visible {
+    fill: var(--action);
+    outline: none;
+    stroke: var(--ink);
+    stroke-width: 5;
+  }
+
+  .history-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .history-change.negative {
+    color: var(--expenses);
+  }
+
+  .history-change.positive {
+    color: var(--cash);
+  }
+
+  .net-worth-history details {
+    margin-block-start: 1rem;
+  }
+
+  .net-worth-history summary {
+    min-block-size: var(--tap-target);
+    padding-block: 0.75rem;
+    cursor: pointer;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .net-worth-history table {
+    inline-size: 100%;
+    border-collapse: collapse;
+  }
+
+  .net-worth-history th,
+  .net-worth-history td {
+    padding: 0.7rem;
+    border-block-end: 1px solid var(--rule);
+    text-align: end;
+    white-space: nowrap;
+  }
+
+  .net-worth-history th:first-child {
+    text-align: start;
+  }
+
+  .net-worth-form {
+    display: grid;
+    gap: 1rem;
+    padding-block-start: 1rem;
+  }
+
+  .net-worth-form fieldset {
+    margin: 0;
+  }
+
+  .dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.55rem;
+    padding-block-start: 1rem;
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .snapshot-list > li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+  }
+
+  .snapshot-list > li > div {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .snapshot-list strong {
+    font-family: var(--font-mono);
+  }
+
+  .snapshot-list span {
+    color: var(--muted);
+  }
+
+  .eligible-delete {
+    margin-block-start: 1rem;
+    padding-block-start: 1rem;
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .eligible-delete p {
+    margin-block-end: 0.75rem;
+    color: var(--muted);
+  }
+
+  @container net-worth-summary (max-width: 42rem) {
+    .net-worth-summary {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @container (max-width: 48rem) {
+    .net-worth-account-groups {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 44rem) {
+    .dashboard-net-worth-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-net-worth-summary .dashboard-net-worth-coverage {
+      grid-column: auto;
+    }
+
+    .net-worth-controls {
+      grid-template-columns: 1fr;
+      align-items: stretch;
+    }
+
+    .net-worth-pending {
+      min-inline-size: 0;
+    }
+
+    .net-worth-summary dl {
+      grid-template-columns: 1fr;
+    }
+
+    .net-worth-summary .net-worth-total {
+      grid-column: auto;
+    }
+
+    .account-list > li {
+      grid-template-columns: 1fr;
+    }
+
+    .account-row-balance {
+      text-align: start;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .net-worth-line,
+    .net-worth-zero-line,
+    .net-worth-history circle {
+      stroke: CanvasText;
+    }
+
+    .net-worth-history circle.is-selected,
+    .net-worth-history circle:focus-visible {
+      fill: Highlight;
+      stroke: HighlightText;
+    }
+  }
+}

@@ -1,0 +1,35 @@
+@layer features {
+  .dashboard-net-worth-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin: 0;
+  }
+
+  .dashboard-net-worth-summary > div {
+    min-inline-size: 0;
+    padding: 0.85rem;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+  }
+
+  .dashboard-net-worth-summary dt {
+    color: var(--muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .dashboard-net-worth-summary dd {
+    margin: 0.25rem 0 0;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-net-worth-summary .dashboard-net-worth-coverage {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-net-worth-summary .dashboard-net-worth-coverage dd {
+    font-family: inherit;
+  }
+}

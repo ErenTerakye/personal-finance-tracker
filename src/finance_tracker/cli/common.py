@@ -8,6 +8,7 @@ import typer
 from finance_tracker.config import resolve_db_path
 from finance_tracker.exceptions import FinanceTrackerError
 from finance_tracker.services import (
+    AccountService,
     BudgetService,
     BudgetStatus,
     CategoryRuleService,
@@ -23,6 +24,10 @@ DbPathOption = Annotated[
         help="SQLite database path. Defaults to ./data/finance_tracker.sqlite3.",
     ),
 ]
+
+
+def account_service(db_path: Path | None) -> AccountService:
+    return AccountService(resolve_db_path(db_path))
 
 
 def transaction_service(db_path: Path | None) -> TransactionService:

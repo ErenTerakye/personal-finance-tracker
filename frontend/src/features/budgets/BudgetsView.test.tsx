@@ -84,12 +84,30 @@ describe("budgets workflow", () => {
     expect(screen.getByText("Uncovered spending").parentElement).toHaveClass(
       "plan-metric-alert",
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: /Food, near limit/ }),
-    );
+    const categoryButton = screen.getByRole("button", {
+      name: /Food, near limit/,
+    });
+    await userEvent.click(categoryButton);
+    expect(categoryButton).toHaveAttribute("aria-expanded", "true");
     expect(
       screen.getByRole("button", { name: "Edit Food budget" }),
     ).toBeInTheDocument();
+    const inspectorId = categoryButton.getAttribute("aria-controls");
+    expect(inspectorId).toBeTruthy();
+    expect(document.getElementById(inspectorId!)).toHaveClass(
+      "plan-inspector",
+      "is-open",
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Close category details" }),
+    );
+    expect(categoryButton).toHaveAttribute("aria-expanded", "false");
+    expect(categoryButton).toHaveFocus();
+    expect(document.getElementById(inspectorId!)).not.toHaveClass("is-open");
+    expect(
+      screen.queryByRole("button", { name: "Edit Food budget" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Priority" })).toBeChecked();
     expect(
       screen.getByRole("searchbox", { name: "Find a category" }),

@@ -3,6 +3,16 @@ import type { components } from "./generated/api";
 type Schema = components["schemas"];
 
 export type TransactionType = "income" | "expense";
+export type AccountType = "asset" | "liability";
+export type AccountRecord = Schema["AccountResponse"];
+export type AccountInput = Schema["AccountCreateRequest"];
+export type AccountMutationResponse = Schema["AccountMutationResponse"];
+export type BalanceSnapshot = Schema["BalanceSnapshotResponse"];
+export type BalanceSnapshotMutationResponse =
+  Schema["BalanceSnapshotMutationResponse"];
+export type NetWorthSummary = Schema["NetWorthSummaryResponse"];
+export type NetWorthHistory = Schema["NetWorthHistoryResponse"];
+export type NetWorthHistoryPoint = Schema["NetWorthHistoryPointResponse"];
 export type TransactionRecord = Schema["TransactionResponse"];
 export type BudgetRecord = Schema["BudgetResponse"];
 export type BudgetStatus = Schema["BudgetStatusResponse"];

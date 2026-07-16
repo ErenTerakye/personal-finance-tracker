@@ -28,12 +28,9 @@
   kbd,
   samp,
   .kpi-card strong,
-  .statement-tape time,
-  .statement-tape strong,
   .line-chart text,
   .category-bar strong,
-  .activity-amount,
-  .data-table strong {
+  .activity-amount {
     font-size-adjust: none;
   }
 

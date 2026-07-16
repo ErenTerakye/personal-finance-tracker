@@ -1,0 +1,237 @@
+{
+  "../node_modules/@fontsource-variable/instrument-sans/files/instrument-sans-latin-ext-wght-normal.woff2": {
+    "file": "assets/instrument-sans-latin-ext-wght-normal-B5bTHO_g.woff2",
+    "src": "../node_modules/@fontsource-variable/instrument-sans/files/instrument-sans-latin-ext-wght-normal.woff2"
+  },
+  "../node_modules/@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2": {
+    "file": "assets/instrument-sans-latin-wght-normal-BbzFLZTg.woff2",
+    "src": "../node_modules/@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2"
+  },
+  "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff": {
+    "file": "assets/ibm-plex-mono-latin-400-normal-CvHOgSBP.woff",
+    "src": "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff"
+  },
+  "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2": {
+    "file": "assets/ibm-plex-mono-latin-400-normal-DMJ8VG8y.woff2",
+    "src": "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2"
+  },
+  "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-600-normal.woff": {
+    "file": "assets/ibm-plex-mono-latin-600-normal-DWFSQ4vo.woff",
+    "src": "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-600-normal.woff"
+  },
+  "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-600-normal.woff2": {
+    "file": "assets/ibm-plex-mono-latin-600-normal-BgSNZQsw.woff2",
+    "src": "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-600-normal.woff2"
+  },
+  "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-400-normal.woff": {
+    "file": "assets/ibm-plex-mono-latin-ext-400-normal-D3D2R8hC.woff",
+    "src": "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-400-normal.woff"
+  },
+  "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-400-normal.woff2": {
+    "file": "assets/ibm-plex-mono-latin-ext-400-normal-BmRBH3aV.woff2",
+    "src": "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-400-normal.woff2"
+  },
+  "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-600-normal.woff": {
+    "file": "assets/ibm-plex-mono-latin-ext-600-normal-DmB0ttJJ.woff",
+    "src": "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-600-normal.woff"
+  },
+  "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-600-normal.woff2": {
+    "file": "assets/ibm-plex-mono-latin-ext-600-normal-D38SheWl.woff2",
+    "src": "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-600-normal.woff2"
+  },
+  "_CsvImportDialog-C4Ed-fpt.js": {
+    "file": "assets/CsvImportDialog-C4Ed-fpt.js",
+    "name": "CsvImportDialog",
+    "imports": [
+      "_useMutation-BCodaUvI.js",
+      "index.html"
+    ]
+  },
+  "_PeriodControl-DwiFWGu1.js": {
+    "file": "assets/PeriodControl-DwiFWGu1.js",
+    "name": "PeriodControl",
+    "imports": [
+      "_x-Ba6CDklj.js",
+      "index.html"
+    ]
+  },
+  "_RollingNumber-1HGpdfWH.js": {
+    "file": "assets/RollingNumber-1HGpdfWH.js",
+    "name": "RollingNumber",
+    "imports": [
+      "index.html"
+    ]
+  },
+  "_arrow-right-C-FZcV0D.js": {
+    "file": "assets/arrow-right-C-FZcV0D.js",
+    "name": "arrow-right",
+    "imports": [
+      "index.html"
+    ]
+  },
+  "_assets-automation-DM0qK_x8.css": {
+    "file": "assets/assets-automation-DM0qK_x8.css",
+    "src": "_assets-automation-DM0qK_x8.css"
+  },
+  "_coins-CKc3YWFH.js": {
+    "file": "assets/coins-CKc3YWFH.js",
+    "name": "coins",
+    "imports": [
+      "index.html"
+    ]
+  },
+  "_pencil-o2_RdUYh.js": {
+    "file": "assets/pencil-o2_RdUYh.js",
+    "name": "pencil",
+    "imports": [
+      "index.html"
+    ]
+  },
+  "_planning-ledger-BxybgR0j.css": {
+    "file": "assets/planning-ledger-BxybgR0j.css",
+    "src": "_planning-ledger-BxybgR0j.css"
+  },
+  "_save-YTinciT7.js": {
+    "file": "assets/save-YTinciT7.js",
+    "name": "save",
+    "imports": [
+      "index.html"
+    ]
+  },
+  "_sparkles-Csqjkv9t.js": {
+    "file": "assets/sparkles-Csqjkv9t.js",
+    "name": "sparkles",
+    "imports": [
+      "index.html"
+    ]
+  },
+  "_useMutation-BCodaUvI.js": {
+    "file": "assets/useMutation-BCodaUvI.js",
+    "name": "useMutation",
+    "imports": [
+      "_x-Ba6CDklj.js",
+      "index.html"
+    ]
+  },
+  "_x-Ba6CDklj.js": {
+    "file": "assets/x-Ba6CDklj.js",
+    "name": "x",
+    "imports": [
+      "index.html"
+    ]
+  },
+  "index.html": {
+    "file": "assets/index-DhejWtwz.js",
+    "name": "index",
+    "src": "index.html",
+    "isEntry": true,
+    "dynamicImports": [
+      "src/features/dashboard/DashboardView.tsx",
+      "src/features/rules/RulesView.tsx",
+      "src/features/net-worth/NetWorthView.tsx",
+      "src/features/transactions/TransactionsView.tsx",
+      "src/features/budgets/BudgetsView.tsx"
+    ],
+    "css": [
+      "assets/index-LJziae90.css"
+    ],
+    "assets": [
+      "assets/instrument-sans-latin-ext-wght-normal-B5bTHO_g.woff2",
+      "assets/instrument-sans-latin-wght-normal-BbzFLZTg.woff2",
+      "assets/ibm-plex-mono-latin-400-normal-DMJ8VG8y.woff2",
+      "assets/ibm-plex-mono-latin-400-normal-CvHOgSBP.woff",
+      "assets/ibm-plex-mono-latin-ext-400-normal-BmRBH3aV.woff2",
+      "assets/ibm-plex-mono-latin-ext-400-normal-D3D2R8hC.woff",
+      "assets/ibm-plex-mono-latin-600-normal-BgSNZQsw.woff2",
+      "assets/ibm-plex-mono-latin-600-normal-DWFSQ4vo.woff",
+      "assets/ibm-plex-mono-latin-ext-600-normal-D38SheWl.woff2",
+      "assets/ibm-plex-mono-latin-ext-600-normal-DmB0ttJJ.woff"
+    ]
+  },
+  "src/features/budgets/BudgetsView.tsx": {
+    "file": "assets/BudgetsView-DbSdr26d.js",
+    "name": "BudgetsView",
+    "src": "src/features/budgets/BudgetsView.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_x-Ba6CDklj.js",
+      "_sparkles-Csqjkv9t.js",
+      "_PeriodControl-DwiFWGu1.js",
+      "_RollingNumber-1HGpdfWH.js",
+      "_save-YTinciT7.js",
+      "_CsvImportDialog-C4Ed-fpt.js",
+      "_useMutation-BCodaUvI.js",
+      "index.html"
+    ],
+    "css": [
+      "assets/planning-ledger-BxybgR0j.css"
+    ]
+  },
+  "src/features/dashboard/DashboardView.tsx": {
+    "file": "assets/DashboardView-Dk6kOdom.js",
+    "name": "DashboardView",
+    "src": "src/features/dashboard/DashboardView.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_arrow-right-C-FZcV0D.js",
+      "_PeriodControl-DwiFWGu1.js",
+      "_RollingNumber-1HGpdfWH.js",
+      "index.html"
+    ],
+    "css": [
+      "assets/DashboardView-ICgCTTDx.css"
+    ]
+  },
+  "src/features/net-worth/NetWorthView.tsx": {
+    "file": "assets/NetWorthView--3eHiXa3.js",
+    "name": "NetWorthView",
+    "src": "src/features/net-worth/NetWorthView.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_x-Ba6CDklj.js",
+      "_pencil-o2_RdUYh.js",
+      "_save-YTinciT7.js",
+      "_useMutation-BCodaUvI.js",
+      "index.html"
+    ],
+    "css": [
+      "assets/assets-automation-DM0qK_x8.css"
+    ]
+  },
+  "src/features/rules/RulesView.tsx": {
+    "file": "assets/RulesView-DcL1wJYl.js",
+    "name": "RulesView",
+    "src": "src/features/rules/RulesView.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_arrow-right-C-FZcV0D.js",
+      "_x-Ba6CDklj.js",
+      "_sparkles-Csqjkv9t.js",
+      "_coins-CKc3YWFH.js",
+      "_useMutation-BCodaUvI.js",
+      "index.html"
+    ],
+    "css": [
+      "assets/assets-automation-DM0qK_x8.css"
+    ]
+  },
+  "src/features/transactions/TransactionsView.tsx": {
+    "file": "assets/TransactionsView-BEskq_N1.js",
+    "name": "TransactionsView",
+    "src": "src/features/transactions/TransactionsView.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_x-Ba6CDklj.js",
+      "_PeriodControl-DwiFWGu1.js",
+      "_coins-CKc3YWFH.js",
+      "_pencil-o2_RdUYh.js",
+      "_save-YTinciT7.js",
+      "_CsvImportDialog-C4Ed-fpt.js",
+      "_useMutation-BCodaUvI.js",
+      "index.html"
+    ],
+    "css": [
+      "assets/planning-ledger-BxybgR0j.css"
+    ]
+  }
+}

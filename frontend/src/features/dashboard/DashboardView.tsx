@@ -1,4 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
+import "./dashboard-components.css";
+import "./dashboard.css";
+import "./dashboard-overrides.css";
 import {
   CheckCircle2,
   ChevronDown,
@@ -31,6 +34,7 @@ import type { View } from "../../app/routes";
 import { useDashboard } from "./useDashboard";
 import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
 import { RollingNumber } from "../../shared/components/RollingNumber";
+import DashboardNetWorthPanel from "./DashboardNetWorthPanel";
 
 export function DashboardView({
   selectedPeriod,
@@ -261,6 +265,11 @@ export function DashboardView({
             <CashflowTrend months={data.trend.months} />
           </Panel>
         </section>
+
+        <DashboardNetWorthPanel
+          netWorth={data.net_worth}
+          onNavigate={() => onNavigate("netWorth")}
+        />
 
         <section
           className="analysis-grid dashboard-priorities"

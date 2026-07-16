@@ -1,836 +1,4 @@
 @layer features {
-  .activity-hero {
-    container: activity-hero / inline-size;
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.5rem;
-    padding: clamp(1.4rem, 4cqi, 2.75rem);
-    overflow: clip;
-    color: var(--ink);
-    background:
-      radial-gradient(
-        circle at 90% 0%,
-        color-mix(in srgb, var(--action) 18%, transparent),
-        transparent 42%
-      ),
-      linear-gradient(
-        145deg,
-        var(--surface),
-        color-mix(in srgb, var(--surface-2) 75%, var(--surface))
-      );
-    border: 1px solid var(--rule-strong);
-    border-radius: calc(var(--radius) * 1.35);
-  }
-
-  .activity-hero::after {
-    position: absolute;
-    inset-block-start: -4rem;
-    inset-inline-end: -3rem;
-    inline-size: 11rem;
-    block-size: 11rem;
-    border: 1px solid color-mix(in srgb, var(--action) 22%, transparent);
-    border-radius: 50%;
-    content: "";
-    pointer-events: none;
-  }
-
-  .activity-hero-copy {
-    position: relative;
-    z-index: 1;
-    max-inline-size: 46rem;
-  }
-
-  .activity-hero h1 {
-    margin-block: 0.2rem 0.55rem;
-    font-size: clamp(2.25rem, 8cqi, 4.75rem);
-    letter-spacing: -0.055em;
-    line-height: 0.96;
-    text-wrap: balance;
-  }
-
-  .activity-hero-copy > p:last-child {
-    max-inline-size: 48ch;
-    margin: 0;
-    color: var(--muted);
-    font-size: clamp(1rem, 2cqi, 1.125rem);
-  }
-
-  .activity-hero-actions {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    align-self: end;
-  }
-
-  .activity-hero + .alert {
-    margin-block-start: var(--section-gap);
-  }
-
-  .activity-workspace {
-    container: activity-workspace / inline-size;
-    display: grid;
-    gap: 1rem;
-    margin-block-start: var(--section-gap);
-  }
-
-  .activity-snapshot {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
-  }
-
-  .activity-stat {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    min-inline-size: 0;
-    min-block-size: 6.25rem;
-    padding: 1rem;
-    background: var(--surface);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-  }
-
-  .activity-stat-icon {
-    display: grid;
-    flex: 0 0 auto;
-    place-items: center;
-    inline-size: 2.65rem;
-    block-size: 2.65rem;
-    color: var(--muted);
-    background: var(--surface-2);
-    border-radius: 50%;
-  }
-
-  .activity-stat.income .activity-stat-icon,
-  .activity-stat.income strong,
-  .activity-stat.positive .activity-stat-icon,
-  .activity-stat.positive strong {
-    color: var(--cash);
-  }
-
-  .activity-stat.expense .activity-stat-icon,
-  .activity-stat.expense strong,
-  .activity-stat.negative .activity-stat-icon,
-  .activity-stat.negative strong {
-    color: var(--expenses);
-  }
-
-  .activity-stat > div {
-    display: grid;
-    min-inline-size: 0;
-    gap: 0.2rem;
-  }
-
-  .activity-stat > div > span {
-    color: var(--muted);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-  }
-
-  .activity-stat strong {
-    font-family: var(--font-mono);
-    font-size: clamp(1.05rem, 2.4cqi, 1.45rem);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.035em;
-    overflow-wrap: anywhere;
-  }
-
-  .activity-command-bar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    gap: 0.75rem;
-    padding: 0.85rem;
-    background: color-mix(in srgb, var(--surface) 94%, transparent);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-  }
-
-  .activity-command-bar .transaction-search > span:first-child,
-  .activity-sort > span {
-    display: block;
-    margin-block-end: 0.35rem;
-    color: var(--muted);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-bold);
-    letter-spacing: 0.045em;
-    text-transform: uppercase;
-  }
-
-  .activity-command-bar .active-filter-summary {
-    grid-column: 1 / -1;
-    padding-block: 0.1rem;
-  }
-
-  .activity-ledger {
-    min-inline-size: 0;
-    background: var(--surface);
-    border: 1px solid var(--rule);
-    border-radius: calc(var(--radius) * 1.2);
-    overflow: clip;
-  }
-
-  .activity-ledger-header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: end;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: clamp(1rem, 3cqi, 1.5rem);
-    border-block-end: 1px solid var(--rule);
-  }
-
-  .activity-ledger-header h2 {
-    margin-block: 0.15rem 0.25rem;
-    font-size: clamp(1.35rem, 3cqi, 1.8rem);
-    letter-spacing: -0.025em;
-  }
-
-  .activity-ledger-header p {
-    margin: 0;
-    color: var(--muted);
-  }
-
-  .activity-sort {
-    inline-size: min(100%, 12.5rem);
-  }
-
-  .activity-sort select {
-    inline-size: 100%;
-  }
-
-  .activity-ledger-body {
-    padding: clamp(0.75rem, 2.5cqi, 1.35rem);
-  }
-
-  .ledger-days,
-  .ledger-entries {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .ledger-days {
-    display: grid;
-    gap: 1.35rem;
-  }
-
-  .ledger-day {
-    min-inline-size: 0;
-  }
-
-  .ledger-day-header {
-    display: flex;
-    align-items: end;
-    justify-content: space-between;
-    gap: 1rem;
-    padding-inline: 0.35rem;
-    padding-block-end: 0.55rem;
-  }
-
-  .ledger-day-header > div {
-    display: grid;
-    gap: 0.1rem;
-  }
-
-  .ledger-day-header time {
-    color: var(--ink);
-    font-weight: var(--font-weight-bold);
-  }
-
-  .ledger-day-header span {
-    color: var(--muted);
-    font-size: var(--font-size-xs);
-  }
-
-  .ledger-day-header > strong,
-  .ledger-entry-amount {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .ledger-day-header > strong {
-    font-size: var(--font-size-sm);
-  }
-
-  .ledger-day-header > strong.income,
-  .ledger-entry.income .ledger-entry-amount {
-    color: var(--cash);
-  }
-
-  .ledger-day-header > strong.expense,
-  .ledger-entry.expense .ledger-entry-amount {
-    color: var(--expenses);
-  }
-
-  .ledger-entries {
-    display: grid;
-    overflow: clip;
-    background: var(--surface);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-  }
-
-  .ledger-entry {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
-    grid-template-areas: "icon copy amount actions";
-    align-items: center;
-    gap: 0.8rem;
-    min-block-size: 4.75rem;
-    padding: 0.75rem;
-    transition: background-color var(--motion-micro) var(--ease-out);
-  }
-
-  .ledger-entry + .ledger-entry {
-    border-block-start: 1px solid var(--rule);
-  }
-
-  .ledger-entry:focus-within {
-    background: color-mix(in srgb, var(--action) 7%, var(--surface));
-  }
-
-  .ledger-entry-icon {
-    grid-area: icon;
-    display: grid;
-    place-items: center;
-    inline-size: 2.65rem;
-    block-size: 2.65rem;
-    color: var(--muted);
-    background: var(--surface-2);
-    border-radius: 50%;
-  }
-
-  .ledger-entry.income .ledger-entry-icon {
-    color: var(--cash);
-    background: color-mix(in srgb, var(--cash) 11%, var(--surface));
-  }
-
-  .ledger-entry.expense .ledger-entry-icon {
-    color: var(--expenses);
-    background: color-mix(in srgb, var(--expenses) 10%, var(--surface));
-  }
-
-  .ledger-entry-copy {
-    grid-area: copy;
-    display: grid;
-    min-inline-size: 0;
-    gap: 0.2rem;
-  }
-
-  .ledger-entry-copy > strong,
-  .ledger-entry-copy > span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .ledger-entry-copy > span {
-    color: var(--muted);
-    font-size: var(--font-size-sm);
-  }
-
-  .ledger-entry-amount {
-    grid-area: amount;
-    justify-self: end;
-    white-space: nowrap;
-  }
-
-  .ledger-entry-actions {
-    grid-area: actions;
-    display: flex;
-    position: relative;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .ledger-entry:hover {
-      background: var(--surface-2);
-    }
-
-    .ledger-quick-edit {
-      opacity: 0;
-      transition: opacity var(--motion-micro) var(--ease-out);
-    }
-
-    .ledger-entry:hover .ledger-quick-edit,
-    .ledger-entry:focus-within .ledger-quick-edit {
-      opacity: 1;
-    }
-  }
-
-  @container workspace-main (min-width: 48rem) {
-    .activity-hero {
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: end;
-    }
-
-    .activity-hero-actions {
-      justify-content: end;
-    }
-  }
-
-  @container activity-workspace (max-width: 42rem) {
-    .activity-snapshot {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .activity-stat {
-      min-block-size: 4.75rem;
-    }
-
-    .activity-command-bar {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .activity-command-bar .transaction-filter-toggle {
-      inline-size: 100%;
-    }
-
-    .ledger-entry {
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      grid-template-areas:
-        "icon copy amount"
-        "icon copy actions";
-      gap: 0.25rem 0.75rem;
-    }
-
-    .ledger-entry-actions {
-      justify-self: end;
-    }
-
-    .ledger-quick-edit {
-      display: none;
-    }
-  }
-
-  @media (forced-colors: active) {
-    .activity-hero,
-    .activity-stat,
-    .activity-command-bar,
-    .activity-ledger,
-    .ledger-entries {
-      background: Canvas;
-      border-color: CanvasText;
-    }
-  }
-
-  .dashboard-context-header {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    gap: 0;
-  }
-
-  .dashboard-context-header > .eyebrow,
-  .dashboard-context-header > .dashboard-narrative {
-    margin: 0;
-  }
-
-  .dashboard-context-header .dashboard-narrative {
-    margin-block-start: 0.5rem;
-  }
-
-  .dashboard-heading-tools {
-    min-inline-size: 0;
-  }
-
-  .dashboard-command-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 0.75rem 1rem;
-    margin-block-start: 1rem;
-  }
-
-  .dashboard-primary-actions {
-    grid-template-columns: minmax(8rem, auto);
-    inline-size: auto;
-  }
-
-  @container workspace-main (min-width: 44rem) {
-    .kpi-grid {
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
-    }
-
-    .analysis-grid,
-    .dashboard-analysis-pair {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .dashboard-priorities .panel:first-child,
-    .budget-layout .records-panel {
-      grid-column: 1 / -1;
-    }
-  }
-
-  @container workspace-main (min-width: 62rem) {
-    .tracker-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .budget-layout {
-      grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.42fr);
-    }
-  }
-
-  @container workspace-main (max-width: 43.99rem) {
-    .page-heading {
-      grid-template-columns: 1fr;
-      align-items: start;
-    }
-
-    .page-heading p:not(.eyebrow) {
-      font-size: var(--font-size-base);
-    }
-
-    .page-actions,
-    .period-control,
-    .period-chip {
-      inline-size: 100%;
-    }
-
-    .artifact-actions {
-      grid-template-columns: 1fr;
-    }
-
-    .dashboard-actions {
-      grid-template-columns: minmax(0, 1fr);
-      align-items: stretch;
-    }
-
-    .dashboard-command-row {
-      grid-template-columns: minmax(0, 1fr);
-      align-items: stretch;
-    }
-
-    .dashboard-primary-actions {
-      grid-template-columns: minmax(0, 1fr);
-      inline-size: 100%;
-    }
-
-    .dashboard-actions .report-menu,
-    .dashboard-actions .report-menu > button {
-      inline-size: 100%;
-    }
-
-    .filter-form {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .filter-form .period-control,
-    .filter-actions {
-      grid-column: 1 / -1;
-    }
-
-    .filter-form .field label {
-      font-size: var(--font-size-xs);
-    }
-  }
-
-  @container panel (min-width: 28rem) {
-    .panel-header {
-      flex-wrap: nowrap;
-    }
-  }
-
-  @container cashflow-trend (min-width: 34rem) {
-    .cashflow-trend ol {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .cashflow-trend li {
-      grid-template-columns: 1fr;
-      grid-template-areas:
-        "time"
-        "bars"
-        "value"
-        "entries";
-      min-block-size: 8.5rem;
-    }
-
-    .cashflow-trend li:not(:last-child) {
-      border-block-end: 0;
-    }
-
-    .cashflow-trend li strong {
-      align-self: end;
-      justify-self: start;
-      text-align: start;
-    }
-
-    .trend-bars {
-      display: flex;
-      align-items: end;
-      gap: 0.35rem;
-      block-size: 4.6rem;
-      min-block-size: 0;
-    }
-
-    .trend-bar {
-      flex: 1 1 0;
-      inline-size: auto;
-      block-size: 100%;
-      align-self: end;
-      border-radius: 999px 999px 3px 3px;
-    }
-
-    .trend-bar span {
-      inline-size: 100%;
-      scale: 1 var(--bar-scale, 0);
-      transform-origin: center bottom;
-    }
-
-    .trend-bar::before {
-      inset-block: 0;
-      inset-inline: -0.4rem;
-      min-inline-size: 0;
-      min-block-size: 2.5rem;
-    }
-  }
-
-  @container cashflow-trend (min-width: 42rem) {
-    .cashflow-trend ol {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  @container panel (min-width: 42rem) {
-    .category-bar {
-      grid-template-columns: minmax(8rem, 0.45fr) minmax(8rem, 1fr) auto;
-      gap: 0.75rem;
-    }
-
-    .category-bar > div {
-      grid-column: auto;
-    }
-  }
-
-  @container cashflow-trend (min-width: 54rem) {
-    .cashflow-trend ol {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-
-    .cashflow-trend li {
-      min-block-size: 10.5rem;
-    }
-  }
-
-  @container line-chart (max-width: 26rem) {
-    .chart-line {
-      stroke-width: 3;
-    }
-
-    .chart-point {
-      r: 4;
-    }
-
-    .line-chart text {
-      font-size: 0.66rem;
-    }
-  }
-
-  @container table-wrap (min-width: 48rem) {
-    .data-table {
-      display: table;
-      min-inline-size: 0;
-      border-collapse: collapse;
-    }
-
-    .data-table caption {
-      display: table-caption;
-    }
-
-    .data-table thead {
-      display: table-header-group;
-    }
-
-    .data-table tbody {
-      display: table-row-group;
-    }
-
-    .data-table tr {
-      display: table-row;
-      padding: 0;
-      background: transparent;
-      border-radius: 0;
-    }
-
-    .data-table th,
-    .data-table td {
-      display: table-cell;
-      padding: 0.7rem 0.65rem;
-      border-block-end: 1px solid var(--rule);
-      vertical-align: middle;
-    }
-
-    .data-table td[data-label="Date"],
-    .data-table td[data-label="Period"],
-    .data-table td[data-label="Amount"] {
-      white-space: nowrap;
-    }
-
-    .transaction-table td[data-label="Category"],
-    .budget-table td[data-label="Category"] {
-      color: inherit;
-      font-weight: inherit;
-    }
-
-    .transaction-table td[data-label="Amount"],
-    .budget-table td[data-label="Amount"],
-    .transaction-table td[data-label="Actions"],
-    .budget-table td[data-label="Actions"] {
-      text-align: start;
-    }
-  }
-
-  @media (max-width: 1050px) {
-    .app-header {
-      grid-template-columns: 1fr auto;
-      gap: 0.75rem;
-      padding: 0.85rem 1rem;
-    }
-
-    .brand {
-      grid-column: 1;
-    }
-
-    .app-header nav {
-      grid-column: 1 / span 2;
-      inline-size: 100%;
-    }
-
-    .header-tools {
-      grid-column: 2;
-      justify-self: end;
-    }
-  }
-
-  @media (max-width: 760px) {
-    html {
-      scroll-padding-block-start: 4.5rem;
-    }
-
-    .app-header {
-      position: sticky;
-      grid-template-columns: 1fr auto;
-      min-block-size: 4rem;
-      padding: 0.65rem 0.75rem;
-      background: var(--paper);
-      backdrop-filter: none;
-    }
-
-    .brand-mark {
-      inline-size: 2.25rem;
-      block-size: 2.25rem;
-    }
-
-    .brand strong {
-      font-size: var(--font-size-sm);
-    }
-
-    .brand em {
-      font-size: 0.68rem;
-    }
-
-    .app-header nav {
-      position: fixed;
-      top: auto;
-      right: 0.75rem;
-      bottom: 0.75rem;
-      bottom: max(0.75rem, env(safe-area-inset-bottom));
-      left: 0.75rem;
-      z-index: 40;
-      inline-size: auto;
-      pointer-events: none;
-    }
-
-    .app-header nav ul {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 0.2rem;
-      padding: 0.3rem;
-      overflow: visible;
-      border-radius: calc(var(--radius) + 0.5rem);
-      pointer-events: auto;
-      scrollbar-gutter: auto;
-    }
-
-    .app-header nav li {
-      min-inline-size: 0;
-      pointer-events: none;
-    }
-
-    .app-header nav a {
-      flex-direction: column;
-      gap: 0.15rem;
-      inline-size: 100%;
-      min-inline-size: 0;
-      min-block-size: 3.5rem;
-      padding: 0.4rem 0.2rem;
-      border-radius: calc(var(--radius) + 0.2rem);
-      font-size: var(--font-size-xs);
-      line-height: 1.1;
-      pointer-events: auto;
-    }
-
-    .nav-label-full {
-      display: none;
-    }
-
-    .nav-label-compact {
-      display: block;
-      max-inline-size: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .workspace {
-      inline-size: 100%;
-      padding-inline: 0.5rem;
-      margin-block-start: 1rem;
-      padding-block-end: calc(5.5rem + env(safe-area-inset-bottom));
-    }
-
-    .local-status {
-      display: none;
-    }
-  }
-
-  @media (max-width: 420px) {
-    .brand em {
-      display: none;
-    }
-
-    .period-month-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  @media (pointer: coarse) {
-    :root {
-      --tap-target: 3rem;
-    }
-
-    .trend-bar::before {
-      inset-block: -0.65rem;
-      min-inline-size: 3rem;
-    }
-
-    .chart-point {
-      stroke-width: 5;
-    }
-
-    .chart-tooltip {
-      padding: 0.65rem 0.75rem;
-      translate: -50% calc(-100% - 0.25rem);
-    }
-  }
-}
-
-@layer features {
   .plan-page-heading {
     padding-block-end: clamp(0.5rem, 2vw, 1.25rem);
   }
@@ -858,13 +26,7 @@
     overflow: hidden;
     padding: clamp(1rem, 3vw, 2rem);
     color: var(--text);
-    background:
-      radial-gradient(
-        circle at 12% 10%,
-        color-mix(in oklab, var(--plan-tone) 14%, transparent),
-        transparent 32rem
-      ),
-      var(--surface);
+    background: var(--surface);
     border: 1px solid color-mix(in oklab, var(--plan-tone) 35%, var(--rule));
     border-radius: clamp(var(--radius), 2vw, 1.5rem);
   }
@@ -942,20 +104,20 @@
   }
 
   .plan-pulse-kicker {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.4rem;
+    padding: 0.35rem 0.65rem;
     color: var(--plan-tone);
+    background: color-mix(in oklab, var(--plan-tone) 7%, var(--surface));
+    border: 1px solid color-mix(in oklab, var(--plan-tone) 30%, var(--rule));
+    border-radius: var(--radius-pill);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
   }
 
-  .plan-pulse-kicker > span {
-    inline-size: 0.65rem;
-    block-size: 0.65rem;
-    background: currentcolor;
-    border-radius: 50%;
-    box-shadow: 0 0 0 0.3rem color-mix(in oklab, currentcolor 16%, transparent);
+  .plan-pulse-kicker > svg {
+    flex: none;
   }
 
   .plan-pulse-copy h2 {
@@ -1172,17 +334,14 @@
   }
 
   .plan-board-content {
+    position: relative;
     display: grid;
     min-inline-size: 0;
-  }
-
-  .plan-board-content.has-selection {
-    grid-template-columns: minmax(0, 1fr) minmax(16rem, 21rem);
-    gap: 1.25rem;
-    align-items: start;
+    isolation: isolate;
   }
 
   .plan-category-region {
+    grid-row: 2;
     min-inline-size: 0;
   }
 
@@ -1313,13 +472,23 @@
     color: var(--card-tone);
   }
 
+  .plan-inspector-layer {
+    grid-row: 1;
+    pointer-events: none;
+  }
+
   .plan-inspector {
     --card-tone: var(--cash);
+    --inspector-border: color-mix(in oklab, var(--card-tone) 38%, var(--rule));
 
-    position: sticky;
-    inset-block-start: 1rem;
+    display: grid;
+    grid-template-rows: 0fr;
+    inline-size: 100%;
+    margin-block-end: 0;
     overflow: hidden;
-    padding: 1.2rem;
+    padding-block: 0;
+    padding-inline: 1.2rem;
+    opacity: 0;
     background:
       linear-gradient(
         150deg,
@@ -1327,8 +496,48 @@
         transparent 12rem
       ),
       var(--surface-2);
-    border: 1px solid color-mix(in oklab, var(--card-tone) 38%, var(--rule));
+    border: 1px solid transparent;
     border-radius: var(--radius);
+    pointer-events: none;
+    translate: 0 -0.5rem;
+    visibility: hidden;
+    transition:
+      grid-template-rows var(--motion-route) var(--ease-out),
+      margin-block-end var(--motion-route) var(--ease-out),
+      padding-block var(--motion-route) var(--ease-out),
+      border-color var(--motion-control) ease-out,
+      opacity var(--motion-control) ease-out,
+      translate var(--motion-route) var(--ease-out),
+      visibility var(--motion-route) allow-discrete;
+  }
+
+  .plan-inspector.is-open {
+    grid-template-rows: 1fr;
+    margin-block-end: 1rem;
+    padding-block: 1.2rem;
+    opacity: 1;
+    border-color: var(--inspector-border);
+    pointer-events: auto;
+    translate: 0;
+    visibility: visible;
+  }
+
+  @starting-style {
+    .plan-inspector.is-open {
+      grid-template-rows: 0fr;
+      margin-block-end: 0;
+      padding-block: 0;
+      opacity: 0;
+      border-color: transparent;
+      translate: 0 -0.5rem;
+    }
+  }
+
+  .plan-inspector-content {
+    display: grid;
+    gap: 1.1rem;
+    min-block-size: 0;
+    overflow: hidden;
   }
 
   .plan-inspector.near-limit {
@@ -1339,56 +548,87 @@
     --card-tone: var(--expenses);
   }
 
+  .plan-inspector-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .plan-inspector-heading > div {
+    min-inline-size: 0;
+  }
+
+  .plan-inspector-close {
+    flex: none;
+    min-block-size: 2.75rem;
+    inline-size: 2.75rem;
+  }
+
   .plan-inspector-heading h3 {
-    margin-block-start: 1rem;
+    margin-block-start: 0.65rem;
     color: var(--ink);
-    font-size: var(--font-size-xl);
-    letter-spacing: -0.035em;
+    font-size: clamp(var(--font-size-xl), 3cqi, var(--font-size-2xl));
+    letter-spacing: -0.045em;
+    line-height: var(--line-tight);
   }
 
   .plan-inspector-heading p {
-    margin-block-start: 0.35rem;
+    max-inline-size: 55ch;
+    margin-block-start: 0.25rem;
     color: var(--muted);
     font-size: var(--font-size-sm);
   }
 
   .plan-inspector-metrics {
     display: grid;
-    gap: 0;
-    margin-block-start: 1.25rem;
-    border-block: 1px solid var(--rule);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin: 0;
   }
 
   .plan-inspector-metrics > div {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-    padding-block: 0.75rem;
-  }
-
-  .plan-inspector-metrics > div + div {
-    border-block-start: 1px solid var(--rule);
+    display: grid;
+    align-content: start;
+    gap: 0.3rem;
+    min-inline-size: 0;
+    padding: 0.85rem 1rem;
+    background: color-mix(in oklab, var(--card-tone) 5%, var(--surface));
+    border: 1px solid color-mix(in oklab, var(--card-tone) 18%, var(--rule));
+    border-radius: var(--radius-sm);
   }
 
   .plan-inspector-metrics dt {
     color: var(--muted);
     font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
   }
 
   .plan-inspector-metrics dd {
     color: var(--ink);
     font-family: var(--font-mono);
-    font-size: var(--font-size-sm);
+    font-size: clamp(var(--font-size-base), 2.25cqi, var(--font-size-xl));
     font-weight: var(--font-weight-bold);
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.035em;
+    line-height: var(--line-compact);
+    overflow-wrap: anywhere;
+  }
+
+  .plan-inspector-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    padding-block-start: 0.1rem;
   }
 
   .plan-inspector-insight {
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
-    margin-block-start: 1rem;
+    max-inline-size: 48ch;
+    margin: 0;
     color: var(--card-tone);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
@@ -1400,13 +640,15 @@
   }
 
   .plan-inspector-actions {
-    display: grid;
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
     gap: 0.55rem;
-    margin-block-start: 1.25rem;
+    margin: 0;
   }
 
   .plan-inspector-actions .button {
-    inline-size: 100%;
+    min-inline-size: 10rem;
   }
 
   @container plan-board (max-width: 64rem) {
@@ -1422,14 +664,24 @@
       inline-size: fit-content;
     }
 
-    .plan-board-content.has-selection {
-      grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem);
+    .plan-inspector-footer {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .plan-inspector-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .plan-inspector-actions .button {
+      min-inline-size: 0;
+      inline-size: 100%;
     }
   }
 
   @container plan-board (max-width: 46rem) {
-    .plan-toolbar,
-    .plan-board-content.has-selection {
+    .plan-toolbar {
       grid-template-columns: minmax(0, 1fr);
     }
 
@@ -1445,9 +697,8 @@
       flex: 1;
     }
 
-    .plan-inspector {
-      position: static;
-      grid-row: 1;
+    .plan-inspector-metrics {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 
@@ -1506,8 +757,9 @@
   @media (prefers-reduced-motion: reduce) {
     .plan-category-card,
     .plan-category-card-topline > svg,
-    .plan-card-progress > span {
-      transition-duration: 0.01ms;
+    .plan-card-progress > span,
+    .plan-inspector {
+      transition: none;
     }
 
     .plan-category-card:hover {
@@ -1517,8 +769,7 @@
 
   @media (forced-colors: active) {
     .plan-orbit,
-    .plan-card-progress > span,
-    .plan-pulse-kicker > span {
+    .plan-card-progress > span {
       forced-color-adjust: none;
       background: Highlight;
     }
@@ -1843,6 +1094,48 @@
 
   .budget-planner-actions .button {
     min-block-size: 3rem;
+  }
+
+  .budget-filter-form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .budget-filter-form .field-label {
+    color: var(--ink);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .budget-filter-form .filter-actions {
+    padding-block-start: 1rem;
+    border-block-start: 1px solid
+      color-mix(in srgb, var(--rule) 72%, transparent);
+  }
+
+  .budget-filter-form .filter-actions .button {
+    min-block-size: 3rem;
+  }
+
+  @container filter-bar (min-width: 32rem) {
+    .budget-filter-form {
+      grid-template-columns: minmax(17rem, 1.15fr) minmax(12rem, 1fr);
+      column-gap: 1.25rem;
+    }
+
+    .budget-filter-form .filter-actions {
+      grid-column: 1 / -1;
+    }
+
+    .budget-filter-form .filter-actions .button:first-child {
+      min-inline-size: 11rem;
+    }
+  }
+
+  @container filter-bar (max-width: 36rem) {
+    .budget-filter-form .filter-actions .button:first-child {
+      inline-size: 100%;
+    }
   }
 
   @media (max-width: 46rem) {

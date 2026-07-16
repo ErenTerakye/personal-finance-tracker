@@ -1,4 +1,59 @@
 type,amount,category,description,date
+income,4000.00,Salary,August salary,2025-08-01
+expense,1450.00,Rent,Apartment rent,2025-08-02
+expense,170.30,Utilities,Electric internet and water,2025-08-06
+expense,320.45,groceries,Groceries and pantry restock,2025-08-09
+expense,95.20,Dining,Weekend brunch and coffee,2025-08-13
+expense,80.00,metro,Monthly transit pass,2025-08-17
+expense,44.99,streaming,Streaming and cloud storage,2025-08-20
+expense,35.00,Fitness,Community gym membership,2025-08-24
+expense,89.00,Learning,Personal finance course,2025-08-25
+expense,50.00,Giving,Local food bank donation,2025-08-27
+expense,110.60,Household,Kitchen storage and cleaning supplies,2025-08-29
+income,4000.00,Salary,September salary,2025-09-01
+expense,1450.00,Rent,Apartment rent,2025-09-02
+expense,165.75,Utilities,Electric internet and water,2025-09-06
+expense,305.20,supermarket,Groceries and farmers market,2025-09-10
+expense,120.45,Dining,Dinner with friends,2025-09-14
+expense,80.00,Transport,Monthly transit pass,2025-09-17
+expense,44.99,Subscriptions,Streaming and cloud storage,2025-09-20
+expense,35.00,Fitness,Community gym membership,2025-09-24
+income,250.00,Freelance,Product copy review,2025-09-25
+expense,70.00,Health,Annual eye exam copay,2025-09-26
+expense,300.00,Travel,Autumn train and hotel deposit,2025-09-28
+income,4100.00,Salary,October salary and merit increase,2025-10-01
+expense,1450.00,Rent,Apartment rent,2025-10-02
+expense,172.10,Utilities,Electric internet and water,2025-10-06
+expense,340.80,Food,Groceries and seasonal market,2025-10-10
+expense,85.30,Dining,Lunch and coffee catchups,2025-10-14
+expense,85.00,rideshare,Transit pass and late ride home,2025-10-17
+expense,44.99,Subscriptions,Streaming and cloud storage,2025-10-20
+expense,35.00,Fitness,Community gym membership,2025-10-24
+expense,180.00,Household,Winter bedding replacement,2025-10-27
+expense,100.00,Giving,Community fundraiser,2025-10-30
+income,4100.00,Salary,November salary,2025-11-01
+expense,1450.00,Rent,Apartment rent,2025-11-02
+expense,188.40,Utilities,Electric internet and water,2025-11-06
+expense,365.55,groceries,Groceries and holiday staples,2025-11-10
+expense,140.25,Dining,Family dinner and coffee,2025-11-14
+expense,85.00,Transport,Transit pass and rideshare,2025-11-17
+expense,44.99,Subscriptions,Streaming and cloud storage,2025-11-20
+expense,35.00,Fitness,Community gym membership,2025-11-24
+income,500.00,Freelance,Year end dashboard prototype,2025-11-25
+expense,150.00,Health,Dental work copay,2025-11-26
+expense,220.00,Travel,Family visit tickets,2025-11-29
+income,4100.00,Salary,December salary,2025-12-01
+expense,1450.00,Rent,Apartment rent,2025-12-02
+expense,210.35,Utilities,Electric internet and water,2025-12-06
+income,1200.00,Bonus,Annual performance bonus,2025-12-08
+expense,410.60,Food,Groceries and holiday hosting,2025-12-10
+expense,175.80,Dining,Holiday meals with friends,2025-12-14
+expense,110.00,Transport,Transit and airport rides,2025-12-17
+expense,44.99,Subscriptions,Streaming and cloud storage,2025-12-20
+expense,35.00,Fitness,Community gym membership,2025-12-24
+expense,350.00,Gifts,Holiday gifts,2025-12-26
+expense,480.00,Travel,Holiday flights,2025-12-27
+expense,120.00,Household,Guest room supplies,2025-12-29
 income,4200.00,Salary,January salary,2026-01-01
 expense,1500.00,Rent,Apartment rent,2026-01-02
 expense,178.40,Utilities,Electric and internet,2026-01-06
@@ -7,7 +62,9 @@ expense,88.20,Dining,Weekend brunch,2026-01-14
 expense,82.00,Transport,Transit pass,2026-01-17
 expense,44.99,Subscriptions,Streaming and cloud storage,2026-01-20
 expense,64.00,Health,Prescription refill,2026-01-24
+expense,35.00,Fitness,Community gym membership,2026-01-25
 expense,120.75,Household,Desk chair repair,2026-01-28
+expense,45.00,Giving,Neighborhood winter drive,2026-01-30
 income,4200.00,Salary,February salary,2026-02-01
 expense,1500.00,Rent,Apartment rent,2026-02-02
 expense,184.10,Utilities,Electric and internet,2026-02-06
@@ -16,6 +73,7 @@ expense,96.30,Dining,Valentine dinner,2026-02-14
 expense,82.00,Transport,Transit pass,2026-02-17
 expense,44.99,Subscriptions,Streaming and cloud storage,2026-02-20
 expense,74.20,Household,Laundry and cleaning supplies,2026-02-22
+expense,35.00,Fitness,Community gym membership,2026-02-24
 expense,220.00,Travel,Winter cabin deposit,2026-02-26
 income,4200.00,Salary,March salary,2026-03-01
 expense,1500.00,Rent,Apartment rent,2026-03-02
@@ -26,6 +84,8 @@ expense,64.75,Dining,Coffee and lunch catchups,2026-03-15
 expense,84.50,Transport,Transit pass and rideshare,2026-03-18
 expense,44.99,Subscriptions,Streaming and cloud storage,2026-03-20
 expense,135.60,Health,Dental cleaning copay,2026-03-23
+expense,35.00,Fitness,Community gym membership,2026-03-24
+expense,79.00,Learning,Accessibility workshop,2026-03-26
 expense,89.35,Household,Kitchen restock,2026-03-28
 income,4200.00,Salary,April salary,2026-04-01
 expense,1500.00,Rent,Apartment rent,2026-04-02
@@ -35,7 +95,9 @@ expense,142.50,Dining,Birthday dinner,2026-04-12
 expense,82.00,Transport,Transit pass,2026-04-17
 expense,44.99,Subscriptions,Streaming and cloud storage,2026-04-20
 expense,210.00,Household,Small appliance replacement,2026-04-22
+expense,35.00,Fitness,Community gym membership,2026-04-24
 expense,380.00,Travel,Spring flight booking,2026-04-26
+expense,60.00,Giving,Community garden fundraiser,2026-04-29
 income,4200.00,Salary,May salary,2026-05-01
 expense,1500.00,Rent,Apartment rent,2026-05-02
 expense,189.70,Utilities,Electric and internet,2026-05-06
@@ -45,6 +107,7 @@ expense,96.80,Transport,Metro card and rideshare,2026-05-16
 income,120.00,Refund,Insurance reimbursement,2026-05-18
 expense,44.99,Subscriptions,Streaming and cloud storage,2026-05-20
 expense,118.40,Health,Prescription refill,2026-05-22
+expense,35.00,Fitness,Community gym membership,2026-05-24
 expense,65.55,Household,Home maintenance supplies,2026-05-24
 expense,260.00,Travel,Weekend train tickets,2026-05-27
 income,4200.00,Salary,June salary,2026-06-01
@@ -55,17 +118,17 @@ expense,171.00,Dining,Team dinner and coffee,2026-06-15
 expense,96.80,Transport,Metro card and rideshare,2026-06-18
 expense,44.99,Subscriptions,Streaming and cloud storage,2026-06-20
 expense,128.00,Household,Closet organization supplies,2026-06-22
+expense,35.00,Fitness,Community gym membership,2026-06-24
 expense,185.00,Travel,Family visit fuel,2026-06-24
 income,450.00,Freelance,Landing page update,2026-06-26
 expense,72.50,Health,Clinic copay,2026-06-27
-income,4200.00,Salary,July salary,2026-07-01
-expense,1500.00,Rent,Apartment rent,2026-07-02
+expense,125.00,Learning,Data visualization course,2026-06-29
 expense,205.20,Utilities,Electric and internet,2026-07-06
-expense,428.75,Food,Groceries and summer market,2026-07-09
+expense,428.75,groceries,Groceries and summer market,2026-07-09
 expense,164.30,Dining,Holiday weekend meals,2026-07-12
-expense,104.60,Transport,Metro card and airport ride,2026-07-15
-expense,44.99,Subscriptions,Streaming and cloud storage,2026-07-20
+expense,104.60,metro,Metro card and airport ride,2026-07-15
 expense,92.00,Health,Physical therapy copay,2026-07-21
 expense,186.40,Household,Patio repair supplies,2026-07-23
 income,300.00,Freelance,Newsletter cleanup,2026-07-25
 expense,640.00,Travel,Summer trip lodging balance,2026-07-27
+expense,75.00,Giving,School supply drive,2026-07-29

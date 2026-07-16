@@ -10,15 +10,33 @@ from finance_tracker.csv_io import (
     TransactionImportPreview,
     TransactionImportPreviewRow,
 )
-from finance_tracker.models import Budget, CategoryRule, RecurringTemplate, Transaction
-from finance_tracker.reports import MonthlyReport, TrendReport
+from finance_tracker.models import (
+    Account,
+    BalanceSnapshot,
+    Budget,
+    CategoryRule,
+    RecurringTemplate,
+    ResolvedAccount,
+    Transaction,
+)
+from finance_tracker.reports import (
+    MonthlyReport,
+    NetWorthHistory,
+    NetWorthSummary,
+    TrendReport,
+)
 from finance_tracker.services import BudgetStatus, RecurringApplyResult
 from finance_tracker.web.schemas import (
+    AccountResponse,
+    BalanceSnapshotResponse,
     BudgetResponse,
     BudgetStatusResponse,
     CategoryRuleResponse,
     ImportSummaryResponse,
     MonthlyReportResponse,
+    NetWorthHistoryPointResponse,
+    NetWorthHistoryResponse,
+    NetWorthSummaryResponse,
     RecurringApplyResponse,
     RecurringTemplateResponse,
     TransactionImportPreviewResponse,
@@ -28,6 +46,109 @@ from finance_tracker.web.schemas import (
     TrendMonthResponse,
     TrendReportResponse,
 )
+
+
+def account_response(resolved: ResolvedAccount, currency: str) -> AccountResponse:
+    account = resolved.account
+    return AccountResponse(
+        id=_require_id(account.id),
+        name=account.name,
+        type=account.type.value,
+        archived_on=account.archived_on.isoformat() if account.archived_on else None,
+        created_at=_required_datetime_response(account.created_at),
+        as_of=resolved.as_of.isoformat(),
+        resolved_balance=(
+            money_decimal(resolved.balance) if resolved.balance is not None else None
+        ),
+        resolved_balance_date=(
+            resolved.balance_date.isoformat() if resolved.balance_date else None
+        ),
+        currency=currency,
+    )
+
+
+def account_mutation_response(
+    account: Account,
+    as_of: date,
+    balance: Decimal | None,
+    balance_date: date | None,
+    currency: str,
+) -> AccountResponse:
+    return account_response(
+        ResolvedAccount(
+            account=account,
+            as_of=as_of,
+            balance=balance,
+            balance_date=balance_date,
+        ),
+        currency,
+    )
+
+
+def balance_snapshot_response(
+    snapshot: BalanceSnapshot,
+    currency: str,
+) -> BalanceSnapshotResponse:
+    return BalanceSnapshotResponse(
+        id=_require_id(snapshot.id),
+        account_id=snapshot.account_id,
+        amount=money_decimal(snapshot.amount),
+        effective_date=snapshot.effective_date.isoformat(),
+        created_at=_required_datetime_response(snapshot.created_at),
+        updated_at=_required_datetime_response(snapshot.updated_at),
+        currency=currency,
+    )
+
+
+def net_worth_summary_response(
+    summary: NetWorthSummary,
+    currency: str,
+) -> NetWorthSummaryResponse:
+    return NetWorthSummaryResponse(
+        as_of=summary.as_of.isoformat(),
+        total_assets=money_decimal(summary.total_assets),
+        total_liabilities=money_decimal(summary.total_liabilities),
+        total_net_worth=money_decimal(summary.total_net_worth),
+        active_account_count=summary.active_account_count,
+        archived_account_count=summary.archived_account_count,
+        resolved_asset_count=summary.resolved_asset_count,
+        resolved_liability_count=summary.resolved_liability_count,
+        unresolved_account_count=summary.unresolved_account_count,
+        currency=currency,
+    )
+
+
+def net_worth_history_response(
+    history: NetWorthHistory,
+    currency: str,
+) -> NetWorthHistoryResponse:
+    return NetWorthHistoryResponse(
+        as_of=history.as_of.isoformat(),
+        months=history.months,
+        points=[
+            NetWorthHistoryPointResponse(
+                as_of=point.as_of.isoformat(),
+                total_assets=money_decimal(point.total_assets),
+                total_liabilities=money_decimal(point.total_liabilities),
+                total_net_worth=money_decimal(point.total_net_worth),
+                resolved_asset_count=point.resolved_asset_count,
+                resolved_liability_count=point.resolved_liability_count,
+                unresolved_account_count=point.unresolved_account_count,
+            )
+            for point in history.points
+        ],
+        change_amount=(
+            money_decimal(history.change_amount)
+            if history.change_amount is not None
+            else None
+        ),
+        change_percent=(
+            moneyless_decimal(history.change_percent)
+            if history.change_percent is not None
+            else None
+        ),
+        currency=currency,
+    )
 
 
 def download_response(content: str | bytes, filename: str, media_type: str) -> Response:
@@ -229,6 +350,12 @@ def _decimal_map(values: dict[str, Decimal]) -> dict[str, str]:
 
 def _datetime_response(value: datetime | None) -> str | None:
     return value.isoformat() if value is not None else None
+
+
+def _required_datetime_response(value: datetime | None) -> str:
+    if value is None:
+        raise ValueError("Stored records must have timestamps.")
+    return value.isoformat()
 
 
 def _require_id(value: int | None) -> int:

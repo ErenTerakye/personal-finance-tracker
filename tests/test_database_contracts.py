@@ -7,6 +7,17 @@ import pytest
 import finance_tracker.database as database
 
 EXPECTED_SCHEMA = {
+    ("index", "idx_account_balance_snapshots_account_date"): (
+        "CREATE INDEX idx_account_balance_snapshots_account_date "
+        "ON account_balance_snapshots(account_id, effective_date DESC)"
+    ),
+    ("index", "idx_account_balance_snapshots_date"): (
+        "CREATE INDEX idx_account_balance_snapshots_date "
+        "ON account_balance_snapshots(effective_date)"
+    ),
+    ("index", "idx_accounts_type_active"): (
+        "CREATE INDEX idx_accounts_type_active ON accounts(type, archived_on)"
+    ),
     ("index", "idx_budgets_period"): (
         "CREATE INDEX idx_budgets_period ON budgets(year, month)"
     ),
@@ -41,6 +52,21 @@ EXPECTED_SCHEMA = {
         "category TEXT NOT NULL, month INTEGER NOT NULL CHECK (month BETWEEN 1 AND 12), "
         "year INTEGER NOT NULL CHECK (year > 0), amount TEXT NOT NULL, "
         "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP )"
+    ),
+    ("table", "account_balance_snapshots"): (
+        "CREATE TABLE account_balance_snapshots ( "
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, "
+        "amount TEXT NOT NULL, effective_date TEXT NOT NULL, "
+        "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+        "updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+        "FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE, "
+        "UNIQUE (account_id, effective_date) )"
+    ),
+    ("table", "accounts"): (
+        "CREATE TABLE accounts ( id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "name TEXT NOT NULL, "
+        "type TEXT NOT NULL CHECK (type IN ('asset', 'liability')), "
+        "archived_on TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP )"
     ),
     ("table", "category_rules"): (
         "CREATE TABLE category_rules ( id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -85,11 +111,11 @@ def test_fresh_database_matches_the_frozen_schema_and_index_manifest(tmp_path):
     database.initialize_database(db_path)
 
     with sqlite3.connect(db_path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 1
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
         assert _normalized_schema(connection) == EXPECTED_SCHEMA
 
 
-def test_current_v1_database_is_not_migrated_again(tmp_path, monkeypatch):
+def test_current_v2_database_is_not_migrated_again(tmp_path, monkeypatch):
     db_path = tmp_path / "current.sqlite3"
     database.initialize_database(db_path)
     with sqlite3.connect(db_path) as connection:
@@ -108,8 +134,38 @@ def test_current_v1_database_is_not_migrated_again(tmp_path, monkeypatch):
         row = connection.execute(
             "SELECT amount, description FROM transactions WHERE id = 1"
         ).fetchone()
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 1
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
         assert row == ("12.34", "Keep me")
+
+
+def test_current_v1_database_upgrades_and_preserves_rows_and_settings(tmp_path):
+    db_path = tmp_path / "version-one.sqlite3"
+    with sqlite3.connect(db_path) as connection:
+        connection.executescript(database.SCHEMA_SQL)
+        connection.execute(
+            "INSERT INTO settings (key, value) VALUES ('currency', 'TRY')"
+        )
+        connection.execute(
+            """
+            INSERT INTO transactions (type, amount, category, description, date)
+            VALUES ('expense', '12.34', 'Food', 'Keep me', '2026-07-10')
+            """
+        )
+        connection.execute("PRAGMA user_version = 1")
+
+    database.initialize_database(db_path)
+
+    with sqlite3.connect(db_path) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert connection.execute(
+            "SELECT amount, description FROM transactions"
+        ).fetchone() == ("12.34", "Keep me")
+        assert connection.execute(
+            "SELECT value FROM settings WHERE key = 'currency'"
+        ).fetchone()[0] == "TRY"
+        assert connection.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='accounts'"
+        ).fetchone()[0] == "accounts"
 
 
 def test_database_rejects_a_future_schema_version_without_mutation(tmp_path):
@@ -123,7 +179,9 @@ def test_database_rejects_a_future_schema_version_without_mutation(tmp_path):
         database.initialize_database(db_path)
 
     with sqlite3.connect(db_path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == (
+            database.SCHEMA_VERSION + 1
+        )
         assert _normalized_schema(connection) == before
 
 

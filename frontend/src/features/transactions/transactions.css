@@ -1,0 +1,398 @@
+@layer features {
+  .activity-hero {
+    container: activity-hero / inline-size;
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+    padding: clamp(1.4rem, 4cqi, 2.75rem);
+    overflow: clip;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-radius: calc(var(--radius) * 1.35);
+  }
+
+  .activity-hero-copy {
+    position: relative;
+    z-index: 1;
+    max-inline-size: 46rem;
+  }
+
+  .activity-hero h1 {
+    margin-block: 0.2rem 0.55rem;
+    font-size: clamp(2.25rem, 8cqi, 4.75rem);
+    letter-spacing: -0.055em;
+    line-height: 0.96;
+    text-wrap: balance;
+  }
+
+  .activity-hero-copy > p:last-child {
+    max-inline-size: 48ch;
+    margin: 0;
+    color: var(--muted);
+    font-size: clamp(1rem, 2cqi, 1.125rem);
+  }
+
+  .activity-hero-actions {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    align-self: end;
+  }
+
+  .activity-hero + .alert {
+    margin-block-start: var(--section-gap);
+  }
+
+  .activity-workspace {
+    container: activity-workspace / inline-size;
+    display: grid;
+    gap: 1rem;
+    margin-block-start: var(--section-gap);
+  }
+
+  .activity-snapshot {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .activity-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-inline-size: 0;
+    min-block-size: 6.25rem;
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+
+  .activity-stat-icon {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    inline-size: 2.65rem;
+    block-size: 2.65rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border-radius: 50%;
+  }
+
+  .activity-stat.income .activity-stat-icon,
+  .activity-stat.income strong,
+  .activity-stat.positive .activity-stat-icon,
+  .activity-stat.positive strong {
+    color: var(--cash);
+  }
+
+  .activity-stat.expense .activity-stat-icon,
+  .activity-stat.expense strong,
+  .activity-stat.negative .activity-stat-icon,
+  .activity-stat.negative strong {
+    color: var(--expenses);
+  }
+
+  .activity-stat > div {
+    display: grid;
+    min-inline-size: 0;
+    gap: 0.2rem;
+  }
+
+  .activity-stat > div > span {
+    color: var(--muted);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .activity-stat strong {
+    font-family: var(--font-mono);
+    font-size: clamp(1.05rem, 2.4cqi, 1.45rem);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.035em;
+    overflow-wrap: anywhere;
+  }
+
+  .activity-command-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0.75rem;
+    padding: 0.85rem;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+
+  .activity-command-bar .transaction-search > span:first-child,
+  .activity-sort > span {
+    display: block;
+    margin-block-end: 0.35rem;
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+  }
+
+  .activity-command-bar .active-filter-summary {
+    grid-column: 1 / -1;
+    padding-block: 0.1rem;
+  }
+
+  .activity-ledger {
+    min-inline-size: 0;
+    overflow: clip;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: calc(var(--radius) * 1.2);
+  }
+
+  .activity-ledger-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: clamp(1rem, 3cqi, 1.5rem);
+    border-block-end: 1px solid var(--rule);
+  }
+
+  .activity-ledger-header h2 {
+    margin-block: 0.15rem 0.25rem;
+    font-size: clamp(1.35rem, 3cqi, 1.8rem);
+    letter-spacing: -0.025em;
+  }
+
+  .activity-ledger-header p {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .activity-sort {
+    inline-size: min(100%, 12.5rem);
+  }
+
+  .activity-sort select {
+    inline-size: 100%;
+  }
+
+  .activity-ledger-body {
+    padding: clamp(0.75rem, 2.5cqi, 1.35rem);
+  }
+
+  .ledger-days,
+  .ledger-entries {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ledger-days {
+    display: grid;
+    gap: 1.35rem;
+  }
+
+  .ledger-day {
+    min-inline-size: 0;
+  }
+
+  .ledger-day-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-inline: 0.35rem;
+    padding-block-end: 0.55rem;
+  }
+
+  .ledger-day-header > div {
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  .ledger-day-header time {
+    color: var(--ink);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .ledger-day-header span {
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .ledger-day-header > strong,
+  .ledger-entry-amount {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ledger-day-header > strong {
+    font-size: var(--font-size-sm);
+  }
+
+  .ledger-day-header > strong.income,
+  .ledger-entry.income .ledger-entry-amount {
+    color: var(--cash);
+  }
+
+  .ledger-day-header > strong.expense,
+  .ledger-entry.expense .ledger-entry-amount {
+    color: var(--expenses);
+  }
+
+  .ledger-entries {
+    display: grid;
+    overflow: clip;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+
+  .ledger-entry {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "icon copy amount actions";
+    align-items: center;
+    gap: 0.8rem;
+    min-block-size: 4.75rem;
+    padding: 0.75rem;
+    transition: background-color var(--motion-micro) var(--ease-out);
+  }
+
+  .ledger-entry + .ledger-entry {
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .ledger-entry:focus-within {
+    background: color-mix(in srgb, var(--action) 7%, var(--surface));
+  }
+
+  .ledger-entry-icon {
+    grid-area: icon;
+    display: grid;
+    place-items: center;
+    inline-size: 2.65rem;
+    block-size: 2.65rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border-radius: 50%;
+  }
+
+  .ledger-entry.income .ledger-entry-icon {
+    color: var(--cash);
+    background: color-mix(in srgb, var(--cash) 11%, var(--surface));
+  }
+
+  .ledger-entry.expense .ledger-entry-icon {
+    color: var(--expenses);
+    background: color-mix(in srgb, var(--expenses) 10%, var(--surface));
+  }
+
+  .ledger-entry-copy {
+    grid-area: copy;
+    display: grid;
+    min-inline-size: 0;
+    gap: 0.2rem;
+  }
+
+  .ledger-entry-copy > strong,
+  .ledger-entry-copy > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ledger-entry-copy > span {
+    color: var(--muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .ledger-entry-amount {
+    grid-area: amount;
+    justify-self: end;
+    white-space: nowrap;
+  }
+
+  .ledger-entry-actions {
+    grid-area: actions;
+    position: relative;
+    display: flex;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ledger-entry:hover {
+      background: var(--surface-2);
+    }
+
+    .ledger-quick-edit {
+      opacity: 0;
+      transition: opacity var(--motion-micro) var(--ease-out);
+    }
+
+    .ledger-entry:hover .ledger-quick-edit,
+    .ledger-entry:focus-within .ledger-quick-edit {
+      opacity: 1;
+    }
+  }
+
+  @container workspace-main (min-width: 48rem) {
+    .activity-hero {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+    }
+
+    .activity-hero-actions {
+      justify-content: end;
+    }
+  }
+
+  @container activity-workspace (max-width: 42rem) {
+    .activity-snapshot {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .activity-stat {
+      min-block-size: 4.75rem;
+    }
+
+    .activity-command-bar {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .activity-command-bar .transaction-filter-toggle {
+      inline-size: 100%;
+    }
+
+    .ledger-entry {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-areas:
+        "icon copy amount"
+        "icon copy actions";
+      gap: 0.25rem 0.75rem;
+    }
+
+    .ledger-entry-actions {
+      justify-self: end;
+    }
+
+    .ledger-quick-edit {
+      display: none;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .activity-hero,
+    .activity-stat,
+    .activity-command-bar,
+    .activity-ledger,
+    .ledger-entries {
+      background: Canvas;
+      border-color: CanvasText;
+    }
+  }
+}

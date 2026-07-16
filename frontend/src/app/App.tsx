@@ -1,12 +1,16 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { flushSync } from "react-dom";
 import { AppShell } from "./AppShell";
 import { currentPeriod } from "../shared/format/periods";
 import { setCurrency } from "../shared/format/money";
 import { pathForView, viewFromPath, type RouteView, type View } from "./routes";
-import { BudgetsView } from "../features/budgets/BudgetsView";
-import { DashboardView } from "../features/dashboard/DashboardView";
-import { TransactionsView } from "../features/transactions/TransactionsView";
 import { I18nProvider, useI18n } from "../shared/i18n/I18nProvider";
 import { ActionButton } from "../shared/components/actions";
 import { PageHeader } from "../shared/components/lists";
@@ -16,9 +20,25 @@ import type { BudgetReviewTarget } from "../shared/components/lists";
 import { cancelActiveViewTransition } from "../shared/motion/viewTransitions";
 
 const initialPeriod = periodFromUrl();
+const DashboardView = lazy(async () => {
+  const module = await import("../features/dashboard/DashboardView");
+  return { default: module.DashboardView };
+});
 const RulesView = lazy(async () => {
   const module = await import("../features/rules/RulesView");
   return { default: module.RulesView };
+});
+const NetWorthView = lazy(async () => {
+  const module = await import("../features/net-worth/NetWorthView");
+  return { default: module.NetWorthView };
+});
+const TransactionsView = lazy(async () => {
+  const module = await import("../features/transactions/TransactionsView");
+  return { default: module.TransactionsView };
+});
+const BudgetsView = lazy(async () => {
+  const module = await import("../features/budgets/BudgetsView");
+  return { default: module.BudgetsView };
 });
 
 function AppContent() {
@@ -30,6 +50,8 @@ function AppContent() {
   const [notice, setNotice] = useState("");
   const [createTransactionRequest, setCreateTransactionRequest] = useState(0);
   const [createBudgetRequest, setCreateBudgetRequest] = useState(0);
+  const [createAccountRequest, setCreateAccountRequest] = useState(0);
+  const [routeFocusRequest, setRouteFocusRequest] = useState(0);
   const mainRef = useRef<HTMLElement | null>(null);
   const viewRef = useRef<RouteView>(view);
   const settings = useAppSettings();
@@ -69,11 +91,12 @@ function AppContent() {
     flushSync(() => {
       if (nextView !== "transactions") setCreateTransactionRequest(0);
       if (nextView !== "budgets") setCreateBudgetRequest(0);
+      if (nextView !== "netWorth") setCreateAccountRequest(0);
       setNotice("");
       viewRef.current = nextView;
       setView(nextView);
+      setRouteFocusRequest((request) => request + 1);
     });
-    mainRef.current?.focus();
     if (afterCommit) queueMicrotask(afterCommit);
   }
 
@@ -135,7 +158,16 @@ function AppContent() {
       notice={notice}
       mainRef={mainRef}
       onNavigate={navigate}
-      onCreateTransaction={() => {
+      primaryActionLabel={
+        view === "netWorth"
+          ? t("netWorth.actions.addAccount")
+          : t("common.addEntry")
+      }
+      onPrimaryAction={() => {
+        if (viewRef.current === "netWorth") {
+          setCreateAccountRequest((request) => request + 1);
+          return;
+        }
         if (viewRef.current === "transactions") {
           setCreateTransactionRequest((request) => request + 1);
           return;
@@ -146,40 +178,74 @@ function AppContent() {
       }}
     >
       {view === "dashboard" ? (
-        <DashboardView
-          selectedPeriod={selectedPeriod}
-          setSelectedPeriod={changePeriod}
-          onNavigate={navigate}
-          onReviewBudget={reviewBudget}
-          onReviewCategory={reviewCategory}
-          onCreateBudget={() => {
-            if (viewRef.current === "budgets") {
-              setCreateBudgetRequest((request) => request + 1);
-              return;
-            }
-            navigate("budgets", () =>
-              setCreateBudgetRequest((request) => request + 1),
-            );
-          }}
-        />
+        <RouteContent
+          fallback={<p role="status">{t("common.loading")}</p>}
+          focusRequest={routeFocusRequest}
+          mainRef={mainRef}
+        >
+          <DashboardView
+            selectedPeriod={selectedPeriod}
+            setSelectedPeriod={changePeriod}
+            onNavigate={navigate}
+            onReviewBudget={reviewBudget}
+            onReviewCategory={reviewCategory}
+            onCreateBudget={() => {
+              if (viewRef.current === "budgets") {
+                setCreateBudgetRequest((request) => request + 1);
+                return;
+              }
+              navigate("budgets", () =>
+                setCreateBudgetRequest((request) => request + 1),
+              );
+            }}
+          />
+        </RouteContent>
       ) : null}
       {view === "transactions" ? (
-        <TransactionsView
-          selectedPeriod={selectedPeriod}
-          setNotice={setNotice}
-          createRequestId={createTransactionRequest}
-        />
+        <RouteContent
+          fallback={<p role="status">{t("common.loading")}</p>}
+          focusRequest={routeFocusRequest}
+          mainRef={mainRef}
+        >
+          <TransactionsView
+            selectedPeriod={selectedPeriod}
+            setNotice={setNotice}
+            createRequestId={createTransactionRequest}
+          />
+        </RouteContent>
+      ) : null}
+      {view === "netWorth" ? (
+        <RouteContent
+          fallback={<p role="status">{t("netWorth.loading")}</p>}
+          focusRequest={routeFocusRequest}
+          mainRef={mainRef}
+        >
+          <NetWorthView
+            setNotice={setNotice}
+            createRequestId={createAccountRequest}
+          />
+        </RouteContent>
       ) : null}
       {view === "budgets" ? (
-        <BudgetsView
-          selectedPeriod={selectedPeriod}
-          setSelectedPeriod={changePeriod}
-          setNotice={setNotice}
-          createRequestId={createBudgetRequest}
-        />
+        <RouteContent
+          fallback={<p role="status">{t("common.loading")}</p>}
+          focusRequest={routeFocusRequest}
+          mainRef={mainRef}
+        >
+          <BudgetsView
+            selectedPeriod={selectedPeriod}
+            setSelectedPeriod={changePeriod}
+            setNotice={setNotice}
+            createRequestId={createBudgetRequest}
+          />
+        </RouteContent>
       ) : null}
       {view === "rules" ? (
-        <Suspense fallback={<p role="status">{t("rules.statusLoading")}</p>}>
+        <RouteContent
+          fallback={<p role="status">{t("rules.statusLoading")}</p>}
+          focusRequest={routeFocusRequest}
+          mainRef={mainRef}
+        >
           <RulesView
             selectedPeriod={selectedPeriod}
             setNotice={setNotice}
@@ -187,7 +253,7 @@ function AppContent() {
               setCurrency(code);
             }}
           />
-        </Suspense>
+        </RouteContent>
       ) : null}
       {view === "not-found" ? (
         <PageHeader
@@ -206,6 +272,41 @@ function AppContent() {
       ) : null}
     </AppShell>
   );
+}
+
+function RouteContent({
+  fallback,
+  focusRequest,
+  mainRef,
+  children,
+}: {
+  fallback: ReactNode;
+  focusRequest: number;
+  mainRef: React.RefObject<HTMLElement | null>;
+  children: ReactNode;
+}) {
+  return (
+    <Suspense fallback={fallback}>
+      {children}
+      <RouteFocus request={focusRequest} mainRef={mainRef} />
+    </Suspense>
+  );
+}
+
+function RouteFocus({
+  request,
+  mainRef,
+}: {
+  request: number;
+  mainRef: React.RefObject<HTMLElement | null>;
+}) {
+  useEffect(() => {
+    if (request > 0) {
+      mainRef.current?.focus();
+    }
+  }, [mainRef, request]);
+
+  return null;
 }
 
 export default function App() {

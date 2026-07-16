@@ -1,4 +1,9 @@
 import type {
+  AccountInput,
+  AccountMutationResponse,
+  AccountRecord,
+  BalanceSnapshot,
+  BalanceSnapshotMutationResponse,
   ApiErrorBody,
   BudgetInput,
   BudgetMutationResponse,
@@ -10,6 +15,8 @@ import type {
   DashboardData,
   ImportSummary,
   NoticeResponse,
+  NetWorthHistory,
+  NetWorthSummary,
   PageMetadata,
   RecurringApplyResponse,
   RecurringTemplate,
@@ -39,11 +46,79 @@ export interface BudgetFilters {
   category?: string;
 }
 
+export interface AccountFilters {
+  as_of?: string;
+  include_archived?: boolean;
+}
+
 export const api = {
   dashboard: (month: number, year: number, signal?: AbortSignal) =>
     request<DashboardData>(`/api/dashboard?${query({ month, year })}`, {
       signal,
     }),
+
+  accounts: (filters: AccountFilters = {}, signal?: AbortSignal) =>
+    request<{ accounts: AccountRecord[] }>(`/api/accounts?${query(filters)}`, {
+      signal,
+    }),
+
+  createAccount: (payload: AccountInput) =>
+    request<AccountMutationResponse>("/api/accounts", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  updateAccount: (id: number, payload: { name: string }) =>
+    request<AccountMutationResponse>(`/api/accounts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+
+  deleteAccount: (id: number) =>
+    request<NoticeResponse>(`/api/accounts/${id}?confirm=true`, {
+      method: "DELETE",
+    }),
+
+  archiveAccount: (
+    id: number,
+    payload: { closing_date: string; confirm_zero_balance: boolean },
+  ) =>
+    request<AccountMutationResponse>(`/api/accounts/${id}/archive`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  balanceSnapshots: (id: number, signal?: AbortSignal) =>
+    request<{ balance_snapshots: BalanceSnapshot[] }>(
+      `/api/accounts/${id}/balance-snapshots`,
+      { signal },
+    ),
+
+  setBalanceSnapshot: (id: number, effectiveDate: string, amount: string) =>
+    request<BalanceSnapshotMutationResponse>(
+      `/api/accounts/${id}/balance-snapshots/${effectiveDate}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ amount }),
+      },
+    ),
+
+  deleteBalanceSnapshot: (id: number, effectiveDate: string) =>
+    request<NoticeResponse>(
+      `/api/accounts/${id}/balance-snapshots/${effectiveDate}?confirm=true`,
+      { method: "DELETE" },
+    ),
+
+  netWorth: (asOf?: string, signal?: AbortSignal) =>
+    request<NetWorthSummary>(`/api/net-worth?${query({ as_of: asOf })}`, {
+      signal,
+    }),
+
+  netWorthHistory: (months: number, asOf?: string, signal?: AbortSignal) =>
+    request<NetWorthHistory>(
+      `/api/net-worth/history?${query({ as_of: asOf, months })}`,
+      { signal },
+    ),
 
   transactions: (filters: TransactionFilters = {}, signal?: AbortSignal) =>
     request<{ transactions: TransactionRecord[]; page: PageMetadata }>(

@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 
+const sourceDirectory = new URL("../frontend/src/", import.meta.url);
 const stylesDirectory = new URL(
   "../frontend/src/shared/styles/",
   import.meta.url,
@@ -27,23 +28,33 @@ if (indexCss !== expectedOrder) {
   throw new Error(`index.css must contain exactly: ${expectedOrder}`);
 }
 
-for (const layer of layers) {
-  const source = await readFile(
-    new URL(`${layer}.css`, stylesDirectory),
-    "utf8",
-  );
-  if (!source.trimStart().startsWith(`@layer ${layer} {`)) {
-    throw new Error(`${layer}.css must be owned by @layer ${layer}.`);
-  }
-  if (/@import\s/i.test(source)) {
-    throw new Error(`${layer}.css must not contain runtime @import rules.`);
-  }
+const sourceCssFiles = (await readdir(sourceDirectory, { recursive: true }))
+  .filter((path) => path.endsWith(".css"))
+  .filter((path) => path !== "shared/styles/index.css");
+
+for (const relativePath of sourceCssFiles) {
+  const sourceUrl = new URL(relativePath, sourceDirectory);
+  const source = await readFile(sourceUrl, "utf8");
   const declared = [...source.matchAll(/@layer\s+([a-z-]+)/g)].map(
     (match) => match[1],
   );
-  const unexpected = declared.find((name) => name !== layer);
+  const owner = declared[0];
+  if (!owner || !layers.includes(owner)) {
+    throw new Error(
+      `${relativePath} must start with one of the ordered CSS layers.`,
+    );
+  }
+  if (!source.trimStart().startsWith(`@layer ${owner} {`)) {
+    throw new Error(`${relativePath} must be wrapped by @layer ${owner}.`);
+  }
+  if (/@import\s/i.test(source)) {
+    throw new Error(`${relativePath} must not contain runtime @import rules.`);
+  }
+  const unexpected = declared.find((name) => name !== owner);
   if (unexpected) {
-    throw new Error(`${layer}.css declares unexpected layer ${unexpected}.`);
+    throw new Error(
+      `${relativePath} declares both ${owner} and unexpected layer ${unexpected}.`,
+    );
   }
 }
 

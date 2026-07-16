@@ -1,0 +1,222 @@
+@layer features {
+  .dashboard-context-header {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 0;
+  }
+
+  .dashboard-context-header > .eyebrow,
+  .dashboard-context-header > .dashboard-narrative {
+    margin: 0;
+  }
+
+  .dashboard-context-header .dashboard-narrative {
+    margin-block-start: 0.5rem;
+  }
+
+  .dashboard-heading-tools {
+    min-inline-size: 0;
+  }
+
+  .dashboard-command-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin-block-start: 1rem;
+  }
+
+  .dashboard-primary-actions {
+    grid-template-columns: minmax(8rem, auto);
+    inline-size: auto;
+  }
+
+  @container workspace-main (min-width: 44rem) {
+    .analysis-grid,
+    .dashboard-analysis-pair {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-priorities .panel:first-child {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @container workspace-main (max-width: 43.99rem) {
+    .page-heading {
+      grid-template-columns: 1fr;
+      align-items: start;
+    }
+
+    .page-heading p:not(.eyebrow) {
+      font-size: var(--font-size-base);
+    }
+
+    .page-actions,
+    .period-control,
+    .period-chip {
+      inline-size: 100%;
+    }
+
+    .dashboard-actions {
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .dashboard-command-row {
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .dashboard-primary-actions {
+      grid-template-columns: minmax(0, 1fr);
+      inline-size: 100%;
+    }
+
+    .dashboard-actions .report-menu,
+    .dashboard-actions .report-menu > button {
+      inline-size: 100%;
+    }
+
+    .filter-form {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .filter-form .period-control,
+    .filter-actions {
+      grid-column: 1 / -1;
+    }
+
+    .filter-form .field label {
+      font-size: var(--font-size-xs);
+    }
+  }
+
+  @container panel (min-width: 28rem) {
+    .panel-header {
+      flex-wrap: nowrap;
+    }
+  }
+
+  @container cashflow-trend (min-width: 34rem) {
+    .cashflow-trend ol {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cashflow-trend li {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "time"
+        "bars"
+        "value"
+        "entries";
+      min-block-size: 8.5rem;
+    }
+
+    .cashflow-trend li:not(:last-child) {
+      border-block-end: 0;
+    }
+
+    .cashflow-trend li strong {
+      align-self: end;
+      justify-self: start;
+      text-align: start;
+    }
+
+    .trend-bars {
+      display: flex;
+      align-items: end;
+      gap: 0.35rem;
+      block-size: 4.6rem;
+      min-block-size: 0;
+    }
+
+    .trend-bar {
+      flex: 1 1 0;
+      inline-size: auto;
+      block-size: 100%;
+      align-self: end;
+      border-radius: 999px 999px 3px 3px;
+    }
+
+    .trend-bar span {
+      inline-size: 100%;
+      scale: 1 var(--bar-scale, 0);
+      transform-origin: center bottom;
+    }
+
+    .trend-bar::before {
+      inset-block: 0;
+      inset-inline: -0.4rem;
+      min-inline-size: 0;
+      min-block-size: 2.5rem;
+    }
+  }
+
+  @container cashflow-trend (min-width: 42rem) {
+    .cashflow-trend ol {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @container panel (min-width: 42rem) {
+    .category-bar {
+      grid-template-columns: minmax(8rem, 0.45fr) minmax(8rem, 1fr) auto;
+      gap: 0.75rem;
+    }
+
+    .category-bar > div {
+      grid-column: auto;
+    }
+  }
+
+  @container cashflow-trend (min-width: 54rem) {
+    .cashflow-trend ol {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .cashflow-trend li {
+      min-block-size: 10.5rem;
+    }
+  }
+
+  @container line-chart (max-width: 26rem) {
+    .chart-line {
+      stroke-width: 3;
+    }
+
+    .chart-point {
+      r: 4;
+    }
+
+    .line-chart text {
+      font-size: 0.66rem;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .period-month-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (pointer: coarse) {
+    :root {
+      --tap-target: 3rem;
+    }
+
+    .trend-bar::before {
+      inset-block: -0.65rem;
+      min-inline-size: 3rem;
+    }
+
+    .chart-point {
+      stroke-width: 5;
+    }
+
+    .chart-tooltip {
+      padding: 0.65rem 0.75rem;
+      translate: -50% calc(-100% - 0.25rem);
+    }
+  }
+}

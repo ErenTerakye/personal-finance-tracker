@@ -13,5 +13,6 @@ export default defineConfig({
     outDir: "../src/finance_tracker/web/static/spa",
     emptyOutDir: true,
     assetsDir: "assets",
+    manifest: "asset-manifest.json",
   },
 });

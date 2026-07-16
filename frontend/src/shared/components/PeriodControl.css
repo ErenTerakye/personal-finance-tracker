@@ -1,0 +1,355 @@
+@layer components {
+  .period-control {
+    anchor-scope: --period-picker;
+    display: grid;
+    grid-template-columns: var(--tap-target) minmax(0, 1fr) var(--tap-target);
+    align-items: center;
+    gap: 0;
+    inline-size: 100%;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    overflow: clip;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    border: 0;
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .period-control > .icon-button,
+  .period-control > .period-chip {
+    min-block-size: calc(var(--tap-target) + 0.25rem);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .period-control
+    > :is(.icon-button, .period-chip)
+    + :is(.icon-button, .period-chip) {
+    margin-inline-start: -1px;
+  }
+
+  .period-control > .icon-button:first-child {
+    border-start-start-radius: inherit;
+    border-end-start-radius: inherit;
+  }
+
+  .period-control > .period-chip + .icon-button {
+    border-start-end-radius: inherit;
+    border-end-end-radius: inherit;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .period-control > :is(.icon-button, .period-chip):hover:not(:disabled) {
+      position: relative;
+      z-index: 1;
+    }
+  }
+
+  .period-control > :focus-visible {
+    position: relative;
+    z-index: 1;
+  }
+
+  .period-chip {
+    anchor-name: --period-picker;
+    min-inline-size: 0;
+    padding-inline: 0.85rem;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .period-pending-mark {
+    flex: none;
+    inline-size: 0.45rem;
+    block-size: 0.45rem;
+    margin-inline-start: 0.1rem;
+    background: var(--action);
+    border-radius: 50%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .period-pending-mark {
+      animation: period-pending-pulse 900ms ease-in-out infinite alternate;
+    }
+
+    @keyframes period-pending-pulse {
+      to {
+        opacity: 0.42;
+      }
+    }
+
+    :is(
+        .period-chip,
+        .period-year-trigger,
+        .period-month-option,
+        .period-year-option
+      ):active:not(:disabled) {
+      transform: scale(0.985);
+    }
+  }
+
+  :is(
+      .period-chip,
+      .period-year-trigger,
+      .period-month-option,
+      .period-year-option
+    ):active:not(:disabled) {
+    background-color: color-mix(in srgb, var(--action) 12%, var(--surface));
+    border-color: color-mix(in srgb, var(--action) 28%, var(--rule));
+  }
+
+  :is(
+      .period-chip,
+      .period-year-trigger,
+      .period-month-option,
+      .period-year-option
+    )[data-focus-origin="pointer"]:focus-visible {
+    outline: 0;
+  }
+
+  .period-popover {
+    position: fixed;
+    inset-block-start: 5rem;
+    inset-inline-end: max(1rem, calc((100dvw - 90rem) / 2));
+    inline-size: min(21rem, calc(100dvw - 2rem));
+    max-inline-size: none;
+    margin: 0;
+    padding: 0.55rem;
+    overflow: hidden;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overscroll-behavior: contain;
+    position-try-fallbacks: flip-block, flip-inline;
+    opacity: 0;
+    translate: 0 -0.3rem;
+    transform-origin: top center;
+    transition:
+      opacity var(--motion-control) var(--ease-out),
+      translate var(--motion-control) var(--ease-out),
+      display var(--motion-control) allow-discrete,
+      overlay var(--motion-control) allow-discrete;
+    transition-behavior: allow-discrete;
+  }
+
+  .period-popover:popover-open {
+    opacity: 1;
+    translate: 0;
+  }
+
+  @starting-style {
+    .period-popover:popover-open {
+      opacity: 0;
+      translate: 0 -0.3rem;
+    }
+  }
+
+  @supports (position-area: block-end) {
+    .period-popover[popover] {
+      position: fixed;
+      position-anchor: --period-picker;
+      position-area: block-end span-inline-end;
+      inset: auto;
+      margin-block-start: 0.5rem;
+    }
+  }
+
+  .period-sheet-header {
+    display: none;
+  }
+
+  .period-picker {
+    display: grid;
+    gap: 0;
+  }
+
+  .period-year-stepper {
+    display: grid;
+    grid-template-columns: var(--tap-target) 1fr var(--tap-target);
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .period-year-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-block-size: var(--tap-target);
+    padding-inline: 0.75rem;
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    font-variant-numeric: tabular-nums;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+  }
+
+  .period-year-trigger svg {
+    color: var(--muted);
+    transition: rotate var(--motion-micro) var(--ease-out);
+  }
+
+  .period-year-trigger[aria-expanded="true"] svg {
+    rotate: 180deg;
+  }
+
+  .period-month-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding-block-start: 0.35rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .period-picker-grid {
+      animation: picker-mode-enter var(--motion-micro) var(--ease-out);
+    }
+
+    @keyframes picker-mode-enter {
+      from {
+        opacity: 0;
+        translate: 0 0.2rem;
+      }
+    }
+  }
+
+  .period-month-option,
+  .period-year-option {
+    min-block-size: 2.65rem;
+    min-inline-size: 0;
+    padding: 0.45rem 0.25rem;
+    color: var(--text);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+  }
+
+  :is(.period-month-option, .period-year-option)[aria-pressed="true"] {
+    color: var(--action);
+    font-weight: var(--font-weight-bold);
+    background: color-mix(in srgb, var(--action) 12%, var(--surface));
+    border-color: color-mix(in srgb, var(--action) 24%, transparent);
+  }
+
+  .period-year-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.25rem;
+    margin-block-start: 0.35rem;
+  }
+
+  .period-year-option {
+    min-block-size: 2.65rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .period-year-trigger:hover,
+    :is(.period-month-option, .period-year-option):hover:not(
+        [aria-pressed="true"]
+      ) {
+      color: var(--ink);
+      background: var(--surface-2);
+      border-color: var(--rule);
+    }
+  }
+
+  @media (max-width: 63.999rem) {
+    .period-popover:not([popover]) {
+      inset: auto 0 0;
+      inline-size: min(32rem, 100dvi);
+      max-inline-size: none;
+      max-block-size: calc(100dvb - 1rem);
+      margin: auto auto 0;
+      padding: 0.75rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom));
+      overflow-y: auto;
+      border-block-end: 0;
+      border-radius: calc(var(--radius) + 0.35rem) calc(var(--radius) + 0.35rem)
+        0 0;
+      opacity: 0;
+      translate: 0 1rem;
+    }
+
+    .period-popover:not([popover])[open] {
+      opacity: 1;
+      translate: 0;
+    }
+
+    @starting-style {
+      .period-popover:not([popover])[open] {
+        opacity: 0;
+        translate: 0 1rem;
+      }
+    }
+
+    .period-popover:not([popover])::backdrop {
+      background: color-mix(in srgb, var(--paper-dark) 54%, transparent);
+      opacity: 1;
+      transition:
+        opacity var(--motion-control) ease-out,
+        display var(--motion-control) allow-discrete,
+        overlay var(--motion-control) allow-discrete;
+    }
+
+    @starting-style {
+      .period-popover:not([popover])[open]::backdrop {
+        opacity: 0;
+      }
+    }
+
+    .period-sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-block-size: var(--tap-target);
+      padding-inline-start: 0.35rem;
+    }
+
+    .period-sheet-header h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: var(--font-size-lg);
+    }
+
+    .period-picker {
+      padding-block-start: 0.25rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .period-popover {
+      translate: none;
+      transition: none;
+    }
+
+    .period-popover::backdrop,
+    .period-year-trigger svg,
+    .period-picker-grid,
+    .period-pending-mark {
+      animation: none;
+      transition: none;
+      translate: none;
+      rotate: none;
+      scale: none;
+      transform: none;
+    }
+
+    .period-chip,
+    .period-year-trigger,
+    .period-month-option,
+    .period-year-option {
+      transition: none;
+      transform: none;
+    }
+  }
+}

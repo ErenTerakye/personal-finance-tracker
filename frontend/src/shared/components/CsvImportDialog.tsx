@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import "./CsvImportDialog.css";
 import { Search, Upload } from "lucide-react";
 import type { ImportSummary, TransactionImportPreview } from "../../types";
 import { localizedNotice } from "../i18n/notices";

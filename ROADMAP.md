@@ -25,6 +25,8 @@ would make it stronger without bloating the scope.
   English/Turkish language preferences.
 - A static showcase exists for portfolio hosting, while real CRUD remains a
   local Python/SQLite workflow.
+- Total net worth is available through dated asset/liability balance snapshots, CLI commands,
+  FastAPI/OpenAPI, a compact Overview aggregate, and a dedicated lazy-loaded browser workspace.
 - GitHub Actions mirrors the documented check set with Python tests, Ruff, mypy,
   frontend linters, OpenAPI drift and bundle budgets, production build, dependency
   audits, and cross-browser Playwright E2E tests.
@@ -168,6 +170,16 @@ Completed the compatibility-first structural cleanup without expanding product s
   and reviewer documentation from the final source tree.
 - Recorded the final automated, cross-browser, package, performance, and live interaction results in
   [`docs/ARCHITECTURE_CLEANUP_EVIDENCE.md`](docs/ARCHITECTURE_CLEANUP_EVIDENCE.md).
+
+### Total Net Worth
+
+- Added schema version 2 with asset/liability accounts and dated balance snapshots.
+- Added transactional account lifecycle safeguards, deterministic as-of summaries and bounded
+  monthly history, CLI parity, and FastAPI/OpenAPI contracts.
+- Added a fifth Net worth browser destination with English/Turkish copy, account workflows,
+  responsive composition, and an accessible SVG chart plus complete data table.
+- Renamed the Overview's income-minus-expenses concept to monthly net cashflow so it is not confused
+  with net worth.
 
 ## Maintenance Focus
 

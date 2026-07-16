@@ -3,6 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 
 const routes = [
   { path: "/", heading: "June 2026" },
+  { path: "/net-worth", heading: "Net worth" },
   { path: "/transactions", heading: "Activity" },
   { path: "/budgets", heading: "Your July 2026 plan" },
   { path: "/rules", heading: "Automations" },
@@ -355,6 +356,27 @@ async function mockApi(
       await route.fulfill({ json: { currency: "USD" } });
       return;
     }
+    if (url.pathname === "/api/accounts") {
+      await route.fulfill({ json: { accounts: [] } });
+      return;
+    }
+    if (url.pathname === "/api/net-worth/history") {
+      await route.fulfill({
+        json: {
+          as_of: "2026-07-16",
+          months: Number(url.searchParams.get("months") ?? 12),
+          points: [],
+          change_amount: null,
+          change_percent: null,
+          currency: "USD",
+        },
+      });
+      return;
+    }
+    if (url.pathname === "/api/net-worth") {
+      await route.fulfill({ json: netWorthSummary() });
+      return;
+    }
     if (url.pathname === "/api/transactions") {
       await route.fulfill({ json: { transactions } });
       return;
@@ -515,6 +537,22 @@ function dashboardPayload() {
     savings_rate: "84.5",
     recent_transactions: [transaction()],
     budget_statuses: attentionQueueStatuses(),
+    net_worth: netWorthSummary(),
+  };
+}
+
+function netWorthSummary() {
+  return {
+    as_of: "2026-07-16",
+    total_assets: "0.00",
+    total_liabilities: "0.00",
+    total_net_worth: "0.00",
+    active_account_count: 0,
+    archived_account_count: 0,
+    resolved_asset_count: 0,
+    resolved_liability_count: 0,
+    unresolved_account_count: 0,
+    currency: "USD",
   };
 }
 

@@ -7,6 +7,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { ReactNode } from "react";
+import "./AppShell.css";
 import { Notice } from "../shared/components/feedback";
 import { useMediaQuery } from "../shared/hooks/useMediaQuery";
 import { useI18n } from "../shared/i18n/I18nProvider";
@@ -15,6 +16,7 @@ import { RouteView, View, viewMeta, viewOrder } from "./routes";
 
 const navIcons = {
   dashboard: LayoutDashboard,
+  netWorth: BarChart3,
   transactions: ReceiptText,
   budgets: PiggyBank,
   rules: SlidersHorizontal,
@@ -41,14 +43,16 @@ export function AppShell({
   notice,
   mainRef,
   onNavigate,
-  onCreateTransaction,
+  primaryActionLabel,
+  onPrimaryAction,
   children,
 }: {
   view: RouteView;
   notice: string;
   mainRef: React.RefObject<HTMLElement | null>;
   onNavigate: (view: View) => void;
-  onCreateTransaction: () => void;
+  primaryActionLabel: string;
+  onPrimaryAction: () => void;
   children: ReactNode;
 }) {
   const { t } = useI18n();
@@ -66,6 +70,11 @@ export function AppShell({
             <li key={item}>
               <a
                 href={viewMeta[item].path}
+                aria-label={
+                  className === "bottom-navigation"
+                    ? t(`nav.${item}`)
+                    : undefined
+                }
                 aria-current={active ? "page" : undefined}
                 onClick={(event) => {
                   if (!shouldHandleNavigation(event)) return;
@@ -100,7 +109,13 @@ export function AppShell({
                     />
                   ) : null}
                 </span>
-                <span>{t(`nav.${item}`)}</span>
+                <span>
+                  {t(
+                    className === "bottom-navigation"
+                      ? `navShort.${item}`
+                      : `nav.${item}`,
+                  )}
+                </span>
               </a>
             </li>
           );
@@ -124,10 +139,11 @@ export function AppShell({
           <button
             className="rail-create button"
             type="button"
-            onClick={onCreateTransaction}
+            data-dialog-return-focus
+            onClick={onPrimaryAction}
           >
             <Plus aria-hidden="true" size={19} />
-            <span>{t("common.addEntry")}</span>
+            <span>{primaryActionLabel}</span>
           </button>
           <div className="rail-utilities">
             <LanguageToggle />
@@ -145,13 +161,12 @@ export function AppShell({
             <button
               className="button primary compact-create"
               type="button"
-              aria-label={t("common.addEntry")}
-              onClick={onCreateTransaction}
+              aria-label={primaryActionLabel}
+              data-dialog-return-focus
+              onClick={onPrimaryAction}
             >
               <Plus aria-hidden="true" />
-              <span className="compact-create-label">
-                {t("common.addEntry")}
-              </span>
+              <span className="compact-create-label">{primaryActionLabel}</span>
             </button>
           </div>
         </header>
