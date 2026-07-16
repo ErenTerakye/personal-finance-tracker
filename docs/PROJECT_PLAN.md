@@ -126,7 +126,7 @@ templates, settings, and account histories in a separate `demo.sqlite3`.
 
 ## Web UI
 
-The shipped information architecture is Overview, Net worth, Activity, Plan, and Automations,
+The shipped information architecture is Net worth, Cash flow, Activity, Plan, and Automations,
 backed by a semantic ledger-editorial design system, inline compact utilities with bottom
 navigation, a persistent wide rail, progressive disclosures, self-hosted typography, and
 accessibility/responsive verification.
@@ -142,8 +142,11 @@ The Python app exposes JSON endpoints under `/api` and serves the compiled React
 Supported browser workflows:
 
 - Personal Finance Tracker dashboard with a six-month cashflow trend, compact period controls, monthly KPI cards, functional browser-rendered charts, recent transactions, budget pressure, and category mix.
-- Route-aware SPA navigation for `/`, `/net-worth`, `/transactions`, `/budgets`, and `/rules`.
-- Net worth as-of summaries, account/snapshot workflows, and accessible historical chart/table.
+- Route-aware SPA navigation for `/`, `/cash-flow`, `/transactions`, `/budgets`, and `/rules`, with
+  compatibility redirects from `/net-worth`.
+- A wealth-first Net worth home with as-of position, integrated history, account movement and
+  composition analytics, coverage facts, atomic balance check-ins, account/snapshot workflows, and
+  an accessible chart/table.
 - Transaction add, edit, delete, and filtering through native dialog workflows.
 - Budget set/update, delete, filtering, and budget status comparison with pressure as the primary view.
 - Browser CSV import/export for transactions and budgets, reusing the same CSV validation and formatting rules as the CLI.

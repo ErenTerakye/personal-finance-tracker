@@ -38,6 +38,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/accounts/balance-check-ins/{effective_date}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Check In Balances */
+    put: operations["check_in_balances_api_accounts_balance_check_ins__effective_date__put"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/accounts": {
     parameters: {
       query?: never;
@@ -121,6 +138,23 @@ export interface paths {
     post?: never;
     /** Delete Balance Snapshot */
     delete: operations["delete_balance_snapshot_api_accounts__account_id__balance_snapshots__effective_date__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/net-worth/overview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Net Worth Overview */
+    get: operations["net_worth_overview_api_net_worth_overview_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -590,6 +624,29 @@ export interface components {
         [key: string]: string;
       } | null;
     };
+    /** BalanceCheckInItemRequest */
+    BalanceCheckInItemRequest: {
+      /** Account Id */
+      account_id: number;
+      /** Amount */
+      amount: string;
+    };
+    /** BalanceCheckInRequest */
+    BalanceCheckInRequest: {
+      /** Updates */
+      updates: components["schemas"]["BalanceCheckInItemRequest"][];
+    };
+    /** BalanceCheckInResponse */
+    BalanceCheckInResponse: {
+      /** Notice */
+      notice: string;
+      /** Notice Code */
+      notice_code: string;
+      /** Balance Snapshots */
+      balance_snapshots: components["schemas"]["BalanceSnapshotResponse"][];
+      /** Replaced Count */
+      replaced_count: number;
+    };
     /** BalanceSnapshotListResponse */
     BalanceSnapshotListResponse: {
       /** Balance Snapshots */
@@ -790,6 +847,60 @@ export interface components {
       /** Net Savings Delta */
       net_savings_delta: string;
     };
+    /** NetWorthAccountAnalyticsResponse */
+    NetWorthAccountAnalyticsResponse: {
+      /** Account Id */
+      account_id: number;
+      /** Name */
+      name: string;
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: "asset" | "liability";
+      /** Archived On */
+      archived_on: string | null;
+      /** Current Balance */
+      current_balance: string | null;
+      /** Current Balance Date */
+      current_balance_date: string | null;
+      /** Comparison Balance */
+      comparison_balance: string | null;
+      /** Comparison Balance Date */
+      comparison_balance_date: string | null;
+      /** Contribution Change */
+      contribution_change: string | null;
+      /** Composition Percent */
+      composition_percent: string | null;
+      /** Currency */
+      currency: string;
+    };
+    /** NetWorthComparisonResponse */
+    NetWorthComparisonResponse: {
+      /** Start Date */
+      start_date: string;
+      /** End Date */
+      end_date: string;
+      /** Available */
+      available: boolean;
+      /** Start Value */
+      start_value: string | null;
+      /** End Value */
+      end_value: string | null;
+      /** Change Amount */
+      change_amount: string | null;
+      /** Change Percent */
+      change_percent: string | null;
+    };
+    /** NetWorthCoverageResponse */
+    NetWorthCoverageResponse: {
+      /** Resolved Account Count */
+      resolved_account_count: number;
+      /** Unresolved Account Count */
+      unresolved_account_count: number;
+      /** Oldest Balance Date */
+      oldest_balance_date: string | null;
+    };
     /** NetWorthHistoryPointResponse */
     NetWorthHistoryPointResponse: {
       /** As Of */
@@ -819,6 +930,17 @@ export interface components {
       change_amount: string | null;
       /** Change Percent */
       change_percent: string | null;
+      /** Currency */
+      currency: string;
+    };
+    /** NetWorthOverviewResponse */
+    NetWorthOverviewResponse: {
+      summary: components["schemas"]["NetWorthSummaryResponse"];
+      history: components["schemas"]["NetWorthHistoryResponse"];
+      comparison: components["schemas"]["NetWorthComparisonResponse"];
+      /** Accounts */
+      accounts: components["schemas"]["NetWorthAccountAnalyticsResponse"][];
+      coverage: components["schemas"]["NetWorthCoverageResponse"];
       /** Currency */
       currency: string;
     };
@@ -1144,6 +1266,59 @@ export interface operations {
       };
       /** @description Bad Request */
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  check_in_balances_api_accounts_balance_check_ins__effective_date__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        effective_date: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BalanceCheckInRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BalanceCheckInResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -1530,6 +1705,48 @@ export interface operations {
       };
       /** @description Not Found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  net_worth_overview_api_net_worth_overview_get: {
+    parameters: {
+      query?: {
+        as_of?: string | null;
+        months?: number;
+        include_archived?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NetWorthOverviewResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
         headers: {
           [name: string]: unknown;
         };

@@ -5,19 +5,51 @@ from datetime import date
 from fastapi import APIRouter, Query, Request
 
 from finance_tracker.models import parse_snapshot_date
-from finance_tracker.reports import build_net_worth_history, build_net_worth_summary
+from finance_tracker.reports import (
+    build_net_worth_history,
+    build_net_worth_overview,
+    build_net_worth_summary,
+)
 from finance_tracker.web.dependencies import account_service, settings_service
 from finance_tracker.web.responses import (
     net_worth_history_response,
+    net_worth_overview_response,
     net_worth_summary_response,
 )
 from finance_tracker.web.schemas import (
     ErrorResponse,
     NetWorthHistoryResponse,
+    NetWorthOverviewResponse,
     NetWorthSummaryResponse,
 )
 
 router = APIRouter()
+
+
+@router.get(
+    "/api/net-worth/overview",
+    response_model=NetWorthOverviewResponse,
+    responses={400: {"model": ErrorResponse}},
+)
+def net_worth_overview(
+    request: Request,
+    as_of: date | None = None,
+    months: int = Query(default=12, ge=1, le=120),
+    include_archived: bool = False,
+) -> NetWorthOverviewResponse:
+    resolved_date = parse_snapshot_date(as_of or date.today())
+    accounts, snapshots = account_service(request).report_data(resolved_date)
+    overview = build_net_worth_overview(
+        accounts,
+        snapshots,
+        resolved_date,
+        months,
+        include_archived=include_archived,
+    )
+    return net_worth_overview_response(
+        overview,
+        settings_service(request).get_currency(),
+    )
 
 
 @router.get(

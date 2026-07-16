@@ -18,7 +18,8 @@ A local-first finance tracker with a Typer CLI, FastAPI JSON API, React browser 
   net worth history.
 - Generate monthly and multi-month income, expense, net savings, category, YTD, and month-over-month reports.
 - Save optional PNG charts for monthly reports and trend reports.
-- Run a polished local FastAPI JSON API and React “ledger editorial” workspace with Overview, Activity, Plan, and Automations workflows.
+- Run a polished local FastAPI JSON API and React “ledger editorial” workspace with Net worth,
+  Cash flow, Activity, Plan, and Automations workflows.
 - Preview transaction CSV imports before writing, skip duplicates by default, import/export budget CSV files, and download report/chart artifacts from the dashboard.
 - Configure one local ledger currency and use locale-aware English/Turkish browser formatting.
 - Verify responsive and accessibility behavior with Playwright coverage.
@@ -104,10 +105,11 @@ The browser application includes:
 
 - A compact dashboard led by a six-month cashflow trend, a ranked budget-attention queue with direct Plan links, an accessible expense-mix donut with exact category shares, and a scannable recent-activity list with signed amounts and explicit income/expense labels.
 - A responsive Plan workspace led by a monthly health pulse, planned/spent/uncovered metrics, live category search, visible sort choices, pressure-ranked guardrail cards, and a focused edit/delete inspector.
-- Route-aware navigation for `/`, `/net-worth`, `/transactions`, `/budgets`, and `/rules`, with an edge-docked, safe-area-aware bottom bar below `64rem` and an adaptive compact command bar.
-- A dedicated Net worth workspace with as-of totals, asset/liability composition, dated balance
-  correction, account archiving safeguards, and an accessible SVG history chart with a complete data
-  table.
+- Wealth-first navigation for `/`, `/cash-flow`, `/transactions`, `/budgets`, and `/rules`;
+  legacy `/net-worth` links redirect to `/` while preserving date and range parameters.
+- A primary Net worth home with a unified position-and-history hero, account-level change drivers,
+  asset/liability composition, balance coverage, atomic multi-account balance check-ins, focused
+  account management, and a complete chart data table.
 - A plain-language Automations workspace with one unified routine list, a guided create flow, safe deletion confirmation, tucked-away display settings, and deliberate monthly previews that explain duplicate handling before entries are created.
 - Compact period controls for month-to-month review without always exposing month/year fields.
 - Task-focused transaction and budget dialogs with prominent amount entry, grouped details, responsive controls, context-aware zero-data states, recoverable page-load errors, and edit/delete flows.
@@ -115,7 +117,9 @@ The browser application includes:
 - Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
 - Read-only transaction tables that collapse into mobile-friendly record lists with compact row actions.
 - A header theme action that follows your system color setting by default, can pin the opposite light/dark mode locally, and reveals theme changes from the control with a reduced-motion-aware animation.
-- Calm, progressive Overview motion: instant top-level tab handoffs, directional period context, responsive rolling values, two-way export and chart-tooltip lifecycles, immediate pending/pressed feedback, and spatial-motion-free reduced-motion states.
+- Calm, progressive Cash flow motion: instant top-level tab handoffs, directional period context,
+  responsive rolling values, two-way export and chart-tooltip lifecycles, immediate pending/pressed
+  feedback, and spatial-motion-free reduced-motion states.
 - An English/Turkish language action with local browser preference persistence and locale-aware money/date formatting using the active ledger currency.
 
 For frontend development against a freshly rebuilt detailed demo, run:

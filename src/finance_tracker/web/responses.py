@@ -22,6 +22,7 @@ from finance_tracker.models import (
 from finance_tracker.reports import (
     MonthlyReport,
     NetWorthHistory,
+    NetWorthOverview,
     NetWorthSummary,
     TrendReport,
 )
@@ -34,8 +35,12 @@ from finance_tracker.web.schemas import (
     CategoryRuleResponse,
     ImportSummaryResponse,
     MonthlyReportResponse,
+    NetWorthAccountAnalyticsResponse,
+    NetWorthComparisonResponse,
+    NetWorthCoverageResponse,
     NetWorthHistoryPointResponse,
     NetWorthHistoryResponse,
+    NetWorthOverviewResponse,
     NetWorthSummaryResponse,
     RecurringApplyResponse,
     RecurringTemplateResponse,
@@ -146,6 +151,96 @@ def net_worth_history_response(
             moneyless_decimal(history.change_percent)
             if history.change_percent is not None
             else None
+        ),
+        currency=currency,
+    )
+
+
+def net_worth_overview_response(
+    overview: NetWorthOverview,
+    currency: str,
+) -> NetWorthOverviewResponse:
+    return NetWorthOverviewResponse(
+        summary=net_worth_summary_response(overview.summary, currency),
+        history=net_worth_history_response(overview.history, currency),
+        comparison=NetWorthComparisonResponse(
+            start_date=overview.comparison_start.isoformat(),
+            end_date=overview.comparison_end.isoformat(),
+            available=overview.comparison_available,
+            start_value=(
+                money_decimal(overview.comparison_start_value)
+                if overview.comparison_start_value is not None
+                else None
+            ),
+            end_value=(
+                money_decimal(overview.comparison_end_value)
+                if overview.comparison_end_value is not None
+                else None
+            ),
+            change_amount=(
+                money_decimal(overview.comparison_change_amount)
+                if overview.comparison_change_amount is not None
+                else None
+            ),
+            change_percent=(
+                moneyless_decimal(overview.comparison_change_percent)
+                if overview.comparison_change_percent is not None
+                else None
+            ),
+        ),
+        accounts=[
+            NetWorthAccountAnalyticsResponse(
+                account_id=account.account_id,
+                name=account.name,
+                type=account.type.value,
+                archived_on=(
+                    account.archived_on.isoformat() if account.archived_on else None
+                ),
+                current_balance=(
+                    money_decimal(account.current_balance)
+                    if account.current_balance is not None
+                    else None
+                ),
+                current_balance_date=(
+                    account.current_balance_date.isoformat()
+                    if account.current_balance_date
+                    else None
+                ),
+                comparison_balance=(
+                    money_decimal(account.comparison_balance)
+                    if account.comparison_balance is not None
+                    else None
+                ),
+                comparison_balance_date=(
+                    account.comparison_balance_date.isoformat()
+                    if account.comparison_balance_date
+                    else None
+                ),
+                contribution_change=(
+                    money_decimal(account.contribution_change)
+                    if account.contribution_change is not None
+                    else None
+                ),
+                composition_percent=(
+                    moneyless_decimal(account.composition_percent)
+                    if account.composition_percent is not None
+                    else None
+                ),
+                currency=currency,
+            )
+            for account in overview.accounts
+        ],
+        coverage=NetWorthCoverageResponse(
+            resolved_account_count=(
+                overview.summary.resolved_asset_count
+                + overview.summary.resolved_liability_count
+            ),
+            unresolved_account_count=overview.summary.unresolved_account_count,
+            oldest_balance_date=(
+                overview.oldest_balance_date.isoformat()
+                if overview.oldest_balance_date
+                else None
+            ),
         ),
         currency=currency,
     )

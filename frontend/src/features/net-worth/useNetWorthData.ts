@@ -11,15 +11,7 @@ export function useNetWorthData(
   const load = useCallback(
     async (signal: AbortSignal) => {
       const queryDate = asOf || undefined;
-      const [summary, accounts, history] = await Promise.all([
-        api.netWorth(queryDate, signal),
-        api.accounts(
-          { as_of: queryDate, include_archived: includeArchived },
-          signal,
-        ),
-        api.netWorthHistory(months, queryDate, signal),
-      ]);
-      return { summary, accounts: accounts.accounts, history };
+      return api.netWorthOverview(months, queryDate, includeArchived, signal);
     },
     [asOf, includeArchived, months],
   );

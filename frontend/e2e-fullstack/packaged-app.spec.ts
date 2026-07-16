@@ -96,15 +96,24 @@ test("net worth history and archive persist through FastAPI, SQLite, and reload"
   expect((await archiveResponse.json()).notice_code).toBe("account.archived");
 
   await page.goto("/net-worth?as_of=2026-07-14&months=6");
+  await expect(page).toHaveURL("/?as_of=2026-07-14&months=6");
   await expect(
     page.getByRole("heading", { name: "Net worth", exact: true }),
   ).toBeVisible();
   await page.getByRole("checkbox", { name: "Show archived accounts" }).check();
-  await expect(page.getByText(name, { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Accounts", exact: true })
+      .getByText(name, { exact: true }),
+  ).toBeVisible();
 
   await page.reload();
   await page.getByRole("checkbox", { name: "Show archived accounts" }).check();
-  await expect(page.getByText(name, { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Accounts", exact: true })
+      .getByText(name, { exact: true }),
+  ).toBeVisible();
 
   const archivedAccountsResponse = await page.request.get(
     "/api/accounts?as_of=2026-07-16&include_archived=true",

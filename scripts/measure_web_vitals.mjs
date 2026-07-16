@@ -42,10 +42,16 @@ try {
 
     await page
       .getByRole("navigation", { name: "Primary" })
-      .getByRole("link", { name: "Transactions" })
+      .getByRole("link", { name: "Activity" })
       .click();
-    await page.getByRole("heading", { name: "Transactions" }).waitFor();
-    await page.getByRole("button", { name: "Add entry" }).click();
+    await page
+      .getByRole("heading", { name: "Activity", exact: true })
+      .waitFor();
+    await page
+      .locator("#content")
+      .getByRole("button", { name: "Add entry" })
+      .first()
+      .click();
     await page.keyboard.press("Escape");
     await page.waitForTimeout(100);
 

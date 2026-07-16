@@ -3,22 +3,23 @@ export type View =
 export type RouteView = View | "not-found";
 
 export const viewOrder: readonly View[] = [
-  "dashboard",
   "netWorth",
+  "dashboard",
   "transactions",
   "budgets",
   "rules",
 ];
 
 export const viewMeta: Record<View, { path: string }> = {
-  dashboard: { path: "/" },
-  netWorth: { path: "/net-worth" },
+  dashboard: { path: "/cash-flow" },
+  netWorth: { path: "/" },
   transactions: { path: "/transactions" },
   budgets: { path: "/budgets" },
   rules: { path: "/rules" },
 };
 
 export function viewFromPath(pathname: string): RouteView {
+  if (pathname === "/net-worth") return "netWorth";
   const match = viewOrder.find((view) => viewMeta[view].path === pathname);
   return match ?? "not-found";
 }

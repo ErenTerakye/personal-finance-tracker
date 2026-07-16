@@ -37,6 +37,7 @@ EXPECTED_EXPORTS = {
     ),
     "services": (
         "AccountService",
+        "BalanceCheckInResult",
         "BudgetService",
         "BudgetStatus",
         "CategoryRuleService",
@@ -70,12 +71,15 @@ EXPECTED_EXPORTS = {
     "reports": (
         "CURRENCY_SYMBOLS",
         "MonthlyReport",
+        "NetWorthAccountAnalytics",
         "NetWorthHistory",
+        "NetWorthOverview",
         "NetWorthSummary",
         "TrendMonth",
         "TrendReport",
         "build_monthly_report",
         "build_net_worth_history",
+        "build_net_worth_overview",
         "build_net_worth_summary",
         "build_trend_report",
         "format_money",

@@ -5,12 +5,12 @@
 Schema version 2 adds asset/liability accounts and dated balance snapshots without linking or
 reinterpreting existing transactions. The latest snapshot on or before an as-of date drives the
 same decimal-safe total assets, total liabilities, and total net worth rules in the CLI, FastAPI,
-Overview aggregate, and dedicated React route.
+Cash flow cross-link and primary React home.
 
 The release includes account creation, name editing, snapshot replacement/correction, protected
 snapshot deletion, closing-zero archive behavior, eligible hard deletion, 1–120 point report
-history, 6/12/24 point browser ranges, English/Turkish copy, and an accessible SVG history chart
-with a complete semantic table.
+history, 6/12/24/60/120 month browser ranges, English/Turkish copy, and an accessible SVG history
+chart with a complete semantic table.
 
 ## Compatibility and boundaries
 
@@ -21,28 +21,34 @@ with a complete semantic table.
 - No production dependency, authentication, bank sync, transfer model, or transaction-to-account
   link was added.
 - The Net worth route is lazy-loaded and all browser transport remains in `api/client.ts`.
+- Net worth is now the canonical `/` home; monthly cash flow moved to `/cash-flow`, and
+  `/net-worth` redirects without losing query parameters.
+- The home combines position and history, explains account-level movement and composition, reports
+  balance coverage, and supports atomic multi-account balance check-ins.
 
 ## Verification
 
 Completed on 2026-07-16:
 
-- `.venv/bin/python -m pytest` — 105 passed.
+- `.venv/bin/python -m pytest` — 107 passed.
 - `.venv/bin/python -m ruff check .` — passed.
 - `.venv/bin/python -m mypy` — passed across 80 source files.
-- `npm test` — 132 passed across 21 test files.
+- `npm test` — 134 passed across 21 test files.
 - `npm run lint` — ESLint, Stylelint, and the eight-layer CSS architecture check passed.
 - `npm run format:check` — passed.
 - `npm run test:e2e` — 243 passed across Chromium, Firefox, and WebKit.
 - `npm run build` — TypeScript and the production Vite build passed.
-- `npm run check:bundle` — 81.84 KiB initial JavaScript, 15.69 KiB initial CSS, and
-  24.93 KiB total CSS; every configured budget passed.
+- `npm run check:bundle` — 82.88 KiB initial JavaScript, 7.19 KiB initial CSS, and 27.02 KiB total
+  CSS; every configured budget passed.
 - `npm run test:e2e:fullstack` — 3 passed against the packaged SPA, real FastAPI routes, SQLite,
-  reload persistence, and the client-side not-found route.
+  redirect persistence, reload persistence, and the client-side not-found route.
+- `npm run measure:vitals -- http://127.0.0.1:8011/ wealth-first` — median lab LCP 372 ms, INP
+  32 ms, and CLS 0.
 - `.venv/bin/python -m build` — source distribution and wheel built successfully.
 - `npm run generate:api` was run twice. Both runs produced SHA-256
-  `475f73326de504c72173a47f5f0c0c8f650d799308f59810ef666d1d1a82ad30` for
+  `7eeca538d00d8026c46571729c415fe8d9dbf2ca89319f1eed90276dc4f21567` for
   `frontend/src/generated/api.ts` and
-  `fda8f3060bef33ba0590d8d4d38f6b6b6fb33db73e51f3f79a43a6e62f730ef0` for
+  `51d2130a2e695e41cec02b614800fbfd51d6f2d7dbe4dfb8ec71ef7a207ce380` for
   `build/openapi.json`.
 - `git diff --check` — passed.
 

@@ -1,35 +1,40 @@
 @layer features {
-  .dashboard-net-worth-summary {
+  .dashboard-net-worth {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.65rem;
-    margin: 0;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.2rem;
+    background: color-mix(in srgb, var(--action) 6%, var(--surface));
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
   }
 
-  .dashboard-net-worth-summary > div {
-    min-inline-size: 0;
-    padding: 0.85rem;
-    background: var(--surface-2);
-    border-radius: var(--radius-sm);
+  .dashboard-net-worth > svg {
+    inline-size: 2rem;
+    block-size: 2rem;
+    color: var(--action);
   }
 
-  .dashboard-net-worth-summary dt {
+  .dashboard-net-worth h2 {
+    font-family: var(--font-mono);
+    font-size: clamp(1.25rem, 4cqi, 1.8rem);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dashboard-net-worth p:last-child {
     color: var(--muted);
     font-size: var(--font-size-sm);
   }
 
-  .dashboard-net-worth-summary dd {
-    margin: 0.25rem 0 0;
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-    overflow-wrap: anywhere;
-  }
+  @container workspace-main (max-width: 34rem) {
+    .dashboard-net-worth {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
 
-  .dashboard-net-worth-summary .dashboard-net-worth-coverage {
-    grid-column: 1 / -1;
-  }
-
-  .dashboard-net-worth-summary .dashboard-net-worth-coverage dd {
-    font-family: inherit;
+    .dashboard-net-worth > button {
+      grid-column: 1 / -1;
+      inline-size: 100%;
+    }
   }
 }

@@ -95,27 +95,27 @@ describe("app composition", () => {
     const links = within(compactNavigation!).getAllByRole("link");
     expect(links).toHaveLength(5);
     expect(links.map((link) => link.textContent)).toEqual([
-      "Overview",
       "Worth",
+      "Cash flow",
       "Entries",
       "Budgets",
       "Rules",
     ]);
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/",
-      "/net-worth",
+      "/cash-flow",
       "/transactions",
       "/budgets",
       "/rules",
     ]);
-    expect(links[0]).toHaveAttribute("aria-current", "page");
-    expect(links[0].querySelector("svg")).toHaveAttribute(
+    expect(links[1]).toHaveAttribute("aria-current", "page");
+    expect(links[1].querySelector("svg")).toHaveAttribute(
       "fill",
       "currentColor",
     );
-    expect(links[0].querySelector("svg")).toHaveAttribute("stroke-width", "2");
-    expect(links[1].querySelector("svg")).toHaveAttribute("fill", "none");
     expect(links[1].querySelector("svg")).toHaveAttribute("stroke-width", "2");
+    expect(links[0].querySelector("svg")).toHaveAttribute("fill", "none");
+    expect(links[0].querySelector("svg")).toHaveAttribute("stroke-width", "2");
 
     await userEvent.click(
       within(compactNavigation!).getByRole("link", {
@@ -294,7 +294,7 @@ describe("app composition", () => {
 
     render(<App />);
     await screen.findByRole("heading", { level: 1 });
-    await userEvent.click(screen.getByRole("link", { name: "Overview" }));
+    await userEvent.click(screen.getByRole("link", { name: "Cash flow" }));
 
     expect(startViewTransition).not.toHaveBeenCalled();
   });

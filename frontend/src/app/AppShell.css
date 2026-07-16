@@ -243,6 +243,7 @@
       gap: 0.2rem;
       min-inline-size: 0;
       min-block-size: 3.75rem;
+      block-size: 100%;
       padding-inline: 0.25rem;
       color: var(--muted);
       border-radius: var(--radius-pill);

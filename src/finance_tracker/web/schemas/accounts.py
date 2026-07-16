@@ -65,6 +65,22 @@ class BalanceSnapshotMutationResponse(ApiModel):
     snapshot: BalanceSnapshotResponse
 
 
+class BalanceCheckInItemRequest(ApiModel):
+    account_id: int = Field(gt=0)
+    amount: str
+
+
+class BalanceCheckInRequest(ApiModel):
+    updates: list[BalanceCheckInItemRequest] = Field(min_length=1)
+
+
+class BalanceCheckInResponse(ApiModel):
+    notice: str
+    notice_code: str
+    balance_snapshots: list[BalanceSnapshotResponse]
+    replaced_count: int
+
+
 class AccountArchiveRequest(ApiModel):
     closing_date: date
     confirm_zero_balance: bool
@@ -99,4 +115,43 @@ class NetWorthHistoryResponse(ApiModel):
     points: list[NetWorthHistoryPointResponse]
     change_amount: str | None
     change_percent: str | None
+    currency: str
+
+
+class NetWorthAccountAnalyticsResponse(ApiModel):
+    account_id: int
+    name: str
+    type: Literal["asset", "liability"]
+    archived_on: str | None
+    current_balance: str | None
+    current_balance_date: str | None
+    comparison_balance: str | None
+    comparison_balance_date: str | None
+    contribution_change: str | None
+    composition_percent: str | None
+    currency: str
+
+
+class NetWorthComparisonResponse(ApiModel):
+    start_date: str
+    end_date: str
+    available: bool
+    start_value: str | None
+    end_value: str | None
+    change_amount: str | None
+    change_percent: str | None
+
+
+class NetWorthCoverageResponse(ApiModel):
+    resolved_account_count: int
+    unresolved_account_count: int
+    oldest_balance_date: str | None
+
+
+class NetWorthOverviewResponse(ApiModel):
+    summary: NetWorthSummaryResponse
+    history: NetWorthHistoryResponse
+    comparison: NetWorthComparisonResponse
+    accounts: list[NetWorthAccountAnalyticsResponse]
+    coverage: NetWorthCoverageResponse
     currency: str

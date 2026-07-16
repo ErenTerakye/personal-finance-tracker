@@ -24,16 +24,7 @@ describe("net worth workflow", () => {
     window.history.pushState({}, "", "/net-worth");
     mockFetch({
       "/api/settings": { currency: "USD" },
-      "/api/net-worth/history": {
-        as_of: "2026-07-16",
-        months: 12,
-        points: [],
-        change_amount: null,
-        change_percent: null,
-        currency: "USD",
-      },
-      "/api/net-worth": emptySummary,
-      "/api/accounts": { accounts: [] },
+      "/api/net-worth/overview": overview(emptySummary, [], []),
     });
 
     render(<App />);
@@ -52,39 +43,32 @@ describe("net worth workflow", () => {
     window.history.pushState({}, "", "/net-worth?months=6");
     mockFetch({
       "/api/settings": { currency: "USD" },
-      "/api/net-worth/history": {
-        as_of: "2026-07-16",
-        months: 6,
-        points: [
+      "/api/net-worth/overview": overview(
+        {
+          ...emptySummary,
+          total_assets: "1100.00",
+          total_liabilities: "1250.00",
+          total_net_worth: "-150.00",
+          active_account_count: 2,
+          resolved_asset_count: 1,
+          resolved_liability_count: 1,
+        },
+        [
           historyPoint("2026-06-30", "1000.00", "1200.00", "-200.00"),
           historyPoint("2026-07-16", "1100.00", "1250.00", "-150.00"),
         ],
-        change_amount: "50.00",
-        change_percent: "25.0",
-        currency: "USD",
-      },
-      "/api/net-worth": {
-        ...emptySummary,
-        total_assets: "1100.00",
-        total_liabilities: "1250.00",
-        total_net_worth: "-150.00",
-        active_account_count: 2,
-        resolved_asset_count: 1,
-        resolved_liability_count: 1,
-      },
-      "/api/accounts": {
-        accounts: [
-          account(1, "Savings", "asset", "1100.00"),
-          account(2, "Loan", "liability", "1250.00"),
+        [
+          analytics(1, "Savings", "asset", "1100.00", "1000.00", "100.00"),
+          analytics(2, "Loan", "liability", "1250.00", "1200.00", "-50.00"),
         ],
-      },
+      ),
     });
 
     render(<App />);
 
     expect((await screen.findAllByText("-$150.00"))[0]).toBeVisible();
-    expect(screen.getByText("Savings")).toBeVisible();
-    expect(screen.getByText("Loan")).toBeVisible();
+    expect(screen.getAllByText("Savings")[0]).toBeVisible();
+    expect(screen.getAllByText("Loan")[0]).toBeVisible();
     const chart = screen.getByRole("img", {
       name: /Net worth over time/,
     });
@@ -98,6 +82,36 @@ describe("net worth workflow", () => {
         name: "Net worth history with asset and liability totals",
       }),
     ).toBeVisible();
+  });
+
+  it("does not calculate change from an unknown comparison balance", async () => {
+    window.history.pushState({}, "", "/?months=6");
+    mockFetch({
+      "/api/settings": { currency: "USD" },
+      "/api/net-worth/overview": overview(
+        {
+          ...emptySummary,
+          total_assets: "1100.00",
+          total_net_worth: "1100.00",
+          active_account_count: 1,
+          resolved_asset_count: 1,
+        },
+        [
+          historyPoint("2026-06-30", "0.00", "0.00", "0.00"),
+          historyPoint("2026-07-16", "1100.00", "0.00", "1100.00"),
+        ],
+        [analytics(1, "New savings", "asset", "1100.00", null, null)],
+      ),
+    });
+
+    render(<App />);
+
+    expect(
+      await screen.findByText(
+        /Change is unavailable because one or more accounts/,
+      ),
+    ).toBeVisible();
+    expect(screen.queryByText("Since June 30, 2026")).toBeNull();
   });
 
   it("uses a native destructive dialog that names the sole account snapshot", async () => {
@@ -117,31 +131,25 @@ describe("net worth workflow", () => {
         ],
       },
       "/api/settings": { currency: "USD" },
-      "/api/net-worth/history": {
-        as_of: "2026-07-16",
-        months: 12,
-        points: [historyPoint("2026-07-16", "1100.00", "0.00", "1100.00")],
-        change_amount: null,
-        change_percent: null,
-        currency: "USD",
-      },
-      "/api/net-worth": {
-        ...emptySummary,
-        total_assets: "1100.00",
-        total_net_worth: "1100.00",
-        active_account_count: 1,
-        resolved_asset_count: 1,
-      },
-      "/api/accounts": {
-        accounts: [account(1, "Savings", "asset", "1100.00")],
-      },
+      "/api/net-worth/overview": overview(
+        {
+          ...emptySummary,
+          total_assets: "1100.00",
+          total_net_worth: "1100.00",
+          active_account_count: 1,
+          resolved_asset_count: 1,
+        },
+        [historyPoint("2026-07-16", "1100.00", "0.00", "1100.00")],
+        [analytics(1, "Savings", "asset", "1100.00", "1100.00", "0.00")],
+      ),
     });
 
     render(<App />);
 
     await userEvent.click(
-      await screen.findByRole("button", { name: "History" }),
+      (await screen.findAllByRole("button", { name: "Manage" }))[0],
     );
+    await userEvent.click(screen.getByRole("button", { name: "History" }));
     await userEvent.click(
       await screen.findByRole("button", { name: "Delete account" }),
     );
@@ -158,26 +166,61 @@ describe("net worth workflow", () => {
       ),
     ).toBeVisible();
   });
-});
 
-function account(
-  id: number,
-  name: string,
-  type: "asset" | "liability",
-  balance: string,
-) {
-  return {
-    id,
-    name,
-    type,
-    archived_on: null,
-    created_at: "2026-01-01T00:00:00",
-    as_of: "2026-07-16",
-    resolved_balance: balance,
-    resolved_balance_date: "2026-07-16",
-    currency: "USD",
-  };
-}
+  it("submits only changed rows from the balance check-in", async () => {
+    window.history.pushState({}, "", "/");
+    const fetchMock = mockFetch({
+      "/api/settings": { currency: "USD" },
+      "/api/accounts/balance-check-ins": {
+        notice: "1 account balance updated.",
+        notice_code: "balance_check_in.saved",
+        balance_snapshots: [],
+        replaced_count: 0,
+      },
+      "/api/net-worth/overview": overview(
+        {
+          ...emptySummary,
+          total_assets: "1100.00",
+          total_liabilities: "1250.00",
+          total_net_worth: "-150.00",
+          active_account_count: 2,
+          resolved_asset_count: 1,
+          resolved_liability_count: 1,
+        },
+        [
+          historyPoint("2026-06-30", "1000.00", "1200.00", "-200.00"),
+          historyPoint("2026-07-16", "1100.00", "1250.00", "-150.00"),
+        ],
+        [
+          analytics(1, "Savings", "asset", "1100.00", "1000.00", "100.00"),
+          analytics(2, "Loan", "liability", "1250.00", "1200.00", "-50.00"),
+        ],
+      ),
+    });
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Update balances" }),
+    );
+    const dialog = screen.getByRole("dialog", { name: "Update balances" });
+    const amountInputs = within(dialog).getAllByRole("spinbutton");
+    await userEvent.type(amountInputs[0], "1150");
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Save 1 update(s)" }),
+    );
+
+    const request = fetchMock.mock.calls.find(([input]) =>
+      String(input).startsWith("/api/accounts/balance-check-ins/"),
+    );
+    expect(request).toBeDefined();
+    const options = (
+      request as unknown as [RequestInfo | URL, RequestInit | undefined]
+    )?.[1];
+    expect(JSON.parse(String(options?.body))).toEqual({
+      updates: [{ account_id: 1, amount: "1150" }],
+    });
+  });
+});
 
 function historyPoint(
   asOf: string,
@@ -193,5 +236,70 @@ function historyPoint(
     resolved_asset_count: 1,
     resolved_liability_count: 1,
     unresolved_account_count: 0,
+  };
+}
+
+function analytics(
+  accountId: number,
+  name: string,
+  type: "asset" | "liability",
+  current: string,
+  comparison: string | null,
+  contribution: string | null,
+) {
+  return {
+    account_id: accountId,
+    name,
+    type,
+    archived_on: null,
+    current_balance: current,
+    current_balance_date: "2026-07-16",
+    comparison_balance: comparison,
+    comparison_balance_date: comparison === null ? null : "2026-06-30",
+    contribution_change: contribution,
+    composition_percent: "100.0",
+    currency: "USD",
+  };
+}
+
+function overview(
+  summary: typeof emptySummary,
+  points: ReturnType<typeof historyPoint>[],
+  accounts: ReturnType<typeof analytics>[],
+) {
+  const start = points[0]?.as_of ?? summary.as_of;
+  const comparisonAvailable =
+    points.length > 1 &&
+    accounts.length > 0 &&
+    accounts.every((account) => account.contribution_change !== null);
+  return {
+    summary,
+    history: {
+      as_of: summary.as_of,
+      months: 12,
+      points,
+      change_amount: points.length > 1 ? "50.00" : null,
+      change_percent: points.length > 1 ? "25.0" : null,
+      currency: "USD",
+    },
+    comparison: {
+      start_date: start,
+      end_date: summary.as_of,
+      available: comparisonAvailable,
+      start_value: comparisonAvailable
+        ? (points[0]?.total_net_worth ?? summary.total_net_worth)
+        : null,
+      end_value: comparisonAvailable ? summary.total_net_worth : null,
+      change_amount: comparisonAvailable ? "50.00" : null,
+      change_percent: comparisonAvailable ? "25.0" : null,
+    },
+    accounts,
+    coverage: {
+      resolved_account_count:
+        summary.resolved_asset_count + summary.resolved_liability_count,
+      unresolved_account_count: summary.unresolved_account_count,
+      oldest_balance_date: accounts.length ? "2026-06-30" : null,
+    },
+    currency: "USD",
   };
 }

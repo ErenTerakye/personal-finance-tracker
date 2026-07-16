@@ -79,7 +79,7 @@ feature directories and emitted with the corresponding lazy route chunks.
 
 The production bundle check measures minified assets after gzip as a stable compressed-transfer
 proxy. It caps render-blocking initial CSS at 12 KiB, each individual lazy CSS chunk at 7 KiB,
-the cumulative lazy CSS loaded by any route at 8 KiB, and all CSS at 30 KiB. Route totals are derived
+the cumulative lazy CSS loaded by any route at 8 KiB, and all CSS at 32 KiB. Route totals are derived
 from Vite's production manifest and include shared component styles, so splitting a route across
 multiple files cannot hide stylesheet growth. Styles shared by the default dashboard and multiple
 routes remain in the initial bundle when doing so reduces route requests and aggregate compressed
@@ -101,7 +101,7 @@ Connections enable foreign keys, WAL, a busy timeout, and `synchronous=NORMAL` w
 3.14 transaction behavior. Money remains `Decimal` in Python and decimal text in SQLite and JSON;
 dates remain ISO text.
 
-The 36 CLI commands, 38 HTTP operations, OpenAPI schema names, CSV headers, SQLite schema/indexes,
+The 36 CLI commands, 40 HTTP operations, OpenAPI schema names, CSV headers, SQLite schema/indexes,
 browser routes, security headers, and package entrypoints frozen by
 [`ARCHITECTURE_CLEANUP_SPEC.md`](ARCHITECTURE_CLEANUP_SPEC.md) are compatibility contracts. Tests
 characterize those contracts, and generated OpenAPI output is changed only through the generator.

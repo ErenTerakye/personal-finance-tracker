@@ -257,7 +257,7 @@ describe("dashboard workflow", () => {
   });
 
   it("chooses a month directly from the period picker", async () => {
-    window.history.replaceState({}, "", "/?month=6&year=2026");
+    window.history.replaceState({}, "", "/cash-flow?month=6&year=2026");
     const fetchMock = mockFetch({
       "/api/dashboard": dashboardPayload({}),
     });

@@ -46,14 +46,14 @@ export const tr = {
     periodLoaded: "{period} yüklendi",
   },
   nav: {
-    dashboard: "Genel Bakış",
+    dashboard: "Nakit akışı",
     netWorth: "Net değer",
     transactions: "Hareketler",
     budgets: "Plan",
     rules: "Otomasyonlar",
   },
   navShort: {
-    dashboard: "Özet",
+    dashboard: "Nakit",
     netWorth: "Değer",
     transactions: "İşlemler",
     budgets: "Bütçe",
@@ -179,6 +179,12 @@ export const tr = {
     asOfHint: "Bu tarihte veya öncesindeki en son bakiye kullanılır.",
     rangeLabel: "Geçmiş aralığı",
     months: "{count} ay",
+    hero: {
+      asOf: "{date} itibarıyla finansal durumunuz",
+      since: "{date} tarihinden beri",
+      comparisonUnavailable:
+        "Bir veya daha fazla hesabın iki karşılaştırma sınırında da bakiyesi olmadığı için değişim gösterilemiyor.",
+    },
     currentPosition: "Güncel durum",
     total: "Toplam net değer",
     assets: "Varlıklar",
@@ -203,8 +209,27 @@ export const tr = {
         "{date} tarihinde veya öncesinde hesap bakiyesi yok; bu yüzden sıfır tam kapsamı temsil etmez.",
     },
     composition: {
+      eyebrow: "Sahip olduklarınız ve borçlarınız",
       title: "Hesap dağılımı",
       detail: "Seçilen toplamı açıklayan bakiyeler.",
+      share: "{name}, bu grubun %{percent} bölümünü oluşturuyor.",
+    },
+    movement: {
+      eyebrow: "Ne değişti",
+      title: "Hesaba göre hareket",
+      detail: "{date} tarihinden beri net değere katkı.",
+      unavailable:
+        "Hesap bazında hareketi karşılaştırmak için daha fazla geçmiş gerekiyor.",
+    },
+    coveragePanel: {
+      eyebrow: "Veri kapsamı",
+      title: "Bu bakiyeler ne kadar güncel?",
+      resolved: "Bakiyesi bilinen hesaplar",
+      oldest: "Bu görünümdeki en eski bakiye",
+    },
+    accounts: {
+      eyebrow: "Kaynak verileri yönetin",
+      title: "Hesaplar",
     },
     account: {
       asset: "Varlık",
@@ -217,7 +242,9 @@ export const tr = {
     },
     actions: {
       addAccount: "Hesap ekle",
+      updateBalances: "Bakiyeleri güncelle",
       updateBalance: "Bakiyeyi güncelle",
+      manage: "Yönet",
       history: "Geçmiş",
       showArchived: "Arşivlenmiş hesapları göster",
       editNameFor: "{name} adını düzenle",
@@ -253,6 +280,18 @@ export const tr = {
         "Arşivleme son bir sıfır bakiye kaydeder ve önceki geçmişi korur.",
       historyTitle: "{name} bakiye geçmişi",
       historyDescription: "En yeni bakiyeler önce gösterilir.",
+    },
+    checkIn: {
+      title: "Bakiyeleri güncelle",
+      description:
+        "Yalnızca değişen bakiyeleri girin. Değişmeyen hesaplara yeni kayıt eklenmez.",
+      current: "{amount}, son kayıt {date}",
+      save: "{count} güncellemeyi kaydet",
+    },
+    inspector: {
+      description: "{type} hesabının ayrıntıları ve geçmişi",
+      balance: "Güncel bakiye",
+      editName: "Adı düzenle",
     },
     form: {
       name: "Hesap adı",
@@ -648,12 +687,13 @@ export const tr = {
     "balance_snapshot.created": "Bakiye kaydı oluşturuldu.",
     "balance_snapshot.updated": "Bu tarihteki bakiye değiştirildi.",
     "balance_snapshot.deleted": "Bakiye kaydı kalıcı olarak silindi.",
+    "balance_check_in.saved": "Hesap bakiyeleri güncellendi.",
   },
   notFound: {
     eyebrow: "Sayfa bulunamadı",
     title: "Burada bir şey yok",
     summary: "Bu adres Finans Takipçisi'ndeki bir görünüme karşılık gelmiyor.",
-    action: "Kontrol paneline dön",
+    action: "Net değere dön",
   },
   categories: {
     Transport: "Ulaşım",

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, vi } from "vitest";
 export function installAppTestLifecycle() {
   beforeEach(() => {
     installLocalStorage();
+    window.history.replaceState({}, "", "/cash-flow");
   });
 
   afterEach(() => {
@@ -10,7 +11,7 @@ export function installAppTestLifecycle() {
     document.documentElement.removeAttribute("data-theme");
     Reflect.deleteProperty(document, "startViewTransition");
     colorSchemeMeta().content = "light dark";
-    window.history.pushState({}, "", "/");
+    window.history.pushState({}, "", "/cash-flow");
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });

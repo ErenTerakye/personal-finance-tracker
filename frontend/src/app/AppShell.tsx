@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Landmark,
   LayoutDashboard,
   PiggyBank,
   Plus,
@@ -16,7 +17,7 @@ import { RouteView, View, viewMeta, viewOrder } from "./routes";
 
 const navIcons = {
   dashboard: LayoutDashboard,
-  netWorth: BarChart3,
+  netWorth: Landmark,
   transactions: ReceiptText,
   budgets: PiggyBank,
   rules: SlidersHorizontal,
@@ -215,7 +216,7 @@ function Brand({
       onClick={(event) => {
         if (!shouldHandleNavigation(event)) return;
         event.preventDefault();
-        onNavigate("dashboard");
+        onNavigate("netWorth");
       }}
     >
       <span className="brand-mark" aria-hidden="true">

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const colorSchemeStorageKey = "finance-tracker-color-scheme";
 const viewports = [320, 390, 430, 768, 1024, 1280, 1440, 1800, 1920];
@@ -14,7 +14,7 @@ test("compact bottom navigation localizes from inline header utilities", async (
   const navigation = page.locator(".bottom-navigation");
   await expect(navigation.getByRole("link")).toHaveCount(5);
   await expect(
-    navigation.getByRole("link", { name: "Overview" }),
+    navigation.getByRole("link", { name: "Net worth" }),
   ).toHaveAttribute("aria-current", "page");
 
   const compactBar = page.locator(".compact-app-bar");
@@ -25,7 +25,7 @@ test("compact bottom navigation localizes from inline header utilities", async (
   await compactBar.locator(".lang-toggle").click();
 
   await expect(
-    navigation.getByRole("link", { name: "Genel Bakış" }),
+    navigation.getByRole("link", { name: "Nakit akışı" }),
   ).toBeVisible();
   await expect(
     navigation.getByRole("link", { name: "Net değer" }),
@@ -44,11 +44,11 @@ test("keeps compact navigation live through rapid tab switches", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await mockApi(page);
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "June 2026" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Net worth" })).toBeVisible();
 
   const navigation = page.locator(".compact-primary-navigation");
   for (const path of [
-    "/net-worth",
+    "/cash-flow",
     "/transactions",
     "/budgets",
     "/rules",
@@ -188,7 +188,7 @@ test("keeps the compact app bar above period transition snapshots", async ({
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockApi(page);
-  await page.goto("/");
+  await page.goto("/cash-flow");
   await expect(page.getByRole("heading", { name: "June 2026" })).toBeVisible();
 
   const transitionChrome = page.evaluate(
@@ -243,7 +243,7 @@ test("keeps category ranking hover active through row separators", async ({
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockApi(page);
-  await page.goto("/");
+  await page.goto("/cash-flow");
 
   const ranking = page.locator(".expense-mix-legend");
   await ranking.scrollIntoViewIfNeeded();
@@ -269,7 +269,7 @@ test("keeps category ranking hover active through row separators", async ({
 test("keeps the export menu content-sized and anchored", async ({ page }) => {
   await page.setViewportSize({ width: 768, height: 900 });
   await mockApi(page);
-  await page.goto("/");
+  await page.goto("/cash-flow");
   await expect(page.getByRole("heading", { name: "June 2026" })).toBeVisible();
 
   const trigger = page.getByRole("button", {
@@ -315,7 +315,7 @@ for (const width of viewports) {
     test("keeps the dashboard readable without horizontal overflow", async ({
       page,
     }) => {
-      await page.goto("/");
+      await page.goto("/cash-flow");
 
       await expect(
         page.getByRole("heading", { name: "June 2026" }),
@@ -487,7 +487,7 @@ test.describe("cashflow trend graph rendering", () => {
   test("scales desktop bars and leaves empty months blank", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/cash-flow");
 
     await expect(page.getByText("Six-month cashflow trend")).toBeVisible();
     const activeBars = await measureTrendBars(
@@ -505,7 +505,7 @@ test.describe("cashflow trend graph rendering", () => {
   });
 
   test("shows exact values on desktop hover", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/cash-flow");
 
     const hoveredBarSlot = page
       .locator(".cashflow-trend .trend-bar.expenses")
@@ -540,7 +540,7 @@ test.describe("keyboard chart interaction", () => {
   });
 
   test("shows exact values on keyboard focus", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/cash-flow");
 
     await page.locator(".cashflow-trend .trend-bar.cash").first().focus();
     const tooltip = page.locator(".cashflow-trend .chart-tooltip");
@@ -561,7 +561,7 @@ test.describe("mobile chart interactions", () => {
   test("pins a tapped bar tooltip inside the viewport and dismisses on outside tap", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/cash-flow");
 
     await page
       .locator(".cashflow-trend .trend-bar.expenses")
@@ -586,7 +586,7 @@ test.describe("mobile chart interactions", () => {
   });
 
   test("pins a tapped income bar and dismisses on scroll", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/cash-flow");
 
     await page
       .locator(".cashflow-trend .trend-bar.cash")
@@ -620,7 +620,7 @@ for (const width of themeViewports) {
     });
 
     test("pins, persists, and clears a manual theme", async ({ page }) => {
-      await page.goto("/");
+      await page.goto("/cash-flow");
 
       await expect(
         page.getByRole("button", { name: "Use dark mode" }),
@@ -679,7 +679,7 @@ for (const width of themeViewports) {
     test("switches repeatedly without a transition or layout shift", async ({
       page,
     }) => {
-      await page.goto("/");
+      await page.goto("/cash-flow");
       await expect(
         page.getByRole("heading", { name: "June 2026" }),
       ).toBeVisible();
@@ -782,6 +782,41 @@ test.describe("theme system preference", () => {
     expect(darkColors.borderInlineEndColor).not.toBe(
       lightColors.borderInlineEndColor,
     );
+  });
+});
+
+test.describe("net worth header theme", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.emulateMedia({ colorScheme: "light" });
+    await mockApi(page, {
+      netWorthOverviewPayload: populatedNetWorthOverview(),
+    });
+  });
+
+  test("uses the active theme tokens for header information", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const header = page.locator(".wealth-hero");
+    await expect(header).toBeVisible();
+    const lightAppearance = await readNetWorthHeaderAppearance(header);
+
+    expect(lightAppearance.backgroundColor).toBe(lightAppearance.surface);
+    expect(lightAppearance.color).toBe(lightAppearance.ink);
+    expect(lightAppearance.secondaryColor).toBe(lightAppearance.muted);
+
+    await page.getByRole("button", { name: "Use dark mode" }).click();
+    const darkAppearance = await readNetWorthHeaderAppearance(header);
+
+    expect(darkAppearance.backgroundColor).toBe(darkAppearance.surface);
+    expect(darkAppearance.color).toBe(darkAppearance.ink);
+    expect(darkAppearance.secondaryColor).toBe(darkAppearance.muted);
+    expect(darkAppearance.backgroundColor).not.toBe(
+      lightAppearance.backgroundColor,
+    );
+    expect(darkAppearance.color).not.toBe(lightAppearance.color);
   });
 });
 
@@ -1023,6 +1058,30 @@ function readElementColors(element: HTMLElement) {
   };
 }
 
+async function readNetWorthHeaderAppearance(header: Locator) {
+  return header.evaluate((element) => {
+    const probe = document.createElement("span");
+    probe.style.cssText =
+      "position:absolute;background-color:var(--surface);color:var(--ink);outline-color:var(--muted)";
+    element.append(probe);
+
+    const styles = getComputedStyle(element);
+    const secondary = element.querySelector(".wealth-as-of");
+    const secondaryStyles = secondary ? getComputedStyle(secondary) : null;
+    const probeStyles = getComputedStyle(probe);
+    const appearance = {
+      backgroundColor: styles.backgroundColor,
+      color: styles.color,
+      secondaryColor: secondaryStyles?.color ?? "",
+      surface: probeStyles.backgroundColor,
+      ink: probeStyles.color,
+      muted: probeStyles.outlineColor,
+    };
+    probe.remove();
+    return appearance;
+  });
+}
+
 async function expectMobileNavigationIsCompact(page: Page, width: number) {
   const navigation = page.locator(".bottom-navigation");
   if (width >= 1024) {
@@ -1102,7 +1161,16 @@ async function expectDialogFitsViewport(
   expect(box?.height).toBeLessThanOrEqual(viewport.height);
 }
 
-async function mockApi(page: Page) {
+async function mockApi(
+  page: Page,
+  {
+    netWorthOverviewPayload = netWorthOverview(),
+  }: {
+    netWorthOverviewPayload?:
+      | ReturnType<typeof netWorthOverview>
+      | ReturnType<typeof populatedNetWorthOverview>;
+  } = {},
+) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
     if (!url.pathname.startsWith("/api/")) {
@@ -1132,6 +1200,10 @@ async function mockApi(page: Page) {
           currency: "USD",
         },
       });
+      return;
+    }
+    if (url.pathname === "/api/net-worth/overview") {
+      await route.fulfill({ json: netWorthOverviewPayload });
       return;
     }
     if (url.pathname === "/api/net-worth") {
@@ -1313,6 +1385,121 @@ function netWorthSummary() {
     resolved_asset_count: 0,
     resolved_liability_count: 0,
     unresolved_account_count: 0,
+    currency: "USD",
+  };
+}
+
+function netWorthOverview() {
+  const summary = netWorthSummary();
+  return {
+    summary,
+    history: {
+      as_of: summary.as_of,
+      months: 12,
+      points: [],
+      change_amount: null,
+      change_percent: null,
+      currency: "USD",
+    },
+    comparison: {
+      start_date: summary.as_of,
+      end_date: summary.as_of,
+      available: false,
+      start_value: null,
+      end_value: null,
+      change_amount: null,
+      change_percent: null,
+    },
+    accounts: [],
+    coverage: {
+      resolved_account_count: 0,
+      unresolved_account_count: 0,
+      oldest_balance_date: null,
+    },
+    currency: "USD",
+  };
+}
+
+function populatedNetWorthOverview() {
+  return {
+    summary: {
+      ...netWorthSummary(),
+      total_assets: "12500.00",
+      total_liabilities: "2500.00",
+      total_net_worth: "10000.00",
+      active_account_count: 2,
+      resolved_asset_count: 1,
+      resolved_liability_count: 1,
+    },
+    history: {
+      as_of: "2026-07-16",
+      months: 12,
+      points: [
+        {
+          as_of: "2026-06-30",
+          total_assets: "12000.00",
+          total_liabilities: "2500.00",
+          total_net_worth: "9500.00",
+          resolved_asset_count: 1,
+          resolved_liability_count: 1,
+          unresolved_account_count: 0,
+        },
+        {
+          as_of: "2026-07-16",
+          total_assets: "12500.00",
+          total_liabilities: "2500.00",
+          total_net_worth: "10000.00",
+          resolved_asset_count: 1,
+          resolved_liability_count: 1,
+          unresolved_account_count: 0,
+        },
+      ],
+      change_amount: "500.00",
+      change_percent: "5.3",
+      currency: "USD",
+    },
+    comparison: {
+      start_date: "2026-06-30",
+      end_date: "2026-07-16",
+      available: true,
+      start_value: "9500.00",
+      end_value: "10000.00",
+      change_amount: "500.00",
+      change_percent: "5.3",
+    },
+    accounts: [
+      {
+        account_id: 1,
+        name: "Savings",
+        type: "asset",
+        archived_on: null,
+        current_balance: "12500.00",
+        current_balance_date: "2026-07-16",
+        comparison_balance: "12000.00",
+        comparison_balance_date: "2026-06-30",
+        contribution_change: "500.00",
+        composition_percent: "100.0",
+        currency: "USD",
+      },
+      {
+        account_id: 2,
+        name: "Loan",
+        type: "liability",
+        archived_on: null,
+        current_balance: "2500.00",
+        current_balance_date: "2026-07-16",
+        comparison_balance: "2500.00",
+        comparison_balance_date: "2026-06-30",
+        contribution_change: "0.00",
+        composition_percent: "100.0",
+        currency: "USD",
+      },
+    ],
+    coverage: {
+      resolved_account_count: 2,
+      unresolved_account_count: 0,
+      oldest_balance_date: "2026-06-30",
+    },
     currency: "USD",
   };
 }

@@ -66,12 +66,14 @@ For the reviewer demo, use the generated sample database:
 finance-tracker web --host 127.0.0.1 --port 8000 --db-path demo.sqlite3
 ```
 
-The Web UI uses five destinations—Overview, Net worth, Activity, Plan, and Automations—and supports:
+The Web UI uses five destinations—Net worth, Cash flow, Activity, Plan, and Automations—and supports:
 
 - A Personal Finance Tracker dashboard with a six-month cashflow trend, KPI cards, YTD/month-over-month context, trend/category charts, recent transactions, and budget pressure.
-- Route-aware browser navigation for `/`, `/net-worth`, `/transactions`, `/budgets`, and `/rules`.
-- A Net worth workspace for current or historical totals, account composition, dated balance
-  correction, archive/delete safeguards, and an accessible chart with a full table.
+- Route-aware browser navigation for `/`, `/cash-flow`, `/transactions`, `/budgets`, and `/rules`;
+  `/net-worth` redirects to the wealth home.
+- A wealth-first Net worth home for current and historical position, account movement, composition,
+  coverage, atomic multi-account balance updates, correction safeguards, and an accessible chart
+  with a full table.
 - Compact period controls for changing monthly scope without keeping month/year fields open all the time.
 - An Activity workspace with an inflow/outflow/net snapshot, immediate search, period and category filters, newest/oldest sorting, a date-grouped ledger timeline, and transaction add, edit, and delete workflows.
 - A Plan workspace with a monthly health pulse, planned/spent/uncovered metrics, live category search, priority/spend/category sorting, pressure-ranked guardrail cards, and focused budget editing and deletion.

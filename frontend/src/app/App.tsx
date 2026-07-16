@@ -51,10 +51,21 @@ function AppContent() {
   const [createTransactionRequest, setCreateTransactionRequest] = useState(0);
   const [createBudgetRequest, setCreateBudgetRequest] = useState(0);
   const [createAccountRequest, setCreateAccountRequest] = useState(0);
+  const [wealthHasAccounts, setWealthHasAccounts] = useState(false);
   const [routeFocusRequest, setRouteFocusRequest] = useState(0);
   const mainRef = useRef<HTMLElement | null>(null);
   const viewRef = useRef<RouteView>(view);
   const settings = useAppSettings();
+
+  useEffect(() => {
+    if (window.location.pathname === "/net-worth") {
+      window.history.replaceState(
+        {},
+        "",
+        `/${window.location.search}${window.location.hash}`,
+      );
+    }
+  }, []);
 
   useEffect(() => {
     if (settings.status === "success") {
@@ -160,7 +171,11 @@ function AppContent() {
       onNavigate={navigate}
       primaryActionLabel={
         view === "netWorth"
-          ? t("netWorth.actions.addAccount")
+          ? t(
+              wealthHasAccounts
+                ? "netWorth.actions.updateBalances"
+                : "netWorth.actions.addAccount",
+            )
           : t("common.addEntry")
       }
       onPrimaryAction={() => {
@@ -223,6 +238,7 @@ function AppContent() {
           <NetWorthView
             setNotice={setNotice}
             createRequestId={createAccountRequest}
+            onAccountAvailabilityChange={setWealthHasAccounts}
           />
         </RouteContent>
       ) : null}
@@ -263,7 +279,7 @@ function AppContent() {
           actions={
             <ActionButton
               icon={LayoutDashboard}
-              onClick={() => navigate("dashboard")}
+              onClick={() => navigate("netWorth")}
             >
               {t("notFound.action")}
             </ActionButton>

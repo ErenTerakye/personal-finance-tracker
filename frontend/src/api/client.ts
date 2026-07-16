@@ -3,6 +3,7 @@ import type {
   AccountMutationResponse,
   AccountRecord,
   BalanceSnapshot,
+  BalanceCheckInResponse,
   BalanceSnapshotMutationResponse,
   ApiErrorBody,
   BudgetInput,
@@ -16,6 +17,7 @@ import type {
   ImportSummary,
   NoticeResponse,
   NetWorthHistory,
+  NetWorthOverview,
   NetWorthSummary,
   PageMetadata,
   RecurringApplyResponse,
@@ -118,6 +120,33 @@ export const api = {
     request<NetWorthHistory>(
       `/api/net-worth/history?${query({ as_of: asOf, months })}`,
       { signal },
+    ),
+
+  netWorthOverview: (
+    months: number,
+    asOf?: string,
+    includeArchived = false,
+    signal?: AbortSignal,
+  ) =>
+    request<NetWorthOverview>(
+      `/api/net-worth/overview?${query({
+        as_of: asOf,
+        months,
+        include_archived: includeArchived,
+      })}`,
+      { signal },
+    ),
+
+  checkInBalances: (
+    effectiveDate: string,
+    updates: { account_id: number; amount: string }[],
+  ) =>
+    request<BalanceCheckInResponse>(
+      `/api/accounts/balance-check-ins/${effectiveDate}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ updates }),
+      },
     ),
 
   transactions: (filters: TransactionFilters = {}, signal?: AbortSignal) =>

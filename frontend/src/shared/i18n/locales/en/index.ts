@@ -46,14 +46,14 @@ export const en = {
     periodLoaded: "Loaded {period}",
   },
   nav: {
-    dashboard: "Overview",
+    dashboard: "Cash flow",
     netWorth: "Net worth",
     transactions: "Activity",
     budgets: "Plan",
     rules: "Automations",
   },
   navShort: {
-    dashboard: "Overview",
+    dashboard: "Cash flow",
     netWorth: "Worth",
     transactions: "Entries",
     budgets: "Budgets",
@@ -179,6 +179,12 @@ export const en = {
     asOfHint: "Balances use the latest snapshot on or before this date.",
     rangeLabel: "History range",
     months: "{count} months",
+    hero: {
+      asOf: "Your financial position as of {date}",
+      since: "Since {date}",
+      comparisonUnavailable:
+        "Change is unavailable because one or more accounts have no balance at both comparison boundaries.",
+    },
     currentPosition: "Current position",
     total: "Total net worth",
     assets: "Assets",
@@ -203,8 +209,27 @@ export const en = {
         "No account has a balance on or before {date}, so zero would not represent complete coverage.",
     },
     composition: {
+      eyebrow: "What you own and owe",
       title: "Account composition",
       detail: "The balances that explain the selected total.",
+      share: "{name} represents {percent}% of this group.",
+    },
+    movement: {
+      eyebrow: "What changed",
+      title: "Movement by account",
+      detail: "Contribution to net worth since {date}.",
+      unavailable:
+        "More history is needed before account-level movement can be compared.",
+    },
+    coveragePanel: {
+      eyebrow: "Data coverage",
+      title: "How current are these balances?",
+      resolved: "Accounts with a known balance",
+      oldest: "Oldest balance in this view",
+    },
+    accounts: {
+      eyebrow: "Manage the source data",
+      title: "Accounts",
     },
     account: {
       asset: "Asset",
@@ -217,7 +242,9 @@ export const en = {
     },
     actions: {
       addAccount: "Add account",
+      updateBalances: "Update balances",
       updateBalance: "Update balance",
+      manage: "Manage",
       history: "History",
       showArchived: "Show archived accounts",
       editNameFor: "Edit name for {name}",
@@ -254,6 +281,18 @@ export const en = {
         "Archiving records a final zero balance and preserves earlier history.",
       historyTitle: "{name} balance history",
       historyDescription: "Newest snapshots appear first.",
+    },
+    checkIn: {
+      title: "Update balances",
+      description:
+        "Enter only balances that changed. Unchanged accounts will not receive a new snapshot.",
+      current: "{amount}, last recorded {date}",
+      save: "Save {count} update(s)",
+    },
+    inspector: {
+      description: "{type} account details and history",
+      balance: "Current balance",
+      editName: "Edit name",
     },
     form: {
       name: "Account name",
@@ -642,12 +681,13 @@ export const en = {
     "balance_snapshot.created": "Balance snapshot recorded.",
     "balance_snapshot.updated": "Balance for this date replaced.",
     "balance_snapshot.deleted": "Balance snapshot permanently deleted.",
+    "balance_check_in.saved": "Account balances updated.",
   },
   notFound: {
     eyebrow: "Page not found",
     title: "Nothing lives here",
     summary: "This address does not match a view in Finance Tracker.",
-    action: "Return to dashboard",
+    action: "Return to net worth",
   },
   categories: {
     Transport: "Transport",

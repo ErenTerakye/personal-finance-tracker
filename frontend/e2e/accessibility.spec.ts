@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 const routes = [
-  { path: "/", heading: "June 2026" },
-  { path: "/net-worth", heading: "Net worth" },
+  { path: "/", heading: "Net worth" },
+  { path: "/cash-flow", heading: "June 2026" },
   { path: "/transactions", heading: "Activity" },
   { path: "/budgets", heading: "Your July 2026 plan" },
   { path: "/rules", heading: "Automations" },
@@ -92,7 +92,7 @@ test.describe("keyboard accessibility smoke checks", () => {
   test("does not select chart disclosure text after rapid activation", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/cash-flow");
 
     const summary = page.locator(".chart-data > summary").first();
     await summary.click({ clickCount: 3 });
@@ -104,7 +104,7 @@ test.describe("keyboard accessibility smoke checks", () => {
   test("expands the attention queue and reviews a budget by keyboard", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/cash-flow");
     await expect(
       page.getByRole("heading", { name: "Needs attention" }),
     ).toBeVisible();
@@ -145,7 +145,7 @@ test.describe("accessibility display preferences", () => {
   }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.emulateMedia({ forcedColors: "active" });
-    await page.goto("/");
+    await page.goto("/cash-flow");
     await expect(
       page.getByRole("button", { name: "Review Rent overage in Plan" }),
     ).toBeVisible();
@@ -180,7 +180,7 @@ test.describe("accessibility display preferences", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 900 });
-    await page.goto("/");
+    await page.goto("/cash-flow");
     await page.addStyleTag({ content: "html { font-size: 200% !important; }" });
 
     await expect(
@@ -373,6 +373,10 @@ async function mockApi(
       });
       return;
     }
+    if (url.pathname === "/api/net-worth/overview") {
+      await route.fulfill({ json: netWorthOverview() });
+      return;
+    }
     if (url.pathname === "/api/net-worth") {
       await route.fulfill({ json: netWorthSummary() });
       return;
@@ -552,6 +556,37 @@ function netWorthSummary() {
     resolved_asset_count: 0,
     resolved_liability_count: 0,
     unresolved_account_count: 0,
+    currency: "USD",
+  };
+}
+
+function netWorthOverview() {
+  const summary = netWorthSummary();
+  return {
+    summary,
+    history: {
+      as_of: summary.as_of,
+      months: 12,
+      points: [],
+      change_amount: null,
+      change_percent: null,
+      currency: "USD",
+    },
+    comparison: {
+      start_date: summary.as_of,
+      end_date: summary.as_of,
+      available: false,
+      start_value: null,
+      end_value: null,
+      change_amount: null,
+      change_percent: null,
+    },
+    accounts: [],
+    coverage: {
+      resolved_account_count: 0,
+      unresolved_account_count: 0,
+      oldest_balance_date: null,
+    },
     currency: "USD",
   };
 }

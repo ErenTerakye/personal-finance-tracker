@@ -13,6 +13,10 @@ export type BalanceSnapshotMutationResponse =
 export type NetWorthSummary = Schema["NetWorthSummaryResponse"];
 export type NetWorthHistory = Schema["NetWorthHistoryResponse"];
 export type NetWorthHistoryPoint = Schema["NetWorthHistoryPointResponse"];
+export type NetWorthOverview = Schema["NetWorthOverviewResponse"];
+export type NetWorthAccountAnalytics =
+  Schema["NetWorthAccountAnalyticsResponse"];
+export type BalanceCheckInResponse = Schema["BalanceCheckInResponse"];
 export type TransactionRecord = Schema["TransactionResponse"];
 export type BudgetRecord = Schema["BudgetResponse"];
 export type BudgetStatus = Schema["BudgetStatusResponse"];

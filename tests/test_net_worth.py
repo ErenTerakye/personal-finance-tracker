@@ -8,7 +8,11 @@ from typer.testing import CliRunner
 from finance_tracker.cli import app
 from finance_tracker.database import connect
 from finance_tracker.exceptions import AccountNotFoundError, ValidationError
-from finance_tracker.reports import build_net_worth_history, build_net_worth_summary
+from finance_tracker.reports import (
+    build_net_worth_history,
+    build_net_worth_overview,
+    build_net_worth_summary,
+)
 from finance_tracker.repositories import BalanceSnapshotRepository
 from finance_tracker.services import AccountService
 from finance_tracker.web.app import create_app
@@ -89,6 +93,67 @@ def test_zero_prior_net_worth_omits_history_percentage(tmp_path):
 
     assert history.change_amount == Decimal("50.00")
     assert history.change_percent is None
+
+
+def test_net_worth_overview_ranks_asset_growth_and_debt_repayment(tmp_path):
+    service = AccountService(tmp_path / "finance.sqlite3")
+    asset = service.create_account("Investments", "asset", "1000", "2026-01-31")
+    debt = service.create_account("Loan", "liability", "700", "2026-01-31")
+    new_asset = service.create_account("New savings", "asset", "200", "2026-07-01")
+    assert asset.id is not None
+    assert debt.id is not None
+    assert new_asset.id is not None
+    service.set_balance(asset.id, "1250", "2026-07-16")
+    service.set_balance(debt.id, "500", "2026-07-16")
+    accounts, snapshots = service.report_data("2026-07-16")
+
+    overview = build_net_worth_overview(
+        accounts,
+        snapshots,
+        date(2026, 7, 16),
+        months=7,
+    )
+
+    by_name = {item.name: item for item in overview.accounts}
+    assert overview.comparison_start == date(2026, 1, 31)
+    assert not overview.comparison_available
+    assert overview.comparison_start_value is None
+    assert overview.comparison_end_value is None
+    assert overview.comparison_change_amount is None
+    assert by_name["Investments"].contribution_change == Decimal("250.00")
+    assert by_name["Loan"].contribution_change == Decimal("200.00")
+    assert by_name["New savings"].contribution_change is None
+    assert by_name["Investments"].composition_percent == Decimal("86.2")
+    assert overview.oldest_balance_date == date(2026, 7, 1)
+
+
+def test_balance_check_in_is_atomic_when_any_write_fails(tmp_path, monkeypatch):
+    db_path = tmp_path / "finance.sqlite3"
+    service = AccountService(db_path)
+    cash = service.create_account("Cash", "asset", "100", "2026-01-01")
+    loan = service.create_account("Loan", "liability", "50", "2026-01-01")
+    assert cash.id is not None
+    assert loan.id is not None
+    original_upsert = BalanceSnapshotRepository.upsert
+    calls = 0
+
+    def fail_second(self, snapshot):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise RuntimeError("forced batch failure")
+        return original_upsert(self, snapshot)
+
+    monkeypatch.setattr(BalanceSnapshotRepository, "upsert", fail_second)
+
+    with pytest.raises(RuntimeError, match="forced batch failure"):
+        service.check_in_balances(
+            "2026-07-16",
+            [(cash.id, "120"), (loan.id, "40")],
+        )
+
+    assert len(service.list_snapshots(cash.id)) == 1
+    assert len(service.list_snapshots(loan.id)) == 1
 
 
 def test_archive_records_closing_zero_and_protects_mutation(tmp_path):
@@ -254,6 +319,14 @@ def test_api_account_snapshot_archive_and_net_worth_flow(tmp_path):
         "/api/net-worth/history",
         params={"as_of": "2026-07-16", "months": 2},
     )
+    overview = client.get(
+        "/api/net-worth/overview",
+        params={"as_of": "2026-07-16", "months": 2},
+    )
+    check_in = client.put(
+        "/api/accounts/balance-check-ins/2026-07-16",
+        json={"updates": [{"account_id": 1, "amount": "1300.00"}]},
+    )
     archive_without_confirmation = client.post(
         "/api/accounts/1/archive",
         json={"closing_date": "2026-07-16", "confirm_zero_balance": False},
@@ -268,6 +341,11 @@ def test_api_account_snapshot_archive_and_net_worth_flow(tmp_path):
     assert set_balance.json()["snapshot"]["amount"] == "1250.50"
     assert summary.json()["total_net_worth"] == "1250.50"
     assert history.json()["points"][-1]["as_of"] == "2026-07-16"
+    assert overview.json()["summary"]["total_net_worth"] == "1250.50"
+    assert overview.json()["comparison"]["available"] is True
+    assert overview.json()["comparison"]["change_amount"] == "0.00"
+    assert overview.json()["accounts"][0]["current_balance"] == "1250.50"
+    assert check_in.json()["balance_snapshots"][0]["amount"] == "1300.00"
     assert archive_without_confirmation.status_code == 400
     assert archived.json()["account"]["archived_on"] == "2026-07-16"
     assert client.get("/api/accounts").json()["accounts"] == []

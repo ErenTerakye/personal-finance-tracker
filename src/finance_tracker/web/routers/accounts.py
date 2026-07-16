@@ -13,6 +13,8 @@ from finance_tracker.web.schemas import (
     AccountListResponse,
     AccountMutationResponse,
     AccountPatchRequest,
+    BalanceCheckInRequest,
+    BalanceCheckInResponse,
     BalanceSnapshotListResponse,
     BalanceSnapshotMutationResponse,
     BalanceSnapshotRequest,
@@ -21,6 +23,33 @@ from finance_tracker.web.schemas import (
 )
 
 router = APIRouter()
+
+
+@router.put(
+    "/api/accounts/balance-check-ins/{effective_date}",
+    response_model=BalanceCheckInResponse,
+    responses={400: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+def check_in_balances(
+    request: Request,
+    effective_date: date,
+    payload: BalanceCheckInRequest,
+) -> BalanceCheckInResponse:
+    result = account_service(request).check_in_balances(
+        effective_date,
+        [(item.account_id, item.amount) for item in payload.updates],
+    )
+    currency = settings_service(request).get_currency()
+    count = len(result.snapshots)
+    return BalanceCheckInResponse(
+        notice=f"{count} account balance{'s' if count != 1 else ''} updated.",
+        notice_code="balance_check_in.saved",
+        balance_snapshots=[
+            balance_snapshot_response(snapshot, currency)
+            for snapshot in result.snapshots
+        ],
+        replaced_count=result.replaced_count,
+    )
 
 
 @router.get(

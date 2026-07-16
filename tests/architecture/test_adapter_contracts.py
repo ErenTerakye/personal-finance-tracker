@@ -240,6 +240,7 @@ HTTP_OPERATIONS = {
     ("PUT", "/api/settings"),
     ("GET", "/api/accounts"),
     ("POST", "/api/accounts"),
+    ("PUT", "/api/accounts/balance-check-ins/{effective_date}"),
     ("PATCH", "/api/accounts/{account_id}"),
     ("DELETE", "/api/accounts/{account_id}"),
     ("POST", "/api/accounts/{account_id}/archive"),
@@ -248,6 +249,7 @@ HTTP_OPERATIONS = {
     ("DELETE", "/api/accounts/{account_id}/balance-snapshots/{effective_date}"),
     ("GET", "/api/net-worth"),
     ("GET", "/api/net-worth/history"),
+    ("GET", "/api/net-worth/overview"),
 }
 
 FROZEN_SCHEMAS = {
@@ -295,9 +297,16 @@ FROZEN_SCHEMAS = {
     "BalanceSnapshotResponse",
     "BalanceSnapshotListResponse",
     "BalanceSnapshotMutationResponse",
+    "BalanceCheckInItemRequest",
+    "BalanceCheckInRequest",
+    "BalanceCheckInResponse",
     "NetWorthSummaryResponse",
     "NetWorthHistoryPointResponse",
     "NetWorthHistoryResponse",
+    "NetWorthAccountAnalyticsResponse",
+    "NetWorthComparisonResponse",
+    "NetWorthCoverageResponse",
+    "NetWorthOverviewResponse",
 }
 
 
@@ -554,7 +563,7 @@ def test_openapi_operation_and_schema_manifests_are_frozen(tmp_path):
 
     assert schema["info"] == {"title": "Personal Finance Tracker", "version": "1.1.0"}
     assert _api_operations(schema) == HTTP_OPERATIONS
-    assert len(HTTP_OPERATIONS) == 38
+    assert len(HTTP_OPERATIONS) == 40
     assert set(schema["components"]["schemas"]) >= FROZEN_SCHEMAS
 
 

@@ -25,6 +25,12 @@ class SnapshotMutation:
     replaced: bool
 
 
+@dataclass(frozen=True)
+class BalanceCheckInResult:
+    snapshots: list[BalanceSnapshot]
+    replaced_count: int
+
+
 class AccountService:
     def __init__(self, db_path: Path | str, *, initialize: bool = True) -> None:
         self.db_path = Path(db_path)
@@ -85,6 +91,37 @@ class AccountService:
             self._require_active(account)
             stored, replaced = BalanceSnapshotRepository(connection).upsert(snapshot)
             return SnapshotMutation(snapshot=stored, replaced=replaced)
+
+    def check_in_balances(
+        self,
+        effective_date: str | date,
+        updates: list[tuple[int, str]],
+    ) -> BalanceCheckInResult:
+        resolved_date = parse_snapshot_date(effective_date)
+        if not updates:
+            raise ValidationError("Update at least one account balance.")
+        account_ids = [account_id for account_id, _amount in updates]
+        if len(account_ids) != len(set(account_ids)):
+            raise ValidationError("Each account can be updated only once per check-in.")
+        prepared = [
+            BalanceSnapshot.create(account_id, amount, resolved_date)
+            for account_id, amount in updates
+        ]
+        with connect(self.db_path) as connection:
+            accounts = AccountRepository(connection)
+            snapshots = BalanceSnapshotRepository(connection)
+            for snapshot in prepared:
+                self._require_active(accounts.get(snapshot.account_id))
+            stored: list[BalanceSnapshot] = []
+            replaced_count = 0
+            for snapshot in prepared:
+                item, replaced = snapshots.upsert(snapshot)
+                stored.append(item)
+                replaced_count += int(replaced)
+            return BalanceCheckInResult(
+                snapshots=stored,
+                replaced_count=replaced_count,
+            )
 
     def list_snapshots(self, account_id: int) -> list[BalanceSnapshot]:
         with connect(self.db_path) as connection:
