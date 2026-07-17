@@ -66,23 +66,33 @@ For the reviewer demo, use the generated sample database:
 finance-tracker web --host 127.0.0.1 --port 8000 --db-path demo.sqlite3
 ```
 
-The Web UI uses five destinations—Net worth, Cash flow, Activity, Plan, and Automations—and supports:
+The Web UI uses four primary destinations—Overview, Transactions, Budgets, and Accounts—with a
+secondary Manage area:
 
-- A Personal Finance Tracker dashboard with a six-month cashflow trend, KPI cards, YTD/month-over-month context, trend/category charts, recent transactions, and budget pressure.
-- Route-aware browser navigation for `/`, `/cash-flow`, `/transactions`, `/budgets`, and `/rules`;
-  `/net-worth` redirects to the wealth home.
-- A wealth-first Net worth home for current and historical position, account movement, composition,
+- A unified Overview at `/` with a six-month cashflow trend, net-worth summary, recent
+  transactions, and budget attention that links to detailed destinations with period/category
+  context.
+- Canonical browser routes `/`, `/transactions`, `/budgets`, and `/accounts`, plus
+  `/manage/automations`, `/manage/categories`, `/manage/data`, and `/manage/preferences`.
+- Compatibility redirects from `/cash-flow` to `/`, `/net-worth` to `/accounts`, and `/rules` to
+  `/manage/automations`, preserving relevant query parameters.
+- An Accounts workspace for current and historical position, account movement, composition,
   coverage, atomic multi-account balance updates, correction safeguards, and an accessible chart
-  with a full table.
+  with a complete data table.
 - Compact period controls for changing monthly scope without keeping month/year fields open all the time.
-- An Activity workspace with an inflow/outflow/net snapshot, immediate search, period and category filters, newest/oldest sorting, a date-grouped ledger timeline, and transaction add, edit, and delete workflows.
-- A Plan workspace with a monthly health pulse, planned/spent/uncovered metrics, live category search, priority/spend/category sorting, pressure-ranked guardrail cards, and focused budget editing and deletion.
+- A Transactions workspace with an inflow/outflow/net summary, immediate search, period and category filters, newest/oldest sorting, a date-grouped ledger timeline, and transaction add, edit, and delete workflows.
+- A Budgets workspace with a monthly health pulse, planned/spent/uncovered metrics, live category search, priority/spend/category sorting, pressure-ranked guardrail cards, and focused budget editing and deletion.
 - Transaction and budget CSV import/export from the browser, using the same columns and validation rules as the CLI.
 - Transaction CSV preview before import, including invalid rows, duplicates, and category alias changes.
-- Category alias and recurring monthly transaction template management from one plain-language Automations list, with a guided create dialog, confirmation before deletion, compact display settings, and a review step before monthly entries are created.
-- Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
-- A color theme action that follows the operating system by default and can pin a local light or dark preference.
-- An English/Turkish language action stored in local browser storage, with locale-aware date, number, and currency formatting based on the active ledger currency.
+- Focused Manage sections for recurring monthly transaction templates, category aliases, local
+  data import/export, and ledger/display preferences. Recurring application includes a review step,
+  duplicate handling, and a direct link to created Transactions.
+- Overview downloads for monthly text reports, monthly PNG charts, six-month trend text reports,
+  and six-month trend PNG charts.
+- A stable global Add transaction action on every route, plus one dominant task action per primary
+  destination.
+- Color theme and English/Turkish language preferences stored locally, with compact access through
+  Manage → Preferences and locale-aware formatting based on the active ledger currency.
 
 The Python server exposes JSON under `/api` and serves the compiled React + Vite app from the same local origin. Money values in API responses are decimal strings, preserving the SQLite/`Decimal` behavior used by the CLI.
 
@@ -116,7 +126,7 @@ The Web UI is a local Python app. GitHub Pages cannot run the live app because P
 Tracked screenshots live in [assets/screenshots](assets/screenshots) and should be refreshed from
 the generated July 2026 demo database after running `examples/build_demo.py`:
 
-- `dashboard-desktop.png` from `/`
+- `dashboard-desktop.png` from `/` (Overview)
 - `transactions-mobile.png` from `/transactions`
 - `budgets-desktop.png` from `/budgets`
 
@@ -320,11 +330,14 @@ finance-tracker export-budgets-csv exports/july-budgets.csv --month 7 --year 202
 
 In the local Web UI:
 
-- Use `Activity -> Import CSV` to add transaction rows from a CSV file with `type,amount,category,description,date`.
-- Use `Activity -> Data options -> Export CSV` to download the currently filtered transaction view.
-- Use `Plan -> Import CSV` to set or update monthly budgets from `category,amount,month,year`.
-- Use `Plan -> Export CSV` to download the currently filtered budget view.
-- Use the dashboard download actions to save the selected month report/chart and the six-month trend report/chart.
+- Use `Transactions → Data options → Import CSV` to add transaction rows from a CSV file with
+  `type,amount,category,description,date`.
+- Use `Transactions → Data options → Export CSV` to download the currently filtered transaction
+  view.
+- Use `Budgets → Data options → Import CSV` to set or update monthly budgets from
+  `category,amount,month,year`.
+- Use `Budgets → Data options → Export CSV` to download the currently filtered budget view.
+- Use the Overview download actions to save the selected month report/chart and the six-month trend report/chart.
 
 Transaction CSV imports skip duplicates by default. Duplicate identity is the
 same type, amount, canonical category, trimmed description, and date, checked

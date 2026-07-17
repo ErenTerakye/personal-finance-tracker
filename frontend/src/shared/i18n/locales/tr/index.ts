@@ -20,7 +20,7 @@ export const tr = {
     delete: "Sil",
     save: "Kaydet",
     retry: "Yeniden dene",
-    addEntry: "İşlem ekle",
+    addTransaction: "İşlem ekle",
     setBudget: "Bütçe belirle",
     importCsv: "CSV İçe Aktar",
     exportCsv: "CSV Dışa Aktar",
@@ -46,18 +46,11 @@ export const tr = {
     periodLoaded: "{period} yüklendi",
   },
   nav: {
-    dashboard: "Nakit akışı",
-    netWorth: "Net değer",
-    transactions: "Hareketler",
-    budgets: "Plan",
-    rules: "Otomasyonlar",
-  },
-  navShort: {
-    dashboard: "Nakit",
-    netWorth: "Değer",
+    overview: "Genel Bakış",
     transactions: "İşlemler",
-    budgets: "Bütçe",
-    rules: "Kurallar",
+    budgets: "Bütçeler",
+    accounts: "Hesaplar",
+    manage: "Yönet",
   },
   theme: {
     system: "Sistem renk ayarını kullan",
@@ -65,9 +58,10 @@ export const tr = {
     dark: "Koyu modu kullan",
   },
   dashboard: {
-    eyebrow: "Nakit Akışı Özeti",
+    eyebrow: "Finansal genel bakış",
+    overviewTitle: "Genel Bakış",
     title: "Kontrol Paneli",
-    summary: "Nakit akışını, bütçe baskısını ve son hareketleri inceleyin.",
+    summary: "Nakit akışını, bütçe baskısını ve son işlemleri inceleyin.",
     narrative: {
       positive: "Bu ay giderlerden sonra {amount} kaldı.",
       negative: "Bu ay giderler geliri {amount} aştı.",
@@ -90,8 +84,8 @@ export const tr = {
       progressLabel: "{category} bütçesinin {percent} kadarı kullanıldı",
       actionOver: "Aşımı incele",
       actionNear: "Limiti incele",
-      reviewOver: "Plan'da {category} bütçe aşımını incele",
-      reviewNear: "Plan'da {category} bütçe limitini incele",
+      reviewOver: "Bütçeler'de {category} bütçe aşımını incele",
+      reviewNear: "Bütçeler'de {category} bütçe limitini incele",
       showMore: "{count} tane daha göster",
       showFewer: "Daha az göster",
       safeTitle: "Tüm bütçeler yolunda",
@@ -139,12 +133,12 @@ export const tr = {
       pressureTitle: "Bütçe Baskısı",
       mixTitle: "Gider Dağılımı",
       mixDetail: "Kategoriye göre harcama",
-      activityTitle: "Son Hareketler",
+      activityTitle: "Son İşlemler",
     },
     netWorth: {
       title: "Güncel net değer",
       asOf: "{date} itibarıyla; seçilen nakit akışı ayından bağımsızdır",
-      action: "Net değeri aç",
+      action: "Hesapları görüntüle",
       emptyTitle: "Net değer henüz takip edilmiyor",
       emptyMessage:
         "İşlem geçmişini değiştirmeden varlık ve borç bakiyelerini elle ekleyin.",
@@ -156,7 +150,7 @@ export const tr = {
       coverage: "{count} hesap bugün için henüz takip edilmiyor.",
     },
     activity: {
-      emptyTitle: "Henüz hareket yok",
+      emptyTitle: "Henüz işlem yok",
       emptyMessage: "Yeni defter kayıtları eklendikten sonra burada görünecek.",
     },
     empty: {
@@ -169,6 +163,9 @@ export const tr = {
   netWorth: {
     eyebrow: "Varlık durumu",
     title: "Net değer",
+    accountsTitle: "Hesaplar",
+    accountsSummary:
+      "Varlık ve borç bakiyelerini yönetin, oluşturdukları net değeri anlayın.",
     summary:
       "Varlık ve borç bakiyelerini bugün veya geçmiş bir tarih için elle takip edin.",
     loading: "Net değer yükleniyor",
@@ -357,10 +354,11 @@ export const tr = {
   },
   transactions: {
     eyebrow: "Paranızın hareketi",
-    title: "Hareketler",
+    title: "İşlemler",
     summary:
       "Değişenleri görün, istediğiniz kaydı bulun ve defterinizi güncel tutun.",
-    searchLabel: "Hareketlerde ara",
+    routeSummary: "{period} için {count} işlem gösteriliyor.",
+    searchLabel: "İşlemlerde ara",
     searchHint: "Kategori, açıklama, tutar veya tarih ara",
     dataMenu: "Veri seçenekleri",
     exportScope: "Dışa aktarma, uygulanmış filtreleri içerir.",
@@ -369,9 +367,9 @@ export const tr = {
       active: "Etkin filtreler",
       clear: "Tüm filtreleri temizle",
     },
-    historyTitle: "Hareket zaman çizelgesi",
+    historyTitle: "İşlem zaman çizelgesi",
     snapshot: {
-      title: "Hareket özeti",
+      title: "İşlem özeti",
       income: "Giren para",
       expenses: "Çıkan para",
       net: "Net hareket",
@@ -381,7 +379,7 @@ export const tr = {
       entryCount: "{count} kayıt",
     },
     sort: {
-      label: "Hareketleri sırala",
+      label: "İşlemleri sırala",
       newest: "Önce en yeni",
       oldest: "Önce en eski",
     },
@@ -436,6 +434,7 @@ export const tr = {
     planTitle: "{period} planınız",
     planSummary:
       "Net sınırlar belirleyin, baskıyı erkenden görün ve ayı güvenle yönetin.",
+    routeSummary: "{period} harcama planını inceleyin ve düzenleyin.",
     plannedVsSpent: "Planlanan ve harcanan",
     totalPlanned: "Toplam planlanan",
     totalSpent: "Toplam harcanan",
@@ -504,6 +503,7 @@ export const tr = {
       over: "Aşılan",
       used: "Bu kategori planının %{percent} kadarı kullanıldı.",
       edit: "{category} bütçesini düzenle",
+      viewTransactions: "Eşleşen işlemleri görüntüle",
     },
     empty: {
       eyebrow: "Aylık planınızı oluşturun",
@@ -650,6 +650,84 @@ export const tr = {
     deleteDescription:
       "Gelecekteki içe aktarımlara veya aylara yardım etmeyi bırakır. Mevcut işlemler değişmez.",
     deleteConfirm: "Otomasyonu sil",
+  },
+  manage: {
+    eyebrow: "Yönet",
+    navigationLabel: "Yönetim bölümleri",
+    sections: {
+      manageAutomations: "Otomasyonlar",
+      manageCategories: "Kategoriler",
+      manageData: "Veri",
+      managePreferences: "Tercihler",
+    },
+    automations: {
+      title: "Otomasyonlar",
+      summary:
+        "Herhangi bir kayıt eklenmeden önce önizleyerek yinelenen işlemleri bilinçli biçimde hazırlayın.",
+      add: "Yinelenen işlem ekle",
+      periodLabel: "Yinelenen işlem ayı",
+      ready: "{period} için {count} yinelenen işlem hazır",
+      readyDetail:
+        "İşlemler bölümüne eklemeden önce kayıtları ve yinelenen davranışını inceleyin.",
+      applied: "Yinelenen işlemler uygulandı",
+      viewTransactions: "Oluşturulan işlemleri görüntüle",
+      listTitle: "Yinelenen işlem şablonları",
+      listSummary:
+        "Aylık işlemler siz açıkça inceleyip uygulayana kadar kayıt oluşturmaz.",
+      active: "Etkin",
+      inactive: "Etkin değil",
+      emptyTitle: "Henüz yinelenen işlem yok",
+      emptyMessage:
+        "Kira, maaş, abonelik veya kaydetmeden önce incelemek istediğiniz başka bir aylık işlem ekleyin.",
+    },
+    categories: {
+      title: "Kategoriler",
+      summary:
+        "İçe aktarılan kategori adlarını defter genelinde kullandığınız adlarla eşleştirin.",
+      add: "Kategori eşlemesi ekle",
+      listTitle: "Kategori eşlemeleri",
+      listSummary:
+        "Her eşleme, gelen bir adı tek bir standart kategoriye dönüştürür.",
+      alias: "İçe aktarılan ad",
+      category: "Kaydedilen kategori",
+      emptyTitle: "Henüz kategori eşlemesi yok",
+      emptyMessage:
+        "İçe aktarılan dosyalar tutarsız kategori adları kullandığında bir eşleme ekleyin.",
+      impactTitle: "Gelecekteki kayıtlara uygulanır",
+      impactSummary:
+        "Eşlemeler, defterin mevcut normalleştirme kurallarına göre gelecekteki içe aktarımları ve işlem kayıtlarını etkiler. Mevcut kayıtlar yeniden adlandırılmaz.",
+    },
+    data: {
+      title: "Veri",
+      summary:
+        "SQLite defterini bu makinede tutarken taşınabilir CSV dosyalarını içe ve dışa aktarın.",
+      transactionsTitle: "İşlemler",
+      transactionsSummary:
+        "Yazmadan önce işlem CSV satırlarını önizleyin. Dışa aktarma seçilen ayı ve geçerli filtre kapsamını kullanır.",
+      duplicateNote:
+        "Onay sırasında özellikle dahil etmediğiniz sürece yinelenen kayıtlar varsayılan olarak atlanır.",
+      budgetsTitle: "Bütçeler",
+      budgetsSummary:
+        "Aylık kategori sınırlarını içe aktarın veya seçilen ayın bütçe kayıtlarını dışa aktarın.",
+      budgetImportNote:
+        "Eşleşen kategori ve ay kayıtları mevcut bütçe içe aktarma kurallarıyla güncellenir.",
+      localTitle: "Defteriniz yerel kalır",
+      localSummary:
+        "Uygulama bu makinedeki bir SQLite veritabanını okur ve yazar. CSV dışa aktarımları inceleyebileceğiniz, yedekleyebileceğiniz veya taşıyabileceğiniz kopyalardır.",
+    },
+    preferences: {
+      title: "Tercihler",
+      summary:
+        "Defter genelindeki biçimlendirme, dil ve görünüm tercihlerini seçin.",
+      currencyTitle: "Defter para birimi",
+      currencySummary:
+        "Para birimi arayüz biçimlendirmesini değiştirir; saklanan ondalık tutarlar dönüştürülmez.",
+      appearanceTitle: "Dil ve görünüm",
+      appearanceSummary:
+        "Bu tarayıcı tercihleri hemen uygulanır ve uygulama kabuğundan erişilebilir kalır.",
+      language: "Dil",
+      theme: "Renk teması",
+    },
   },
   csv: {
     importTitle: "İşlem CSV İçe Aktar",

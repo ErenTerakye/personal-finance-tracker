@@ -9,6 +9,7 @@ import {
   FileText,
   ImageDown,
   PiggyBank,
+  Plus,
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
@@ -18,6 +19,7 @@ import { PeriodControl } from "../../shared/components/PeriodControl";
 import {
   ActivityList,
   BudgetPressureList,
+  PageHeader,
   Panel,
   rankBudgetAttention,
   summarizeBudgetAttention,
@@ -29,8 +31,7 @@ import { money, percent } from "../../shared/format/money";
 import { useMediaQuery } from "../../shared/hooks/useMediaQuery";
 import { periodLabel } from "../../shared/format/periods";
 import { useI18n } from "../../shared/i18n/I18nProvider";
-import type { DashboardData } from "../../types";
-import type { View } from "../../app/routes";
+import type { DashboardData, TransactionRecord } from "../../types";
 import { useDashboard } from "./useDashboard";
 import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
 import { RollingNumber } from "../../shared/components/RollingNumber";
@@ -39,17 +40,23 @@ import DashboardNetWorthPanel from "./DashboardNetWorthPanel";
 export function DashboardView({
   selectedPeriod,
   setSelectedPeriod,
-  onNavigate,
+  onAddTransaction,
   onCreateBudget,
+  onReviewAccounts,
   onReviewBudget,
   onReviewCategory,
+  onReviewTransaction,
+  onViewTransactions,
 }: {
   selectedPeriod: { month: number; year: number };
   setSelectedPeriod: (period: { month: number; year: number }) => void;
-  onNavigate: (view: View) => void;
+  onAddTransaction: () => void;
   onCreateBudget: () => void;
+  onReviewAccounts: (asOf?: string) => void;
   onReviewBudget: (target: BudgetReviewTarget) => void;
   onReviewCategory: (category: string) => void;
+  onReviewTransaction: (transaction: TransactionRecord) => void;
+  onViewTransactions: () => void;
 }) {
   const { t, locale, tUpper } = useI18n();
   const dashboard = useDashboard(selectedPeriod.month, selectedPeriod.year);
@@ -128,22 +135,18 @@ export function DashboardView({
           onRetry={dashboard.refetch}
         />
       ) : null}
-      <section
-        className="page-heading dashboard-heading dashboard-context-header"
-        aria-labelledby="page-title"
-      >
-        <p className="eyebrow">{tUpper("dashboard.eyebrow")}</p>
-        <h1 id="page-title" className="period-transition-heading">
-          {displayPeriodLabel}
-        </h1>
-        <p className="dashboard-narrative period-transition-narrative">
-          {net >= 0
+      <PageHeader
+        eyebrow={tUpper("dashboard.eyebrow")}
+        title={t("dashboard.overviewTitle")}
+        summary={
+          net >= 0
             ? t("dashboard.narrative.positive", { amount: money(net) })
             : t("dashboard.narrative.negative", {
                 amount: money(Math.abs(net)),
-              })}
-        </p>
-        <div className="dashboard-command-row">
+              })
+        }
+        className="dashboard-heading dashboard-context-header"
+        context={
           <div
             className="dashboard-heading-tools dashboard-actions"
             aria-label={t("dashboard.toolsLabel")}
@@ -159,10 +162,15 @@ export function DashboardView({
               year={selectedPeriod.year}
             />
           </div>
+        }
+        actions={
           <div
-            className="dashboard-primary-actions action-cluster"
+            className="action-cluster"
             aria-label={t("dashboard.detail.actions")}
           >
+            <ActionButton icon={Plus} onClick={onAddTransaction}>
+              {t("common.addTransaction")}
+            </ActionButton>
             <ActionButton
               icon={PiggyBank}
               variant="secondary"
@@ -171,8 +179,8 @@ export function DashboardView({
               {t("common.setBudget")}
             </ActionButton>
           </div>
-        </div>
-      </section>
+        }
+      />
 
       <div className="period-transition-content">
         <section
@@ -268,7 +276,7 @@ export function DashboardView({
 
         <DashboardNetWorthPanel
           netWorth={data.net_worth}
-          onNavigate={() => onNavigate("netWorth")}
+          onNavigate={() => onReviewAccounts(data.net_worth.as_of)}
         />
 
         <section
@@ -317,14 +325,17 @@ export function DashboardView({
               <button
                 className="button ghost activity-view-all"
                 type="button"
-                onClick={() => onNavigate("transactions")}
+                onClick={onViewTransactions}
               >
                 {t("dashboard.viewAllActivity")}
                 <ArrowRight aria-hidden="true" size={17} />
               </button>
             }
           >
-            <ActivityList transactions={data.recent_transactions} />
+            <ActivityList
+              transactions={data.recent_transactions}
+              onSelect={onReviewTransaction}
+            />
           </Panel>
           <Panel
             title={t("dashboard.sections.mixTitle")}

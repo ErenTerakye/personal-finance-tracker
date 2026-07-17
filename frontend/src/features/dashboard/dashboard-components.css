@@ -259,14 +259,14 @@
     min-inline-size: 0;
   }
 
+  .dashboard-period-view .period-transition-content {
+    display: grid;
+    gap: var(--section-gap);
+  }
+
   .dashboard-summary {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
     align-items: stretch;
-  }
-
-  .dashboard-lead,
-  .analysis-grid {
-    margin-block-start: var(--section-gap);
   }
 
   .analysis-grid {

@@ -18,7 +18,7 @@ test("built SPA reads and writes through the real FastAPI and SQLite stack", asy
 
   await page.goto("/transactions?month=7&year=2026");
   await expect(
-    page.getByRole("heading", { name: "Activity", exact: true }),
+    page.getByRole("heading", { name: "Transactions", exact: true }),
   ).toBeVisible();
   await expect(page.getByText(description)).toBeVisible();
 
@@ -96,9 +96,9 @@ test("net worth history and archive persist through FastAPI, SQLite, and reload"
   expect((await archiveResponse.json()).notice_code).toBe("account.archived");
 
   await page.goto("/net-worth?as_of=2026-07-14&months=6");
-  await expect(page).toHaveURL("/?as_of=2026-07-14&months=6");
+  await expect(page).toHaveURL("/accounts?as_of=2026-07-14&months=6");
   await expect(
-    page.getByRole("heading", { name: "Net worth", exact: true }),
+    page.getByRole("heading", { name: "Accounts", exact: true }),
   ).toBeVisible();
   await page.getByRole("checkbox", { name: "Show archived accounts" }).check();
   await expect(

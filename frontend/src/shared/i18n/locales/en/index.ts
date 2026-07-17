@@ -20,7 +20,7 @@ export const en = {
     delete: "Delete",
     save: "Save",
     retry: "Retry",
-    addEntry: "Add entry",
+    addTransaction: "Add transaction",
     setBudget: "Set budget",
     importCsv: "Import CSV",
     exportCsv: "Export CSV",
@@ -46,18 +46,11 @@ export const en = {
     periodLoaded: "Loaded {period}",
   },
   nav: {
-    dashboard: "Cash flow",
-    netWorth: "Net worth",
-    transactions: "Activity",
-    budgets: "Plan",
-    rules: "Automations",
-  },
-  navShort: {
-    dashboard: "Cash flow",
-    netWorth: "Worth",
-    transactions: "Entries",
+    overview: "Overview",
+    transactions: "Transactions",
     budgets: "Budgets",
-    rules: "Rules",
+    accounts: "Accounts",
+    manage: "Manage",
   },
   theme: {
     system: "Use system color setting",
@@ -65,9 +58,10 @@ export const en = {
     dark: "Use dark mode",
   },
   dashboard: {
-    eyebrow: "Cashflow Overview",
+    eyebrow: "Financial overview",
+    overviewTitle: "Overview",
     title: "Dashboard",
-    summary: "Review cashflow, budget pressure, and recent activity.",
+    summary: "Review cashflow, budget pressure, and recent transactions.",
     narrative: {
       positive: "{amount} remained after expenses this month.",
       negative: "Expenses exceeded income by {amount} this month.",
@@ -90,8 +84,8 @@ export const en = {
       progressLabel: "{category} budget used {percent}",
       actionOver: "Review overage",
       actionNear: "Review limit",
-      reviewOver: "Review {category} overage in Plan",
-      reviewNear: "Review {category} limit in Plan",
+      reviewOver: "Review {category} overage in Budgets",
+      reviewNear: "Review {category} limit in Budgets",
       showMore: "Show {count} more",
       showFewer: "Show fewer",
       safeTitle: "All budgets are on track",
@@ -138,12 +132,12 @@ export const en = {
       pressureTitle: "Budget pressure",
       mixTitle: "Expense mix",
       mixDetail: "Spending by category",
-      activityTitle: "Recent activity",
+      activityTitle: "Recent transactions",
     },
     netWorth: {
       title: "Current net worth",
       asOf: "As of {date}, independent of the selected cashflow month",
-      action: "Open net worth",
+      action: "View accounts",
       emptyTitle: "Net worth is not tracked yet",
       emptyMessage:
         "Add manual asset and liability balances without changing transaction history.",
@@ -155,7 +149,7 @@ export const en = {
       coverage: "{count} account(s) are not tracked yet for today.",
     },
     activity: {
-      emptyTitle: "No recent activity",
+      emptyTitle: "No recent transactions",
       emptyMessage:
         "New ledger entries will appear here after they are posted.",
     },
@@ -169,6 +163,9 @@ export const en = {
   netWorth: {
     eyebrow: "Wealth position",
     title: "Net worth",
+    accountsTitle: "Accounts",
+    accountsSummary:
+      "Maintain asset and liability balances and understand the net worth they produce.",
     summary:
       "Track manual asset and liability balances as of today or a past date.",
     loading: "Loading net worth",
@@ -358,9 +355,10 @@ export const en = {
   },
   transactions: {
     eyebrow: "Your money, in motion",
-    title: "Activity",
+    title: "Transactions",
     summary: "See what changed, find any entry, and keep your ledger moving.",
-    searchLabel: "Search activity",
+    routeSummary: "{count} transactions shown for {period}.",
+    searchLabel: "Search transactions",
     searchHint: "Search category, description, amount, or date",
     dataMenu: "Data options",
     exportScope: "Export includes the currently applied filters.",
@@ -369,9 +367,9 @@ export const en = {
       active: "Active filters",
       clear: "Clear all filters",
     },
-    historyTitle: "Activity timeline",
+    historyTitle: "Transaction timeline",
     snapshot: {
-      title: "Activity snapshot",
+      title: "Transaction summary",
       income: "Money in",
       expenses: "Money out",
       net: "Net activity",
@@ -381,7 +379,7 @@ export const en = {
       entryCount: "{count} entries",
     },
     sort: {
-      label: "Sort activity",
+      label: "Sort transactions",
       newest: "Newest first",
       oldest: "Oldest first",
     },
@@ -437,6 +435,7 @@ export const en = {
     planTitle: "Your {period} plan",
     planSummary:
       "Set clear guardrails, spot pressure early, and adjust the month with confidence.",
+    routeSummary: "Review and adjust the spending plan for {period}.",
     plannedVsSpent: "Planned versus spent",
     totalPlanned: "Total planned",
     totalSpent: "Total spent",
@@ -504,6 +503,7 @@ export const en = {
       over: "Over by",
       used: "{percent}% of this category's plan has been used.",
       edit: "Edit {category} budget",
+      viewTransactions: "View matching transactions",
     },
     empty: {
       eyebrow: "Build your monthly plan",
@@ -646,6 +646,84 @@ export const en = {
     deleteDescription:
       "It will stop helping with future imports or months. Existing transactions will not change.",
     deleteConfirm: "Delete automation",
+  },
+  manage: {
+    eyebrow: "Manage",
+    navigationLabel: "Manage sections",
+    sections: {
+      manageAutomations: "Automations",
+      manageCategories: "Categories",
+      manageData: "Data",
+      managePreferences: "Preferences",
+    },
+    automations: {
+      title: "Automations",
+      summary:
+        "Prepare recurring transactions deliberately, with a preview before anything is added.",
+      add: "Add recurring entry",
+      periodLabel: "Recurring-entry month",
+      ready: "{count} recurring entries are ready for {period}",
+      readyDetail:
+        "Review the entries and duplicate handling before adding them to Transactions.",
+      applied: "Recurring entries applied",
+      viewTransactions: "View created transactions",
+      listTitle: "Recurring transaction templates",
+      listSummary:
+        "Monthly entries remain inactive until you explicitly review and apply them.",
+      active: "Active",
+      inactive: "Inactive",
+      emptyTitle: "No recurring entries yet",
+      emptyMessage:
+        "Add rent, salary, subscriptions, or another monthly transaction you want to review before posting.",
+    },
+    categories: {
+      title: "Categories",
+      summary:
+        "Normalize imported category aliases into the names you use throughout the ledger.",
+      add: "Add category alias",
+      listTitle: "Category aliases",
+      listSummary:
+        "Each mapping converts an incoming alias into one canonical category.",
+      alias: "Imported alias",
+      category: "Saved category",
+      emptyTitle: "No category aliases yet",
+      emptyMessage:
+        "Add a mapping when imported files use inconsistent category names.",
+      impactTitle: "Applies to future writes",
+      impactSummary:
+        "Aliases affect future imports and transaction writes according to the ledger’s existing normalization rules. Existing records are not renamed.",
+    },
+    data: {
+      title: "Data",
+      summary:
+        "Import and export portable CSV files while keeping the SQLite ledger on this machine.",
+      transactionsTitle: "Transactions",
+      transactionsSummary:
+        "Preview transaction CSV rows before writing. Exports use the selected month and current filter scope.",
+      duplicateNote:
+        "Duplicates are skipped by default unless you explicitly include them during confirmation.",
+      budgetsTitle: "Budgets",
+      budgetsSummary:
+        "Import monthly category limits or export the selected month’s budget records.",
+      budgetImportNote:
+        "Matching category and month records are updated using the existing budget import rules.",
+      localTitle: "Your ledger stays local",
+      localSummary:
+        "The application reads and writes a SQLite database on this machine. CSV exports are copies you can inspect, back up, or move yourself.",
+    },
+    preferences: {
+      title: "Preferences",
+      summary:
+        "Choose ledger-wide formatting, language, and appearance preferences.",
+      currencyTitle: "Ledger currency",
+      currencySummary:
+        "Currency changes formatting across the interface; stored decimal amounts are not converted.",
+      appearanceTitle: "Language and appearance",
+      appearanceSummary:
+        "These browser preferences apply immediately and remain available from the app shell.",
+      language: "Language",
+      theme: "Color theme",
+    },
   },
   csv: {
     importTitle: "Import transaction CSV",

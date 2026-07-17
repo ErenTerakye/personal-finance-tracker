@@ -28,7 +28,9 @@ describe("budgets workflow", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<App />);
-    await userEvent.click(await screen.findByRole("link", { name: /Plan/i }));
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Budgets/i }),
+    );
     const alert = await screen.findByRole("alert");
     await userEvent.click(within(alert).getByRole("button", { name: "Retry" }));
 
@@ -71,7 +73,9 @@ describe("budgets workflow", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<App />);
-    await userEvent.click(await screen.findByRole("link", { name: /Plan/i }));
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Budgets/i }),
+    );
 
     expect(
       await screen.findByRole("heading", {
@@ -146,7 +150,9 @@ describe("budgets workflow", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<App />);
-    await userEvent.click(await screen.findByRole("link", { name: /Plan/i }));
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Budgets/i }),
+    );
     await userEvent.click(
       await screen.findByRole("button", { name: "Set budget" }),
     );
@@ -194,7 +200,9 @@ describe("budgets workflow", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<App />);
-    await userEvent.click(await screen.findByRole("link", { name: /Plan/i }));
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Budgets/i }),
+    );
     await userEvent.click(
       await screen.findByRole("button", { name: "Import CSV" }),
     );

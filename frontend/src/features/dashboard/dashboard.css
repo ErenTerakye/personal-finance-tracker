@@ -2,7 +2,7 @@
   .dashboard-context-header {
     grid-template-columns: minmax(0, 1fr);
     align-items: start;
-    gap: 0;
+    row-gap: var(--space-4);
   }
 
   .dashboard-context-header > .eyebrow,

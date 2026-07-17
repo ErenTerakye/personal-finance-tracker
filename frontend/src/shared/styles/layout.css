@@ -111,4 +111,12 @@
     min-inline-size: 0;
     max-inline-size: 30rem;
   }
+
+  .page-context {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+    margin-block-start: 1rem;
+  }
 }

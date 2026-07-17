@@ -2,7 +2,7 @@
 
 ## Document Status
 
-- **Status:** Proposed product, information-architecture, design-system, and implementation goal
+- **Status:** Implemented and verified on July 16, 2026
 - **Audit date:** July 16, 2026
 - **Scope:** The complete React Web UI, its primary destinations, secondary management surfaces,
   shared shell, cross-route workflows, naming, iconography, and interaction conventions
@@ -10,10 +10,10 @@
 - **Primary audience:** An implementation agent, contributors, reviewers, and future maintainers
 - **Architecture boundary:** Frontend-first. Small API additions are allowed only when they remove
   duplicated requests or make an explicitly required cross-feature summary practical.
-- **Source of truth for:** The next substantial Web UI cohesion and navigation improvement
+- **Source of truth for:** The shipped Web UI cohesion, navigation, and cross-route flow
 - **Supersedes for navigation decisions:** The four-route proposal in `WEB_UI_OVERHAUL_GOAL.md`
 - **Related documents:** `WEB_UI_OVERHAUL_GOAL.md`, `OVERVIEW_ANIMATION_AUDIT_GOAL.md`,
-  `ARCHITECTURE.md`, and `PROJECT_PLAN.md`
+  `WEB_UI_COHESION_AND_FLOW_RELEASE.md`, `ARCHITECTURE.md`, and `PROJECT_PLAN.md`
 
 ## Agent Mission
 

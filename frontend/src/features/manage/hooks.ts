@@ -1,20 +1,44 @@
 import { useCallback } from "react";
 import { api } from "../../api/client";
-import { useResource } from "../../shared/hooks/useResource";
 import { useMutation } from "../../shared/hooks/useMutation";
+import { useResource } from "../../shared/hooks/useResource";
 import type {
+  CategoryRuleInput,
+  CategoryRuleMutationResponse,
   NoticeResponse,
   RecurringApplyResponse,
   RecurringTemplateInput,
   RecurringTemplateMutationResponse,
 } from "../../types";
 
+export function useCategoryRules() {
+  const load = useCallback(
+    (signal: AbortSignal) => api.categoryRules(signal),
+    [],
+  );
+  return useResource(load, "manage-category-rules", { retainData: true });
+}
+
+export function useSaveCategoryRule(
+  onSuccess: (response: CategoryRuleMutationResponse) => void,
+) {
+  return useMutation((input: CategoryRuleInput) => api.setCategoryRule(input), {
+    onSuccess,
+  });
+}
+
+export function useDeleteCategoryRule(
+  onSuccess: (response: NoticeResponse) => void,
+) {
+  return useMutation((id: number) => api.deleteCategoryRule(id), { onSuccess });
+}
+
 export function useRecurringTemplates() {
   const load = useCallback(
     (signal: AbortSignal) => api.recurringTemplates(signal),
     [],
   );
-  return useResource(load, "recurring-templates", { retainData: true });
+  return useResource(load, "manage-recurring-templates", { retainData: true });
 }
 
 export function useLedgerSettings() {
@@ -22,7 +46,7 @@ export function useLedgerSettings() {
     (signal: AbortSignal) => api.getSettings(signal),
     [],
   );
-  return useResource(load, "ledger-settings", { retainData: true });
+  return useResource(load, "manage-ledger-settings", { retainData: true });
 }
 
 export function useSaveRecurringTemplate(

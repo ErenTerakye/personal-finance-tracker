@@ -2,11 +2,14 @@ import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 const routes = [
-  { path: "/", heading: "Net worth" },
-  { path: "/cash-flow", heading: "June 2026" },
-  { path: "/transactions", heading: "Activity" },
-  { path: "/budgets", heading: "Your July 2026 plan" },
-  { path: "/rules", heading: "Automations" },
+  { path: "/", heading: "Overview" },
+  { path: "/transactions", heading: "Transactions" },
+  { path: "/budgets", heading: "Budgets" },
+  { path: "/accounts", heading: "Accounts" },
+  { path: "/manage/automations", heading: "Automations" },
+  { path: "/manage/categories", heading: "Categories" },
+  { path: "/manage/data", heading: "Data" },
+  { path: "/manage/preferences", heading: "Preferences" },
 ];
 
 const viewports = [
@@ -59,15 +62,17 @@ test.describe("keyboard accessibility smoke checks", () => {
 
     const transactionsLink = page
       .getByRole("navigation", { name: "Primary" })
-      .getByRole("link", { name: "Activity" });
+      .getByRole("link", { name: "Transactions" });
     await transactionsLink.focus();
     await page.keyboard.press("Enter");
 
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(
-      page.getByRole("heading", { name: "Activity", exact: true }),
+      page.getByRole("heading", { name: "Transactions", exact: true }),
     ).toBeVisible();
-    await expect(page.locator("main")).toBeFocused();
+    await expect(
+      page.getByRole("heading", { name: "Transactions", exact: true }),
+    ).toBeFocused();
   });
 
   test("opens and closes the transaction dialog with the keyboard", async ({
@@ -75,7 +80,9 @@ test.describe("keyboard accessibility smoke checks", () => {
   }) => {
     await page.goto("/transactions");
 
-    const addButton = page.getByRole("button", { name: "Add entry" }).first();
+    const addButton = page
+      .getByRole("button", { name: "Add transaction" })
+      .first();
     await addButton.focus();
     await page.keyboard.press("Enter");
 
@@ -92,7 +99,7 @@ test.describe("keyboard accessibility smoke checks", () => {
   test("does not select chart disclosure text after rapid activation", async ({
     page,
   }) => {
-    await page.goto("/cash-flow");
+    await page.goto("/");
 
     const summary = page.locator(".chart-data > summary").first();
     await summary.click({ clickCount: 3 });
@@ -104,7 +111,7 @@ test.describe("keyboard accessibility smoke checks", () => {
   test("expands the attention queue and reviews a budget by keyboard", async ({
     page,
   }) => {
-    await page.goto("/cash-flow");
+    await page.goto("/");
     await expect(
       page.getByRole("heading", { name: "Needs attention" }),
     ).toBeVisible();
@@ -119,19 +126,70 @@ test.describe("keyboard accessibility smoke checks", () => {
     ).toHaveCount(7);
 
     const review = page.getByRole("button", {
-      name: "Review Rent overage in Plan",
+      name: "Review Rent overage in Budgets",
     });
     await review.focus();
     await page.keyboard.press("Enter");
 
     await expect(page).toHaveURL(/\/budgets\?month=6&year=2026&category=Rent$/);
-    await expect(
-      page.getByRole("heading", { name: "Your June 2026 plan" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
     await expect(
       page.getByRole("searchbox", { name: "Find a category" }),
     ).toHaveValue("Rent");
-    await expect(page.locator("main")).toBeFocused();
+    await expect(page.getByRole("heading", { name: "Budgets" })).toBeFocused();
+  });
+});
+
+test.describe("route compatibility and history", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await mockApi(page);
+  });
+
+  test("redirects legacy URLs to canonical destinations with relevant context", async ({
+    page,
+  }) => {
+    await page.goto("/cash-flow?month=6&year=2026&discard=1");
+    await expect(page).toHaveURL("/?month=6&year=2026");
+    await expect(
+      page.getByRole("heading", { name: "Overview", exact: true }),
+    ).toBeVisible();
+
+    await page.goto("/net-worth?as_of=2026-07-12&months=6&discard=1");
+    await expect(page).toHaveURL("/accounts?as_of=2026-07-12&months=6");
+    await expect(
+      page.getByRole("heading", { name: "Accounts", exact: true }),
+    ).toBeVisible();
+
+    await page.goto("/rules?month=7&year=2026&tab=categories");
+    await expect(page).toHaveURL("/manage/automations?month=7&year=2026");
+    await expect(
+      page.getByRole("heading", { name: "Automations", exact: true }),
+    ).toBeVisible();
+  });
+
+  test("restores route query context through browser history", async ({
+    page,
+  }) => {
+    await page.goto("/transactions?month=5&year=2026&search=Rent");
+    await expect(
+      page.getByRole("searchbox", { name: "Search transactions" }),
+    ).toHaveValue("Rent");
+
+    await page
+      .getByRole("navigation", { name: "Primary" })
+      .getByRole("link", { name: "Overview" })
+      .click();
+    await expect(page).toHaveURL("/");
+
+    await page.goBack();
+    await expect(page).toHaveURL("/transactions?month=5&year=2026&search=Rent");
+    await expect(
+      page.getByRole("heading", { name: "Transactions", exact: true }),
+    ).toBeFocused();
+    await expect(
+      page.getByRole("searchbox", { name: "Search transactions" }),
+    ).toHaveValue("Rent");
   });
 });
 
@@ -145,9 +203,9 @@ test.describe("accessibility display preferences", () => {
   }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.emulateMedia({ forcedColors: "active" });
-    await page.goto("/cash-flow");
+    await page.goto("/");
     await expect(
-      page.getByRole("button", { name: "Review Rent overage in Plan" }),
+      page.getByRole("button", { name: "Review Rent overage in Budgets" }),
     ).toBeVisible();
     await expect(
       page.getByText("Over budget", { exact: true }).first(),
@@ -162,7 +220,9 @@ test.describe("accessibility display preferences", () => {
 
     await page.goto("/transactions");
 
-    const addButton = page.getByRole("button", { name: "Add entry" }).first();
+    const addButton = page
+      .getByRole("button", { name: "Add transaction" })
+      .first();
     await expect(addButton).toBeVisible();
     await addButton.click();
     const dialog = page.getByRole("dialog", { name: "Add transaction" });
@@ -180,12 +240,10 @@ test.describe("accessibility display preferences", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 900 });
-    await page.goto("/cash-flow");
+    await page.goto("/");
     await page.addStyleTag({ content: "html { font-size: 200% !important; }" });
 
-    await expect(
-      page.getByRole("heading", { name: "June 2026" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Show 4 more" }),
     ).toBeVisible();
@@ -197,18 +255,15 @@ test.describe("accessibility display preferences", () => {
       )
       .toBe(true);
 
-    await page.goto("/rules");
+    await page.goto("/manage/automations");
     await page.addStyleTag({ content: "html { font-size: 200% !important; }" });
 
     await expect(
       page.getByRole("heading", { name: "Automations", exact: true }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "New automation" }).click();
-    await page
-      .getByRole("radio", { name: /Clean up imported categories/i })
-      .click();
+    await page.getByRole("button", { name: "Add recurring entry" }).click();
     await expect(
-      page.getByRole("textbox", { name: "Imported category" }),
+      page.getByRole("textbox", { name: "Description (optional)" }),
     ).toBeVisible();
     await expect
       .poll(() =>
@@ -238,13 +293,11 @@ test.describe("accessibility display preferences", () => {
 
     await page
       .getByRole("navigation", { name: "Primary" })
-      .getByRole("link", { name: "Plan" })
+      .getByRole("link", { name: "Budgets" })
       .click();
     await expect(page).toHaveURL(/\/budgets$/);
-    await expect(
-      page.getByRole("heading", { name: "Your July 2026 plan" }),
-    ).toBeVisible();
-    await expect(page.locator("main")).toBeFocused();
+    await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Budgets" })).toBeFocused();
   });
 });
 

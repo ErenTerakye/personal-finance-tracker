@@ -21,7 +21,7 @@ const emptySummary = {
 
 describe("net worth workflow", () => {
   it("shows first-use education without implying complete zero coverage", async () => {
-    window.history.pushState({}, "", "/net-worth");
+    window.history.pushState({}, "", "/accounts");
     mockFetch({
       "/api/settings": { currency: "USD" },
       "/api/net-worth/overview": overview(emptySummary, [], []),
@@ -30,17 +30,17 @@ describe("net worth workflow", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: "Net worth", level: 1 }),
+      await screen.findByRole("heading", { name: "Accounts", level: 1 }),
     ).toBeVisible();
     expect(screen.getByText("Add your first account")).toBeVisible();
     expect(
       screen.queryByRole("img", { name: /Net worth over time/ }),
     ).toBeNull();
-    expect(document.title).toContain("Net worth");
+    expect(document.title).toContain("Accounts");
   });
 
   it("renders signed totals, account composition, focusable points, and table data", async () => {
-    window.history.pushState({}, "", "/net-worth?months=6");
+    window.history.pushState({}, "", "/accounts?months=6");
     mockFetch({
       "/api/settings": { currency: "USD" },
       "/api/net-worth/overview": overview(
@@ -85,7 +85,7 @@ describe("net worth workflow", () => {
   });
 
   it("does not calculate change from an unknown comparison balance", async () => {
-    window.history.pushState({}, "", "/?months=6");
+    window.history.pushState({}, "", "/accounts?months=6");
     mockFetch({
       "/api/settings": { currency: "USD" },
       "/api/net-worth/overview": overview(
@@ -115,7 +115,7 @@ describe("net worth workflow", () => {
   });
 
   it("uses a native destructive dialog that names the sole account snapshot", async () => {
-    window.history.pushState({}, "", "/net-worth");
+    window.history.pushState({}, "", "/accounts");
     mockFetch({
       "/api/accounts/1/balance-snapshots": {
         balance_snapshots: [
@@ -168,7 +168,7 @@ describe("net worth workflow", () => {
   });
 
   it("submits only changed rows from the balance check-in", async () => {
-    window.history.pushState({}, "", "/");
+    window.history.pushState({}, "", "/accounts");
     const fetchMock = mockFetch({
       "/api/settings": { currency: "USD" },
       "/api/accounts/balance-check-ins": {

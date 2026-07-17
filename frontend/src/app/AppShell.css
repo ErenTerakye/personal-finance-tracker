@@ -101,12 +101,42 @@
     justify-content: flex-start;
   }
 
-  .rail-utilities {
+  .rail-manage-navigation {
     align-self: end;
+  }
+
+  .rail-manage-navigation a {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    min-block-size: 3rem;
+    padding-inline: 0.85rem;
+    color: var(--muted);
+    border-block-start: 1px solid var(--rule);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .rail-manage-navigation a:hover,
+  .rail-manage-navigation a[aria-current="page"] {
+    color: var(--ink);
+  }
+
+  .rail-utilities {
     display: grid;
     grid-template-columns: 1fr auto auto;
     align-items: center;
     gap: 0.45rem;
+  }
+
+  .local-data-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-inline-size: 0;
+    color: var(--muted);
+    font-size: var(--font-size-xs);
   }
 
   .app-rail :is(.lang-toggle, .theme-toggle) {
@@ -188,7 +218,17 @@
     }
 
     .compact-app-bar :is(.lang-toggle, .theme-toggle) {
+      display: none;
       flex: none;
+    }
+
+    .compact-manage {
+      inline-size: auto;
+      padding-inline: 0.75rem;
+    }
+
+    .compact-manage span {
+      display: block;
     }
 
     .compact-create {
@@ -220,7 +260,7 @@
 
     .bottom-navigation ul {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       max-inline-size: 52rem;
       min-block-size: 4.5rem;
       margin: 0 auto;
@@ -282,7 +322,7 @@
     }
 
     .bottom-navigation a[aria-current="page"] {
-      --active-navigation-icon-detail: color-mix(
+      --active-navigation-indicator: color-mix(
         in srgb,
         var(--action) 15%,
         var(--surface)
@@ -292,22 +332,7 @@
     }
 
     .bottom-navigation a[aria-current="page"] .navigation-icon::before {
-      background: var(--active-navigation-icon-detail);
-    }
-
-    .bottom-navigation .navigation-icon-detail {
-      position: absolute;
-      pointer-events: none;
-      stroke: var(--active-navigation-icon-detail);
-    }
-
-    .bottom-navigation
-      .navigation-icon-detail--transactions
-      > path:last-of-type,
-    .bottom-navigation
-      .navigation-icon-detail--budgets
-      > path:not(:nth-of-type(2)) {
-      display: none;
+      background: var(--active-navigation-indicator);
     }
 
     .bottom-navigation a:focus-visible {
@@ -333,6 +358,19 @@
     .compact-create {
       inline-size: auto;
       padding-inline: 0.9rem;
+    }
+
+    .compact-app-bar :is(.lang-toggle, .theme-toggle) {
+      display: grid;
+    }
+
+    .compact-manage {
+      inline-size: auto;
+      padding-inline: 0.9rem;
+    }
+
+    .compact-manage span {
+      display: block;
     }
   }
 

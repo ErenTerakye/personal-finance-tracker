@@ -7,26 +7,32 @@ import {
   type ReactNode,
 } from "react";
 import { flushSync } from "react-dom";
+import { House } from "lucide-react";
 import { AppShell } from "./AppShell";
 import { currentPeriod } from "../shared/format/periods";
 import { setCurrency } from "../shared/format/money";
-import { pathForView, viewFromPath, type RouteView, type View } from "./routes";
+import {
+  pathForView,
+  resolveRoute,
+  viewMeta,
+  type ManageView,
+  type RouteView,
+  type View,
+} from "./routes";
 import { I18nProvider, useI18n } from "../shared/i18n/I18nProvider";
 import { ActionButton } from "../shared/components/actions";
 import { PageHeader } from "../shared/components/lists";
-import { LayoutDashboard } from "lucide-react";
 import { useAppSettings } from "./useAppSettings";
 import type { BudgetReviewTarget } from "../shared/components/lists";
 import { cancelActiveViewTransition } from "../shared/motion/viewTransitions";
 
-const initialPeriod = periodFromUrl();
 const DashboardView = lazy(async () => {
   const module = await import("../features/dashboard/DashboardView");
   return { default: module.DashboardView };
 });
-const RulesView = lazy(async () => {
-  const module = await import("../features/rules/RulesView");
-  return { default: module.RulesView };
+const ManageView = lazy(async () => {
+  const module = await import("../features/manage/ManageView");
+  return { default: module.ManageView };
 });
 const NetWorthView = lazy(async () => {
   const module = await import("../features/net-worth/NetWorthView");
@@ -43,28 +49,21 @@ const BudgetsView = lazy(async () => {
 
 function AppContent() {
   const { t, locale, tUpper } = useI18n();
-  const [view, setView] = useState<RouteView>(() =>
-    viewFromPath(window.location.pathname),
+  const [view, setView] = useState<RouteView>(
+    () => resolveRoute(window.location.pathname, window.location.search).view,
   );
-  const [selectedPeriod, setSelectedPeriod] = useState(initialPeriod);
+  const [selectedPeriod, setSelectedPeriod] = useState(periodFromUrl);
   const [notice, setNotice] = useState("");
   const [createTransactionRequest, setCreateTransactionRequest] = useState(0);
   const [createBudgetRequest, setCreateBudgetRequest] = useState(0);
-  const [createAccountRequest, setCreateAccountRequest] = useState(0);
-  const [wealthHasAccounts, setWealthHasAccounts] = useState(false);
   const [routeFocusRequest, setRouteFocusRequest] = useState(0);
+  const [locationVersion, setLocationVersion] = useState(0);
   const mainRef = useRef<HTMLElement | null>(null);
   const viewRef = useRef<RouteView>(view);
   const settings = useAppSettings();
 
   useEffect(() => {
-    if (window.location.pathname === "/net-worth") {
-      window.history.replaceState(
-        {},
-        "",
-        `/${window.location.search}${window.location.hash}`,
-      );
-    }
+    normalizeCompatibilityRoute();
   }, []);
 
   useEffect(() => {
@@ -74,50 +73,59 @@ function AppContent() {
   }, [settings.status, settings.data]);
 
   useEffect(() => {
-    function handlePopState() {
-      const nextView = viewFromPath(window.location.pathname);
-      commitRoute(nextView);
-    }
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
-  useEffect(() => {
     viewRef.current = view;
   }, [view]);
 
   useEffect(() => {
     const title =
-      view === "not-found" ? t("notFound.eyebrow") : t(`nav.${view}`);
+      view === "not-found" ? t("notFound.eyebrow") : t(viewMeta[view].titleKey);
     document.title = `${title} | Personal Finance Tracker`;
   }, [view, locale, t]);
 
-  function commitRoute(nextView: RouteView, afterCommit?: () => void) {
-    if (nextView === viewRef.current) return;
-    // Top-level routes behave like application tabs. Commit the content and
-    // selected navigation state together so persistent glass chrome always
-    // remains live instead of being covered by an old View Transition snapshot.
+  function commitRoute(
+    nextView: RouteView,
+    {
+      afterCommit,
+      focus = true,
+    }: { afterCommit?: () => void; focus?: boolean } = {},
+  ) {
+    const routeChanged = nextView !== viewRef.current;
+    if (!routeChanged) {
+      if (afterCommit) queueMicrotask(afterCommit);
+      return;
+    }
     cancelActiveViewTransition();
     flushSync(() => {
       if (nextView !== "transactions") setCreateTransactionRequest(0);
       if (nextView !== "budgets") setCreateBudgetRequest(0);
-      if (nextView !== "netWorth") setCreateAccountRequest(0);
       setNotice("");
       viewRef.current = nextView;
       setView(nextView);
-      setRouteFocusRequest((request) => request + 1);
+      if (focus) setRouteFocusRequest((request) => request + 1);
     });
     if (afterCommit) queueMicrotask(afterCommit);
   }
 
-  function navigate(nextView: View, afterCommit?: () => void) {
-    if (nextView === viewRef.current) return;
-    const nextPath = pathForView(nextView);
-    if (window.location.pathname !== nextPath) {
+  function navigate(nextView: View, afterCommit?: () => void, search = "") {
+    const nextPath = `${pathForView(nextView)}${search}`;
+    if (
+      window.location.pathname !== pathForView(nextView) ||
+      window.location.search !== search
+    ) {
       window.history.pushState({}, "", nextPath);
+      setLocationVersion((version) => version + 1);
     }
-    commitRoute(nextView, afterCommit);
+    setSelectedPeriod(periodFromUrl());
+    commitRoute(nextView, { afterCommit });
+  }
+
+  function navigateWithParams(
+    nextView: View,
+    params: URLSearchParams,
+    afterCommit?: () => void,
+  ) {
+    const query = params.toString();
+    navigate(nextView, afterCommit, query ? `?${query}` : "");
   }
 
   function changePeriod(period: { month: number; year: number }) {
@@ -129,39 +137,71 @@ function AppContent() {
   }
 
   function reviewBudget(target: BudgetReviewTarget) {
-    const params = new URLSearchParams({
-      month: String(target.month),
-      year: String(target.year),
-      category: target.category,
-    });
-    window.history.pushState(
-      {},
-      "",
-      `${pathForView("budgets")}?${params.toString()}`,
+    navigateWithParams(
+      "budgets",
+      new URLSearchParams({
+        month: String(target.month),
+        year: String(target.year),
+        category: target.category,
+      }),
     );
-    setSelectedPeriod({ month: target.month, year: target.year });
-    commitRoute("budgets");
   }
 
-  function reviewCategory(category: string) {
+  function reviewTransactions({
+    month = selectedPeriod.month,
+    year = selectedPeriod.year,
+    category = "",
+    transactionType = "",
+    dataAction = "",
+    search = "",
+  }: {
+    month?: number;
+    year?: number;
+    category?: string;
+    transactionType?: string;
+    dataAction?: string;
+    search?: string;
+  } = {}) {
     const params = new URLSearchParams({
-      month: String(selectedPeriod.month),
-      year: String(selectedPeriod.year),
+      month: String(month),
+      year: String(year),
     });
-    if (category) {
-      params.set("category", category);
-    }
-    window.history.pushState(
-      {},
-      "",
-      `${pathForView("transactions")}?${params.toString()}`,
-    );
-    commitRoute("transactions");
+    if (category) params.set("category", category);
+    if (transactionType) params.set("transaction_type", transactionType);
+    if (dataAction) params.set("data", dataAction);
+    if (search) params.set("search", search);
+    navigateWithParams("transactions", params);
   }
+
+  function reviewAccounts(asOf?: string) {
+    const params = new URLSearchParams();
+    if (asOf) params.set("as_of", asOf);
+    navigateWithParams("accounts", params);
+  }
+
+  useEffect(() => {
+    function handlePopState() {
+      const resolved = resolveRoute(
+        window.location.pathname,
+        window.location.search,
+      );
+      if (resolved.canonicalUrl) {
+        window.history.replaceState({}, "", resolved.canonicalUrl);
+      }
+      setSelectedPeriod(periodFromUrl());
+      commitRoute(resolved.view, { focus: resolved.view !== viewRef.current });
+      setLocationVersion((version) => version + 1);
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   if (settings.status === "idle" || settings.status === "loading") {
     return <div className="app-loading">{t("common.loading")}</div>;
   }
+
+  const routeKey = `${view}:${locationVersion}`;
 
   return (
     <AppShell
@@ -169,20 +209,7 @@ function AppContent() {
       notice={notice}
       mainRef={mainRef}
       onNavigate={navigate}
-      primaryActionLabel={
-        view === "netWorth"
-          ? t(
-              wealthHasAccounts
-                ? "netWorth.actions.updateBalances"
-                : "netWorth.actions.addAccount",
-            )
-          : t("common.addEntry")
-      }
       onPrimaryAction={() => {
-        if (viewRef.current === "netWorth") {
-          setCreateAccountRequest((request) => request + 1);
-          return;
-        }
         if (viewRef.current === "transactions") {
           setCreateTransactionRequest((request) => request + 1);
           return;
@@ -192,8 +219,9 @@ function AppContent() {
         );
       }}
     >
-      {view === "dashboard" ? (
+      {view === "overview" ? (
         <RouteContent
+          key={routeKey}
           fallback={<p role="status">{t("common.loading")}</p>}
           focusRequest={routeFocusRequest}
           mainRef={mainRef}
@@ -201,14 +229,23 @@ function AppContent() {
           <DashboardView
             selectedPeriod={selectedPeriod}
             setSelectedPeriod={changePeriod}
-            onNavigate={navigate}
+            onAddTransaction={() =>
+              navigate("transactions", () =>
+                setCreateTransactionRequest((request) => request + 1),
+              )
+            }
+            onReviewAccounts={reviewAccounts}
             onReviewBudget={reviewBudget}
-            onReviewCategory={reviewCategory}
+            onReviewCategory={(category) => reviewTransactions({ category })}
+            onReviewTransaction={(transaction) =>
+              reviewTransactions({
+                month: Number(transaction.date.slice(5, 7)),
+                year: Number(transaction.date.slice(0, 4)),
+                search: transaction.description || transaction.category,
+              })
+            }
+            onViewTransactions={() => reviewTransactions()}
             onCreateBudget={() => {
-              if (viewRef.current === "budgets") {
-                setCreateBudgetRequest((request) => request + 1);
-                return;
-              }
               navigate("budgets", () =>
                 setCreateBudgetRequest((request) => request + 1),
               );
@@ -218,6 +255,7 @@ function AppContent() {
       ) : null}
       {view === "transactions" ? (
         <RouteContent
+          key={routeKey}
           fallback={<p role="status">{t("common.loading")}</p>}
           focusRequest={routeFocusRequest}
           mainRef={mainRef}
@@ -229,21 +267,19 @@ function AppContent() {
           />
         </RouteContent>
       ) : null}
-      {view === "netWorth" ? (
+      {view === "accounts" ? (
         <RouteContent
+          key={routeKey}
           fallback={<p role="status">{t("netWorth.loading")}</p>}
           focusRequest={routeFocusRequest}
           mainRef={mainRef}
         >
-          <NetWorthView
-            setNotice={setNotice}
-            createRequestId={createAccountRequest}
-            onAccountAvailabilityChange={setWealthHasAccounts}
-          />
+          <NetWorthView setNotice={setNotice} />
         </RouteContent>
       ) : null}
       {view === "budgets" ? (
         <RouteContent
+          key={routeKey}
           fallback={<p role="status">{t("common.loading")}</p>}
           focusRequest={routeFocusRequest}
           mainRef={mainRef}
@@ -253,21 +289,40 @@ function AppContent() {
             setSelectedPeriod={changePeriod}
             setNotice={setNotice}
             createRequestId={createBudgetRequest}
+            onReviewTransactions={(category, month, year) =>
+              reviewTransactions({ category, month, year })
+            }
           />
         </RouteContent>
       ) : null}
-      {view === "rules" ? (
+      {view.startsWith("manage") ? (
         <RouteContent
-          fallback={<p role="status">{t("rules.statusLoading")}</p>}
+          key={routeKey}
+          fallback={<p role="status">{t("common.loading")}</p>}
           focusRequest={routeFocusRequest}
           mainRef={mainRef}
         >
-          <RulesView
+          <ManageView
+            section={view as ManageView}
             selectedPeriod={selectedPeriod}
+            setSelectedPeriod={changePeriod}
             setNotice={setNotice}
-            onCurrencyChange={(code) => {
-              setCurrency(code);
+            onNavigate={navigate}
+            onViewTransactions={(month, year) =>
+              reviewTransactions({ month, year })
+            }
+            onOpenTransactionImport={() =>
+              reviewTransactions({ dataAction: "import" })
+            }
+            onOpenBudgetImport={() => {
+              const params = new URLSearchParams({
+                month: String(selectedPeriod.month),
+                year: String(selectedPeriod.year),
+                data: "import",
+              });
+              navigateWithParams("budgets", params);
             }}
+            onCurrencyChange={setCurrency}
           />
         </RouteContent>
       ) : null}
@@ -277,10 +332,7 @@ function AppContent() {
           title={t("notFound.title")}
           summary={t("notFound.summary")}
           actions={
-            <ActionButton
-              icon={LayoutDashboard}
-              onClick={() => navigate("netWorth")}
-            >
+            <ActionButton icon={House} onClick={() => navigate("overview")}>
               {t("notFound.action")}
             </ActionButton>
           }
@@ -317,9 +369,14 @@ function RouteFocus({
   mainRef: React.RefObject<HTMLElement | null>;
 }) {
   useEffect(() => {
-    if (request > 0) {
-      mainRef.current?.focus();
+    if (request <= 0) return;
+    const heading = mainRef.current?.querySelector<HTMLElement>("h1");
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus();
+      return;
     }
+    mainRef.current?.focus();
   }, [mainRef, request]);
 
   return null;
@@ -331,6 +388,16 @@ export default function App() {
       <AppContent />
     </I18nProvider>
   );
+}
+
+function normalizeCompatibilityRoute() {
+  const resolved = resolveRoute(
+    window.location.pathname,
+    window.location.search,
+  );
+  if (resolved.canonicalUrl) {
+    window.history.replaceState({}, "", resolved.canonicalUrl);
+  }
 }
 
 function periodFromUrl(): { month: number; year: number } {

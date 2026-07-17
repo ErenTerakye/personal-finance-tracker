@@ -176,6 +176,56 @@
     place-items: center;
   }
 
+  .data-menu {
+    position: relative;
+  }
+
+  .data-menu > summary {
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .data-menu > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .data-menu-popover {
+    position: absolute;
+    inset-block-start: calc(100% + 0.4rem);
+    inset-inline-end: 0;
+    z-index: 8;
+    display: grid;
+    min-inline-size: min(18rem, calc(100vw - 2rem));
+    padding: 0.45rem;
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+    box-shadow: 0 0.8rem 2rem rgb(5 12 19 / 0.14);
+  }
+
+  .data-menu-popover .button {
+    justify-content: flex-start;
+    inline-size: 100%;
+  }
+
+  .data-menu-popover p {
+    margin: 0.35rem 0.55rem 0.45rem;
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-compact);
+  }
+
+  .activity-item-link {
+    display: contents;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .activity-item:has(.activity-item-link:focus-visible) {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .theme-toggle-icon {
       animation: theme-icon-swap var(--motion-micro) var(--ease-out);

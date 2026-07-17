@@ -18,11 +18,11 @@ would make it stronger without bloating the scope.
   Python and stored as text for predictable round-tripping.
 - FastAPI exposes local JSON endpoints under `/api` and serves the packaged
   React + Vite + TypeScript SPA.
-- The Web UI includes dashboard, transaction, budget, and rules workflows with
-  responsive layouts, accessible dialogs, SVG charts, period controls, route
-  navigation, browser CSV import/export, transaction CSV preview, dashboard
-  report/chart downloads, persistent light/dark/system theme behavior, and
-  English/Turkish language preferences.
+- The Web UI uses a stable Overview, Transactions, Budgets, and Accounts information architecture
+  with focused Manage sections for recurring entries, categories, data, and preferences. It
+  includes responsive layouts, accessible dialogs, SVG charts, period controls, compatibility
+  redirects, browser CSV import/export, transaction CSV preview, report/chart downloads,
+  persistent light/dark/system theme behavior, and English/Turkish language preferences.
 - A static showcase exists for portfolio hosting, while real CRUD remains a
   local Python/SQLite workflow.
 - Total net worth is available through dated asset/liability balance snapshots, CLI commands,
@@ -178,6 +178,21 @@ Completed the compatibility-first structural cleanup without expanding product s
   monthly history, CLI parity, and FastAPI/OpenAPI contracts.
 - Added a fifth Net worth browser destination with English/Turkish copy, account workflows,
   responsive composition, and an accessible SVG chart plus complete data table.
+
+### Web UI Cohesion and Flow
+
+- Consolidated the browser into four primary destinations with one label and icon system at every
+  viewport: Overview, Transactions, Budgets, and Accounts.
+- Unified cashflow orientation, current net-worth context, budget attention, and recent
+  transactions on Overview while keeping full account management in Accounts.
+- Decomposed the mixed Rules surface into Manage sections for Automations, Categories, Data, and
+  Preferences.
+- Stabilized Add transaction as the global command, aligned route headers and primary actions, and
+  added context-preserving links between summary and detail workflows.
+- Preserved legacy bookmarks through tested `/cash-flow`, `/net-worth`, and `/rules` redirects,
+  including browser-history and relevant query-state behavior.
+- Expanded automated accessibility coverage to every canonical route and Manage section at mobile,
+  tablet, and desktop widths.
 - Renamed the Overview's income-minus-expenses concept to monthly net cashflow so it is not confused
   with net worth.
 

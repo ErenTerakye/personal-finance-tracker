@@ -17,13 +17,13 @@ import {
   WalletCards,
 } from "lucide-react";
 import "./net-worth.css";
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useMemo, useReducer, useState } from "react";
 import { api } from "../../api/client";
 import { ActionButton, SubmitButton } from "../../shared/components/actions";
 import { ModalDialog } from "../../shared/components/dialogs";
 import { EmptyState, ErrorBanner } from "../../shared/components/feedback";
 import { Field } from "../../shared/components/fields";
-import { Panel } from "../../shared/components/lists";
+import { PageHeader, Panel } from "../../shared/components/lists";
 import { formatDate, todayIso } from "../../shared/format/dates";
 import { currencySymbol, money, signedMoney } from "../../shared/format/money";
 import { useMutation } from "../../shared/hooks/useMutation";
@@ -58,12 +58,8 @@ type DialogState =
 
 export function NetWorthView({
   setNotice,
-  createRequestId,
-  onAccountAvailabilityChange,
 }: {
   setNotice: (notice: string) => void;
-  createRequestId: number;
-  onAccountAvailabilityChange: (hasAccounts: boolean) => void;
 }) {
   const { t } = useI18n();
   const initial = useMemo(() => readUrlState(), []);
@@ -73,31 +69,6 @@ export function NetWorthView({
   const [dialog, setDialog] = useState<DialogState>(null);
   const [refreshKey, refresh] = useReducer((value: number) => value + 1, 0);
   const resource = useNetWorthData(asOf, months, includeArchived, refreshKey);
-  const handledCreateRequest = useRef(0);
-
-  useEffect(() => {
-    if (
-      createRequestId > handledCreateRequest.current &&
-      resource.data !== undefined
-    ) {
-      handledCreateRequest.current = createRequestId;
-      setDialog(
-        resource.data.summary.active_account_count > 0
-          ? { kind: "checkIn" }
-          : { kind: "add" },
-      );
-    }
-  }, [createRequestId, resource.data]);
-
-  useEffect(() => {
-    onAccountAvailabilityChange(
-      Boolean(resource.data?.summary?.active_account_count),
-    );
-  }, [
-    onAccountAvailabilityChange,
-    resource.data?.summary?.active_account_count,
-  ]);
-
   function updateUrl(nextAsOf: string, nextMonths: number) {
     const url = new URL(window.location.href);
     if (nextAsOf) url.searchParams.set("as_of", nextAsOf);
@@ -143,6 +114,36 @@ export function NetWorthView({
       className={`net-worth-view${pending ? " is-refreshing" : ""}`}
       aria-busy={pending}
     >
+      <PageHeader
+        eyebrow={t("netWorth.eyebrow")}
+        title={t("netWorth.accountsTitle")}
+        summary={t("netWorth.accountsSummary")}
+        actions={
+          <div className="wealth-header-actions">
+            <ActionButton
+              icon={accountCount ? WalletCards : CircleDollarSign}
+              onClick={() =>
+                setDialog(accountCount ? { kind: "checkIn" } : { kind: "add" })
+              }
+            >
+              {t(
+                accountCount
+                  ? "netWorth.actions.updateBalances"
+                  : "netWorth.actions.addAccount",
+              )}
+            </ActionButton>
+            {accountCount ? (
+              <ActionButton
+                icon={CircleDollarSign}
+                variant="secondary"
+                onClick={() => setDialog({ kind: "add" })}
+              >
+                {t("netWorth.actions.addAccount")}
+              </ActionButton>
+            ) : null}
+          </div>
+        }
+      />
       {resource.status === "error" ? (
         <ErrorBanner
           message={resource.error.message}

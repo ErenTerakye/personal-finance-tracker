@@ -1,11 +1,12 @@
 import {
   BarChart3,
-  Landmark,
-  LayoutDashboard,
-  PiggyBank,
+  Database,
+  House,
   Plus,
   ReceiptText,
-  SlidersHorizontal,
+  Settings2,
+  Target,
+  WalletCards,
 } from "lucide-react";
 import { ReactNode } from "react";
 import "./AppShell.css";
@@ -13,28 +14,35 @@ import { Notice } from "../shared/components/feedback";
 import { useMediaQuery } from "../shared/hooks/useMediaQuery";
 import { useI18n } from "../shared/i18n/I18nProvider";
 import { ThemeToggle } from "../shared/theme/ThemeToggle";
-import { RouteView, View, viewMeta, viewOrder } from "./routes";
+import {
+  isManageView,
+  primaryViewOrder,
+  type PrimaryView,
+  type RouteView,
+  type View,
+  viewMeta,
+} from "./routes";
 
 const navIcons = {
-  dashboard: LayoutDashboard,
-  netWorth: Landmark,
+  overview: House,
   transactions: ReceiptText,
-  budgets: PiggyBank,
-  rules: SlidersHorizontal,
+  budgets: Target,
+  accounts: WalletCards,
 };
 
-function LanguageToggle() {
+export function LanguageToggle({ labeled = false }: { labeled?: boolean }) {
   const { locale, toggleLocale, t } = useI18n();
   const label = t("common.toggleLanguage");
   return (
     <button
-      className="lang-toggle"
+      className={`lang-toggle${labeled ? " is-labeled" : ""}`}
       type="button"
       aria-label={label}
       title={label}
       onClick={toggleLocale}
     >
       <span>{locale === "en" ? "TR" : "EN"}</span>
+      {labeled ? <span>{t("manage.preferences.language")}</span> : null}
     </button>
   );
 }
@@ -44,7 +52,6 @@ export function AppShell({
   notice,
   mainRef,
   onNavigate,
-  primaryActionLabel,
   onPrimaryAction,
   children,
 }: {
@@ -52,7 +59,6 @@ export function AppShell({
   notice: string;
   mainRef: React.RefObject<HTMLElement | null>;
   onNavigate: (view: View) => void;
-  primaryActionLabel: string;
   onPrimaryAction: () => void;
   children: ReactNode;
 }) {
@@ -62,65 +68,14 @@ export function AppShell({
   const navigation = (className: string) => (
     <nav aria-label={t("common.primaryNavigation")} className={className}>
       <ul>
-        {viewOrder.map((item) => {
-          const Icon = navIcons[item];
-          const active = view === item;
-          const bottomNavigationActive =
-            active && className === "bottom-navigation";
-          return (
-            <li key={item}>
-              <a
-                href={viewMeta[item].path}
-                aria-label={
-                  className === "bottom-navigation"
-                    ? t(`nav.${item}`)
-                    : undefined
-                }
-                aria-current={active ? "page" : undefined}
-                onClick={(event) => {
-                  if (!shouldHandleNavigation(event)) return;
-                  event.preventDefault();
-                  onNavigate(item);
-                }}
-              >
-                <span className="navigation-icon" aria-hidden="true">
-                  <Icon
-                    className={
-                      bottomNavigationActive && item !== "rules"
-                        ? "navigation-filled-icon"
-                        : undefined
-                    }
-                    size={20}
-                    fill={
-                      bottomNavigationActive && item !== "rules"
-                        ? "currentColor"
-                        : "none"
-                    }
-                    strokeWidth={
-                      bottomNavigationActive && item === "rules" ? 2.75 : 2
-                    }
-                  />
-                  {bottomNavigationActive &&
-                  (item === "transactions" || item === "budgets") ? (
-                    <Icon
-                      className={`navigation-icon-detail navigation-icon-detail--${item}`}
-                      size={20}
-                      fill="none"
-                      strokeWidth={item === "budgets" ? 3 : 2}
-                    />
-                  ) : null}
-                </span>
-                <span>
-                  {t(
-                    className === "bottom-navigation"
-                      ? `navShort.${item}`
-                      : `nav.${item}`,
-                  )}
-                </span>
-              </a>
-            </li>
-          );
-        })}
+        {primaryViewOrder.map((item) => (
+          <PrimaryNavigationItem
+            key={item}
+            item={item}
+            active={view === item}
+            onNavigate={onNavigate}
+          />
+        ))}
       </ul>
     </nav>
   );
@@ -138,15 +93,36 @@ export function AppShell({
           <Brand onNavigate={onNavigate} />
           {navigation("rail-navigation")}
           <button
-            className="rail-create button"
+            className="rail-create button primary"
             type="button"
             data-dialog-return-focus
             onClick={onPrimaryAction}
           >
             <Plus aria-hidden="true" size={19} />
-            <span>{primaryActionLabel}</span>
+            <span>{t("common.addTransaction")}</span>
           </button>
+          <nav
+            className="rail-manage-navigation"
+            aria-label={t("manage.navigationLabel")}
+          >
+            <a
+              href={viewMeta.manageAutomations.path}
+              aria-current={isManageView(view) ? "page" : undefined}
+              onClick={(event) => {
+                if (!shouldHandleNavigation(event)) return;
+                event.preventDefault();
+                onNavigate("manageAutomations");
+              }}
+            >
+              <Settings2 aria-hidden="true" size={19} />
+              <span>{t("nav.manage")}</span>
+            </a>
+          </nav>
           <div className="rail-utilities">
+            <span className="local-data-status">
+              <Database aria-hidden="true" size={15} />
+              {t("common.localSqlite")}
+            </span>
             <LanguageToggle />
             <ThemeToggle />
           </div>
@@ -159,15 +135,31 @@ export function AppShell({
           <div className="compact-utilities">
             <LanguageToggle />
             <ThemeToggle />
+            <a
+              className="button secondary compact-manage"
+              href={viewMeta.manageAutomations.path}
+              aria-label={t("nav.manage")}
+              aria-current={isManageView(view) ? "page" : undefined}
+              onClick={(event) => {
+                if (!shouldHandleNavigation(event)) return;
+                event.preventDefault();
+                onNavigate("manageAutomations");
+              }}
+            >
+              <Settings2 aria-hidden="true" size={18} />
+              <span>{t("nav.manage")}</span>
+            </a>
             <button
               className="button primary compact-create"
               type="button"
-              aria-label={primaryActionLabel}
+              aria-label={t("common.addTransaction")}
               data-dialog-return-focus
               onClick={onPrimaryAction}
             >
               <Plus aria-hidden="true" />
-              <span className="compact-create-label">{primaryActionLabel}</span>
+              <span className="compact-create-label">
+                {t("common.addTransaction")}
+              </span>
             </button>
           </div>
         </header>
@@ -201,6 +193,37 @@ export function AppShell({
   );
 }
 
+function PrimaryNavigationItem({
+  item,
+  active,
+  onNavigate,
+}: {
+  item: PrimaryView;
+  active: boolean;
+  onNavigate: (view: View) => void;
+}) {
+  const { t } = useI18n();
+  const Icon = navIcons[item];
+  return (
+    <li>
+      <a
+        href={viewMeta[item].path}
+        aria-current={active ? "page" : undefined}
+        onClick={(event) => {
+          if (!shouldHandleNavigation(event)) return;
+          event.preventDefault();
+          onNavigate(item);
+        }}
+      >
+        <span className="navigation-icon" aria-hidden="true">
+          <Icon size={20} strokeWidth={2} />
+        </span>
+        <span>{t(`nav.${item}`)}</span>
+      </a>
+    </li>
+  );
+}
+
 function Brand({
   onNavigate,
   compact = false,
@@ -216,7 +239,7 @@ function Brand({
       onClick={(event) => {
         if (!shouldHandleNavigation(event)) return;
         event.preventDefault();
-        onNavigate("netWorth");
+        onNavigate("overview");
       }}
     >
       <span className="brand-mark" aria-hidden="true">

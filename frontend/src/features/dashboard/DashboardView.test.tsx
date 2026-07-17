@@ -36,7 +36,7 @@ describe("dashboard workflow", () => {
     await userEvent.click(within(alert).getByRole("button", { name: "Retry" }));
 
     expect(
-      await screen.findByRole("heading", { name: "June 2026" }),
+      await screen.findByRole("heading", { name: "Overview" }),
     ).toBeVisible();
     expect(dashboardAttempts).toBe(2);
   });
@@ -47,7 +47,7 @@ describe("dashboard workflow", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: "June 2026" }),
+      await screen.findByRole("heading", { name: "Overview" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Month report").closest("a")).toHaveAttribute(
       "href",
@@ -80,7 +80,7 @@ describe("dashboard workflow", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: "June 2026" }),
+      await screen.findByRole("heading", { name: "Overview" }),
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /^Next month,/ }));
 
@@ -96,7 +96,7 @@ describe("dashboard workflow", () => {
     const fetchMock = mockFetch({ "/api/dashboard": dashboardPayload({}) });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "June 2026" });
+    await screen.findByRole("heading", { name: "Overview" });
 
     const next = screen.getByRole("button", { name: /^Next month,/ });
     fireEvent.click(next);
@@ -118,7 +118,7 @@ describe("dashboard workflow", () => {
 
     render(<App />);
 
-    await screen.findByRole("heading", { name: "June 2026" });
+    await screen.findByRole("heading", { name: "Overview" });
     const toolbar = screen.getByLabelText("Dashboard period and export tools");
 
     expect(
@@ -138,8 +138,8 @@ describe("dashboard workflow", () => {
       within(actions)
         .getAllByRole("button")
         .map((button) => button.textContent),
-    ).toEqual(["Set budget"]);
-    expect(actions.closest(".dashboard-command-row")).toContainElement(toolbar);
+    ).toEqual(["Add transaction", "Set budget"]);
+    expect(actions.closest(".page-heading")).toContainElement(toolbar);
     expect(document.querySelector(".quick-actions")).not.toBeInTheDocument();
   });
 
@@ -165,7 +165,7 @@ describe("dashboard workflow", () => {
 
     render(<App />);
 
-    await screen.findByRole("heading", { name: "June 2026" });
+    await screen.findByRole("heading", { name: "Overview" });
     const appBar = document.querySelector<HTMLElement>(".compact-app-bar")!;
     const popover = document.querySelector<HTMLElement>(".artifact-popover")!;
     const trigger = screen.getByRole("button", {
@@ -235,7 +235,7 @@ describe("dashboard workflow", () => {
 
     render(<App />);
 
-    await screen.findByRole("heading", { name: "June 2026" });
+    await screen.findByRole("heading", { name: "Overview" });
     const trigger = screen.getByRole("button", { name: /^Choose period,/ });
     const picker =
       document.querySelector<HTMLDialogElement>(".period-popover")!;
@@ -257,7 +257,7 @@ describe("dashboard workflow", () => {
   });
 
   it("chooses a month directly from the period picker", async () => {
-    window.history.replaceState({}, "", "/cash-flow?month=6&year=2026");
+    window.history.replaceState({}, "", "/?month=6&year=2026");
     const fetchMock = mockFetch({
       "/api/dashboard": dashboardPayload({}),
     });
@@ -277,14 +277,14 @@ describe("dashboard workflow", () => {
 
     render(<App />);
 
-    await screen.findByRole("heading", { name: "June 2026" });
+    await screen.findByRole("heading", { name: "Overview" });
     await userEvent.click(
       screen.getByRole("button", { name: /^Choose period,/ }),
     );
 
     const picker = screen.getByRole("dialog", { name: "Choose a period" });
     expect(
-      within(picker).getByRole("button", { name: "July" }),
+      within(picker).getByRole("button", { name: "June" }),
     ).toHaveAttribute("aria-pressed", "true");
 
     await userEvent.click(
@@ -310,7 +310,7 @@ describe("dashboard workflow", () => {
     });
   });
 
-  it("keeps one global entry action that moves creation to Activity", async () => {
+  it("keeps one global transaction action that moves creation to Transactions", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
       "/api/transactions": { transactions: [] },
@@ -319,12 +319,12 @@ describe("dashboard workflow", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "June 2026" });
+    await screen.findByRole("heading", { name: "Overview" });
     expect(
-      within(screen.getByLabelText("Next actions")).queryByRole("button", {
-        name: "Add entry",
+      within(screen.getByLabelText("Next actions")).getByRole("button", {
+        name: "Add transaction",
       }),
-    ).not.toBeInTheDocument();
+    ).toBeVisible();
     await userEvent.click(
       document.querySelector<HTMLButtonElement>(".rail-create")!,
     );
@@ -343,7 +343,7 @@ describe("dashboard workflow", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "June 2026" });
+    await screen.findByRole("heading", { name: "Overview" });
     await userEvent.click(
       within(screen.getByLabelText("Next actions")).getByRole("button", {
         name: "Set budget",
@@ -356,16 +356,16 @@ describe("dashboard workflow", () => {
     expect(within(dialog).getByLabelText("Year")).toHaveValue(2026);
   });
 
-  it("uses Add entry consistently for every global create command", async () => {
+  it("uses Add transaction consistently for every global create command", async () => {
     mockCompactLayout();
     mockFetch({ "/api/dashboard": dashboardPayload({}) });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "June 2026" });
+    await screen.findByRole("heading", { name: "Overview" });
 
     expect(document.querySelector(".rail-create")).not.toBeInTheDocument();
     expect(document.querySelector(".compact-create")).toHaveAccessibleName(
-      "Add entry",
+      "Add transaction",
     );
   });
 
@@ -420,7 +420,7 @@ describe("dashboard workflow", () => {
     ).toHaveAttribute("value", "100");
     expect(
       within(panel).queryByRole("button", {
-        name: "Review Dining limit in Plan",
+        name: "Review Dining limit in Budgets",
       }),
     ).not.toBeInTheDocument();
 
@@ -437,7 +437,7 @@ describe("dashboard workflow", () => {
     expect(within(panel).getAllByText("Review limit")).toHaveLength(4);
     expect(
       within(panel).getByRole("button", {
-        name: "Review Dining limit in Plan",
+        name: "Review Dining limit in Budgets",
       }),
     ).toBeInTheDocument();
 
@@ -475,7 +475,7 @@ describe("dashboard workflow", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("opens the matching period and category in Plan from a risk", async () => {
+  it("opens the matching period and category in Budgets from a risk", async () => {
     const travelStatus = attentionStatus(
       1,
       "Travel & Fun",
@@ -494,7 +494,7 @@ describe("dashboard workflow", () => {
 
     await userEvent.click(
       await screen.findByRole("button", {
-        name: "Review Travel & Fun overage in Plan",
+        name: "Review Travel & Fun overage in Budgets",
       }),
     );
 
@@ -503,13 +503,15 @@ describe("dashboard workflow", () => {
       "?month=6&year=2026&category=Travel+%26+Fun",
     );
     expect(
-      await screen.findByRole("heading", { name: "Your June 2026 plan" }),
+      await screen.findByRole("heading", { name: "Budgets" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("searchbox", { name: "Find a category" }),
     ).toHaveValue("Travel & Fun");
-    expect(document.title).toBe("Plan | Personal Finance Tracker");
-    await waitFor(() => expect(document.querySelector("main")).toHaveFocus());
+    expect(document.title).toBe("Budgets | Personal Finance Tracker");
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Budgets" })).toHaveFocus(),
+    );
   });
 
   it("uses one heading for the cashflow trend emphasis", async () => {
@@ -540,7 +542,7 @@ describe("dashboard workflow", () => {
     render(<App />);
 
     const activityHeading = await screen.findByRole("heading", {
-      name: "Recent activity",
+      name: "Recent transactions",
     });
     const mixHeading = screen.getByRole("heading", { name: "Expense mix" });
     const analysisPair = document.querySelector(".dashboard-analysis-pair");

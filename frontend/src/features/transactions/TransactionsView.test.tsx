@@ -32,7 +32,7 @@ describe("transactions workflow", () => {
       "Add your first entry for this period to start building your history.",
     );
     expect(
-      within(emptyState).getByRole("button", { name: "Add entry" }),
+      within(emptyState).getByRole("button", { name: "Add transaction" }),
     ).toBeVisible();
     expect(emptyState).not.toHaveTextContent("TRANSACTIONS.EMPTY.EYEBROW");
 
@@ -67,7 +67,7 @@ describe("transactions workflow", () => {
       "Try a different search or clear your filters.",
     );
     expect(
-      within(emptyState).queryByRole("button", { name: "Add entry" }),
+      within(emptyState).queryByRole("button", { name: "Add transaction" }),
     ).toBeNull();
     await userEvent.click(
       within(emptyState).getByRole("button", {
@@ -193,7 +193,7 @@ describe("transactions workflow", () => {
     );
 
     const snapshot = await screen.findByRole("region", {
-      name: "Activity snapshot",
+      name: "Transaction summary",
     });
     expect(snapshot).toHaveTextContent("Money in$125.00");
     expect(snapshot).toHaveTextContent("Money out$45.90");
@@ -202,7 +202,7 @@ describe("transactions workflow", () => {
     expect(screen.getByText("Monday, June 1")).toBeVisible();
 
     await userEvent.selectOptions(
-      screen.getByLabelText("Sort activity"),
+      screen.getByLabelText("Sort transactions"),
       "oldest",
     );
     expect(document.querySelector(".ledger-day time")).toHaveTextContent(
@@ -239,7 +239,7 @@ describe("transactions workflow", () => {
     await userEvent.click(
       within(
         document.querySelector<HTMLElement>(".compact-app-bar")!,
-      ).getByRole("button", { name: "Add entry" }),
+      ).getByRole("button", { name: "Add transaction" }),
     );
     const dialog = screen.getByRole("dialog", { name: "Add transaction" });
     await userEvent.type(within(dialog).getByLabelText("Amount"), "45.90");
@@ -266,7 +266,7 @@ describe("transactions workflow", () => {
       await screen.findByRole("link", { name: /Transactions|Activity/i }),
     );
     await userEvent.click(
-      screen.getAllByRole("button", { name: "Add entry" })[0],
+      screen.getAllByRole("button", { name: "Add transaction" })[0],
     );
 
     const dialog = await screen.findByRole("dialog", {

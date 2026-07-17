@@ -10,12 +10,14 @@ export function PageHeader({
   eyebrow,
   title,
   summary,
+  context,
   actions,
   className = "",
 }: {
   eyebrow?: string;
   title: string;
   summary: string;
+  context?: ReactNode;
   actions?: ReactNode;
   className?: string;
 }) {
@@ -28,6 +30,7 @@ export function PageHeader({
         {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
         <h1 id="page-title">{title}</h1>
         <p>{summary}</p>
+        {context ? <div className="page-context">{context}</div> : null}
       </div>
       {actions ? <div className="page-actions">{actions}</div> : null}
     </section>
@@ -264,8 +267,10 @@ export function BudgetPressureList({
 
 export function ActivityList({
   transactions,
+  onSelect,
 }: {
   transactions: TransactionRecord[];
+  onSelect?: (transaction: TransactionRecord) => void;
 }) {
   const { t } = useI18n();
 
@@ -291,31 +296,62 @@ export function ActivityList({
             className={`activity-item ${isIncome ? "income" : "expense"}`}
             key={transaction.id}
           >
-            <div className="activity-copy">
-              <strong className="activity-category">
-                {transaction.category}
-              </strong>
-              {transaction.description ? (
-                <span className="activity-description">
-                  {transaction.description}
-                </span>
-              ) : null}
-            </div>
-            <div className="activity-value">
-              <strong className="activity-amount">
-                {signedMoney(signedAmount)}
-              </strong>
-              <span className="activity-meta">
-                <span>{t(isIncome ? "common.income" : "common.expense")}</span>
-                <span aria-hidden="true">·</span>
-                <time dateTime={transaction.date}>
-                  {formatActivityDate(transaction.date)}
-                </time>
-              </span>
-            </div>
+            {onSelect ? (
+              <button
+                className="activity-item-link"
+                type="button"
+                onClick={() => onSelect(transaction)}
+              >
+                <ActivityItemContent
+                  transaction={transaction}
+                  signedAmount={signedAmount}
+                  isIncome={isIncome}
+                />
+              </button>
+            ) : (
+              <ActivityItemContent
+                transaction={transaction}
+                signedAmount={signedAmount}
+                isIncome={isIncome}
+              />
+            )}
           </li>
         );
       })}
     </ul>
+  );
+}
+
+function ActivityItemContent({
+  transaction,
+  signedAmount,
+  isIncome,
+}: {
+  transaction: TransactionRecord;
+  signedAmount: number;
+  isIncome: boolean;
+}) {
+  const { t } = useI18n();
+  return (
+    <>
+      <div className="activity-copy">
+        <strong className="activity-category">{transaction.category}</strong>
+        {transaction.description ? (
+          <span className="activity-description">
+            {transaction.description}
+          </span>
+        ) : null}
+      </div>
+      <div className="activity-value">
+        <strong className="activity-amount">{signedMoney(signedAmount)}</strong>
+        <span className="activity-meta">
+          <span>{t(isIncome ? "common.income" : "common.expense")}</span>
+          <span aria-hidden="true">·</span>
+          <time dateTime={transaction.date}>
+            {formatActivityDate(transaction.date)}
+          </time>
+        </span>
+      </div>
+    </>
   );
 }

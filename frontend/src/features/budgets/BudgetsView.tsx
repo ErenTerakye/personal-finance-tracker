@@ -14,6 +14,7 @@ import {
   ChevronRight,
   CircleGauge,
   Download,
+  MoreHorizontal,
   PiggyBank,
   Search,
   Trash2,
@@ -55,11 +56,13 @@ export function BudgetsView({
   setSelectedPeriod,
   setNotice,
   createRequestId,
+  onReviewTransactions,
 }: {
   selectedPeriod: { month: number; year: number };
   setSelectedPeriod: (period: { month: number; year: number }) => void;
   setNotice: (notice: string) => void;
   createRequestId: number;
+  onReviewTransactions: (category: string, month: number, year: number) => void;
 }) {
   const [filters, setFilters] = useState<BudgetFilters>(() =>
     readBudgetFilters(selectedPeriod),
@@ -78,8 +81,8 @@ export function BudgetsView({
   const periodTransition = usePeriodTransition(requestedPeriod, budgetResource);
   const budgets = periodTransition.data?.budgets ?? [];
   const statuses = periodTransition.data?.statuses ?? [];
-  const [sortBy, setSortBy] = useState<"priority" | "category" | "spent">(
-    "priority",
+  const [sortBy, setSortBy] = useState<"priority" | "category" | "spent">(() =>
+    readBudgetSort(),
   );
   const visibleStatuses = statuses.filter((status) =>
     filters.category
@@ -102,8 +105,12 @@ export function BudgetsView({
       Number(b.percent_used) - Number(a.percent_used)
     );
   });
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    () => readBudgetCategory() || null,
+  );
+  const [inspectorOpen, setInspectorOpen] = useState(() =>
+    Boolean(readBudgetCategory()),
+  );
   const inspectorId = useId();
   const inspectorTitleId = useId();
   const categoryButtonRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -142,6 +149,12 @@ export function BudgetsView({
     handledCreateRequest.current = createRequestId;
     openCreate();
   }, [createRequestId]);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("data") === "import") {
+      setImportOpen(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!inspectorOpen) return;
@@ -300,23 +313,46 @@ export function BudgetsView({
       </p>
       <PageHeader
         eyebrow={t("budgets.eyebrow")}
-        title={t("budgets.planTitle", {
+        title={t("budgets.title")}
+        summary={t("budgets.routeSummary", {
           period: periodLabel(presentedPeriod.month, presentedPeriod.year),
         })}
-        summary={t("budgets.planSummary")}
         className="plan-page-heading"
+        context={
+          <PeriodControl
+            label={t("budgets.filterPeriod")}
+            value={requestedPeriod}
+            onChange={(period) => updateFilters({ ...filters, ...period })}
+          />
+        }
         actions={
           <div className="action-cluster">
             <ActionButton icon={PiggyBank} onClick={openCreate}>
               {t("common.setBudget")}
             </ActionButton>
-            <ActionButton
-              icon={Upload}
-              variant="secondary"
-              onClick={() => setImportOpen(true)}
-            >
-              {t("common.importCsv")}
-            </ActionButton>
+            <details className="data-menu">
+              <summary className="button secondary">
+                <MoreHorizontal aria-hidden="true" size={18} />
+                <span>{t("transactions.dataMenu")}</span>
+              </summary>
+              <div className="data-menu-popover">
+                <ActionButton
+                  icon={Upload}
+                  variant="ghost"
+                  onClick={() => setImportOpen(true)}
+                >
+                  {t("common.importCsv")}
+                </ActionButton>
+                <DownloadLink
+                  icon={Download}
+                  href={artifactUrls.budgetsCsv(filters)}
+                  download
+                  variant="ghost"
+                >
+                  {t("common.exportCsv")}
+                </DownloadLink>
+              </div>
+            </details>
           </div>
         }
       />
@@ -436,14 +472,6 @@ export function BudgetsView({
               <h2 id="plan-board-title">{t("budgets.board.title")}</h2>
               <p>{t("budgets.board.summary", { count: budgets.length })}</p>
             </div>
-            <DownloadLink
-              icon={Download}
-              href={artifactUrls.budgetsCsv(filters)}
-              download
-              variant="secondary"
-            >
-              {t("common.exportCsv")}
-            </DownloadLink>
           </header>
 
           <div className="plan-toolbar">
@@ -487,7 +515,10 @@ export function BudgetsView({
                       name="plan-sort"
                       value={option}
                       checked={sortBy === option}
-                      onChange={() => setSortBy(option)}
+                      onChange={() => {
+                        setSortBy(option);
+                        writeBudgetSort(option);
+                      }}
                     />
                     <span>{label}</span>
                   </label>
@@ -675,6 +706,19 @@ export function BudgetsView({
                       </p>
                       <div className="plan-inspector-actions">
                         <button
+                          className="button secondary"
+                          type="button"
+                          onClick={() =>
+                            onReviewTransactions(
+                              selectedStatus.budget.category,
+                              selectedStatus.budget.month,
+                              selectedStatus.budget.year,
+                            )
+                          }
+                        >
+                          {t("budgets.inspector.viewTransactions")}
+                        </button>
+                        <button
                           className="button primary"
                           type="button"
                           onClick={() => openEdit(selectedStatus.budget)}
@@ -772,4 +816,20 @@ export function BudgetsView({
       </ModalDialog>
     </div>
   );
+}
+
+function readBudgetCategory(): string {
+  return new URLSearchParams(window.location.search).get("category") ?? "";
+}
+
+function readBudgetSort(): "priority" | "category" | "spent" {
+  const value = new URLSearchParams(window.location.search).get("sort");
+  return value === "category" || value === "spent" ? value : "priority";
+}
+
+function writeBudgetSort(value: "priority" | "category" | "spent") {
+  const url = new URL(window.location.href);
+  if (value === "priority") url.searchParams.delete("sort");
+  else url.searchParams.set("sort", value);
+  window.history.replaceState({}, "", `${url.pathname}${url.search}`);
 }

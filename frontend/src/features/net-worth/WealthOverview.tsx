@@ -31,13 +31,12 @@ type OverviewActions = {
 };
 
 export function WealthFirstUse({ onAdd }: { onAdd: () => void }) {
-  const { t, tUpper } = useI18n();
+  const { t } = useI18n();
   return (
-    <section className="wealth-onboarding" aria-labelledby="page-title">
+    <section className="wealth-onboarding" aria-labelledby="wealth-first-title">
       <div className="wealth-onboarding-copy">
-        <p className="eyebrow">{tUpper("netWorth.firstUse.eyebrow")}</p>
-        <h1 id="page-title">{t("netWorth.title")}</h1>
-        <p className="wealth-onboarding-lede">{t("netWorth.firstUse.title")}</p>
+        <p className="eyebrow">{t("netWorth.firstUse.eyebrow")}</p>
+        <h2 id="wealth-first-title">{t("netWorth.firstUse.title")}</h2>
         <p>{t("netWorth.firstUse.message")}</p>
         <ActionButton icon={Plus} onClick={onAdd}>
           {t("netWorth.actions.addAccount")}
@@ -133,7 +132,6 @@ export function WealthOverview({
   onDateChange,
   onRangeChange,
   onCheckIn,
-  onAdd,
 }: {
   data: NetWorthOverview;
   asOf: string;
@@ -142,7 +140,7 @@ export function WealthOverview({
   onDateChange: (value: string) => void;
   onRangeChange: (value: NetWorthRange) => void;
 } & OverviewActions) {
-  const { t, tUpper } = useI18n();
+  const { t } = useI18n();
   const total = Number(data.summary.total_net_worth);
   const change =
     data.comparison.change_amount === null
@@ -156,22 +154,6 @@ export function WealthOverview({
 
   return (
     <>
-      <header className="wealth-page-header">
-        <div>
-          <p className="eyebrow">{tUpper("netWorth.eyebrow")}</p>
-          <h1 id="page-title">{t("netWorth.title")}</h1>
-          <p>{t("netWorth.summary")}</p>
-        </div>
-        <div className="wealth-header-actions">
-          <ActionButton icon={WalletCards} onClick={onCheckIn}>
-            {t("netWorth.actions.updateBalances")}
-          </ActionButton>
-          <ActionButton icon={Plus} variant="secondary" onClick={onAdd}>
-            {t("netWorth.actions.addAccount")}
-          </ActionButton>
-        </div>
-      </header>
-
       <WealthToolbar
         asOf={asOf}
         months={months}

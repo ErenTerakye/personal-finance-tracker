@@ -94,7 +94,7 @@ export function ActivityLedger({
           ) : (
             <button className="button primary" type="button" onClick={onCreate}>
               <Plus aria-hidden="true" size={18} />
-              <span>{t("common.addEntry")}</span>
+              <span>{t("common.addTransaction")}</span>
             </button>
           )
         }

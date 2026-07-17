@@ -69,6 +69,14 @@ The browser uses small custom resource and mutation hooks for request cancellati
 guards, error normalization, duplicate-submit prevention, and explicit refresh. It does not use a
 global cache, optimistic updates, automatic retries, or background revalidation.
 
+Browser composition exposes exactly four primary destinations: Overview (`/`), Transactions
+(`/transactions`), Budgets (`/budgets`), and Accounts (`/accounts`). Lower-frequency setup is
+secondary under `/manage/*`. The app layer owns canonical-route metadata, compatibility redirects,
+document titles, route focus, browser-history continuity, and cross-feature context handoff.
+Feature modules continue to own their workflows and never import one another. Compatibility paths
+translate `/cash-flow` to `/`, `/net-worth` to `/accounts`, and `/rules` to
+`/manage/automations`, retaining only relevant query parameters.
+
 ## Styling, accessibility, and browser policy
 
 Global CSS is split into the ordered native cascade layers `tokens`, `reset`, `base`, `layout`,
@@ -102,7 +110,8 @@ Connections enable foreign keys, WAL, a busy timeout, and `synchronous=NORMAL` w
 dates remain ISO text.
 
 The 36 CLI commands, 40 HTTP operations, OpenAPI schema names, CSV headers, SQLite schema/indexes,
-browser routes, security headers, and package entrypoints frozen by
+documented canonical and compatibility browser routes, security headers, and package entrypoints
+frozen by
 [`ARCHITECTURE_CLEANUP_SPEC.md`](ARCHITECTURE_CLEANUP_SPEC.md) are compatibility contracts. Tests
 characterize those contracts, and generated OpenAPI output is changed only through the generator.
 

@@ -126,9 +126,9 @@ templates, settings, and account histories in a separate `demo.sqlite3`.
 
 ## Web UI
 
-The shipped information architecture is Net worth, Cash flow, Activity, Plan, and Automations,
-backed by a semantic ledger-editorial design system, inline compact utilities with bottom
-navigation, a persistent wide rail, progressive disclosures, self-hosted typography, and
+The shipped information architecture is Overview, Transactions, Budgets, and Accounts, backed by
+a semantic ledger-editorial design system, four-item compact bottom navigation, a persistent wide
+rail, a visible secondary Manage area, progressive disclosures, self-hosted typography, and
 accessibility/responsive verification.
 
 The Web UI is an intentional scope expansion from the original CLI-first milestone while preserving the local-first architecture. It runs with:
@@ -141,18 +141,23 @@ The Python app exposes JSON endpoints under `/api` and serves the compiled React
 
 Supported browser workflows:
 
-- Personal Finance Tracker dashboard with a six-month cashflow trend, compact period controls, monthly KPI cards, functional browser-rendered charts, recent transactions, budget pressure, and category mix.
-- Route-aware SPA navigation for `/`, `/cash-flow`, `/transactions`, `/budgets`, and `/rules`, with
-  compatibility redirects from `/net-worth`.
-- A wealth-first Net worth home with as-of position, integrated history, account movement and
+- Unified Overview at `/` with cashflow orientation, a concise net-worth summary, recent
+  transactions, budget pressure, and context-preserving links into detailed work.
+- Route-aware SPA navigation for `/`, `/transactions`, `/budgets`, and `/accounts`, with Manage at
+  `/manage/automations`, `/manage/categories`, `/manage/data`, and `/manage/preferences`.
+- Compatibility redirects from `/cash-flow`, `/net-worth`, and `/rules` to their canonical
+  destinations while retaining relevant query context.
+- An Accounts workspace with as-of position, integrated history, account movement and
   composition analytics, coverage facts, atomic balance check-ins, account/snapshot workflows, and
   an accessible chart/table.
 - Transaction add, edit, delete, and filtering through native dialog workflows.
 - Budget set/update, delete, filtering, and budget status comparison with pressure as the primary view.
 - Browser CSV import/export for transactions and budgets, reusing the same CSV validation and formatting rules as the CLI.
 - Browser transaction CSV preview before import, showing valid rows, invalid rows, duplicate rows, and category alias changes.
-- Rules view for category aliases and recurring monthly transaction templates.
-- Dashboard downloads for monthly and trend text reports plus PNG charts generated through the Python report/chart layers.
+- Focused Manage sections for recurring templates, category aliases, local data operations,
+  currency, language, and theme preferences.
+- Overview downloads for monthly and trend text reports plus PNG charts generated through the
+  Python report/chart layers.
 
 Browser support policy: target Baseline 2026-capable browsers. Newly available platform features, such as native dialogs and popovers, SVG chart affordances, container queries, color-scheme-aware dark mode, same-document view transitions, and reduced-motion-aware animation, are allowed when they are progressive enhancements and the core local CRUD workflows remain usable without large polyfills.
 

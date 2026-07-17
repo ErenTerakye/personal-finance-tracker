@@ -35,8 +35,8 @@ const routes = [
     budget: budgets.routeCss,
   },
   {
-    label: "rules route CSS",
-    source: "src/features/rules/RulesView.tsx",
+    label: "manage route CSS",
+    source: "src/features/manage/ManageView.tsx",
     budget: budgets.routeCss,
   },
   {

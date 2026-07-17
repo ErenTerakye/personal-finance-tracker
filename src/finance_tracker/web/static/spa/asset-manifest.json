@@ -39,74 +39,96 @@
     "file": "assets/ibm-plex-mono-latin-ext-600-normal-D38SheWl.woff2",
     "src": "../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-600-normal.woff2"
   },
-  "_CsvImportDialog-BgKAuhIN.js": {
-    "file": "assets/CsvImportDialog-BgKAuhIN.js",
+  "_CsvImportDialog-D1GttLqM.css": {
+    "file": "assets/CsvImportDialog-D1GttLqM.css",
+    "src": "_CsvImportDialog-D1GttLqM.css"
+  },
+  "_CsvImportDialog-DvZLo3tI.js": {
+    "file": "assets/CsvImportDialog-DvZLo3tI.js",
     "name": "CsvImportDialog",
     "imports": [
-      "_useMutation-CIgwhAOq.js",
+      "_upload-BaVP1hI6.js",
+      "_useMutation-BnRMAU4N.js",
       "index.html"
     ],
     "css": [
       "assets/CsvImportDialog-D1GttLqM.css"
     ]
   },
-  "_CsvImportDialog-D1GttLqM.css": {
-    "file": "assets/CsvImportDialog-D1GttLqM.css",
-    "src": "_CsvImportDialog-D1GttLqM.css"
-  },
-  "_PeriodControl-3nOsu2IV.js": {
-    "file": "assets/PeriodControl-3nOsu2IV.js",
+  "_PeriodControl-WTRMusXy.js": {
+    "file": "assets/PeriodControl-WTRMusXy.js",
     "name": "PeriodControl",
     "imports": [
-      "_x-Cl7A_p7z.js",
+      "_x-CBqJiW--.js",
       "index.html"
     ]
   },
-  "_RollingNumber-B-ICrpRZ.js": {
-    "file": "assets/RollingNumber-B-ICrpRZ.js",
+  "_RollingNumber-CvY-2a61.js": {
+    "file": "assets/RollingNumber-CvY-2a61.js",
     "name": "RollingNumber",
     "imports": [
       "index.html"
     ]
   },
-  "_arrow-right-COMrZ4HD.js": {
-    "file": "assets/arrow-right-COMrZ4HD.js",
+  "_arrow-right-BikXbW65.js": {
+    "file": "assets/arrow-right-BikXbW65.js",
     "name": "arrow-right",
     "imports": [
       "index.html"
     ]
   },
-  "_circle-check-C66usOeE.js": {
-    "file": "assets/circle-check-C66usOeE.js",
+  "_check-DLw7QANN.js": {
+    "file": "assets/check-DLw7QANN.js",
+    "name": "check",
+    "imports": [
+      "index.html"
+    ]
+  },
+  "_circle-check-COlZcN05.js": {
+    "file": "assets/circle-check-COlZcN05.js",
     "name": "circle-check",
     "imports": [
       "index.html"
     ]
   },
-  "_coins-D1iToXyC.js": {
-    "file": "assets/coins-D1iToXyC.js",
+  "_coins--XH6of4D.js": {
+    "file": "assets/coins--XH6of4D.js",
     "name": "coins",
     "imports": [
       "index.html"
     ]
   },
-  "_rotate-ccw-CFa5NxGY.js": {
-    "file": "assets/rotate-ccw-CFa5NxGY.js",
+  "_landmark-_v87BFcD.js": {
+    "file": "assets/landmark-_v87BFcD.js",
+    "name": "landmark",
+    "imports": [
+      "index.html"
+    ]
+  },
+  "_rotate-ccw-CL64-QqO.js": {
+    "file": "assets/rotate-ccw-CL64-QqO.js",
     "name": "rotate-ccw",
     "imports": [
       "index.html"
     ]
   },
-  "_save-BSWvSbmi.js": {
-    "file": "assets/save-BSWvSbmi.js",
+  "_save-B6Y32WmW.js": {
+    "file": "assets/save-B6Y32WmW.js",
     "name": "save",
     "imports": [
       "index.html"
     ]
   },
-  "_sparkles-Dh6jFlL8.js": {
-    "file": "assets/sparkles-Dh6jFlL8.js",
+  "_sparkles-Bi9NNPeg.js": {
+    "file": "assets/sparkles-Bi9NNPeg.js",
     "name": "sparkles",
+    "imports": [
+      "index.html"
+    ]
+  },
+  "_upload-BaVP1hI6.js": {
+    "file": "assets/upload-BaVP1hI6.js",
+    "name": "upload",
     "imports": [
       "index.html"
     ]
@@ -115,38 +137,38 @@
     "file": "assets/useMutation-BkGho6hY.css",
     "src": "_useMutation-BkGho6hY.css"
   },
-  "_useMutation-CIgwhAOq.js": {
-    "file": "assets/useMutation-CIgwhAOq.js",
+  "_useMutation-BnRMAU4N.js": {
+    "file": "assets/useMutation-BnRMAU4N.js",
     "name": "useMutation",
     "imports": [
-      "_x-Cl7A_p7z.js",
+      "_x-CBqJiW--.js",
       "index.html"
     ],
     "css": [
       "assets/useMutation-BkGho6hY.css"
     ]
   },
-  "_x-Cl7A_p7z.js": {
-    "file": "assets/x-Cl7A_p7z.js",
+  "_x-CBqJiW--.js": {
+    "file": "assets/x-CBqJiW--.js",
     "name": "x",
     "imports": [
       "index.html"
     ]
   },
   "index.html": {
-    "file": "assets/index-DaUDFXdY.js",
+    "file": "assets/index-CBWNotJX.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
     "dynamicImports": [
       "src/features/dashboard/DashboardView.tsx",
-      "src/features/rules/RulesView.tsx",
+      "src/features/manage/ManageView.tsx",
       "src/features/net-worth/NetWorthView.tsx",
       "src/features/transactions/TransactionsView.tsx",
       "src/features/budgets/BudgetsView.tsx"
     ],
     "css": [
-      "assets/index-BIrWrwZp.css"
+      "assets/index-DanIMVJO.css"
     ],
     "assets": [
       "assets/instrument-sans-latin-ext-wght-normal-B5bTHO_g.woff2",
@@ -162,90 +184,97 @@
     ]
   },
   "src/features/budgets/BudgetsView.tsx": {
-    "file": "assets/BudgetsView-DU42Baif.js",
+    "file": "assets/BudgetsView-D7fL0aJa.js",
     "name": "BudgetsView",
     "src": "src/features/budgets/BudgetsView.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_x-Cl7A_p7z.js",
-      "_sparkles-Dh6jFlL8.js",
-      "_PeriodControl-3nOsu2IV.js",
-      "_circle-check-C66usOeE.js",
-      "_save-BSWvSbmi.js",
-      "_CsvImportDialog-BgKAuhIN.js",
-      "_useMutation-CIgwhAOq.js",
-      "index.html",
-      "_RollingNumber-B-ICrpRZ.js"
+      "_x-CBqJiW--.js",
+      "_check-DLw7QANN.js",
+      "_PeriodControl-WTRMusXy.js",
+      "_circle-check-COlZcN05.js",
+      "_CsvImportDialog-DvZLo3tI.js",
+      "_RollingNumber-CvY-2a61.js",
+      "_save-B6Y32WmW.js",
+      "_sparkles-Bi9NNPeg.js",
+      "_upload-BaVP1hI6.js",
+      "_useMutation-BnRMAU4N.js",
+      "index.html"
     ],
     "css": [
       "assets/BudgetsView-DVrr6qSk.css"
     ]
   },
   "src/features/dashboard/DashboardView.tsx": {
-    "file": "assets/DashboardView-BYYlhL90.js",
+    "file": "assets/DashboardView-C3NEcm-I.js",
     "name": "DashboardView",
     "src": "src/features/dashboard/DashboardView.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_arrow-right-COMrZ4HD.js",
-      "_PeriodControl-3nOsu2IV.js",
-      "_circle-check-C66usOeE.js",
-      "index.html",
-      "_RollingNumber-B-ICrpRZ.js"
+      "_arrow-right-BikXbW65.js",
+      "_PeriodControl-WTRMusXy.js",
+      "_circle-check-COlZcN05.js",
+      "_landmark-_v87BFcD.js",
+      "_RollingNumber-CvY-2a61.js",
+      "index.html"
     ],
     "css": [
-      "assets/DashboardView-DQykb9MC.css"
+      "assets/DashboardView-CmKCm--q.css"
+    ]
+  },
+  "src/features/manage/ManageView.tsx": {
+    "file": "assets/ManageView-BaK_sWJ_.js",
+    "name": "ManageView",
+    "src": "src/features/manage/ManageView.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_arrow-right-BikXbW65.js",
+      "_check-DLw7QANN.js",
+      "_PeriodControl-WTRMusXy.js",
+      "_coins--XH6of4D.js",
+      "_upload-BaVP1hI6.js",
+      "_useMutation-BnRMAU4N.js",
+      "index.html"
+    ],
+    "css": [
+      "assets/ManageView-CQ6ED81W.css"
     ]
   },
   "src/features/net-worth/NetWorthView.tsx": {
-    "file": "assets/NetWorthView-CnbBC3XM.js",
+    "file": "assets/NetWorthView-BXTHn4bq.js",
     "name": "NetWorthView",
     "src": "src/features/net-worth/NetWorthView.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_arrow-right-COMrZ4HD.js",
-      "_rotate-ccw-CFa5NxGY.js",
-      "_x-Cl7A_p7z.js",
-      "_sparkles-Dh6jFlL8.js",
-      "_circle-check-C66usOeE.js",
-      "_save-BSWvSbmi.js",
-      "_useMutation-CIgwhAOq.js",
+      "_arrow-right-BikXbW65.js",
+      "_rotate-ccw-CL64-QqO.js",
+      "_x-CBqJiW--.js",
+      "_check-DLw7QANN.js",
+      "_circle-check-COlZcN05.js",
+      "_landmark-_v87BFcD.js",
+      "_save-B6Y32WmW.js",
+      "_sparkles-Bi9NNPeg.js",
+      "_useMutation-BnRMAU4N.js",
       "index.html"
     ],
     "css": [
-      "assets/NetWorthView-ZFRgf2Vy.css"
-    ]
-  },
-  "src/features/rules/RulesView.tsx": {
-    "file": "assets/RulesView-CKqImCK8.js",
-    "name": "RulesView",
-    "src": "src/features/rules/RulesView.tsx",
-    "isDynamicEntry": true,
-    "imports": [
-      "_arrow-right-COMrZ4HD.js",
-      "_x-Cl7A_p7z.js",
-      "_sparkles-Dh6jFlL8.js",
-      "_coins-D1iToXyC.js",
-      "_useMutation-CIgwhAOq.js",
-      "index.html"
-    ],
-    "css": [
-      "assets/RulesView-CwEbqTHG.css"
+      "assets/NetWorthView-zRIMw6c4.css"
     ]
   },
   "src/features/transactions/TransactionsView.tsx": {
-    "file": "assets/TransactionsView-3--tRDs0.js",
+    "file": "assets/TransactionsView-TLdHDti3.js",
     "name": "TransactionsView",
     "src": "src/features/transactions/TransactionsView.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_rotate-ccw-CFa5NxGY.js",
-      "_x-Cl7A_p7z.js",
-      "_PeriodControl-3nOsu2IV.js",
-      "_coins-D1iToXyC.js",
-      "_save-BSWvSbmi.js",
-      "_CsvImportDialog-BgKAuhIN.js",
-      "_useMutation-CIgwhAOq.js",
+      "_rotate-ccw-CL64-QqO.js",
+      "_x-CBqJiW--.js",
+      "_PeriodControl-WTRMusXy.js",
+      "_coins--XH6of4D.js",
+      "_CsvImportDialog-DvZLo3tI.js",
+      "_save-B6Y32WmW.js",
+      "_upload-BaVP1hI6.js",
+      "_useMutation-BnRMAU4N.js",
       "index.html"
     ],
     "css": [

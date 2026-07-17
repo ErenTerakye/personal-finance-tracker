@@ -18,9 +18,9 @@ A local-first finance tracker with a Typer CLI, FastAPI JSON API, React browser 
   net worth history.
 - Generate monthly and multi-month income, expense, net savings, category, YTD, and month-over-month reports.
 - Save optional PNG charts for monthly reports and trend reports.
-- Run a polished local FastAPI JSON API and React “ledger editorial” workspace with Net worth,
-  Cash flow, Activity, Plan, and Automations workflows.
-- Preview transaction CSV imports before writing, skip duplicates by default, import/export budget CSV files, and download report/chart artifacts from the dashboard.
+- Run a polished local FastAPI JSON API and React “ledger editorial” workspace with Overview,
+  Transactions, Budgets, Accounts, and focused Manage workflows.
+- Preview transaction CSV imports before writing, skip duplicates by default, import/export budget CSV files, and download report/chart artifacts from Overview.
 - Configure one local ledger currency and use locale-aware English/Turkish browser formatting.
 - Verify responsive and accessibility behavior with Playwright coverage.
 - Use a clean `src/` package layout with Typer, pytest, and Ruff.
@@ -87,7 +87,7 @@ points.
 Reviewer screenshots are refreshed from the detailed July 2026 demo using
 `finance-tracker web --db-path demo.sqlite3` after running the example builder.
 
-![Dashboard desktop screenshot](docs/assets/screenshots/dashboard-desktop.png)
+![Overview desktop screenshot](docs/assets/screenshots/dashboard-desktop.png)
 
 ![Transactions mobile screenshot](docs/assets/screenshots/transactions-mobile.png)
 
@@ -97,27 +97,42 @@ Reviewer screenshots are refreshed from the detailed July 2026 demo using
 
 The local Web UI is an intentional portfolio-scale scope expansion: a Personal Finance Tracker for trend-first monthly review, transaction entry, and budget pressure checks. It remains local-first: the Python server reads and writes your SQLite database on your machine.
 
-The 2026 interface uses a persistent desktop rail, an edge-docked compact-screen navigation bar, inline compact utilities, pill-shaped action controls, and an adaptive month-and-year period picker—anchored on desktop and presented as a compact bottom sheet on smaller screens. It also includes an editorial cashflow overview, searchable activity ledger, plan-pulse workspace with live category guardrails, and task-oriented automation management. Design rationale and release evidence are recorded in [docs/WEB_UI_OVERHAUL_RELEASE.md](docs/WEB_UI_OVERHAUL_RELEASE.md).
+The 2026 interface uses one stable four-destination model—Overview, Transactions, Budgets, and
+Accounts—across its persistent desktop rail and compact bottom navigation. A visible Manage entry
+houses Automations, Categories, Data, and Preferences, while Add transaction remains the same
+global action on every route. Shared route headers, contextual controls, native dialogs,
+progressive data menus, and English/Turkish labels keep the application predictable without
+flattening each destination into the same layout. The current design goal is documented in
+[docs/WEB_UI_COHESION_AND_FLOW_GOAL.md](docs/WEB_UI_COHESION_AND_FLOW_GOAL.md).
 
 Architecture: FastAPI exposes JSON endpoints under `/api`, and a React + Vite + TypeScript SPA is served from the same local server after `npm run build`. Money values are sent as decimal strings so the browser never depends on floating-point rounding for stored amounts.
 
 The browser application includes:
 
-- A compact dashboard led by a six-month cashflow trend, a ranked budget-attention queue with direct Plan links, an accessible expense-mix donut with exact category shares, and a scannable recent-activity list with signed amounts and explicit income/expense labels.
-- A responsive Plan workspace led by a monthly health pulse, planned/spent/uncovered metrics, live category search, visible sort choices, pressure-ranked guardrail cards, and a focused edit/delete inspector.
-- Wealth-first navigation for `/`, `/cash-flow`, `/transactions`, `/budgets`, and `/rules`;
-  legacy `/net-worth` links redirect to `/` while preserving date and range parameters.
-- A primary Net worth home with a unified position-and-history hero, account-level change drivers,
-  asset/liability composition, balance coverage, atomic multi-account balance check-ins, focused
-  account management, and a complete chart data table.
-- A plain-language Automations workspace with one unified routine list, a guided create flow, safe deletion confirmation, tucked-away display settings, and deliberate monthly previews that explain duplicate handling before entries are created.
+- A unified Overview at `/` with cashflow orientation, a concise net-worth summary, budget
+  attention, recent transactions, and context-preserving links into detailed work.
+- A searchable Transactions ledger at `/transactions` with add/edit/delete workflows, visible
+  filter context, and progressively disclosed CSV data actions.
+- A responsive Budgets workspace at `/budgets` with monthly health, planned/spent/uncovered
+  metrics, category search and sorting, pressure-ranked guardrails, and a focused inspector.
+- An Accounts workspace at `/accounts` with current and historical net worth, account movement,
+  composition, balance coverage, atomic balance check-ins, account management, and an accessible
+  chart data table.
+- A secondary Manage area at `/manage/automations`, `/manage/categories`, `/manage/data`, and
+  `/manage/preferences` for recurring work, category aliases, import/export, currency, language,
+  and theme.
+- Compatibility redirects from `/cash-flow` to `/`, `/net-worth` to `/accounts`, and `/rules` to
+  `/manage/automations`, preserving relevant query context.
 - Compact period controls for month-to-month review without always exposing month/year fields.
 - Task-focused transaction and budget dialogs with prominent amount entry, grouped details, responsive controls, context-aware zero-data states, recoverable page-load errors, and edit/delete flows.
 - Browser transaction CSV preview with duplicate detection and category alias display before import, plus CSV export for transactions and budgets.
-- Dashboard downloads for monthly text reports, monthly PNG charts, six-month trend text reports, and six-month trend PNG charts.
+- Overview downloads for monthly text reports, monthly PNG charts, six-month trend text reports,
+  and six-month trend PNG charts.
 - Read-only transaction tables that collapse into mobile-friendly record lists with compact row actions.
-- A header theme action that follows your system color setting by default, can pin the opposite light/dark mode locally, and reveals theme changes from the control with a reduced-motion-aware animation.
-- Calm, progressive Cash flow motion: instant top-level tab handoffs, directional period context,
+- A theme action that follows your system color setting by default, can pin a local light/dark
+  preference, and remains available from Preferences when compact chrome omits lower-frequency
+  utilities.
+- Calm, progressive Overview motion: instant top-level route handoffs, directional period context,
   responsive rolling values, two-way export and chart-tooltip lifecycles, immediate pending/pressed
   feedback, and spatial-motion-free reduced-motion states.
 - An English/Turkish language action with local browser preference persistence and locale-aware money/date formatting using the active ledger currency.
@@ -207,7 +222,7 @@ src/finance_tracker/
 frontend/src/
   app/               # React composition and routes
   api/               # Browser transport, artifacts, and API errors
-  features/          # Dashboard, transactions, budgets, and rules workflows
+  features/          # Overview, transactions, budgets, accounts, and Manage workflows
   shared/            # Reusable UI, hooks, format, i18n, charts, theme, and styles
   generated/         # OpenAPI-generated TypeScript contract
 ```

@@ -6,6 +6,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Download,
+  MoreHorizontal,
   Plus,
   Search,
   Scale,
@@ -19,6 +20,7 @@ import { TableSkeleton } from "../../shared/components/tables";
 import { ActionButton, DownloadLink } from "../../shared/components/actions";
 import { ModalDialog } from "../../shared/components/dialogs";
 import { ErrorBanner } from "../../shared/components/feedback";
+import { PageHeader } from "../../shared/components/lists";
 import { money } from "../../shared/format/money";
 import { periodLabel } from "../../shared/format/periods";
 import type {
@@ -66,7 +68,7 @@ export function TransactionsView({
     null,
   );
   const [importOpen, setImportOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => readSearchParam());
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const ledgerHeadingRef = useRef<HTMLElement>(null);
   const handledCreateRequest = useRef(0);
@@ -152,6 +154,12 @@ export function TransactionsView({
     openCreate();
   }, [createRequestId]);
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("data") === "import") {
+      setImportOpen(true);
+    }
+  }, []);
+
   function openEdit(transaction: TransactionRecord) {
     setForm({
       type: transaction.type as TransactionType,
@@ -188,6 +196,7 @@ export function TransactionsView({
       category: "",
     };
     setSearch("");
+    writeSearchParam("");
     writeTransactionFilters(next);
     setFilters(next);
   }
@@ -232,33 +241,46 @@ export function TransactionsView({
 
   return (
     <>
-      <section className="activity-hero" aria-labelledby="page-title">
-        <div className="activity-hero-copy">
-          <p className="eyebrow">{t("transactions.eyebrow")}</p>
-          <h1 id="page-title">{t("transactions.title")}</h1>
-          <p>{t("transactions.summary")}</p>
-        </div>
-        <div className="activity-hero-actions">
-          <ActionButton icon={Plus} onClick={openCreate}>
-            {t("common.addEntry")}
-          </ActionButton>
-          <ActionButton
-            icon={Upload}
-            variant="secondary"
-            onClick={() => setImportOpen(true)}
-          >
-            {t("common.importCsv")}
-          </ActionButton>
-          <DownloadLink
-            icon={Download}
-            href={artifactUrls.transactionsCsv(filters)}
-            download
-            variant="secondary"
-          >
-            {t("common.exportCsv")}
-          </DownloadLink>
-        </div>
-      </section>
+      <PageHeader
+        eyebrow={t("transactions.eyebrow")}
+        title={t("transactions.title")}
+        summary={t("transactions.routeSummary", {
+          count: visibleTransactions.length,
+          period: periodLabel(Number(filters.month), Number(filters.year)),
+        })}
+        className="activity-hero"
+        actions={
+          <div className="activity-hero-actions">
+            <ActionButton icon={Plus} onClick={openCreate}>
+              {t("common.addTransaction")}
+            </ActionButton>
+            <details className="data-menu">
+              <summary className="button secondary">
+                <MoreHorizontal aria-hidden="true" size={18} />
+                <span>{t("transactions.dataMenu")}</span>
+              </summary>
+              <div className="data-menu-popover">
+                <ActionButton
+                  icon={Upload}
+                  variant="ghost"
+                  onClick={() => setImportOpen(true)}
+                >
+                  {t("common.importCsv")}
+                </ActionButton>
+                <DownloadLink
+                  icon={Download}
+                  href={artifactUrls.transactionsCsv(filters)}
+                  download
+                  variant="ghost"
+                >
+                  {t("common.exportCsv")}
+                </DownloadLink>
+                <p>{t("transactions.exportScope")}</p>
+              </div>
+            </details>
+          </div>
+        }
+      />
 
       {transactionResource.status === "error" ? (
         <ErrorBanner
@@ -319,7 +341,10 @@ export function TransactionsView({
                 type="search"
                 value={search}
                 placeholder={t("transactions.searchHint")}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  writeSearchParam(event.target.value);
+                }}
               />
             </span>
           </label>
@@ -488,4 +513,16 @@ export function TransactionsView({
       </datalist>
     </>
   );
+}
+
+function readSearchParam(): string {
+  return new URLSearchParams(window.location.search).get("search") ?? "";
+}
+
+function writeSearchParam(value: string) {
+  const url = new URL(window.location.href);
+  const normalized = value.trim();
+  if (normalized) url.searchParams.set("search", normalized);
+  else url.searchParams.delete("search");
+  window.history.replaceState({}, "", `${url.pathname}${url.search}`);
 }
