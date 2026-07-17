@@ -35,11 +35,13 @@ const YEAR_PAGE_SIZE = 10;
 export function PeriodControl({
   value,
   onChange,
+  onPrepare,
   label = "Period",
   busy = false,
 }: {
   value: PeriodValue;
   onChange: (period: PeriodValue) => void;
+  onPrepare?: (period: PeriodValue) => void;
   label?: string;
   busy?: boolean;
 }) {
@@ -107,7 +109,11 @@ export function PeriodControl({
     const picker = pickerRef.current;
     if (!picker) return;
     resetPicker();
+    delete picker.dataset.entered;
     picker.showModal();
+    requestAnimationFrame(() => {
+      if (picker.open) picker.dataset.entered = "true";
+    });
     setExpanded(true);
   }
 
@@ -118,6 +124,8 @@ export function PeriodControl({
   }
 
   function finishClosing() {
+    const picker = pickerRef.current;
+    if (picker) delete picker.dataset.entered;
     setExpanded(false);
     resetPicker();
     requestAnimationFrame(() => {
@@ -202,6 +210,8 @@ export function PeriodControl({
           period: periodLabel(previous.month, previous.year),
         })}
         variant="secondary"
+        onFocus={() => onPrepare?.(previous)}
+        onPointerEnter={() => onPrepare?.(previous)}
         onClick={() => step(-1)}
       />
       <button
@@ -232,6 +242,8 @@ export function PeriodControl({
           period: periodLabel(next.month, next.year),
         })}
         variant="secondary"
+        onFocus={() => onPrepare?.(next)}
+        onPointerEnter={() => onPrepare?.(next)}
         onClick={() => step(1)}
       />
 
@@ -366,6 +378,10 @@ export function PeriodControl({
                     tabIndex={selected ? 0 : -1}
                     aria-pressed={selected}
                     onPointerDown={markPointerFocus}
+                    onPointerEnter={() =>
+                      onPrepare?.({ month, year: draft.year })
+                    }
+                    onFocus={() => onPrepare?.({ month, year: draft.year })}
                     onBlur={clearPointerFocus}
                     onKeyDown={(event) => {
                       markKeyboardFocus(event);

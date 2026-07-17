@@ -40,6 +40,65 @@ function renderCompactPeriodControl(
 }
 
 describe("PeriodControl", () => {
+  it("accumulates rapid month steps without waiting for a parent render", async () => {
+    const onChange = renderCompactPeriodControl();
+    const next = screen.getByRole("button", { name: /^Next month,/ });
+
+    await userEvent.click(next);
+    await userEvent.click(next);
+    await userEvent.click(next);
+
+    expect(onChange).toHaveBeenNthCalledWith(1, { month: 7, year: 2026 });
+    expect(onChange).toHaveBeenNthCalledWith(2, { month: 8, year: 2026 });
+    expect(onChange).toHaveBeenNthCalledWith(3, { month: 9, year: 2026 });
+  });
+
+  it("prepares pointer and keyboard period targets before selection", async () => {
+    const onPrepare = vi.fn();
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        media: query,
+        matches: query === "(max-width: 63.999rem)",
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    render(
+      <I18nProvider>
+        <PeriodControl
+          value={{ month: 6, year: 2026 }}
+          onChange={vi.fn()}
+          onPrepare={onPrepare}
+        />
+      </I18nProvider>,
+    );
+
+    fireEvent.pointerEnter(
+      screen.getByRole("button", { name: "Next month, July 2026" }),
+    );
+    expect(onPrepare).toHaveBeenCalledWith({ month: 7, year: 2026 });
+
+    onPrepare.mockClear();
+    fireEvent.focus(
+      screen.getByRole("button", { name: "Previous month, May 2026" }),
+    );
+    expect(onPrepare).toHaveBeenCalledWith({ month: 5, year: 2026 });
+
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Choose period, current period is June 2026",
+      }),
+    );
+    onPrepare.mockClear();
+    fireEvent.pointerEnter(screen.getByRole("button", { name: "November" }));
+    expect(onPrepare).toHaveBeenCalledWith({ month: 11, year: 2026 });
+  });
+
   it("shows a visible static pending mark without disabling rapid controls", () => {
     vi.stubGlobal(
       "matchMedia",

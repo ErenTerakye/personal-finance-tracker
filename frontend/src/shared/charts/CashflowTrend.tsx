@@ -27,7 +27,14 @@ export function CashflowTrend({ months }: { months: TrendMonth[] }) {
   const { t } = useI18n();
 
   useEffect(() => {
-    setMotionReady(true);
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => setMotionReady(true));
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+    };
   }, []);
 
   function activateBar(

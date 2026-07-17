@@ -325,6 +325,7 @@
       position: fixed;
       inset: auto 0 0;
       z-index: 20;
+      view-transition-name: compact-navigation;
       display: block;
       padding-block-end: env(safe-area-inset-bottom);
       background: color-mix(in srgb, var(--surface) 94%, transparent);

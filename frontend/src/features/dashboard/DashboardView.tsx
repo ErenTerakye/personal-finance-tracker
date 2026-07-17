@@ -159,6 +159,11 @@ export function DashboardView({
               label={t("dashboard.changePeriod")}
               value={selectedPeriod}
               onChange={setSelectedPeriod}
+              onPrepare={(period) => {
+                void preloadDashboard(period.month, period.year).catch(
+                  () => undefined,
+                );
+              }}
               busy={periodTransition.pending}
             />
             <ReportMenu

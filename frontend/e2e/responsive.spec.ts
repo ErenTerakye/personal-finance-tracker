@@ -28,6 +28,74 @@ test("uses the full recent transaction card as its hit target", async ({
   );
 });
 
+test("accepts rapid repeated month navigation without a transition cooldown", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await mockApi(page);
+  await page.goto("/?month=6&year=2026");
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+
+  const nextMonth = page.getByRole("button", { name: /^Next month,/ });
+  const bounds = await nextMonth.boundingBox();
+  expect(bounds).not.toBeNull();
+
+  for (let index = 0; index < 4; index += 1) {
+    await page.mouse.click(
+      bounds!.x + bounds!.width / 2,
+      bounds!.y + bounds!.height / 2,
+    );
+  }
+
+  await expect(page).toHaveURL(/month=10&year=2026/);
+  await expect(page.locator("html")).not.toHaveClass(/period-view-transition/);
+
+  const previousMonth = page.getByRole("button", { name: /^Previous month,/ });
+  const previousBounds = await previousMonth.boundingBox();
+  expect(previousBounds).not.toBeNull();
+  for (let index = 0; index < 6; index += 1) {
+    await page.mouse.click(
+      previousBounds!.x + previousBounds!.width / 2,
+      previousBounds!.y + previousBounds!.height / 2,
+    );
+  }
+  await expect(page).toHaveURL(/month=4&year=2026/);
+});
+
+test("opens the compact period backdrop with one continuous fade", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockApi(page);
+  await page.goto("/?month=6&year=2026");
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+
+  const samplesPromise = page.evaluate(async () => {
+    const picker = document.querySelector<HTMLDialogElement>(".period-popover");
+    if (!picker) throw new Error("Expected compact period picker");
+
+    const opacitySamples: number[] = [];
+    while (!picker.open) await new Promise(requestAnimationFrame);
+    const startedAt = performance.now();
+    while (performance.now() - startedAt < 500) {
+      await new Promise(requestAnimationFrame);
+      opacitySamples.push(
+        Number.parseFloat(getComputedStyle(picker, "::backdrop").opacity),
+      );
+    }
+    return opacitySamples;
+  });
+  await page.getByRole("button", { name: /Choose period/ }).click();
+  const samples = await samplesPromise;
+
+  expect(samples.at(-1)).toBe(1);
+  expect(
+    samples.every(
+      (sample, index) => index === 0 || sample >= samples[index - 1] - 0.01,
+    ),
+  ).toBe(true);
+});
+
 test("compact bottom navigation localizes from inline header utilities", async ({
   page,
 }) => {
@@ -131,6 +199,63 @@ test("keeps compact navigation live through rapid tab switches", async ({
       pathname: path,
     });
   }
+});
+
+test("keeps compact navigation above route transition snapshots", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockApi(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+
+  const transitionChrome = page.evaluate(
+    () =>
+      new Promise<{
+        navigationTransitionName: string;
+        navigationGroupZIndex: string;
+      }>((resolve, reject) => {
+        const timeout = window.setTimeout(() => {
+          observer.disconnect();
+          reject(new Error("Route view transition did not start"));
+        }, 1_000);
+        const observer = new MutationObserver(() => {
+          if (
+            !document.documentElement.classList.contains(
+              "route-view-transition",
+            )
+          ) {
+            return;
+          }
+
+          const navigation = document.querySelector<HTMLElement>(
+            ".compact-primary-navigation",
+          );
+          if (!navigation) throw new Error("Expected compact navigation");
+          window.clearTimeout(timeout);
+          observer.disconnect();
+          resolve({
+            navigationTransitionName:
+              getComputedStyle(navigation).viewTransitionName,
+            navigationGroupZIndex: getComputedStyle(
+              document.documentElement,
+              "::view-transition-group(compact-navigation)",
+            ).zIndex,
+          });
+        });
+        observer.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["class"],
+        });
+      }),
+  );
+
+  await page.getByRole("link", { name: "Transactions" }).click();
+
+  await expect(transitionChrome).resolves.toEqual({
+    navigationTransitionName: "compact-navigation",
+    navigationGroupZIndex: "2",
+  });
 });
 
 test("scrolls the monthly automation creator in a short viewport", async ({

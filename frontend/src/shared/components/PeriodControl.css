@@ -278,33 +278,25 @@
         0 0;
       opacity: 0;
       translate: 0 1rem;
+      transition:
+        opacity var(--motion-control) var(--ease-out),
+        translate var(--motion-control) var(--ease-out);
+      transition-behavior: normal;
     }
 
-    .period-popover:not([popover])[open] {
+    .period-popover:not([popover])[open][data-entered="true"] {
       opacity: 1;
       translate: 0;
     }
 
-    @starting-style {
-      .period-popover:not([popover])[open] {
-        opacity: 0;
-        translate: 0 1rem;
-      }
-    }
-
     .period-popover:not([popover])::backdrop {
       background: color-mix(in srgb, var(--paper-dark) 54%, transparent);
-      opacity: 1;
-      transition:
-        opacity var(--motion-control) ease-out,
-        display var(--motion-control) allow-discrete,
-        overlay var(--motion-control) allow-discrete;
+      opacity: 0;
+      transition: opacity var(--motion-control) ease-out;
     }
 
-    @starting-style {
-      .period-popover:not([popover])[open]::backdrop {
-        opacity: 0;
-      }
+    .period-popover:not([popover])[open][data-entered="true"]::backdrop {
+      opacity: 1;
     }
 
     .period-sheet-header {

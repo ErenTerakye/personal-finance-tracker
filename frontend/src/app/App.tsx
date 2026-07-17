@@ -100,11 +100,33 @@ function AppContent() {
     new Map<RouteView, string>([[view, window.location.search]]),
   );
   const routeRequestRef = useRef(0);
+  const [initialRoute] = useState(() => ({ view, period: selectedPeriod }));
+  const [initialRoutePrepared, setInitialRoutePrepared] = useState(false);
+  const [startupLoadingVisible, setStartupLoadingVisible] = useState(false);
   const settings = useAppSettings();
 
   useEffect(() => {
     normalizeCompatibilityRoute();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadingTimer = window.setTimeout(
+      () => setStartupLoadingVisible(true),
+      ROUTE_LOADING_DELAY_MS,
+    );
+    void prepareRoute(initialRoute.view, initialRoute.period)
+      .catch(() => undefined)
+      .finally(() => {
+        if (cancelled) return;
+        window.clearTimeout(loadingTimer);
+        setInitialRoutePrepared(true);
+      });
+    return () => {
+      cancelled = true;
+      window.clearTimeout(loadingTimer);
+    };
+  }, [initialRoute]);
 
   useEffect(() => {
     if (settings.status === "success") {
@@ -349,8 +371,16 @@ function AppContent() {
     };
   }, [selectedPeriod, settings.status]);
 
-  if (settings.status === "idle" || settings.status === "loading") {
-    return <div className="app-loading">{t("common.loading")}</div>;
+  if (
+    settings.status === "idle" ||
+    settings.status === "loading" ||
+    !initialRoutePrepared
+  ) {
+    return startupLoadingVisible ? (
+      <div className="app-loading" role="status">
+        {t("common.loading")}
+      </div>
+    ) : null;
   }
 
   return (

@@ -50,10 +50,14 @@
       z-index: 1;
     }
 
+    ::view-transition-group(compact-navigation) {
+      z-index: 2;
+    }
+
     :is(
         .button,
         .icon-button,
-        nav a,
+        nav:not(.bottom-navigation) a,
         .brand,
         .theme-toggle,
         .lang-toggle
@@ -134,9 +138,9 @@
   }
 
   :is(
-      .button,
-      .icon-button,
-      nav a,
+      .button:not(.primary, .danger),
+      .icon-button:not(.primary, .danger),
+      nav:not(.bottom-navigation) a,
       .brand,
       .theme-toggle,
       .lang-toggle

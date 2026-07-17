@@ -1,11 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ResourceState } from "./useResource";
-import {
-  periodDirection,
-  usePeriodTransition,
-  type PeriodValue,
-} from "./usePeriodTransition";
+import { usePeriodTransition, type PeriodValue } from "./usePeriodTransition";
 
 type Props = {
   period: PeriodValue;
@@ -18,6 +14,15 @@ afterEach(() => {
 });
 
 describe("usePeriodTransition", () => {
+  it("presents prepared initial data without a loading frame", () => {
+    const { result } = renderHook(() =>
+      usePeriodTransition({ month: 6, year: 2026 }, success("Prepared June")),
+    );
+
+    expect(result.current.data).toBe("Prepared June");
+    expect(result.current.presentedPeriod).toEqual({ month: 6, year: 2026 });
+  });
+
   it("retains presented data while the requested period loads", () => {
     const { result, rerender } = renderHook(
       ({ period, resource }: Props) => usePeriodTransition(period, resource),
@@ -38,7 +43,7 @@ describe("usePeriodTransition", () => {
     expect(result.current.pending).toBe(true);
   });
 
-  it("commits adjacent and jumped periods with semantic transitions", async () => {
+  it("commits rapid period results without starting document snapshots", async () => {
     const startViewTransition = installViewTransition();
     const { result, rerender } = renderHook(
       ({ period, resource }: Props) => usePeriodTransition(period, resource),
@@ -55,18 +60,13 @@ describe("usePeriodTransition", () => {
       resource: success("July"),
     });
     await waitFor(() => expect(result.current.data).toBe("July"));
-    expect(startViewTransition).toHaveBeenLastCalledWith(
-      expect.objectContaining({ types: ["period-forward"] }),
-    );
 
     rerender({
-      period: { month: 3, year: 2025 },
-      resource: success("March"),
+      period: { month: 8, year: 2026 },
+      resource: success("August"),
     });
-    await waitFor(() => expect(result.current.data).toBe("March"));
-    expect(startViewTransition).toHaveBeenLastCalledWith(
-      expect.objectContaining({ types: ["period-jump"] }),
-    );
+    await waitFor(() => expect(result.current.data).toBe("August"));
+    expect(startViewTransition).not.toHaveBeenCalled();
   });
 
   it("updates without a transition for reduced motion or same-period data", async () => {
@@ -97,7 +97,7 @@ describe("usePeriodTransition", () => {
     expect(startViewTransition).not.toHaveBeenCalled();
   });
 
-  it("keeps compact glass navigation live during period updates", async () => {
+  it("keeps compact glass navigation outside period snapshots", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: query === "(max-width: 63.999rem)",
     }));
@@ -118,23 +118,7 @@ describe("usePeriodTransition", () => {
     });
 
     await waitFor(() => expect(result.current.data).toBe("July"));
-    expect(startViewTransition).toHaveBeenCalledWith(
-      expect.objectContaining({ types: ["period-forward"] }),
-    );
-  });
-});
-
-describe("periodDirection", () => {
-  it("distinguishes adjacent navigation from a picker jump", () => {
-    expect(
-      periodDirection({ month: 1, year: 2026 }, { month: 12, year: 2025 }),
-    ).toBe("backward");
-    expect(
-      periodDirection({ month: 12, year: 2025 }, { month: 1, year: 2026 }),
-    ).toBe("forward");
-    expect(
-      periodDirection({ month: 1, year: 2026 }, { month: 3, year: 2026 }),
-    ).toBe("jump");
+    expect(startViewTransition).not.toHaveBeenCalled();
   });
 });
 

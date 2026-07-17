@@ -34,7 +34,9 @@ describe("budgets workflow", () => {
     const alert = await screen.findByRole("alert");
     await userEvent.click(within(alert).getByRole("button", { name: "Retry" }));
 
-    expect(await screen.findByText("No budgets for this period")).toBeVisible();
+    expect(
+      await within(activeRoute()).findByText("No budgets for this period"),
+    ).toBeVisible();
     expect(budgetAttempts).toBe(2);
   });
 
@@ -229,3 +231,7 @@ describe("budgets workflow", () => {
     );
   });
 });
+
+function activeRoute() {
+  return document.querySelector<HTMLElement>(".route-stage.is-active")!;
+}

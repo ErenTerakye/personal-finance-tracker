@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import App from "./app/App";
 import { resolveRoute } from "./app/routes";
 import {
@@ -9,12 +9,43 @@ import {
   installAppTestLifecycle,
   mockCompactLayout,
   mockFetch,
+  response,
   transaction,
 } from "./test/appTestSupport";
 
 installAppTestLifecycle();
 
 describe("app composition", () => {
+  it("does not flash the dashboard loading panel during startup", async () => {
+    let releaseDashboard!: () => void;
+    const dashboardResponse = new Promise<Response>((resolve) => {
+      releaseDashboard = () => {
+        void response(dashboardPayload({})).then(resolve);
+      };
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.startsWith("/api/dashboard")) return dashboardResponse;
+        if (url.startsWith("/api/settings")) {
+          return response({ currency: "USD" });
+        }
+        return response({});
+      }),
+    );
+
+    render(<App />);
+
+    await screen.findByRole("status");
+    expect(screen.queryByText("Loading dashboard")).toBeNull();
+    releaseDashboard();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Overview" }),
+    ).toBeVisible();
+    expect(screen.queryByText("Loading dashboard")).toBeNull();
+  });
+
   it("renders the unified Overview", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({

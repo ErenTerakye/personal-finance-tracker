@@ -119,6 +119,30 @@
     }
   }
 
+  .button.primary:active:not(:disabled),
+  .icon-button.primary:active:not(:disabled) {
+    background: color-mix(in srgb, var(--action) 72%, var(--button-hover-mix));
+    border-color: color-mix(
+      in srgb,
+      var(--action) 72%,
+      var(--button-hover-mix)
+    );
+  }
+
+  .button.danger:active:not(:disabled),
+  .icon-button.danger:active:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      var(--expenses) 72%,
+      var(--button-hover-mix)
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--expenses) 72%,
+      var(--button-hover-mix)
+    );
+  }
+
   .button:disabled,
   .icon-button:disabled {
     cursor: not-allowed;
