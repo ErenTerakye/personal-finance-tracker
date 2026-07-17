@@ -372,6 +372,44 @@ test("keeps the export menu content-sized and anchored", async ({ page }) => {
   await expect(page.locator(".artifact-popover")).toBeHidden();
 });
 
+test("shows transaction data options beyond the hero card", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 900 });
+  await mockApi(page);
+  await page.goto("/transactions");
+
+  const hero = page.locator(".activity-hero");
+  const menu = page.locator(".data-menu-popover");
+  const exportLink = menu.getByRole("link", { name: "Export CSV" });
+
+  await page.locator(".data-menu > summary").click();
+  await expect(exportLink).toBeVisible();
+
+  const [heroBox, menuBox] = await Promise.all([
+    hero.boundingBox(),
+    menu.boundingBox(),
+  ]);
+  expect(heroBox).not.toBeNull();
+  expect(menuBox).not.toBeNull();
+  expect(menuBox!.y + menuBox!.height).toBeGreaterThan(
+    heroBox!.y + heroBox!.height,
+  );
+
+  await expect
+    .poll(() =>
+      exportLink.evaluate((link) => {
+        const rect = link.getBoundingClientRect();
+        const target = document.elementFromPoint(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2,
+        );
+        return target !== null && link.contains(target);
+      }),
+    )
+    .toBe(true);
+});
+
 for (const width of viewports) {
   test.describe(`responsive layout at ${width}px`, () => {
     test.beforeEach(async ({ page }) => {
