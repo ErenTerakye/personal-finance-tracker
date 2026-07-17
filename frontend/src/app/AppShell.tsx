@@ -73,6 +73,7 @@ export function AppShell({
             key={item}
             item={item}
             active={view === item}
+            filledIcon={className === "bottom-navigation"}
             onNavigate={onNavigate}
           />
         ))}
@@ -196,10 +197,12 @@ export function AppShell({
 function PrimaryNavigationItem({
   item,
   active,
+  filledIcon,
   onNavigate,
 }: {
   item: PrimaryView;
   active: boolean;
+  filledIcon: boolean;
   onNavigate: (view: View) => void;
 }) {
   const { t } = useI18n();
@@ -216,11 +219,98 @@ function PrimaryNavigationItem({
         }}
       >
         <span className="navigation-icon" aria-hidden="true">
-          <Icon size={20} strokeWidth={2} />
+          {active && filledIcon ? (
+            <FilledPrimaryNavigationIcon item={item} />
+          ) : filledIcon && item === "overview" ? (
+            <OutlineOverviewIcon />
+          ) : (
+            <Icon size={22} strokeWidth={2} fill="none" />
+          )}
         </span>
         <span>{t(`nav.${item}`)}</span>
       </a>
     </li>
+  );
+}
+
+function OutlineOverviewIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      xmlns="http://www.w3.org/2000/svg"
+      data-variant="outline-open-door"
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 .71-1.53l7-6a2 2 0 0 1 2.58 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2h-4" />
+      <path d="M9 21v-8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v8" />
+    </svg>
+  );
+}
+
+function FilledPrimaryNavigationIcon({ item }: { item: PrimaryView }) {
+  const sharedProps = {
+    width: 22,
+    height: 22,
+    viewBox: "0 0 24 24",
+    fill: "currentColor",
+    fillOpacity: 1,
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    xmlns: "http://www.w3.org/2000/svg",
+  };
+
+  if (item === "overview") {
+    return (
+      <svg {...sharedProps}>
+        <path
+          fillRule="evenodd"
+          d="M10.72 2.32a2 2 0 0 1 2.56 0l7 5.83A2 2 0 0 1 21 9.69V19a2 2 0 0 1-2 2h-3v-6a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v6H5a2 2 0 0 1-2-2V9.69a2 2 0 0 1 .72-1.54z"
+        />
+      </svg>
+    );
+  }
+
+  if (item === "transactions") {
+    return (
+      <svg {...sharedProps}>
+        <path d="M5 2a1.5 1.5 0 0 1 .82.24l.82.53a1.5 1.5 0 0 0 1.62 0l.93-.6a1.5 1.5 0 0 1 1.62 0l.38.24a1.5 1.5 0 0 0 1.62 0l.38-.24a1.5 1.5 0 0 1 1.62 0l.93.6a1.5 1.5 0 0 0 1.62 0l.82-.53A1.5 1.5 0 0 1 20 3.5v17a1.5 1.5 0 0 1-2.32 1.26l-.82-.53a1.5 1.5 0 0 0-1.62 0l-.93.6a1.5 1.5 0 0 1-1.62 0l-.38-.24a1.5 1.5 0 0 0-1.62 0l-.38.24a1.5 1.5 0 0 1-1.62 0l-.93-.6a1.5 1.5 0 0 0-1.62 0l-.82.53A1.5 1.5 0 0 1 4 20.5v-17A1.5 1.5 0 0 1 5 2" />
+        <path
+          d="M8 8h8M8 12h8M8 16h5"
+          fill="none"
+          stroke="var(--surface)"
+        />
+      </svg>
+    );
+  }
+
+  if (item === "budgets") {
+    return (
+      <svg {...sharedProps}>
+        <path
+          fillRule="evenodd"
+          d="M12 1a11 11 0 1 1 0 22 11 11 0 0 1 0-22m0 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14m0 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...sharedProps} data-variant="filled-wallet-cards">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path
+        d="M3 7h18M3 11h3.75a2 2 0 0 1 1.6.8l.45.6a4 4 0 0 0 6.4 0l.45-.6a2 2 0 0 1 1.6-.8H21"
+        fill="none"
+        stroke="var(--surface)"
+      />
+    </svg>
   );
 }
 

@@ -37,9 +37,40 @@ test("compact bottom navigation localizes from inline header utilities", async (
 
   const navigation = page.locator(".bottom-navigation");
   await expect(navigation.getByRole("link")).toHaveCount(4);
+  const activeLink = navigation.getByRole("link", { name: "Overview" });
+  await expect(activeLink).toHaveAttribute("aria-current", "page");
+  await expect(activeLink.locator("svg")).toHaveAttribute(
+    "fill",
+    "currentColor",
+  );
   await expect(
-    navigation.getByRole("link", { name: "Overview" }),
-  ).toHaveAttribute("aria-current", "page");
+    navigation.getByRole("link", { name: "Transactions" }).locator("svg"),
+  ).toHaveAttribute("fill", "none");
+
+  const activeLinkBounds = await activeLink.boundingBox();
+  expect(activeLinkBounds).not.toBeNull();
+  await page.mouse.move(
+    activeLinkBounds!.x + activeLinkBounds!.width / 2,
+    activeLinkBounds!.y + activeLinkBounds!.height / 2,
+  );
+  await page.mouse.down();
+  await expect
+    .poll(() =>
+      activeLink.evaluate((link) => {
+        const icon = link.querySelector("svg")!;
+        return {
+          backgroundColor: getComputedStyle(link).backgroundColor,
+          iconTransform: getComputedStyle(icon).transform,
+          linkTransform: getComputedStyle(link).transform,
+        };
+      }),
+    )
+    .toEqual({
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      iconTransform: "matrix(0.94, 0, 0, 0.94, 0, 0)",
+      linkTransform: "none",
+    });
+  await page.mouse.up();
 
   const compactBar = page.locator(".compact-app-bar");
   await expect(page.locator("#app-drawer")).toHaveCount(0);

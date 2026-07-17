@@ -62,7 +62,21 @@ describe("app composition", () => {
       "/budgets",
       "/accounts",
     ]);
-    for (const link of links) {
+    expect(links[0]).toHaveAttribute("aria-current", "page");
+    expect(links[0].querySelector("svg")).toHaveAttribute(
+      "fill",
+      "currentColor",
+    );
+    expect(links[0].querySelector("svg")).toHaveAttribute(
+      "stroke",
+      "currentColor",
+    );
+    expect(links[0].querySelector("svg")).toHaveAttribute(
+      "fill-opacity",
+      "1",
+    );
+    expect(links[0].querySelectorAll("path")).not.toHaveLength(0);
+    for (const link of links.slice(1)) {
       expect(link.querySelector("svg")).toHaveAttribute("fill", "none");
       expect(link.querySelector("svg")).toHaveAttribute("stroke-width", "2");
     }
@@ -73,6 +87,7 @@ describe("app composition", () => {
   });
 
   it("navigates to Budgets with matching route, heading, and title", async () => {
+    mockCompactLayout();
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
       "/api/budgets": { budgets: [] },
@@ -87,6 +102,15 @@ describe("app composition", () => {
       await screen.findByRole("heading", { level: 1, name: "Budgets" }),
     ).toHaveFocus();
     expect(document.title).toBe("Budgets | Personal Finance Tracker");
+
+    const compactNavigation = document.querySelector<HTMLElement>(
+      ".compact-primary-navigation",
+    )!;
+    expect(
+      within(compactNavigation)
+        .getByRole("link", { name: "Overview" })
+        .querySelector("svg"),
+    ).toHaveAttribute("data-variant", "outline-open-door");
   });
 
   it("keeps the global command tied to Add transaction", async () => {

@@ -292,47 +292,36 @@
       line-height: 1.1;
       text-align: center;
       text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .bottom-navigation .navigation-icon {
-      position: relative;
       display: grid;
       place-items: center;
-      inline-size: 3rem;
+      inline-size: 2rem;
       block-size: 2rem;
     }
 
-    .bottom-navigation .navigation-icon::before {
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      border-radius: 100vmax;
-      content: "";
-      background: transparent;
+    .bottom-navigation .navigation-icon svg {
+      transition: transform var(--motion-micro) var(--ease-out);
     }
 
     .bottom-navigation a:hover:not([aria-current="page"]) {
       color: var(--ink);
     }
 
-    .bottom-navigation
-      a:hover:not([aria-current="page"])
-      .navigation-icon::before {
-      background: color-mix(in srgb, var(--surface-2) 68%, transparent);
+    .bottom-navigation a:active .navigation-icon svg {
+      transform: scale(0.94);
+    }
+
+    .bottom-navigation a:active:not(:disabled) {
+      transform: none;
+      background-color: transparent;
+      border-color: transparent;
     }
 
     .bottom-navigation a[aria-current="page"] {
-      --active-navigation-indicator: color-mix(
-        in srgb,
-        var(--action) 15%,
-        var(--surface)
-      );
-
-      color: var(--action);
-    }
-
-    .bottom-navigation a[aria-current="page"] .navigation-icon::before {
-      background: var(--active-navigation-indicator);
+      color: var(--ink);
     }
 
     .bottom-navigation a:focus-visible {
@@ -377,6 +366,12 @@
   @media (pointer: coarse) and (max-width: 63.999rem) {
     .bottom-navigation a {
       min-block-size: 3.75rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) and (max-width: 63.999rem) {
+    .bottom-navigation .navigation-icon svg {
+      transition: none;
     }
   }
 
