@@ -293,7 +293,7 @@ export function ActivityList({
 
         return (
           <li
-            className={`activity-item ${isIncome ? "income" : "expense"}`}
+            className={`activity-item ${isIncome ? "income" : "expense"} ${onSelect ? "activity-item-interactive" : ""}`.trim()}
             key={transaction.id}
           >
             {onSelect ? (

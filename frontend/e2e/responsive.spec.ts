@@ -4,6 +4,30 @@ const colorSchemeStorageKey = "finance-tracker-color-scheme";
 const viewports = [320, 390, 430, 768, 1024, 1280, 1440, 1800, 1920];
 const themeViewports = [390, 1280];
 
+test("uses the full recent transaction card as its hit target", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockApi(page);
+  await page.goto("/");
+
+  const transactionButton = page.getByRole("button", {
+    name: /Food Groceries.*45\.90.*Expense.*Jun 12/i,
+  });
+  await expect(transactionButton).toBeVisible();
+
+  const hitTarget = await transactionButton.boundingBox();
+  expect(hitTarget).not.toBeNull();
+  expect(hitTarget!.height).toBeGreaterThanOrEqual(72);
+
+  await transactionButton.click({
+    position: { x: 6, y: hitTarget!.height / 2 },
+  });
+  await expect(page).toHaveURL(
+    "/transactions?month=6&year=2026&search=Groceries",
+  );
+});
+
 test("compact bottom navigation localizes from inline header utilities", async ({
   page,
 }) => {

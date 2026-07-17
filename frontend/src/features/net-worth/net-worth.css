@@ -634,10 +634,6 @@
     border-block-start: 3px solid var(--warning);
   }
 
-  .data-health.is-complete {
-    border-block-start: 3px solid var(--cash);
-  }
-
   .data-health-heading {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);

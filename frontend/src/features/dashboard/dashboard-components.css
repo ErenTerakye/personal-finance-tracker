@@ -1303,7 +1303,10 @@
 
   .activity-item {
     --activity-accent: var(--text);
+  }
 
+  .activity-item,
+  .activity-item-link {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "copy value";
@@ -1315,6 +1318,14 @@
     background: color-mix(in srgb, var(--surface-2) 72%, transparent);
     border: 1px solid color-mix(in srgb, var(--rule) 82%, transparent);
     border-radius: var(--radius);
+  }
+
+  .activity-item-interactive {
+    display: contents;
+  }
+
+  .activity-item-link {
+    inline-size: 100%;
   }
 
   .activity-item.income {
@@ -1382,7 +1393,8 @@
   }
 
   @container activity-list (max-width: 24rem) {
-    .activity-item {
+    .activity-item,
+    .activity-item-link {
       grid-template-columns: minmax(0, 1fr);
       grid-template-areas:
         "copy"

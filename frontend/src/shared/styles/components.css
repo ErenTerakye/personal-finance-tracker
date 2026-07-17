@@ -216,8 +216,10 @@
   }
 
   .activity-item-link {
-    display: contents;
     color: inherit;
+    font: inherit;
+    text-align: inherit;
+    appearance: none;
     cursor: pointer;
   }
 
