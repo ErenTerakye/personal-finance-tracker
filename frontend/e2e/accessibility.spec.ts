@@ -67,12 +67,13 @@ test.describe("keyboard accessibility smoke checks", () => {
     await page.keyboard.press("Enter");
 
     await expect(page).toHaveURL(/\/transactions$/);
-    await expect(
-      page.getByRole("heading", { name: "Transactions", exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Transactions", exact: true }),
-    ).toBeFocused();
+    const heading = page.getByRole("heading", {
+      name: "Transactions",
+      exact: true,
+    });
+    await expect(heading).toBeVisible();
+    await expect(heading).toBeFocused();
+    await expect(heading).toHaveCSS("outline-style", "none");
   });
 
   test("opens and closes the transaction dialog with the keyboard", async ({

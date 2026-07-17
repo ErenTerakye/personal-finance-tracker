@@ -173,6 +173,21 @@ test("scrolls the monthly automation creator in a short viewport", async ({
   );
 });
 
+test("aligns compact page actions with their heading content", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 900 });
+  await mockApi(page, {
+    netWorthOverviewPayload: populatedNetWorthOverview(),
+  });
+
+  for (const path of ["/transactions", "/accounts", "/manage/automations"]) {
+    await page.goto(path);
+    await expect(page.locator(".page-heading")).toBeVisible();
+    await expectPageActionsAlignedWithHeading(page);
+  }
+});
+
 test("opens category guardrails without covering or rearranging cards", async ({
   page,
 }) => {
@@ -962,6 +977,21 @@ async function expectDashboardFitsViewport(page: Page) {
     ".cashflow-trend ol",
     ".theme-toggle",
   ]);
+}
+
+async function expectPageActionsAlignedWithHeading(page: Page) {
+  const heading = page.locator(".page-heading");
+  const copy = heading.locator(":scope > div:first-child");
+  const firstAction = heading.locator(".page-actions .button").first();
+  const [copyBox, actionBox] = await Promise.all([
+    copy.boundingBox(),
+    firstAction.boundingBox(),
+  ]);
+
+  expect(copyBox).not.toBeNull();
+  expect(actionBox).not.toBeNull();
+  expect(Math.abs(actionBox!.x - copyBox!.x)).toBeLessThanOrEqual(1);
+  expect(actionBox!.y).toBeGreaterThanOrEqual(copyBox!.y + copyBox!.height);
 }
 
 async function expectElementsFitViewport(page: Page, selectors: string[]) {

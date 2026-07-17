@@ -82,6 +82,10 @@
     overflow-wrap: anywhere;
   }
 
+  .page-heading h1:focus {
+    outline: none;
+  }
+
   .page-heading.dashboard-heading h1 {
     font-size: clamp(2rem, 4.5cqi, 2.75rem);
   }

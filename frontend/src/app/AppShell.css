@@ -171,6 +171,8 @@
 
     .page-actions {
       inline-size: 100%;
+      max-inline-size: none;
+      justify-content: flex-start;
     }
 
     .compact-app-bar {
