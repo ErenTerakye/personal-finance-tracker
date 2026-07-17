@@ -42,6 +42,7 @@ import {
   useTransactionPreview,
   useTransactionCategories,
   useTransactions,
+  preloadTransactions,
 } from "./useTransactions";
 import { TransactionFilterForm } from "./components/TransactionFilterForm";
 import { TransactionFormDialog } from "./components/TransactionFormDialog";
@@ -49,14 +50,23 @@ import { ActivityLedger } from "./components/ActivityLedger";
 
 type TransactionDialog = "create" | "edit" | null;
 
+export function preloadTransactionsView(period: {
+  month: number;
+  year: number;
+}) {
+  return preloadTransactions(readTransactionFilters(period));
+}
+
 export function TransactionsView({
   selectedPeriod,
   setNotice,
   createRequestId = 0,
+  locationVersion = 0,
 }: {
   selectedPeriod: { month: number; year: number };
   setNotice: (notice: string) => void;
   createRequestId?: number;
+  locationVersion?: number;
 }) {
   const [filters, setFilters] = useState<TransactionFilters>(() =>
     readTransactionFilters(selectedPeriod),
@@ -155,9 +165,26 @@ export function TransactionsView({
   }, [createRequestId]);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("data") === "import") {
-      setImportOpen(true);
-    }
+    setFilters(readTransactionFilters(selectedPeriod));
+    setSearch(readSearchParam());
+    setImportOpen(
+      new URLSearchParams(window.location.search).get("data") === "import",
+    );
+  }, [locationVersion, selectedPeriod]);
+
+  useEffect(() => {
+    const closeTransientUi = () => {
+      setDialog(null);
+      setEditingId(null);
+      setPendingDelete(null);
+      setImportOpen(false);
+    };
+    window.addEventListener("finance-tracker:route-leave", closeTransientUi);
+    return () =>
+      window.removeEventListener(
+        "finance-tracker:route-leave",
+        closeTransientUi,
+      );
   }, []);
 
   function openEdit(transaction: TransactionRecord) {

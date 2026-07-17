@@ -76,6 +76,8 @@ secondary Manage area:
   `/manage/automations`, `/manage/categories`, `/manage/data`, and `/manage/preferences`.
 - Compatibility redirects from `/cash-flow` to `/`, `/net-worth` to `/accounts`, and `/rules` to
   `/manage/automations`, preserving relevant query parameters.
+- Idle and interaction-intent preparation for fast first opens, with visited filters and view state
+  restored when returning to a destination; slow routes use an accessible stable loading shell.
 - An Accounts workspace for current and historical position, account movement, composition,
   coverage, atomic multi-account balance updates, correction safeguards, and an accessible chart
   with a complete data table.

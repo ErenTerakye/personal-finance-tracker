@@ -21,14 +21,15 @@ export function PageHeader({
   actions?: ReactNode;
   className?: string;
 }) {
+  const titleId = useId();
   return (
     <section
       className={`page-heading ${className}`.trim()}
-      aria-labelledby="page-title"
+      aria-labelledby={titleId}
     >
       <div>
         {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-        <h1 id="page-title">{title}</h1>
+        <h1 id={titleId}>{title}</h1>
         <p>{summary}</p>
         {context ? <div className="page-context">{context}</div> : null}
       </div>

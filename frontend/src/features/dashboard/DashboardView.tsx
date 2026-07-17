@@ -32,10 +32,14 @@ import { useMediaQuery } from "../../shared/hooks/useMediaQuery";
 import { periodLabel } from "../../shared/format/periods";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import type { DashboardData, TransactionRecord } from "../../types";
-import { useDashboard } from "./useDashboard";
+import { preloadDashboard, useDashboard } from "./useDashboard";
 import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
 import { RollingNumber } from "../../shared/components/RollingNumber";
 import DashboardNetWorthPanel from "./DashboardNetWorthPanel";
+
+export function preloadDashboardView(period: { month: number; year: number }) {
+  return preloadDashboard(period.month, period.year);
+}
 
 export function DashboardView({
   selectedPeriod,
@@ -401,6 +405,15 @@ function ReportMenu({ month, year }: { month: number; year: number }) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const compactLayout = useMediaQuery("(max-width: 63.999rem)");
   const [compactOpen, setCompactOpen] = useState(false);
+  useEffect(() => {
+    const closeTransientUi = () => setCompactOpen(false);
+    window.addEventListener("finance-tracker:route-leave", closeTransientUi);
+    return () =>
+      window.removeEventListener(
+        "finance-tracker:route-leave",
+        closeTransientUi,
+      );
+  }, []);
   const { t } = useI18n();
 
   useEffect(() => {

@@ -17,7 +17,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import "./net-worth.css";
-import { useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { api } from "../../api/client";
 import { ActionButton, SubmitButton } from "../../shared/components/actions";
 import { ModalDialog } from "../../shared/components/dialogs";
@@ -28,6 +28,8 @@ import { formatDate, todayIso } from "../../shared/format/dates";
 import { currencySymbol, money, signedMoney } from "../../shared/format/money";
 import { useMutation } from "../../shared/hooks/useMutation";
 import { useResource } from "../../shared/hooks/useResource";
+import { invalidateResourceTags } from "../../shared/hooks/resourceCache";
+import { resourceTags } from "../../shared/hooks/resourceKeys";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { localizedNotice } from "../../shared/i18n/notices";
 import type {
@@ -37,7 +39,7 @@ import type {
   NetWorthAccountAnalytics,
   NetWorthOverview,
 } from "../../types";
-import { useNetWorthData } from "./useNetWorthData";
+import { preloadNetWorthData, useNetWorthData } from "./useNetWorthData";
 import {
   isSupportedNetWorthRange,
   PortfolioWorkspace,
@@ -56,10 +58,17 @@ type DialogState =
   | { kind: "history"; account: AccountRecord }
   | null;
 
+export function preloadNetWorthView() {
+  const { asOf, months } = readUrlState();
+  return preloadNetWorthData(asOf, months, false);
+}
+
 export function NetWorthView({
   setNotice,
+  locationVersion = 0,
 }: {
   setNotice: (notice: string) => void;
+  locationVersion?: number;
 }) {
   const { t } = useI18n();
   const initial = useMemo(() => readUrlState(), []);
@@ -69,6 +78,22 @@ export function NetWorthView({
   const [dialog, setDialog] = useState<DialogState>(null);
   const [refreshKey, refresh] = useReducer((value: number) => value + 1, 0);
   const resource = useNetWorthData(asOf, months, includeArchived, refreshKey);
+
+  useEffect(() => {
+    const next = readUrlState();
+    setAsOf(next.asOf);
+    setMonths(next.months);
+  }, [locationVersion]);
+
+  useEffect(() => {
+    const closeTransientUi = () => setDialog(null);
+    window.addEventListener("finance-tracker:route-leave", closeTransientUi);
+    return () =>
+      window.removeEventListener(
+        "finance-tracker:route-leave",
+        closeTransientUi,
+      );
+  }, []);
   function updateUrl(nextAsOf: string, nextMonths: number) {
     const url = new URL(window.location.href);
     if (nextAsOf) url.searchParams.set("as_of", nextAsOf);
@@ -79,6 +104,7 @@ export function NetWorthView({
   }
 
   function changed(response: { notice: string; notice_code?: string }) {
+    invalidateResourceTags(resourceTags.accounts, resourceTags.dashboard);
     setNotice(localizedNotice(response, t));
     setDialog(null);
     refresh();

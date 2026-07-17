@@ -11,6 +11,75 @@
     padding: clamp(1.25rem, 3vw, 3.5rem) var(--page-gutter) 5rem;
   }
 
+  .route-stage.is-active,
+  .route-loading-shell {
+    view-transition-name: route-stage;
+  }
+
+  .route-loading-shell {
+    min-block-size: min(42rem, calc(100dvh - 6rem));
+  }
+
+  .route-loading-heading {
+    display: grid;
+    gap: 0.75rem;
+    margin-block-end: var(--space-5);
+  }
+
+  .route-loading-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+
+  .route-skeleton {
+    display: block;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--muted) 14%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--rule) 72%, transparent);
+    border-radius: var(--radius);
+  }
+
+  .route-skeleton-eyebrow {
+    inline-size: 7rem;
+    block-size: 0.8rem;
+    border-radius: var(--radius-pill);
+  }
+
+  .route-skeleton-title {
+    inline-size: min(22rem, 70%);
+    block-size: 2.75rem;
+  }
+
+  .route-skeleton-summary {
+    inline-size: min(36rem, 90%);
+    block-size: 1.1rem;
+  }
+
+  .route-skeleton-panel {
+    min-block-size: 14rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .route-skeleton {
+      animation: route-skeleton-pulse 900ms ease-in-out infinite alternate;
+    }
+  }
+
+  @keyframes route-skeleton-pulse {
+    to {
+      opacity: 0.58;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .route-skeleton {
+      background: Canvas;
+      border-color: CanvasText;
+      animation: none;
+    }
+  }
+
   .app-rail {
     position: fixed;
     inset: 0 auto 0 0;
@@ -167,6 +236,10 @@
     .page-heading {
       grid-template-columns: minmax(0, 1fr);
       align-items: start;
+    }
+
+    .route-loading-grid {
+      grid-template-columns: 1fr;
     }
 
     .page-actions {

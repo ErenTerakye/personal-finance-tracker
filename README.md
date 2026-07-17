@@ -20,6 +20,8 @@ A local-first finance tracker with a Typer CLI, FastAPI JSON API, React browser 
 - Save optional PNG charts for monthly reports and trend reports.
 - Run a polished local FastAPI JSON API and React “ledger editorial” workspace with Overview,
   Transactions, Budgets, Accounts, and focused Manage workflows.
+- Move between warmed workspaces without first-open flicker while preserving visited filters and
+  respecting reduced-motion preferences.
 - Preview transaction CSV imports before writing, skip duplicates by default, import/export budget CSV files, and download report/chart artifacts from Overview.
 - Configure one local ledger currency and use locale-aware English/Turkish browser formatting.
 - Verify responsive and accessibility behavior with Playwright coverage.

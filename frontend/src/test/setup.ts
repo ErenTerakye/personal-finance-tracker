@@ -1,4 +1,8 @@
 import "@testing-library/jest-dom/vitest";
+import { afterEach } from "vitest";
+import { clearResourceCache } from "../shared/hooks/resourceCache";
+
+afterEach(() => clearResourceCache());
 
 class TestDialog extends HTMLElement {
   open = false;

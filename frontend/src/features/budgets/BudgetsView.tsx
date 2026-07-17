@@ -44,6 +44,7 @@ import {
   useBudgets,
   useDeleteBudget,
   useSaveBudget,
+  preloadBudgets,
 } from "./useBudgets";
 import { BudgetFormDialog } from "./components/BudgetFormDialog";
 import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
@@ -51,17 +52,23 @@ import { RollingNumber } from "../../shared/components/RollingNumber";
 
 type BudgetDialog = "create" | "edit" | null;
 
+export function preloadBudgetsView(period: { month: number; year: number }) {
+  return preloadBudgets(readBudgetFilters(period), period);
+}
+
 export function BudgetsView({
   selectedPeriod,
   setSelectedPeriod,
   setNotice,
   createRequestId,
+  locationVersion = 0,
   onReviewTransactions,
 }: {
   selectedPeriod: { month: number; year: number };
   setSelectedPeriod: (period: { month: number; year: number }) => void;
   setNotice: (notice: string) => void;
   createRequestId: number;
+  locationVersion?: number;
   onReviewTransactions: (category: string, month: number, year: number) => void;
 }) {
   const [filters, setFilters] = useState<BudgetFilters>(() =>
@@ -151,9 +158,29 @@ export function BudgetsView({
   }, [createRequestId]);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("data") === "import") {
-      setImportOpen(true);
-    }
+    const nextFilters = readBudgetFilters(selectedPeriod);
+    const category = nextFilters.category || null;
+    setFilters(nextFilters);
+    setSelectedCategory(category);
+    setInspectorOpen(Boolean(category));
+    setImportOpen(
+      new URLSearchParams(window.location.search).get("data") === "import",
+    );
+  }, [locationVersion, selectedPeriod]);
+
+  useEffect(() => {
+    const closeTransientUi = () => {
+      setDialog(null);
+      setPendingDelete(null);
+      setInspectorOpen(false);
+      setImportOpen(false);
+    };
+    window.addEventListener("finance-tracker:route-leave", closeTransientUi);
+    return () =>
+      window.removeEventListener(
+        "finance-tracker:route-leave",
+        closeTransientUi,
+      );
   }, []);
 
   useEffect(() => {

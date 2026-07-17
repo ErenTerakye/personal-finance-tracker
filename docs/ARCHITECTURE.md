@@ -66,8 +66,10 @@ responses use `Cache-Control: no-store`; the server also supplies CSP, `nosniff`
 permissions, and frame-ancestor protections.
 
 The browser uses small custom resource and mutation hooks for request cancellation, stale-response
-guards, error normalization, duplicate-submit prevention, and explicit refresh. It does not use a
-global cache, optimistic updates, automatic retries, or background revalidation.
+guards, error normalization, duplicate-submit prevention, and explicit refresh. A bounded,
+page-session-only resource cache deduplicates route preparation, keeps successful reads fresh for a
+short window, and invalidates related data after mutations. It does not persist financial responses,
+add a server-state dependency, perform optimistic updates, or retry failed requests automatically.
 
 Browser composition exposes exactly four primary destinations: Overview (`/`), Transactions
 (`/transactions`), Budgets (`/budgets`), and Accounts (`/accounts`). Lower-frequency setup is
@@ -76,6 +78,12 @@ document titles, route focus, browser-history continuity, and cross-feature cont
 Feature modules continue to own their workflows and never import one another. Compatibility paths
 translate `/cash-flow` to `/`, `/net-worth` to `/accounts`, and `/rules` to
 `/manage/automations`, retaining only relevant query parameters.
+
+Primary destinations are prepared sequentially during browser idle time and on navigation intent.
+Visited routes remain in React Activity boundaries so their loaded results, filters, and local view
+state can be restored without rebuilding the route. The app shell owns the delayed route-loading
+threshold, stable page-shaped fallback, route focus, scroll restoration, and content-only View
+Transition boundary; unsupported or reduced-motion environments switch views immediately.
 
 ## Styling, accessibility, and browser policy
 

@@ -57,7 +57,19 @@ import {
   useSaveCategoryRule,
   useSaveRecurringTemplate,
   useUpdateLedgerSettings,
+  preloadCategoryRules,
+  preloadLedgerSettings,
+  preloadRecurringTemplates,
 } from "./hooks";
+
+export function preloadManageView(section: ManageSection) {
+  if (section === "manageAutomations") {
+    return Promise.all([preloadRecurringTemplates(), preloadLedgerSettings()]);
+  }
+  if (section === "manageCategories") return preloadCategoryRules();
+  if (section === "managePreferences") return preloadLedgerSettings();
+  return Promise.resolve();
+}
 
 const manageIcons = {
   manageAutomations: Repeat2,
@@ -72,6 +84,7 @@ export function ManageView({
   setSelectedPeriod,
   setNotice,
   onNavigate,
+  onPrepare,
   onViewTransactions,
   onOpenTransactionImport,
   onOpenBudgetImport,
@@ -82,13 +95,18 @@ export function ManageView({
   setSelectedPeriod: (period: { month: number; year: number }) => void;
   setNotice: (notice: string) => void;
   onNavigate: (view: View) => void;
+  onPrepare: (view: View) => void;
   onViewTransactions: (month: number, year: number) => void;
   onOpenTransactionImport: () => void;
   onOpenBudgetImport: () => void;
   onCurrencyChange: (currency: string) => void;
 }) {
   const navigation = (
-    <ManageNavigation current={section} onNavigate={onNavigate} />
+    <ManageNavigation
+      current={section}
+      onNavigate={onNavigate}
+      onPrepare={onPrepare}
+    />
   );
   return (
     <div className="manage-view">
@@ -126,9 +144,11 @@ export function ManageView({
 function ManageNavigation({
   current,
   onNavigate,
+  onPrepare,
 }: {
   current: ManageSection;
   onNavigate: (view: View) => void;
+  onPrepare: (view: View) => void;
 }) {
   const { t } = useI18n();
   return (
@@ -141,6 +161,9 @@ function ManageNavigation({
               <a
                 href={pathForView(view)}
                 aria-current={current === view ? "page" : undefined}
+                onFocus={() => onPrepare(view)}
+                onPointerEnter={() => onPrepare(view)}
+                onPointerDown={() => onPrepare(view)}
                 onClick={(event) => {
                   if (
                     event.button !== 0 ||
@@ -203,6 +226,21 @@ function AutomationsView({
   const activeTemplates = templates.filter((template) => template.active);
   const currency = settingsResource.data?.currency ?? "USD";
   const period = periodLabel(selectedPeriod.month, selectedPeriod.year);
+
+  useEffect(() => {
+    const closeTransientUi = () => {
+      setCreatorOpen(false);
+      setPreviewOpen(false);
+      setPendingDelete(null);
+      setApplyResult(null);
+    };
+    window.addEventListener("finance-tracker:route-leave", closeTransientUi);
+    return () =>
+      window.removeEventListener(
+        "finance-tracker:route-leave",
+        closeTransientUi,
+      );
+  }, []);
 
   const saveMutation = useSaveRecurringTemplate((response) => {
     setNotice(localizedNotice(response, t));
@@ -572,6 +610,18 @@ function CategoriesView({
   const [pendingDelete, setPendingDelete] = useState<CategoryRule | null>(null);
   const resource = useCategoryRules();
   const rules = resource.data?.rules ?? [];
+  useEffect(() => {
+    const closeTransientUi = () => {
+      setCreatorOpen(false);
+      setPendingDelete(null);
+    };
+    window.addEventListener("finance-tracker:route-leave", closeTransientUi);
+    return () =>
+      window.removeEventListener(
+        "finance-tracker:route-leave",
+        closeTransientUi,
+      );
+  }, []);
   const saveMutation = useSaveCategoryRule((response) => {
     setNotice(localizedNotice(response, t));
     setForm(defaultRule);

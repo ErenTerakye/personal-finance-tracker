@@ -13,25 +13,12 @@
     border-radius: calc(var(--radius) * 1.35);
   }
 
-  .activity-hero-copy {
-    position: relative;
-    z-index: 1;
-    max-inline-size: 46rem;
-  }
-
   .activity-hero h1 {
     margin-block: 0.2rem 0.55rem;
     font-size: clamp(2.25rem, 8cqi, 4.75rem);
     letter-spacing: -0.055em;
     line-height: 0.96;
     text-wrap: balance;
-  }
-
-  .activity-hero-copy > p:last-child {
-    max-inline-size: 48ch;
-    margin: 0;
-    color: var(--muted);
-    font-size: clamp(1rem, 2cqi, 1.125rem);
   }
 
   .activity-hero-actions {

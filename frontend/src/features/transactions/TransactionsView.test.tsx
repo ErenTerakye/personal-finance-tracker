@@ -76,7 +76,7 @@ describe("transactions workflow", () => {
     );
 
     expect(search).toHaveValue("");
-    expect(await screen.findByText("Groceries")).toBeVisible();
+    expect(await within(activeRoute()).findByText("Groceries")).toBeVisible();
   });
 
   it("retries a failed transaction resource load", async () => {
@@ -150,8 +150,8 @@ describe("transactions workflow", () => {
     await userEvent.type(search, "salary");
 
     await waitFor(() => {
-      expect(screen.getByText("Salary")).toBeInTheDocument();
-      expect(screen.queryByText("Groceries")).not.toBeInTheDocument();
+      expect(within(activeRoute()).getByText("Salary")).toBeInTheDocument();
+      expect(within(activeRoute()).queryByText("Groceries")).toBeNull();
     });
     await userEvent.click(
       screen.getByRole("button", { name: "Advanced filters" }),
@@ -405,7 +405,7 @@ describe("transactions workflow", () => {
     await userEvent.click(
       await screen.findByRole("link", { name: /Transactions|Activity/i }),
     );
-    await screen.findByText("Groceries");
+    await within(activeRoute()).findByText("Groceries");
     await userEvent.click(screen.getByRole("button", { name: "Actions" }));
     const popover = document.getElementById("row-actions-1");
     if (popover && typeof (popover as any).showPopover === "function") {
@@ -423,3 +423,7 @@ describe("transactions workflow", () => {
     await waitFor(() => expect(dialog).not.toHaveAttribute("open"));
   });
 });
+
+function activeRoute() {
+  return document.querySelector<HTMLElement>(".route-stage.is-active")!;
+}

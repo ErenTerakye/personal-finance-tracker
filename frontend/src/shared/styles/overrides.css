@@ -13,6 +13,39 @@
   }
 
   @media (prefers-reduced-motion: no-preference) {
+    ::view-transition-group(route-stage) {
+      animation-duration: 160ms;
+      animation-timing-function: ease-out;
+    }
+
+    html:active-view-transition-type(route-forward)
+      ::view-transition-old(route-stage) {
+      animation: 160ms ease-out both route-exit-backward;
+    }
+
+    html:active-view-transition-type(route-forward)
+      ::view-transition-new(route-stage) {
+      animation: 160ms ease-out both route-enter-forward;
+    }
+
+    html:active-view-transition-type(route-backward)
+      ::view-transition-old(route-stage) {
+      animation: 160ms ease-out both route-exit-forward;
+    }
+
+    html:active-view-transition-type(route-backward)
+      ::view-transition-new(route-stage) {
+      animation: 160ms ease-out both route-enter-backward;
+    }
+
+    html:active-view-transition-type(route-jump)
+      :is(
+        ::view-transition-old(route-stage),
+        ::view-transition-new(route-stage)
+      ) {
+      animation-duration: 140ms;
+    }
+
     ::view-transition-group(period-header) {
       z-index: 1;
     }
@@ -26,6 +59,34 @@
         .lang-toggle
       ):active:not(:disabled) {
       transform: scale(0.985);
+    }
+  }
+
+  @keyframes route-enter-forward {
+    from {
+      opacity: 0;
+      transform: translateX(6px);
+    }
+  }
+
+  @keyframes route-enter-backward {
+    from {
+      opacity: 0;
+      transform: translateX(-6px);
+    }
+  }
+
+  @keyframes route-exit-forward {
+    to {
+      opacity: 0;
+      transform: translateX(6px);
+    }
+  }
+
+  @keyframes route-exit-backward {
+    to {
+      opacity: 0;
+      transform: translateX(-6px);
     }
   }
 

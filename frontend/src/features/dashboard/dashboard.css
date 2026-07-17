@@ -5,30 +5,12 @@
     row-gap: var(--space-4);
   }
 
-  .dashboard-context-header > .eyebrow,
-  .dashboard-context-header > .dashboard-narrative {
+  .dashboard-context-header > .eyebrow {
     margin: 0;
-  }
-
-  .dashboard-context-header .dashboard-narrative {
-    margin-block-start: 0.5rem;
   }
 
   .dashboard-heading-tools {
     min-inline-size: 0;
-  }
-
-  .dashboard-command-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 0.75rem 1rem;
-    margin-block-start: 1rem;
-  }
-
-  .dashboard-primary-actions {
-    grid-template-columns: minmax(8rem, auto);
-    inline-size: auto;
   }
 
   @container workspace-main (min-width: 44rem) {
@@ -61,16 +43,6 @@
     .dashboard-actions {
       grid-template-columns: minmax(0, 1fr);
       align-items: stretch;
-    }
-
-    .dashboard-command-row {
-      grid-template-columns: minmax(0, 1fr);
-      align-items: stretch;
-    }
-
-    .dashboard-primary-actions {
-      grid-template-columns: minmax(0, 1fr);
-      inline-size: 100%;
     }
 
     .dashboard-actions .report-menu,

@@ -26,7 +26,7 @@ const budgets = {
   lazyJavaScriptChunk: 45 * kibibytes,
   lazyCssChunk: 7 * kibibytes,
   routeCss: 8 * kibibytes,
-  totalCss: 32 * kibibytes,
+  totalCss: 40 * kibibytes,
 };
 const routes = [
   {

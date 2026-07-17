@@ -9,6 +9,7 @@ import {
   installAppTestLifecycle,
   mockCompactLayout,
   mockFetch,
+  transaction,
 } from "./test/appTestSupport";
 
 installAppTestLifecycle();
@@ -71,10 +72,7 @@ describe("app composition", () => {
       "stroke",
       "currentColor",
     );
-    expect(links[0].querySelector("svg")).toHaveAttribute(
-      "fill-opacity",
-      "1",
-    );
+    expect(links[0].querySelector("svg")).toHaveAttribute("fill-opacity", "1");
     expect(links[0].querySelectorAll("path")).not.toHaveLength(0);
     for (const link of links.slice(1)) {
       expect(link.querySelector("svg")).toHaveAttribute("fill", "none");
@@ -186,5 +184,28 @@ describe("app composition", () => {
     expect(screen.getByRole("link", { name: "Bütçeler" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Hesaplar" })).toBeVisible();
     expect(document.title).toBe("Genel Bakış | Personal Finance Tracker");
+  });
+
+  it("restores a visited destination without resetting its local view state", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": { transactions: [transaction()] },
+      "/api/budgets/status": { statuses: [] },
+      "/api/budgets": { budgets: [] },
+      "/api/category-rules": { rules: [] },
+    });
+    render(<App />);
+
+    await userEvent.click(
+      await screen.findByRole("link", { name: "Transactions" }),
+    );
+    const search = await screen.findByRole("searchbox");
+    await userEvent.type(search, "groceries");
+    await userEvent.click(screen.getByRole("link", { name: "Budgets" }));
+    await screen.findByRole("heading", { name: "Budgets" });
+    await userEvent.click(screen.getByRole("link", { name: "Transactions" }));
+
+    expect(await screen.findByRole("searchbox")).toHaveValue("groceries");
+    expect(document.querySelector(".route-loading-shell")).toBeNull();
   });
 });

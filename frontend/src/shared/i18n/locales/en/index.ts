@@ -15,6 +15,7 @@ export const en = {
     localSqlite: "Local SQLite",
     hostedDemo: "Hosted demo",
     loading: "Loading ledger settings...",
+    loadingRoute: "Loading {name}...",
     cancel: "Cancel",
     edit: "Edit",
     delete: "Delete",

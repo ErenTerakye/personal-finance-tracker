@@ -9,34 +9,6 @@
     opacity: 0.82;
   }
 
-  .wealth-page-header {
-    display: flex;
-    align-items: end;
-    justify-content: space-between;
-    gap: 1.25rem;
-    padding-block: 0.35rem;
-  }
-
-  .wealth-page-header > div:first-child {
-    display: grid;
-    gap: 0.35rem;
-    max-inline-size: 48rem;
-  }
-
-  .wealth-page-header h1 {
-    color: var(--ink);
-    font-size: clamp(2.4rem, 7cqi, 5.4rem);
-    letter-spacing: -0.055em;
-    line-height: 0.95;
-    text-wrap: balance;
-  }
-
-  .wealth-page-header p:not(.eyebrow) {
-    color: var(--muted);
-    font-size: clamp(1rem, 1.8cqi, 1.15rem);
-    text-wrap: pretty;
-  }
-
   .wealth-header-actions {
     display: flex;
     flex-wrap: wrap;
@@ -561,7 +533,6 @@
   .movement-list,
   .unresolved-account-list,
   .portfolio-list,
-  .check-in-list,
   .snapshot-list {
     margin: 0;
     padding: 0;
@@ -919,15 +890,7 @@
     line-height: 0.88;
   }
 
-  .wealth-onboarding .wealth-onboarding-lede {
-    color: inherit;
-    font-size: clamp(1.35rem, 3cqi, 2.15rem);
-    font-weight: var(--font-weight-semibold);
-    line-height: var(--line-tight);
-    text-wrap: balance;
-  }
-
-  .wealth-onboarding p:not(.eyebrow, .wealth-onboarding-lede) {
+  .wealth-onboarding p:not(.eyebrow) {
     max-inline-size: 58ch;
     color: color-mix(in srgb, var(--surface) 72%, transparent);
     font-size: clamp(1rem, 2cqi, 1.15rem);
@@ -1004,8 +967,7 @@
     vector-effect: non-scaling-stroke;
   }
 
-  .wealth-muted,
-  .form-hint {
+  .wealth-muted {
     color: var(--muted);
     font-size: var(--font-size-sm);
   }
@@ -1750,10 +1712,6 @@
   }
 
   @media (max-width: 52rem) {
-    .net-worth-view:has(.wealth-scoreboard) .wealth-page-header {
-      order: 0;
-    }
-
     .net-worth-view:has(.wealth-scoreboard) .wealth-scoreboard {
       order: 1;
     }
@@ -1768,11 +1726,6 @@
 
     .net-worth-view:has(.wealth-scoreboard) .portfolio-workspace {
       order: 4;
-    }
-
-    .wealth-page-header {
-      align-items: start;
-      flex-direction: column;
     }
 
     .wealth-header-actions {

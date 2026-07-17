@@ -1,7 +1,12 @@
 import { flushSync } from "react-dom";
 
 export type MotionTransitionType =
-  "period-forward" | "period-backward" | "period-jump";
+  | "period-forward"
+  | "period-backward"
+  | "period-jump"
+  | "route-forward"
+  | "route-backward"
+  | "route-jump";
 
 type ViewTransitionLike = {
   finished?: Promise<unknown>;
@@ -22,6 +27,7 @@ export function cancelActiveViewTransition() {
   activeTransition?.skipTransition?.();
   activeTransition = null;
   document.documentElement.classList.remove("period-view-transition");
+  document.documentElement.classList.remove("route-view-transition");
 }
 
 /**
@@ -51,7 +57,10 @@ export function runViewTransition(
   activeTransition?.skipTransition?.();
   activeTransition = null;
   const root = document.documentElement;
-  root.classList.add("period-view-transition");
+  const transitionClass = type.startsWith("period-")
+    ? "period-view-transition"
+    : "route-view-transition";
+  root.classList.add(transitionClass);
 
   let transition: ViewTransitionLike;
   try {
@@ -60,7 +69,7 @@ export function runViewTransition(
       types: [type],
     });
     if (!candidate) {
-      root.classList.remove("period-view-transition");
+      root.classList.remove(transitionClass);
       flushSync(update);
       return {
         started: false,
@@ -70,7 +79,7 @@ export function runViewTransition(
     }
     transition = candidate;
   } catch {
-    root.classList.remove("period-view-transition");
+    root.classList.remove(transitionClass);
     flushSync(update);
     return {
       started: false,
@@ -92,7 +101,7 @@ export function runViewTransition(
     .finally(() => {
       if (activeTransition === transition) {
         activeTransition = null;
-        root.classList.remove("period-view-transition");
+        root.classList.remove(transitionClass);
       }
     });
 

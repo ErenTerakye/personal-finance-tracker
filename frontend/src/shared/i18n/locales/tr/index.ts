@@ -15,6 +15,7 @@ export const tr = {
     localSqlite: "Yerel SQLite",
     hostedDemo: "Barındırılan demo",
     loading: "Defter ayarları yükleniyor...",
+    loadingRoute: "{name} yükleniyor...",
     cancel: "İptal",
     edit: "Düzenle",
     delete: "Sil",

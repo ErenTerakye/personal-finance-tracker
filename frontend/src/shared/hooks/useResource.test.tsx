@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useResource } from "./useResource";
+import { prefetchResource } from "./resourceCache";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -77,5 +78,17 @@ describe("useResource", () => {
 
     await waitFor(() => expect(result.current.status).toBe("error"));
     expect(result.current.error?.message).toBe("synchronous failure");
+  });
+
+  it("starts from prepared data without exposing an idle loading frame", async () => {
+    await prefetchResource("prepared", async () => "warm");
+    const loader = vi.fn(async () => "network");
+
+    const { result } = renderHook(() =>
+      useResource(loader, "prepared", { cacheKey: "prepared" }),
+    );
+
+    expect(result.current).toMatchObject({ status: "success", data: "warm" });
+    expect(loader).not.toHaveBeenCalled();
   });
 });

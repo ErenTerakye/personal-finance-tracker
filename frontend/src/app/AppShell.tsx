@@ -50,15 +50,19 @@ export function LanguageToggle({ labeled = false }: { labeled?: boolean }) {
 export function AppShell({
   view,
   notice,
+  busy,
   mainRef,
   onNavigate,
+  onPrepare,
   onPrimaryAction,
   children,
 }: {
   view: RouteView;
   notice: string;
+  busy: boolean;
   mainRef: React.RefObject<HTMLElement | null>;
   onNavigate: (view: View) => void;
+  onPrepare: (view: View) => void;
   onPrimaryAction: () => void;
   children: ReactNode;
 }) {
@@ -75,6 +79,7 @@ export function AppShell({
             active={view === item}
             filledIcon={className === "bottom-navigation"}
             onNavigate={onNavigate}
+            onPrepare={onPrepare}
           />
         ))}
       </ul>
@@ -91,7 +96,7 @@ export function AppShell({
           className="app-rail"
           aria-label={t("common.workspaceNavigation")}
         >
-          <Brand onNavigate={onNavigate} />
+          <Brand onNavigate={onNavigate} onPrepare={onPrepare} />
           {navigation("rail-navigation")}
           <button
             className="rail-create button primary"
@@ -109,6 +114,9 @@ export function AppShell({
             <a
               href={viewMeta.manageAutomations.path}
               aria-current={isManageView(view) ? "page" : undefined}
+              onFocus={() => onPrepare("manageAutomations")}
+              onPointerEnter={() => onPrepare("manageAutomations")}
+              onPointerDown={() => onPrepare("manageAutomations")}
               onClick={(event) => {
                 if (!shouldHandleNavigation(event)) return;
                 event.preventDefault();
@@ -132,7 +140,7 @@ export function AppShell({
 
       {compactLayout && (
         <header className="compact-app-bar">
-          <Brand onNavigate={onNavigate} compact />
+          <Brand onNavigate={onNavigate} onPrepare={onPrepare} compact />
           <div className="compact-utilities">
             <LanguageToggle />
             <ThemeToggle />
@@ -141,6 +149,9 @@ export function AppShell({
               href={viewMeta.manageAutomations.path}
               aria-label={t("nav.manage")}
               aria-current={isManageView(view) ? "page" : undefined}
+              onFocus={() => onPrepare("manageAutomations")}
+              onPointerEnter={() => onPrepare("manageAutomations")}
+              onPointerDown={() => onPrepare("manageAutomations")}
               onClick={(event) => {
                 if (!shouldHandleNavigation(event)) return;
                 event.preventDefault();
@@ -172,7 +183,12 @@ export function AppShell({
         </div>
       )}
 
-      <main id="content" tabIndex={-1} ref={mainRef}>
+      <main
+        id="content"
+        tabIndex={-1}
+        ref={mainRef}
+        aria-busy={busy || undefined}
+      >
         <Notice message={notice} />
         <div
           className="sr-only"
@@ -199,11 +215,13 @@ function PrimaryNavigationItem({
   active,
   filledIcon,
   onNavigate,
+  onPrepare,
 }: {
   item: PrimaryView;
   active: boolean;
   filledIcon: boolean;
   onNavigate: (view: View) => void;
+  onPrepare: (view: View) => void;
 }) {
   const { t } = useI18n();
   const Icon = navIcons[item];
@@ -212,6 +230,9 @@ function PrimaryNavigationItem({
       <a
         href={viewMeta[item].path}
         aria-current={active ? "page" : undefined}
+        onFocus={() => onPrepare(item)}
+        onPointerEnter={() => onPrepare(item)}
+        onPointerDown={() => onPrepare(item)}
         onClick={(event) => {
           if (!shouldHandleNavigation(event)) return;
           event.preventDefault();
@@ -282,11 +303,7 @@ function FilledPrimaryNavigationIcon({ item }: { item: PrimaryView }) {
     return (
       <svg {...sharedProps}>
         <path d="M5 2a1.5 1.5 0 0 1 .82.24l.82.53a1.5 1.5 0 0 0 1.62 0l.93-.6a1.5 1.5 0 0 1 1.62 0l.38.24a1.5 1.5 0 0 0 1.62 0l.38-.24a1.5 1.5 0 0 1 1.62 0l.93.6a1.5 1.5 0 0 0 1.62 0l.82-.53A1.5 1.5 0 0 1 20 3.5v17a1.5 1.5 0 0 1-2.32 1.26l-.82-.53a1.5 1.5 0 0 0-1.62 0l-.93.6a1.5 1.5 0 0 1-1.62 0l-.38-.24a1.5 1.5 0 0 0-1.62 0l-.38.24a1.5 1.5 0 0 1-1.62 0l-.93-.6a1.5 1.5 0 0 0-1.62 0l-.82.53A1.5 1.5 0 0 1 4 20.5v-17A1.5 1.5 0 0 1 5 2" />
-        <path
-          d="M8 8h8M8 12h8M8 16h5"
-          fill="none"
-          stroke="var(--surface)"
-        />
+        <path d="M8 8h8M8 12h8M8 16h5" fill="none" stroke="var(--surface)" />
       </svg>
     );
   }
@@ -296,7 +313,8 @@ function FilledPrimaryNavigationIcon({ item }: { item: PrimaryView }) {
       <svg {...sharedProps}>
         <path
           fillRule="evenodd"
-          d="M12 1a11 11 0 1 1 0 22 11 11 0 0 1 0-22m0 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14m0 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6"
+          d="M12 1a11 11 0 1 1 0 22 11 11 0 0 1 0-22m0 2a9 9 0 1 0 0 18 9 9 0 0 0 0-18m0 2a7 7 0 1 1 0 14 7 7 0 0 1 0-14m0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10m0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6"
+          stroke="none"
         />
       </svg>
     );
@@ -316,9 +334,11 @@ function FilledPrimaryNavigationIcon({ item }: { item: PrimaryView }) {
 
 function Brand({
   onNavigate,
+  onPrepare,
   compact = false,
 }: {
   onNavigate: (view: View) => void;
+  onPrepare: (view: View) => void;
   compact?: boolean;
 }) {
   return (
@@ -326,6 +346,9 @@ function Brand({
       className={`brand ${compact ? "brand-compact" : ""}`}
       href="/"
       aria-label="Finance Tracker"
+      onFocus={() => onPrepare("overview")}
+      onPointerEnter={() => onPrepare("overview")}
+      onPointerDown={() => onPrepare("overview")}
       onClick={(event) => {
         if (!shouldHandleNavigation(event)) return;
         event.preventDefault();
