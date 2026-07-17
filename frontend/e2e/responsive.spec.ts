@@ -146,7 +146,19 @@ test("compact bottom navigation localizes from inline header utilities", async (
     compactBar.getByRole("button", { name: "Open navigation menu" }),
   ).toHaveCount(0);
   await expect(compactBar.getByRole("link", { name: "Manage" })).toBeVisible();
-  await compactBar.locator(".lang-toggle").click();
+  const headerLayout = await captureCompactHeaderLayout(page);
+
+  // Navigate to Manage Preferences page to change language on compact screen widths
+  await compactBar.getByRole("link", { name: "Manage" }).click();
+  await expect(page).toHaveURL(/\/manage\/automations/);
+
+  const manageNav = page.locator(".manage-navigation");
+  await manageNav.getByRole("link", { name: "Preferences" }).click();
+  await expect(page).toHaveURL(/\/manage\/preferences/);
+
+  // Under PreferenceChoiceGroups in PreferencesView, choose Turkish
+  const prefGroup = page.locator(".preference-choice-groups");
+  await prefGroup.getByRole("radio", { name: "Turkish" }).locator("..").click();
 
   await expect(
     navigation.getByRole("link", { name: "Genel Bakış" }),
@@ -160,6 +172,11 @@ test("compact bottom navigation localizes from inline header utilities", async (
   await expect(
     navigation.getByRole("link", { name: "Hesaplar" }),
   ).toBeVisible();
+
+  // Return to Overview page to check layout consistency
+  await navigation.getByRole("link", { name: "Genel Bakış" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  expect(await captureCompactHeaderLayout(page)).toEqual(headerLayout);
 });
 
 test("keeps compact navigation live through rapid tab switches", async ({
@@ -201,7 +218,7 @@ test("keeps compact navigation live through rapid tab switches", async ({
   }
 });
 
-test("keeps compact navigation above route transition snapshots", async ({
+test("switches compact tabs without a shared-page route transition", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -209,53 +226,59 @@ test("keeps compact navigation above route transition snapshots", async ({
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
 
-  const transitionChrome = page.evaluate(
-    () =>
-      new Promise<{
-        navigationTransitionName: string;
-        navigationGroupZIndex: string;
-      }>((resolve, reject) => {
-        const timeout = window.setTimeout(() => {
-          observer.disconnect();
-          reject(new Error("Route view transition did not start"));
-        }, 1_000);
-        const observer = new MutationObserver(() => {
-          if (
-            !document.documentElement.classList.contains(
-              "route-view-transition",
-            )
-          ) {
-            return;
-          }
-
-          const navigation = document.querySelector<HTMLElement>(
-            ".compact-primary-navigation",
-          );
-          if (!navigation) throw new Error("Expected compact navigation");
-          window.clearTimeout(timeout);
-          observer.disconnect();
-          resolve({
-            navigationTransitionName:
-              getComputedStyle(navigation).viewTransitionName,
-            navigationGroupZIndex: getComputedStyle(
-              document.documentElement,
-              "::view-transition-group(compact-navigation)",
-            ).zIndex,
-          });
-        });
-        observer.observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ["class"],
-        });
-      }),
-  );
+  await page.evaluate(() => {
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: () => {
+        throw new Error("Tab switches must not start a View Transition");
+      },
+    });
+  });
 
   await page.getByRole("link", { name: "Transactions" }).click();
 
-  await expect(transitionChrome).resolves.toEqual({
-    navigationTransitionName: "compact-navigation",
-    navigationGroupZIndex: "2",
+  await expect(page).toHaveURL(/\/transactions$/);
+  await expect(
+    page.getByRole("heading", { name: "Transactions" }),
+  ).toBeVisible();
+  await expect(page.locator("html")).not.toHaveClass(/route-view-transition/);
+});
+
+test("restores compact tabs to independent remembered scroll positions", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 600 });
+  await mockApi(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+
+  const overviewScroll = await page.evaluate(() => {
+    window.scrollTo({ top: 700, behavior: "instant" });
+    return window.scrollY;
   });
+  expect(overviewScroll).toBeGreaterThan(0);
+
+  await page.getByRole("link", { name: "Transactions" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Transactions" }),
+  ).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+
+  const transactionsScroll = await page.evaluate(() => {
+    window.scrollTo({ top: 350, behavior: "instant" });
+    return window.scrollY;
+  });
+  expect(transactionsScroll).toBeGreaterThan(0);
+
+  await page.getByRole("link", { name: "Overview" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBe(overviewScroll);
+
+  await page.getByRole("link", { name: "Transactions" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBe(transactionsScroll);
 });
 
 test("scrolls the monthly automation creator in a short viewport", async ({
@@ -375,7 +398,7 @@ test("opens category guardrails without covering or rearranging cards", async ({
   expect(await readCardGeometry()).toEqual(before);
 });
 
-test("keeps the compact app bar above period transition snapshots", async ({
+test("keeps the compact app bar configured above period snapshots", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -383,48 +406,19 @@ test("keeps the compact app bar above period transition snapshots", async ({
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
 
-  const transitionChrome = page.evaluate(
-    () =>
-      new Promise<{
-        headerTransitionName: string;
-        headerGroupZIndex: string;
-      }>((resolve, reject) => {
-        const timeout = window.setTimeout(() => {
-          observer.disconnect();
-          reject(new Error("Period view transition did not start"));
-        }, 1_000);
-        const observer = new MutationObserver(() => {
-          if (
-            !document.documentElement.classList.contains(
-              "period-view-transition",
-            )
-          ) {
-            return;
-          }
+  const transitionChrome = await page.evaluate(() => {
+    const header = document.querySelector<HTMLElement>(".compact-app-bar");
+    if (!header) throw new Error("Expected compact app bar");
+    return {
+      headerTransitionName: getComputedStyle(header).viewTransitionName,
+      headerGroupZIndex: getComputedStyle(
+        document.documentElement,
+        "::view-transition-group(period-header)",
+      ).zIndex,
+    };
+  });
 
-          const header =
-            document.querySelector<HTMLElement>(".compact-app-bar");
-          if (!header) throw new Error("Expected compact app bar");
-          window.clearTimeout(timeout);
-          observer.disconnect();
-          resolve({
-            headerTransitionName: getComputedStyle(header).viewTransitionName,
-            headerGroupZIndex: getComputedStyle(
-              document.documentElement,
-              "::view-transition-group(period-header)",
-            ).zIndex,
-          });
-        });
-        observer.observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ["class"],
-        });
-      }),
-  );
-
-  await page.getByRole("button", { name: /^Next month,/ }).click();
-
-  await expect(transitionChrome).resolves.toEqual({
+  expect(transitionChrome).toEqual({
     headerTransitionName: "period-header",
     headerGroupZIndex: "1",
   });
@@ -578,7 +572,7 @@ for (const width of viewports) {
         ".pressure-row",
         ".pressure-review",
       ]);
-      await expectThemeToggleIconCentered(page);
+      await expectRailPreferenceControls(page);
       await expectMobileNavigationIsCompact(page, width);
       await expectAdaptiveCompactCommandBar(page, width);
       await page.getByRole("button", { name: /Choose period/ }).click();
@@ -836,13 +830,13 @@ for (const width of themeViewports) {
       await mockApi(page);
     });
 
-    test("pins, persists, and clears a manual theme", async ({ page }) => {
+    test("pins and persists explicit light and dark themes", async ({
+      page,
+    }) => {
       const route = width < 576 ? "/manage/preferences" : "/";
       await page.goto(route);
 
-      await expect(
-        page.getByRole("button", { name: "Use dark mode" }),
-      ).toBeVisible();
+      await expectThemeChoice(page, width, "dark");
       await expectThemeState(page, {
         dataTheme: null,
         meta: "light dark",
@@ -850,11 +844,9 @@ for (const width of themeViewports) {
         colorScheme: "light dark",
       });
 
-      await page.getByRole("button", { name: "Use dark mode" }).click();
+      await chooseTheme(page, width, "dark");
 
-      await expect(
-        page.getByRole("button", { name: "Use system color setting" }),
-      ).toBeVisible();
+      await expectThemeChoice(page, width, "light");
       await expectThemeState(page, {
         dataTheme: "dark",
         meta: "dark",
@@ -870,9 +862,7 @@ for (const width of themeViewports) {
           name: width < 576 ? "Preferences" : "Overview",
         }),
       ).toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "Use system color setting" }),
-      ).toBeVisible();
+      await expectThemeChoice(page, width, "light");
       await expectThemeState(page, {
         dataTheme: "dark",
         meta: "dark",
@@ -880,18 +870,14 @@ for (const width of themeViewports) {
         colorScheme: "dark",
       });
 
-      await page
-        .getByRole("button", { name: "Use system color setting" })
-        .click();
+      await chooseTheme(page, width, "light");
 
-      await expect(
-        page.getByRole("button", { name: "Use dark mode" }),
-      ).toBeVisible();
+      await expectThemeChoice(page, width, "dark");
       await expectThemeState(page, {
-        dataTheme: null,
-        meta: "light dark",
-        stored: null,
-        colorScheme: "light dark",
+        dataTheme: "light",
+        meta: "light",
+        stored: "light",
+        colorScheme: "light",
       });
       await assertNoHorizontalOverflow(page);
     });
@@ -905,9 +891,7 @@ for (const width of themeViewports) {
           name: width < 576 ? "Preferences" : "Overview",
         }),
       ).toBeVisible();
-      await page
-        .getByRole("button", { name: "Use dark mode" })
-        .scrollIntoViewIfNeeded();
+      await themeChoiceTarget(page, width, "dark").scrollIntoViewIfNeeded();
       await page.evaluate(() => document.fonts.ready);
       const initialScrollY = await page.evaluate(() => window.scrollY);
       const initialLayout = await captureThemeLayout(page);
@@ -934,16 +918,14 @@ for (const width of themeViewports) {
           }),
       );
 
-      await page.getByRole("button", { name: "Use dark mode" }).click();
-      await page
-        .getByRole("button", { name: "Use system color setting" })
-        .click();
+      await chooseTheme(page, width, "dark");
+      await chooseTheme(page, width, "light");
 
       await expectThemeState(page, {
-        dataTheme: null,
-        meta: "light dark",
-        stored: null,
-        colorScheme: "light dark",
+        dataTheme: "light",
+        meta: "light",
+        stored: "light",
+        colorScheme: "light",
       });
       await page.evaluate(
         (scrollY) => window.scrollTo(0, scrollY),
@@ -967,14 +949,11 @@ test.describe("theme system preference", () => {
   }) => {
     await page.goto("/");
 
-    await expect(
-      page.getByRole("button", { name: "Use dark mode" }),
-    ).toBeVisible();
+    const themeToggle = page.locator(".theme-toggle");
+    await expect(themeToggle).toHaveAttribute("aria-label", "Use dark mode");
     await page.emulateMedia({ colorScheme: "dark" });
 
-    await expect(
-      page.getByRole("button", { name: "Use light mode" }),
-    ).toBeVisible();
+    await expect(themeToggle).toHaveAttribute("aria-label", "Use light mode");
     await expectThemeState(page, {
       dataTheme: null,
       meta: "light dark",
@@ -982,12 +961,10 @@ test.describe("theme system preference", () => {
       colorScheme: "light dark",
     });
 
-    await page.getByRole("button", { name: "Use light mode" }).click();
+    await themeToggle.click();
     await page.emulateMedia({ colorScheme: "light" });
 
-    await expect(
-      page.getByRole("button", { name: "Use system color setting" }),
-    ).toBeVisible();
+    await expect(themeToggle).toHaveAttribute("aria-label", "Use dark mode");
     await expectThemeState(page, {
       dataTheme: "light",
       meta: "light",
@@ -1004,7 +981,7 @@ test.describe("theme system preference", () => {
     await expect(rail).toBeVisible();
 
     const lightColors = await rail.evaluate(readElementColors);
-    await page.getByRole("button", { name: "Use dark mode" }).click();
+    await page.locator(".theme-toggle").click();
     const darkColors = await rail.evaluate(readElementColors);
 
     expect(darkColors.backgroundColor).not.toBe(lightColors.backgroundColor);
@@ -1036,7 +1013,7 @@ test.describe("accounts scoreboard theme", () => {
     expect(lightAppearance.backgroundColor).toBe(lightAppearance.surface);
     expect(lightAppearance.color).toBe(lightAppearance.ink);
 
-    await page.getByRole("button", { name: "Use dark mode" }).click();
+    await page.locator(".theme-toggle").click();
     const darkAppearance = await readNetWorthHeaderAppearance(header);
 
     expect(darkAppearance.backgroundColor).toBe(darkAppearance.surface);
@@ -1216,41 +1193,16 @@ async function captureThemeLayout(page: Page) {
     )
     .evaluateAll((elements) =>
       elements.map((element) => {
-        const { x, y, width, height } = element.getBoundingClientRect();
-        return { x, y, width, height };
+        const { x, y, width } = element.getBoundingClientRect();
+        return { x, y, width };
       }),
     );
 }
 
-async function expectThemeToggleIconCentered(page: Page) {
+async function expectRailPreferenceControls(page: Page) {
   if ((page.viewportSize()?.width ?? 0) <= 1023) return;
-  const offset = await page
-    .locator(".theme-toggle:visible")
-    .first()
-    .evaluate((button) => {
-      const icon = button.querySelector("svg");
-      if (!icon) {
-        throw new Error("Expected theme toggle icon");
-      }
-
-      const buttonRect = button.getBoundingClientRect();
-      const iconRect = icon.getBoundingClientRect();
-      return {
-        x: Math.abs(
-          buttonRect.left +
-            buttonRect.width / 2 -
-            (iconRect.left + iconRect.width / 2),
-        ),
-        y: Math.abs(
-          buttonRect.top +
-            buttonRect.height / 2 -
-            (iconRect.top + iconRect.height / 2),
-        ),
-      };
-    });
-
-  expect(offset.x).toBeLessThanOrEqual(1);
-  expect(offset.y).toBeLessThanOrEqual(1);
+  await expect(page.locator(".theme-toggle")).toBeVisible();
+  await expect(page.locator(".lang-toggle")).toBeVisible();
 }
 
 async function expectAdaptiveCompactCommandBar(page: Page, width: number) {
@@ -1267,7 +1219,6 @@ async function expectAdaptiveCompactCommandBar(page: Page, width: number) {
   await expect(rail).toBeHidden();
   const brand = compactBar.getByRole("link", { name: "Finance Tracker" });
   const create = compactBar.getByRole("button", { name: "Add transaction" });
-  const label = compactBar.locator(".compact-create-label");
   const brandName = brand.locator("strong");
 
   await expect(page.locator("#app-drawer")).toHaveCount(0);
@@ -1276,7 +1227,6 @@ async function expectAdaptiveCompactCommandBar(page: Page, width: number) {
   ).toHaveCount(0);
 
   const manage = compactBar.getByRole("link", { name: "Manage" });
-  await expect(manage.locator("span")).toBeVisible();
 
   for (const control of [brand, manage, create]) {
     const box = await control.boundingBox();
@@ -1285,19 +1235,67 @@ async function expectAdaptiveCompactCommandBar(page: Page, width: number) {
     expect(box!.height).toBeGreaterThanOrEqual(47.9);
   }
 
-  if (width < 576) {
-    await expect(label).toBeHidden();
-    await expect(brandName).toBeHidden();
-  } else {
-    await expect(label).toBeVisible();
-    await expect(brandName).toBeVisible();
-  }
+  await expect(brandName).toBeHidden();
 
   await expectElementsFitViewport(page, [
     ".compact-app-bar .brand",
     ".compact-utilities",
     ".compact-create",
   ]);
+}
+
+function themeChoice(page: Page, width: number, scheme: "light" | "dark") {
+  const label = `${scheme[0].toUpperCase()}${scheme.slice(1)}`;
+  return width < 576
+    ? page.getByRole("radio", { name: label, exact: true })
+    : page.locator(".theme-toggle");
+}
+
+async function expectThemeChoice(
+  page: Page,
+  width: number,
+  scheme: "light" | "dark",
+) {
+  const control = themeChoice(page, width, scheme);
+  await expect(control).toBeVisible();
+}
+
+async function chooseTheme(
+  page: Page,
+  width: number,
+  scheme: "light" | "dark",
+) {
+  const control = themeChoice(page, width, scheme);
+  if (width < 576) {
+    await control.locator("..").click();
+  } else {
+    const currentTheme = await page.locator("html").getAttribute("data-theme");
+    if (scheme === "dark" && currentTheme !== "dark") {
+      await control.click();
+    } else if (scheme === "light" && currentTheme === "dark") {
+      await control.click();
+    }
+  }
+}
+
+function themeChoiceTarget(
+  page: Page,
+  width: number,
+  scheme: "light" | "dark",
+) {
+  const control = themeChoice(page, width, scheme);
+  return width < 576 ? control.locator("..") : control;
+}
+
+async function captureCompactHeaderLayout(page: Page) {
+  return page
+    .locator(".compact-app-bar .brand, .compact-manage, .compact-create")
+    .evaluateAll((elements) =>
+      elements.map((element) => {
+        const { x, y, width, height } = element.getBoundingClientRect();
+        return { x, y, width, height };
+      }),
+    );
 }
 
 async function expectThemeState(

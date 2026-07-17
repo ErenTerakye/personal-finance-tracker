@@ -131,13 +131,15 @@ The browser application includes:
 - Overview downloads for monthly text reports, monthly PNG charts, six-month trend text reports,
   and six-month trend PNG charts.
 - Read-only transaction tables that collapse into mobile-friendly record lists with compact row actions.
-- A theme action that follows your system color setting by default, can pin a local light/dark
-  preference, and remains available from Preferences when compact chrome omits lower-frequency
-  utilities.
+- A theme action that follows your system color setting until you explicitly pin Light or Dark,
+  with synchronized controls in the desktop rail, compact-header preferences panel, and Manage →
+  Preferences.
 - Calm, progressive Overview motion: instant top-level route handoffs, directional period context,
   responsive rolling values, two-way export and chart-tooltip lifecycles, immediate pending/pressed
   feedback, and spatial-motion-free reduced-motion states.
-- An English/Turkish language action with local browser preference persistence and locale-aware money/date formatting using the active ledger currency.
+- English/Turkish language controls with local browser preference persistence, stable compact-header
+  geometry across translations, and locale-aware money/date formatting using the active ledger
+  currency.
 
 For frontend development against a freshly rebuilt detailed demo, run:
 

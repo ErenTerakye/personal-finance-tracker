@@ -290,27 +290,8 @@
     gap: 0.75rem;
   }
 
-  .manage-quick-preferences {
-    display: grid;
-    gap: 0.75rem;
-  }
-
-  .manage-quick-preferences > div {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    min-block-size: var(--tap-target);
-    padding-block: 0.5rem;
-    border-block-end: 1px solid var(--rule);
-  }
-
-  .manage-quick-preferences .lang-toggle.is-labeled {
-    display: inline-flex;
-    inline-size: auto;
-    gap: 0.45rem;
-    padding-inline: 0.8rem;
-    border-radius: var(--radius-pill);
+  .manage-group > .preference-choice-groups {
+    max-inline-size: 30rem;
   }
 
   @media (max-width: 46rem) {

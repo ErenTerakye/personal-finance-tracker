@@ -26,16 +26,13 @@ import {
   type View,
 } from "./routes";
 import { I18nProvider, useI18n } from "../shared/i18n/I18nProvider";
+import { ThemeProvider } from "../shared/theme/ThemeProvider";
 import { ActionButton } from "../shared/components/actions";
 import { ErrorBanner } from "../shared/components/feedback";
 import { PageHeader } from "../shared/components/lists";
 import { useAppSettings } from "./useAppSettings";
 import type { BudgetReviewTarget } from "../shared/components/lists";
-import {
-  cancelActiveViewTransition,
-  runViewTransition,
-  type MotionTransitionType,
-} from "../shared/motion/viewTransitions";
+import { cancelActiveViewTransition } from "../shared/motion/viewTransitions";
 
 const loadDashboardModule = () => import("../features/dashboard/DashboardView");
 const loadManageModule = () => import("../features/manage/ManageView");
@@ -170,6 +167,9 @@ function AppContent() {
     }
     scrollPositionsRef.current.set(presentedViewRef.current, window.scrollY);
     const revisiting = visitedViewsRef.current.has(nextView);
+    const destinationScroll = revisiting
+      ? (scrollPositionsRef.current.get(nextView) ?? 0)
+      : 0;
     window.dispatchEvent(new Event("finance-tracker:route-leave"));
     cancelActiveViewTransition();
     flushSync(() => {
@@ -185,10 +185,7 @@ function AppContent() {
     const loadingTimer = window.setTimeout(() => {
       if (routeRequestRef.current !== request) return;
       loadingStartedAt = Date.now();
-      runViewTransition(
-        routeTransitionType(presentedViewRef.current, nextView),
-        () => setRouteLoading(true),
-      );
+      flushSync(() => setRouteLoading(true));
     }, ROUTE_LOADING_DELAY_MS);
 
     void prepareRoute(nextView, period)
@@ -204,24 +201,33 @@ function AppContent() {
         }
         if (routeRequestRef.current !== request) return;
 
-        const transition = runViewTransition(
-          routeTransitionType(presentedViewRef.current, nextView),
-          () => {
-            setRouteLoading(false);
-            presentedViewRef.current = nextView;
-            setPresentedView(nextView);
-            if (focus) setRouteFocusRequest((value) => value + 1);
-            setVisitedViews((current) => {
-              if (current.has(nextView)) return current;
-              const next = new Set(current);
-              next.add(nextView);
-              visitedViewsRef.current = next;
-              return next;
-            });
-          },
-        );
-        await transition.updated;
-        await transition.finished;
+        // A retained route has its own conceptual scroll state. Commit it as a
+        // discrete tab switch: a document View Transition would interpolate
+        // the route-stage geometry between two window scroll offsets and make
+        // the tabs look like sections of one long page.
+        flushSync(() => {
+          setRouteLoading(false);
+          presentedViewRef.current = nextView;
+          setPresentedView(nextView);
+          if (focus) setRouteFocusRequest((value) => value + 1);
+          setVisitedViews((current) => {
+            if (current.has(nextView)) return current;
+            const next = new Set(current);
+            next.add(nextView);
+            visitedViewsRef.current = next;
+            return next;
+          });
+        });
+        window.scrollTo({ top: destinationScroll, behavior: "instant" });
+        if (focus) {
+          const heading = mainRef.current?.querySelector<HTMLElement>(
+            `.route-stage[data-route="${nextView}"] h1`,
+          );
+          if (heading) {
+            heading.tabIndex = -1;
+            heading.focus({ preventScroll: true });
+          }
+        }
         await nextAnimationFrame();
         await nextAnimationFrame();
         if (routeRequestRef.current === request && focus) {
@@ -231,12 +237,6 @@ function AppContent() {
             revisiting,
             () => routeRequestRef.current === request,
           );
-          const savedScroll = scrollPositionsRef.current.get(nextView);
-          if (revisiting && savedScroll && savedScroll > 0) {
-            window.requestAnimationFrame(() =>
-              window.scrollTo({ top: savedScroll, behavior: "instant" }),
-            );
-          }
         }
         if (routeRequestRef.current === request && afterCommit) afterCommit();
       });
@@ -725,7 +725,9 @@ function RouteFocus({
 export default function App() {
   return (
     <I18nProvider>
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </I18nProvider>
   );
 }
@@ -778,27 +780,6 @@ async function prepareRoute(
   }
   const module = await loadManageModule();
   await module.preloadManageView(view);
-}
-
-function routeTransitionType(
-  from: RouteView,
-  to: RouteView,
-): MotionTransitionType {
-  const primaryFrom = primaryViewOrder.indexOf(
-    from as (typeof primaryViewOrder)[number],
-  );
-  const primaryTo = primaryViewOrder.indexOf(
-    to as (typeof primaryViewOrder)[number],
-  );
-  if (primaryFrom >= 0 && primaryTo >= 0) {
-    return primaryTo > primaryFrom ? "route-forward" : "route-backward";
-  }
-  const manageFrom = manageViewOrder.indexOf(from as ManageView);
-  const manageTo = manageViewOrder.indexOf(to as ManageView);
-  if (manageFrom >= 0 && manageTo >= 0) {
-    return manageTo > manageFrom ? "route-forward" : "route-backward";
-  }
-  return "route-jump";
 }
 
 function scheduleIdle(callback: () => void) {

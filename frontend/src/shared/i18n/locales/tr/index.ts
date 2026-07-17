@@ -58,6 +58,18 @@ export const tr = {
     light: "Açık modu kullan",
     dark: "Koyu modu kullan",
   },
+  preferences: {
+    open: "Tercihleri aç",
+    title: "Tercihler",
+    language: "Dil",
+    appearance: "Görünüm",
+    english: "İngilizce",
+    turkish: "Türkçe",
+    light: "Açık",
+    dark: "Koyu",
+    switchToEnglish: "İngilizceye geç",
+    switchToTurkish: "Türkçeye geç",
+  },
   dashboard: {
     eyebrow: "Finansal genel bakış",
     overviewTitle: "Genel Bakış",

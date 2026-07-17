@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import App from "../../app/App";
@@ -20,22 +20,24 @@ describe("theme preference workflow", () => {
 
     render(<App />);
 
-    expect(
-      await screen.findByRole("button", { name: "Use dark mode" }),
-    ).toBeInTheDocument();
+    const themeToggle = await screen.findByRole("button", {
+      name: "Use dark mode",
+    });
+    expect(themeToggle).toBeVisible();
     expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBeNull();
     expect(document.documentElement).not.toHaveAttribute("data-theme");
     expect(colorSchemeMeta()).toHaveAttribute("content", "light dark");
   });
 
-  it("pins the opposite system mode and restores system mode", async () => {
+  it("pins light and dark modes without cycling back to system", async () => {
     mockColorScheme("light");
     mockFetch({ "/api/dashboard": dashboardPayload({}) });
 
     render(<App />);
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Use dark mode" }),
-    );
+    const themeToggle = await screen.findByRole("button", {
+      name: "Use dark mode",
+    });
+    await userEvent.click(themeToggle);
 
     await waitFor(() => {
       expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBe(
@@ -45,14 +47,17 @@ describe("theme preference workflow", () => {
       expect(colorSchemeMeta()).toHaveAttribute("content", "dark");
     });
 
-    await userEvent.click(
-      screen.getByRole("button", { name: "Use system color setting" }),
-    );
+    const themeToggleLight = screen.getByRole("button", {
+      name: "Use light mode",
+    });
+    await userEvent.click(themeToggleLight);
 
     await waitFor(() => {
-      expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBeNull();
-      expect(document.documentElement).not.toHaveAttribute("data-theme");
-      expect(colorSchemeMeta()).toHaveAttribute("content", "light dark");
+      expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBe(
+        "light",
+      );
+      expect(document.documentElement).toHaveAttribute("data-theme", "light");
+      expect(colorSchemeMeta()).toHaveAttribute("content", "light");
     });
   });
 
@@ -66,20 +71,22 @@ describe("theme preference workflow", () => {
     });
 
     render(<App />);
-    const toggle = await screen.findByRole("button", {
+    const themeToggle = await screen.findByRole("button", {
       name: "Use dark mode",
     });
 
-    await userEvent.click(toggle);
+    await userEvent.click(themeToggle);
 
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
-    await userEvent.click(
-      screen.getByRole("button", { name: "Use system color setting" }),
-    );
 
-    expect(document.documentElement).not.toHaveAttribute("data-theme");
+    const themeToggleLight = screen.getByRole("button", {
+      name: "Use light mode",
+    });
+    await userEvent.click(themeToggleLight);
+
+    expect(document.documentElement).toHaveAttribute("data-theme", "light");
     expect(startViewTransition).not.toHaveBeenCalled();
-    expect(toggle).toHaveFocus();
+    expect(themeToggleLight).toHaveFocus();
   });
 
   it("applies a stored manual mode on render", async () => {
@@ -89,9 +96,10 @@ describe("theme preference workflow", () => {
 
     render(<App />);
 
-    expect(
-      await screen.findByRole("button", { name: "Use system color setting" }),
-    ).toBeInTheDocument();
+    const themeToggle = await screen.findByRole("button", {
+      name: "Use light mode",
+    });
+    expect(themeToggle).toBeVisible();
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
     expect(colorSchemeMeta()).toHaveAttribute("content", "dark");
   });
@@ -102,25 +110,26 @@ describe("theme preference workflow", () => {
 
     render(<App />);
 
-    expect(
-      await screen.findByRole("button", { name: "Use dark mode" }),
-    ).toBeInTheDocument();
-    colorScheme.set("dark");
+    const themeToggle = await screen.findByRole("button", {
+      name: "Use dark mode",
+    });
+    expect(themeToggle).toBeVisible();
+    act(() => colorScheme.set("dark"));
 
-    expect(
-      await screen.findByRole("button", { name: "Use light mode" }),
-    ).toBeInTheDocument();
+    const themeToggleLight = screen.getByRole("button", {
+      name: "Use light mode",
+    });
+    expect(themeToggleLight).toBeVisible();
     expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBeNull();
     expect(document.documentElement).not.toHaveAttribute("data-theme");
 
-    await userEvent.click(
-      screen.getByRole("button", { name: "Use light mode" }),
-    );
-    colorScheme.set("light");
+    await userEvent.click(themeToggleLight);
+    act(() => colorScheme.set("light"));
 
-    expect(
-      await screen.findByRole("button", { name: "Use system color setting" }),
-    ).toBeInTheDocument();
+    const themeToggleDark = screen.getByRole("button", {
+      name: "Use dark mode",
+    });
+    expect(themeToggleDark).toBeVisible();
     expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBe("light");
     expect(document.documentElement).toHaveAttribute("data-theme", "light");
   });
@@ -132,9 +141,10 @@ describe("theme preference workflow", () => {
 
     const { unmount } = render(<App />);
 
-    expect(
-      await screen.findByRole("button", { name: "Use dark mode" }),
-    ).toBeInTheDocument();
+    const themeToggle = await screen.findByRole("button", {
+      name: "Use dark mode",
+    });
+    expect(themeToggle).toBeVisible();
     expect(window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)).toBeNull();
     expect(document.documentElement).not.toHaveAttribute("data-theme");
     expect(colorSchemeMeta()).toHaveAttribute("content", "light dark");
@@ -147,9 +157,10 @@ describe("theme preference workflow", () => {
 
     render(<App />);
 
-    expect(
-      await screen.findByRole("button", { name: "Use dark mode" }),
-    ).toBeInTheDocument();
+    const themeToggle2 = await screen.findByRole("button", {
+      name: "Use dark mode",
+    });
+    expect(themeToggle2).toBeVisible();
     expect(document.documentElement).not.toHaveAttribute("data-theme");
     expect(colorSchemeMeta()).toHaveAttribute("content", "light dark");
   });

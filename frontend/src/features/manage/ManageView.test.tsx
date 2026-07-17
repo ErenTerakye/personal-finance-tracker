@@ -134,12 +134,10 @@ describe("Manage workflows", () => {
       await screen.findByRole("heading", { level: 1, name: "Preferences" }),
     ).toBeVisible();
     expect(screen.getByLabelText("Ledger currency")).toHaveValue("USD");
-    expect(
-      screen.getAllByRole("button", { name: "Switch language" }).length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.getAllByRole("button", { name: /Use (dark|light) mode/ }).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getByRole("radio", { name: "English" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Turkish" })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: "Light" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Dark" })).not.toBeChecked();
   });
 
   it("keeps Overview available from Manage navigation", async () => {

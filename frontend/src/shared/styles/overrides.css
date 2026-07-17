@@ -58,7 +58,8 @@
         .button,
         .icon-button,
         nav:not(.bottom-navigation) a,
-        .brand,
+        a.brand-mark,
+        a.brand-text,
         .theme-toggle,
         .lang-toggle
       ):active:not(:disabled) {
@@ -121,7 +122,8 @@
     .button,
     .icon-button,
     nav a,
-    .brand,
+    a.brand-mark,
+    a.brand-text,
     .theme-toggle,
     .lang-toggle {
       transition: none;
@@ -141,7 +143,6 @@
       .button:not(.primary, .danger),
       .icon-button:not(.primary, .danger),
       nav:not(.bottom-navigation) a,
-      .brand,
       .theme-toggle,
       .lang-toggle
     ):active:not(:disabled) {

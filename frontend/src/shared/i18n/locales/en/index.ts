@@ -58,6 +58,18 @@ export const en = {
     light: "Use light mode",
     dark: "Use dark mode",
   },
+  preferences: {
+    open: "Open preferences",
+    title: "Preferences",
+    language: "Language",
+    appearance: "Appearance",
+    english: "English",
+    turkish: "Turkish",
+    light: "Light",
+    dark: "Dark",
+    switchToEnglish: "Switch to English",
+    switchToTurkish: "Switch to Turkish",
+  },
   dashboard: {
     eyebrow: "Financial overview",
     overviewTitle: "Overview",

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, vi } from "vitest";
 export function installAppTestLifecycle() {
   beforeEach(() => {
     installLocalStorage();
+    vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
     window.history.replaceState({}, "", "/");
   });
 

@@ -37,7 +37,7 @@ describe("transactions workflow", () => {
     expect(emptyState).not.toHaveTextContent("TRANSACTIONS.EMPTY.EYEBROW");
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Switch language" }),
+      screen.getByRole("button", { name: "Switch to Turkish" }),
     );
     expect(await screen.findByText("Henüz işlem yok")).toBeVisible();
     expect(

@@ -93,8 +93,9 @@ secondary Manage area:
   and six-month trend PNG charts.
 - A stable global Add transaction action on every route, plus one dominant task action per primary
   destination.
-- Color theme and English/Turkish language preferences stored locally, with compact access through
-  Manage → Preferences and locale-aware formatting based on the active ledger currency.
+- Light/Dark and English/Turkish preferences stored locally, with synchronized access from the
+  desktop rail, the compact-header preferences panel, and Manage → Preferences. With no stored
+  theme, the interface initially follows the operating-system color scheme.
 
 The Python server exposes JSON under `/api` and serves the compiled React + Vite app from the same local origin. Money values in API responses are decimal strings, preserving the SQLite/`Decimal` behavior used by the CLI.
 

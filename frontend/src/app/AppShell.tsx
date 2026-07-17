@@ -4,7 +4,7 @@ import {
   House,
   Plus,
   ReceiptText,
-  Settings2,
+  Settings,
   Target,
   WalletCards,
 } from "lucide-react";
@@ -13,7 +13,7 @@ import "./AppShell.css";
 import { Notice } from "../shared/components/feedback";
 import { useMediaQuery } from "../shared/hooks/useMediaQuery";
 import { useI18n } from "../shared/i18n/I18nProvider";
-import { ThemeToggle } from "../shared/theme/ThemeToggle";
+import { ThemeToggle, LangToggle } from "../shared/theme/ThemeToggle";
 import {
   isManageView,
   primaryViewOrder,
@@ -29,23 +29,6 @@ const navIcons = {
   budgets: Target,
   accounts: WalletCards,
 };
-
-export function LanguageToggle({ labeled = false }: { labeled?: boolean }) {
-  const { locale, toggleLocale, t } = useI18n();
-  const label = t("common.toggleLanguage");
-  return (
-    <button
-      className={`lang-toggle${labeled ? " is-labeled" : ""}`}
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={toggleLocale}
-    >
-      <span>{locale === "en" ? "TR" : "EN"}</span>
-      {labeled ? <span>{t("manage.preferences.language")}</span> : null}
-    </button>
-  );
-}
 
 export function AppShell({
   view,
@@ -107,11 +90,9 @@ export function AppShell({
             <Plus aria-hidden="true" size={19} />
             <span>{t("common.addTransaction")}</span>
           </button>
-          <nav
-            className="rail-manage-navigation"
-            aria-label={t("manage.navigationLabel")}
-          >
+          <nav className="rail-manage-navigation" aria-label={t("nav.manage")}>
             <a
+              className="rail-action"
               href={viewMeta.manageAutomations.path}
               aria-current={isManageView(view) ? "page" : undefined}
               onFocus={() => onPrepare("manageAutomations")}
@@ -123,18 +104,18 @@ export function AppShell({
                 onNavigate("manageAutomations");
               }}
             >
-              <Settings2 aria-hidden="true" size={19} />
+              <span className="navigation-icon" aria-hidden="true">
+                <Settings size={19} />
+              </span>
               <span>{t("nav.manage")}</span>
             </a>
           </nav>
-          <div className="rail-utilities">
+          <footer className="rail-utilities">
             <span className="local-data-status">
               <Database aria-hidden="true" size={15} />
               {t("common.localSqlite")}
             </span>
-            <LanguageToggle />
-            <ThemeToggle />
-          </div>
+          </footer>
         </aside>
       )}
 
@@ -142,10 +123,10 @@ export function AppShell({
         <header className="compact-app-bar">
           <Brand onNavigate={onNavigate} onPrepare={onPrepare} compact />
           <div className="compact-utilities">
-            <LanguageToggle />
             <ThemeToggle />
+            <LangToggle />
             <a
-              className="button secondary compact-manage"
+              className="compact-manage shell-icon-action"
               href={viewMeta.manageAutomations.path}
               aria-label={t("nav.manage")}
               aria-current={isManageView(view) ? "page" : undefined}
@@ -158,8 +139,7 @@ export function AppShell({
                 onNavigate("manageAutomations");
               }}
             >
-              <Settings2 aria-hidden="true" size={18} />
-              <span>{t("nav.manage")}</span>
+              <Settings aria-hidden="true" size={18} />
             </a>
             <button
               className="button primary compact-create"
@@ -169,9 +149,6 @@ export function AppShell({
               onClick={onPrimaryAction}
             >
               <Plus aria-hidden="true" />
-              <span className="compact-create-label">
-                {t("common.addTransaction")}
-              </span>
             </button>
           </div>
         </header>
@@ -189,6 +166,12 @@ export function AppShell({
         ref={mainRef}
         aria-busy={busy || undefined}
       >
+        {!compactLayout && (
+          <div className="desktop-utility-bar">
+            <ThemeToggle />
+            <LangToggle />
+          </div>
+        )}
         <Notice message={notice} />
         <div
           className="sr-only"
@@ -228,6 +211,7 @@ function PrimaryNavigationItem({
   return (
     <li>
       <a
+        className={filledIcon ? undefined : "rail-action"}
         href={viewMeta[item].path}
         aria-current={active ? "page" : undefined}
         onFocus={() => onPrepare(item)}
@@ -342,26 +326,38 @@ function Brand({
   compact?: boolean;
 }) {
   return (
-    <a
-      className={`brand ${compact ? "brand-compact" : ""}`}
-      href="/"
-      aria-label="Finance Tracker"
-      onFocus={() => onPrepare("overview")}
-      onPointerEnter={() => onPrepare("overview")}
-      onPointerDown={() => onPrepare("overview")}
-      onClick={(event) => {
-        if (!shouldHandleNavigation(event)) return;
-        event.preventDefault();
-        onNavigate("overview");
-      }}
-    >
-      <span className="brand-mark" aria-hidden="true">
+    <div className={`brand ${compact ? "brand-compact" : ""}`}>
+      <a
+        className="brand-mark"
+        href="/"
+        aria-label="Finance Tracker"
+        onFocus={() => onPrepare("overview")}
+        onPointerEnter={() => onPrepare("overview")}
+        onPointerDown={() => onPrepare("overview")}
+        onClick={(event) => {
+          if (!shouldHandleNavigation(event)) return;
+          event.preventDefault();
+          onNavigate("overview");
+        }}
+      >
         <BarChart3 size={20} />
-      </span>
-      <span>
+      </a>
+      <a
+        className="brand-text"
+        href="/"
+        tabIndex={-1}
+        aria-hidden="true"
+        onPointerEnter={() => onPrepare("overview")}
+        onPointerDown={() => onPrepare("overview")}
+        onClick={(event) => {
+          if (!shouldHandleNavigation(event)) return;
+          event.preventDefault();
+          onNavigate("overview");
+        }}
+      >
         <strong>Finance Tracker</strong>
-      </span>
-    </a>
+      </a>
+    </div>
   );
 }
 

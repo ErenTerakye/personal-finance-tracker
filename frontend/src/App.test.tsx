@@ -182,6 +182,60 @@ describe("app composition", () => {
     expect(document.title).toBe("Automations | Personal Finance Tracker");
   });
 
+  it("uses theme and language toggles in the desktop layout", async () => {
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "Overview" });
+
+    // The theme toggle button should have aria-label "Use dark mode" initially (since default is light)
+    const themeToggle = screen.getByRole("button", { name: "Use dark mode" });
+    expect(themeToggle).toBeVisible();
+
+    // The language toggle button should show target language "TR" and have aria-label "Switch to Turkish"
+    const langToggle = screen.getByRole("button", {
+      name: "Switch to Turkish",
+    });
+    expect(langToggle).toHaveTextContent("TR");
+
+    // Clicking language toggle should switch language to Turkish
+    await userEvent.click(langToggle);
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Genel Bakış" }),
+    ).toBeVisible();
+
+    // Now the language toggle should show "EN" and have aria-label "İngilizceye geç"
+    const newLangToggle = screen.getByRole("button", {
+      name: "İngilizceye geç",
+    });
+    expect(newLangToggle).toHaveTextContent("EN");
+
+    // Clicking theme toggle should switch theme to dark
+    const newThemeToggle = screen.getByRole("button", {
+      name: "Koyu modu kullan",
+    });
+    await userEvent.click(newThemeToggle);
+
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+  });
+
+  it("renders a clean mobile header with manage gear icon and no redundant popover", async () => {
+    mockCompactLayout();
+    mockFetch({ "/api/dashboard": dashboardPayload({}) });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "Overview" });
+
+    // Verify gear icon link exists with aria-label "Manage"
+    const manageLink = screen.getByRole("link", { name: "Manage" });
+    expect(manageLink).toBeVisible();
+
+    // Verify "Open preferences" button does not exist
+    expect(
+      screen.queryByRole("button", { name: "Open preferences" }),
+    ).toBeNull();
+  });
+
   it("translates compatibility routes and preserves relevant query state", () => {
     expect(resolveRoute("/cash-flow", "?month=5&year=2026")).toEqual({
       view: "overview",
@@ -203,7 +257,7 @@ describe("app composition", () => {
     await screen.findByRole("heading", { name: "Overview" });
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Switch language" }),
+      screen.getByRole("button", { name: "Switch to Turkish" }),
     );
 
     await waitFor(() =>
@@ -238,5 +292,60 @@ describe("app composition", () => {
 
     expect(await screen.findByRole("searchbox")).toHaveValue("groceries");
     expect(document.querySelector(".route-loading-shell")).toBeNull();
+  });
+
+  it("activates each destination at its remembered scroll position", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": { transactions: [transaction()] },
+    });
+    let scrollY = 420;
+    vi.spyOn(window, "scrollY", "get").mockImplementation(() => scrollY);
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(((
+      options: ScrollToOptions | number,
+    ) => {
+      if (typeof options === "object") scrollY = options.top ?? 0;
+    }) as typeof window.scrollTo);
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("link", { name: "Transactions" }),
+    );
+    await screen.findByRole("heading", { name: "Transactions" });
+
+    expect(scrollTo).toHaveBeenLastCalledWith({
+      top: 0,
+      behavior: "instant",
+    });
+
+    scrollY = 180;
+    await userEvent.click(screen.getByRole("link", { name: "Overview" }));
+    await screen.findByRole("heading", { name: "Overview" });
+
+    expect(scrollTo).toHaveBeenLastCalledWith({
+      top: 420,
+      behavior: "instant",
+    });
+  });
+
+  it("switches destinations without interpolating their scroll contexts", async () => {
+    mockFetch({
+      "/api/dashboard": dashboardPayload({}),
+      "/api/transactions": { transactions: [transaction()] },
+    });
+    const startViewTransition = vi.fn();
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: startViewTransition,
+    });
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("link", { name: "Transactions" }),
+    );
+    await screen.findByRole("heading", { name: "Transactions" });
+
+    expect(startViewTransition).not.toHaveBeenCalled();
+    expect(document.documentElement).not.toHaveClass("route-view-transition");
   });
 });

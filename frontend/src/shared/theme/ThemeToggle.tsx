@@ -1,71 +1,45 @@
 import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
-import {
-  applyColorSchemePreference,
-  getSystemColorScheme,
-  readColorSchemePreference,
-  subscribeToSystemColorScheme,
-  writeColorSchemePreference,
-  type ColorScheme,
-  type ColorSchemePreference,
-} from "./preference";
 import { useI18n } from "../i18n/I18nProvider";
+import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
   const { t } = useI18n();
-  const [preference, setPreference] = useState<ColorSchemePreference>(() =>
-    readColorSchemePreference(),
-  );
-  const [systemScheme, setSystemScheme] = useState<ColorScheme>(() =>
-    getSystemColorScheme(),
-  );
-  const manual = preference !== "system";
-  const nextPreference: ColorSchemePreference = manual
-    ? "system"
-    : systemScheme === "dark"
-      ? "light"
-      : "dark";
-  const label = manual
-    ? t("theme.system")
-    : systemScheme === "dark"
-      ? t("theme.light")
-      : t("theme.dark");
-  const currentScheme: ColorScheme =
-    preference === "system" ? systemScheme : preference;
-  const Icon = currentScheme === "dark" ? Sun : Moon;
-
-  useEffect(() => {
-    applyColorSchemePreference(preference);
-  }, [preference]);
-
-  useEffect(
-    () =>
-      subscribeToSystemColorScheme(() => {
-        setSystemScheme(getSystemColorScheme());
-      }),
-    [],
-  );
+  const { scheme, setScheme } = useTheme();
+  const nextScheme = scheme === "dark" ? "light" : "dark";
+  const label = t(`theme.${nextScheme}`);
+  const Icon = scheme === "dark" ? Sun : Moon;
 
   return (
     <button
       className="theme-toggle"
       type="button"
       aria-label={label}
-      title={label}
-      onClick={() => {
-        writeColorSchemePreference(nextPreference);
-        applyColorSchemePreference(nextPreference);
-        setPreference(nextPreference);
-      }}
+      onClick={() => setScheme(nextScheme)}
     >
-      <span
-        className="theme-toggle-icon"
-        aria-hidden="true"
-        key={currentScheme}
-      >
+      <span className="theme-toggle-icon" aria-hidden="true" key={scheme}>
         <Icon size={17} />
       </span>
       <span className="sr-only">{label}</span>
+    </button>
+  );
+}
+
+export function LangToggle() {
+  const { locale, setLocale, t } = useI18n();
+  const nextLocale = locale === "en" ? "tr" : "en";
+  const label =
+    nextLocale === "tr"
+      ? t("preferences.switchToTurkish")
+      : t("preferences.switchToEnglish");
+
+  return (
+    <button
+      className="lang-toggle"
+      type="button"
+      aria-label={label}
+      onClick={() => setLocale(nextLocale)}
+    >
+      <span aria-hidden="true">{nextLocale.toUpperCase()}</span>
     </button>
   );
 }

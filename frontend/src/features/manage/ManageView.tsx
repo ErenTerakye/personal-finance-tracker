@@ -17,7 +17,6 @@ import {
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import "./manage.css";
 import { artifactUrls } from "../../api/artifacts";
-import { LanguageToggle } from "../../app/AppShell";
 import {
   manageViewOrder,
   pathForView,
@@ -39,7 +38,7 @@ import { money } from "../../shared/format/money";
 import { periodLabel } from "../../shared/format/periods";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { localizedNotice } from "../../shared/i18n/notices";
-import { ThemeToggle } from "../../shared/theme/ThemeToggle";
+import { PreferenceChoiceGroups } from "../../shared/preferences/PreferenceControls";
 import type {
   CategoryRule,
   CategoryRuleInput,
@@ -965,16 +964,7 @@ function PreferencesView({
               <p>{t("manage.preferences.appearanceSummary")}</p>
             </div>
           </header>
-          <div className="manage-quick-preferences">
-            <div>
-              <span>{t("manage.preferences.language")}</span>
-              <LanguageToggle labeled />
-            </div>
-            <div>
-              <span>{t("manage.preferences.theme")}</span>
-              <ThemeToggle />
-            </div>
-          </div>
+          <PreferenceChoiceGroups idPrefix="manage-preferences" />
         </article>
       </section>
     </>
