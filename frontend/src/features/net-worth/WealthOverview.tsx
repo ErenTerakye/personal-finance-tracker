@@ -9,7 +9,15 @@ import {
   Sparkles,
   WalletCards,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type PointerEvent,
+  type RefObject,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { ActionButton } from "../../shared/components/actions";
 import { Field } from "../../shared/components/fields";
 import { formatDate, todayIso } from "../../shared/format/dates";
@@ -250,11 +258,39 @@ function TrendExplorer({ history }: { history: NetWorthHistory }) {
   const [selected, setSelected] = useState(
     Math.max(0, history.points.length - 1),
   );
+  const [tooltip, setTooltip] = useState<{
+    index: number;
+    x: number;
+    y: number;
+    pinned: boolean;
+  } | null>(null);
+  const figureRef = useRef<HTMLElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const pointRefs = useRef<(SVGCircleElement | null)[]>([]);
 
   useEffect(() => {
     setSelected(Math.max(0, history.points.length - 1));
+    setTooltip(null);
   }, [history]);
+
+  useEffect(() => {
+    if (!tooltip?.pinned) return;
+
+    function dismissPinnedTooltip(event: globalThis.PointerEvent) {
+      if (!figureRef.current?.contains(event.target as Node)) {
+        setTooltip(null);
+      }
+    }
+
+    document.addEventListener("pointerdown", dismissPinnedTooltip, {
+      capture: true,
+    });
+    return () => {
+      document.removeEventListener("pointerdown", dismissPinnedTooltip, {
+        capture: true,
+      });
+    };
+  }, [tooltip?.pinned]);
 
   const chart = useMemo(() => buildChart(history), [history]);
   const selectedPoint = history.points[selected];
@@ -274,7 +310,50 @@ function TrendExplorer({ history }: { history: NetWorthHistory }) {
   function selectPoint(index: number, moveFocus = false) {
     const next = Math.max(0, Math.min(history.points.length - 1, index));
     setSelected(next);
-    if (moveFocus) pointRefs.current[next]?.focus();
+    if (moveFocus) {
+      pointRefs.current[next]?.focus();
+      showTooltipAtPoint(next);
+    }
+  }
+
+  function showTooltipAtPoint(index: number, pinned = false) {
+    const point = chart.points[index];
+    const figureRect = figureRef.current?.getBoundingClientRect();
+    const rendered = renderedChartPoint(svgRef, chart, point.x, point.y);
+    if (!figureRect || !rendered) return;
+    setTooltip({
+      index,
+      x: rendered.x - figureRect.left,
+      y: rendered.y - figureRect.top,
+      pinned,
+    });
+  }
+
+  function selectNearestPoint(
+    event: PointerEvent<SVGSVGElement>,
+    pinned = false,
+  ) {
+    const svgRect = event.currentTarget.getBoundingClientRect();
+    if (!svgRect.width || !svgRect.height) return;
+
+    const scale = Math.min(
+      svgRect.width / chart.width,
+      svgRect.height / chart.height,
+    );
+    const offsetX = (svgRect.width - chart.width * scale) / 2;
+    const viewBoxX = (event.clientX - svgRect.left - offsetX) / scale;
+    const ratio =
+      (viewBoxX - chart.plotLeft) / (chart.plotRight - chart.plotLeft);
+    const index = Math.max(
+      0,
+      Math.min(
+        history.points.length - 1,
+        Math.round(ratio * Math.max(history.points.length - 1, 1)),
+      ),
+    );
+    if (tooltip?.index === index && tooltip.pinned === pinned) return;
+    setSelected((current) => (current === index ? current : index));
+    showTooltipAtPoint(index, pinned);
   }
 
   return (
@@ -284,16 +363,28 @@ function TrendExplorer({ history }: { history: NetWorthHistory }) {
           <p className="eyebrow">{t("netWorth.history.eyebrow")}</p>
           <h2 id="wealth-trend-title">{t("netWorth.history.title")}</h2>
         </div>
-        <div className="trend-selection" aria-live="polite">
+        <div className="trend-selection">
           <span>{formatDate(selectedPoint.as_of)}</span>
           <strong>{signedMoney(selectedPoint.total_net_worth)}</strong>
         </div>
       </header>
-      <figure className="wealth-chart">
+      <figure className="wealth-chart" ref={figureRef}>
         <svg
+          ref={svgRef}
           viewBox={`0 0 ${chart.width} ${chart.height}`}
           role="img"
           aria-labelledby="net-worth-chart-title net-worth-chart-desc"
+          onPointerMove={(event) => {
+            if (event.pointerType !== "touch" || tooltip?.pinned) {
+              selectNearestPoint(event, Boolean(tooltip?.pinned));
+            }
+          }}
+          onPointerDown={(event) =>
+            selectNearestPoint(event, event.pointerType === "touch")
+          }
+          onPointerLeave={() => {
+            if (!tooltip?.pinned) setTooltip(null);
+          }}
         >
           <title id="net-worth-chart-title">
             {t("netWorth.history.chartTitle")}
@@ -316,7 +407,7 @@ function TrendExplorer({ history }: { history: NetWorthHistory }) {
                 y2={tick.y}
               />
               <text x={chart.plotLeft - 12} y={tick.y + 4}>
-                {compactMoney(tick.value)}
+                {formatAxisValue(tick.value, chart.tickStep)}
               </text>
             </g>
           ))}
@@ -330,7 +421,7 @@ function TrendExplorer({ history }: { history: NetWorthHistory }) {
             />
           ) : null}
           <path className="net-worth-area" d={chart.areaPath} />
-          <path className="net-worth-line" d={chart.linePath} />
+          <path className="net-worth-line" d={chart.linePath} pathLength="1" />
           <line
             className="chart-selection-line"
             x1={chart.points[selected].x}
@@ -348,15 +439,25 @@ function TrendExplorer({ history }: { history: NetWorthHistory }) {
               cx={point.x}
               cy={point.y}
               r={selected === index ? 7 : 4.5}
-              tabIndex={0}
+              tabIndex={selected === index ? 0 : -1}
               role="button"
+              aria-pressed={selected === index}
               aria-label={t("netWorth.history.pointLabel", {
                 date: formatDate(point.data.as_of),
                 amount: money(point.data.total_net_worth),
               })}
-              onFocus={() => setSelected(index)}
-              onPointerEnter={() => setSelected(index)}
-              onPointerDown={() => setSelected(index)}
+              style={
+                {
+                  "--point-delay": `${Math.min(index, 12) * 24}ms`,
+                } as CSSProperties
+              }
+              onBlur={() =>
+                setTooltip((current) => (current?.pinned ? current : null))
+              }
+              onFocus={() => {
+                setSelected(index);
+                showTooltipAtPoint(index);
+              }}
               onKeyDown={(event) => {
                 if (event.key === "ArrowLeft") {
                   event.preventDefault();
@@ -369,6 +470,11 @@ function TrendExplorer({ history }: { history: NetWorthHistory }) {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
                   selectPoint(index);
+                  showTooltipAtPoint(index, true);
+                }
+                if (event.key === "Escape") {
+                  setTooltip(null);
+                  event.currentTarget.blur();
                 }
               }}
             />
@@ -391,6 +497,30 @@ function TrendExplorer({ history }: { history: NetWorthHistory }) {
             amount: money(selectedPoint.total_net_worth),
           })}
         </figcaption>
+        <output
+          className="wealth-chart-tooltip"
+          hidden={!tooltip}
+          aria-hidden="true"
+          style={
+            {
+              "--tooltip-x": `${tooltip?.x ?? 0}px`,
+              "--tooltip-y": `${tooltip?.y ?? 0}px`,
+            } as CSSProperties
+          }
+        >
+          <span>{formatDate(selectedPoint.as_of)}</span>
+          <strong>{signedMoney(selectedPoint.total_net_worth)}</strong>
+          <dl>
+            <div>
+              <dt>{t("netWorth.assets")}</dt>
+              <dd>{money(selectedPoint.total_assets)}</dd>
+            </div>
+            <div>
+              <dt>{t("netWorth.liabilities")}</dt>
+              <dd>{money(selectedPoint.total_liabilities)}</dd>
+            </div>
+          </dl>
+        </output>
       </figure>
       <details className="wealth-chart-table">
         <summary>{t("netWorth.history.tableToggle")}</summary>
@@ -732,12 +862,16 @@ function buildChart(history: NetWorthHistory) {
   const rawValues = history.points.map((point) =>
     Number(point.total_net_worth),
   );
-  const rawMin = Math.min(0, ...rawValues);
-  const rawMax = Math.max(0, ...rawValues);
-  const rawSpan = rawMax - rawMin || Math.max(Math.abs(rawMax), 1);
-  const padding = rawSpan * 0.12;
-  const min = rawMin - padding;
-  const max = rawMax + padding;
+  const scaleValues = rawValues.length ? rawValues : [0];
+  const rawMin = Math.min(...scaleValues);
+  const rawMax = Math.max(...scaleValues);
+  const scaleMin = Math.min(0, rawMin);
+  const scaleMax = Math.max(0, rawMax);
+  const scaleSpan = scaleMax - scaleMin || 1;
+  const tickStep = niceStep(scaleSpan / 4);
+  const min = Math.floor(scaleMin / tickStep) * tickStep;
+  let max = Math.ceil(scaleMax / tickStep) * tickStep;
+  if (min === max) max = tickStep;
   const span = max - min;
   const x = (index: number) =>
     history.points.length === 1
@@ -755,14 +889,17 @@ function buildChart(history: NetWorthHistory) {
     .map((point, index) => `${index ? "L" : "M"} ${point.x} ${point.y}`)
     .join(" ");
   const areaPath = points.length
-    ? `${linePath} L ${points.at(-1)?.x ?? plotRight} ${plotBottom} L ${
+    ? `${linePath} L ${points.at(-1)?.x ?? plotRight} ${y(0)} L ${
         points[0].x
-      } ${plotBottom} Z`
+      } ${y(0)} Z`
     : "";
-  const yTicks = Array.from({ length: 5 }, (_, index) => {
-    const value = max - (span / 4) * index;
-    return { value, y: y(value) };
-  });
+  const yTicks = Array.from(
+    { length: Math.round(span / tickStep) + 1 },
+    (_, index) => {
+      const value = Number((max - tickStep * index).toPrecision(12));
+      return { value, y: y(value) };
+    },
+  );
   const labelIndexes = Array.from(
     new Set([
       0,
@@ -792,16 +929,48 @@ function buildChart(history: NetWorthHistory) {
     linePath,
     areaPath,
     yTicks,
+    tickStep,
     xLabels,
-    zeroY: min < 0 && max > 0 ? y(0) : null,
+    zeroY: y(0),
   };
 }
 
-function compactMoney(value: number) {
+function niceStep(value: number) {
+  const magnitude = 10 ** Math.floor(Math.log10(Math.max(value, 1e-9)));
+  const normalized = value / magnitude;
+  const factor =
+    normalized <= 1
+      ? 1
+      : normalized <= 2
+        ? 2
+        : normalized <= 2.5
+          ? 2.5
+          : normalized <= 5
+            ? 5
+            : 10;
+  return factor * magnitude;
+}
+
+function formatAxisValue(value: number, step: number) {
+  const fractionDigits = step >= 1 ? 0 : Math.ceil(-Math.log10(step));
   return new Intl.NumberFormat(undefined, {
-    notation: "compact",
-    maximumFractionDigits: 1,
+    maximumFractionDigits: fractionDigits,
   }).format(value);
+}
+
+function renderedChartPoint(
+  svgRef: RefObject<SVGSVGElement | null>,
+  chart: ReturnType<typeof buildChart>,
+  x: number,
+  y: number,
+) {
+  const rect = svgRef.current?.getBoundingClientRect();
+  if (!rect?.width || !rect.height) return null;
+  const scale = Math.min(rect.width / chart.width, rect.height / chart.height);
+  return {
+    x: rect.left + (rect.width - chart.width * scale) / 2 + x * scale,
+    y: rect.top + (rect.height - chart.height * scale) / 2 + y * scale,
+  };
 }
 
 function formatShortDate(value: string) {

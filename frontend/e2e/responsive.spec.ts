@@ -813,6 +813,43 @@ test.describe("accounts scoreboard theme", () => {
     );
     expect(darkAppearance.color).not.toBe(lightAppearance.color);
   });
+
+  test("tracks the nearest net worth date across the full plot", async ({
+    page,
+  }) => {
+    await page.goto("/accounts");
+
+    const chart = page.getByRole("img", { name: "Net worth over time" });
+    await expect(chart).toBeVisible();
+    await expect(chart.getByText("0", { exact: true })).toBeVisible();
+    await chart.scrollIntoViewIfNeeded();
+    const chartBox = await chart.boundingBox();
+    expect(chartBox).not.toBeNull();
+
+    await page.mouse.move(
+      (chartBox?.x ?? 0) + (chartBox?.width ?? 0) * 0.2,
+      (chartBox?.y ?? 0) + (chartBox?.height ?? 0) * 0.5,
+    );
+    const tooltip = page.locator(".wealth-chart-tooltip");
+    await expect(tooltip).toBeVisible();
+    await expect(tooltip).toContainText("Jun 30, 2026");
+    await expect(tooltip).toContainText("+$9,500.00");
+    await expect(tooltip).toHaveCSS("pointer-events", "none");
+
+    const firstPosition = await tooltip.getAttribute("style");
+    await page.mouse.move(
+      (chartBox?.x ?? 0) + (chartBox?.width ?? 0) * 0.3,
+      (chartBox?.y ?? 0) + (chartBox?.height ?? 0) * 0.7,
+    );
+    await expect(tooltip).toHaveAttribute("style", firstPosition ?? "");
+
+    await page.mouse.move(
+      (chartBox?.x ?? 0) + (chartBox?.width ?? 0) * 0.85,
+      (chartBox?.y ?? 0) + (chartBox?.height ?? 0) * 0.5,
+    );
+    await expect(tooltip).toContainText("Jul 16, 2026");
+    await expect(tooltip).toContainText("+$10,000.00");
+  });
 });
 
 async function assertNoHorizontalOverflow(page: Page) {

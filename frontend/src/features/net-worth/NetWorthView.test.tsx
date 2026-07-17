@@ -1,6 +1,6 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import App from "../../app/App";
 import { installAppTestLifecycle, mockFetch } from "../../test/appTestSupport";
 
@@ -82,6 +82,57 @@ describe("net worth workflow", () => {
         name: "Net worth history with asset and liability totals",
       }),
     ).toBeVisible();
+  });
+
+  it("uses a positive nice-number scale and reveals details across the plot", async () => {
+    window.history.pushState({}, "", "/accounts?months=6");
+    mockFetch({
+      "/api/settings": { currency: "USD" },
+      "/api/net-worth/overview": overview(
+        {
+          ...emptySummary,
+          total_assets: "28100.00",
+          total_net_worth: "28100.00",
+          active_account_count: 1,
+          resolved_asset_count: 1,
+        },
+        [
+          historyPoint("2026-06-30", "10700.00", "0.00", "10700.00"),
+          historyPoint("2026-07-16", "28100.00", "0.00", "28100.00"),
+        ],
+        [analytics(1, "Savings", "asset", "28100.00", "10700.00", "17400.00")],
+      ),
+    });
+
+    render(<App />);
+
+    const chart = await screen.findByRole("img", {
+      name: /Net worth over time/,
+    });
+    expect(within(chart).getByText("0")).toBeVisible();
+    expect(within(chart).getByText("10,000")).toBeVisible();
+    expect(within(chart).getByText("20,000")).toBeVisible();
+    expect(chart.textContent).not.toContain("-5,000");
+
+    vi.spyOn(chart, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 0, y: 0, width: 820, height: 350 }),
+    );
+    const figure = chart.closest("figure");
+    expect(figure).not.toBeNull();
+    vi.spyOn(figure as HTMLElement, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 0, y: 0, width: 820, height: 350 }),
+    );
+
+    fireEvent.pointerMove(chart, {
+      clientX: 780,
+      clientY: 160,
+      pointerType: "mouse",
+    });
+
+    const tooltip = figure?.querySelector(".wealth-chart-tooltip");
+    expect(tooltip).not.toHaveAttribute("hidden");
+    expect(tooltip).toHaveTextContent("+$28,100.00");
+    expect(tooltip).toHaveTextContent("Assets$28,100.00");
   });
 
   it("does not calculate change from an unknown comparison balance", async () => {

@@ -317,6 +317,7 @@
 
   .wealth-trend-card {
     display: grid;
+    overflow: clip;
     padding: clamp(1rem, 2.5cqi, 1.65rem);
   }
 
@@ -358,6 +359,8 @@
   }
 
   .wealth-chart {
+    container: wealth-chart / inline-size;
+    position: relative;
     min-inline-size: 0;
     margin: 0.75rem 0 0;
     color: var(--action);
@@ -368,6 +371,8 @@
     inline-size: 100%;
     min-block-size: 24rem;
     overflow: visible;
+    cursor: crosshair;
+    touch-action: pan-y;
   }
 
   .chart-grid-line line {
@@ -399,6 +404,78 @@
     stroke-linejoin: round;
     stroke-width: 3;
     vector-effect: non-scaling-stroke;
+  }
+
+  .wealth-chart-tooltip {
+    --tooltip-width: 13rem;
+    --tooltip-half-width: calc(var(--tooltip-width) / 2);
+    --tooltip-center: clamp(
+      var(--tooltip-half-width),
+      var(--tooltip-x),
+      calc(100cqi - var(--tooltip-half-width))
+    );
+    position: absolute;
+    z-index: 4;
+    inset-block-start: clamp(
+      0.5rem,
+      calc(var(--tooltip-y) - 8.5rem),
+      calc(100% - 8.5rem)
+    );
+    inset-inline-start: var(--tooltip-center);
+    display: grid;
+    gap: 0.18rem;
+    inline-size: var(--tooltip-width);
+    max-inline-size: calc(100cqi - 1rem);
+    padding: 0.7rem 0.8rem;
+    color: var(--ink);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border: 1px solid color-mix(in srgb, var(--action) 24%, var(--rule));
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(0.75rem);
+    pointer-events: none;
+    translate: -50% 0;
+  }
+
+  .wealth-chart-tooltip[hidden] {
+    display: none;
+  }
+
+  .wealth-chart-tooltip > span,
+  .wealth-chart-tooltip dt {
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .wealth-chart-tooltip > strong,
+  .wealth-chart-tooltip dd {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .wealth-chart-tooltip > strong {
+    font-size: var(--font-size-lg);
+    line-height: var(--line-tight);
+  }
+
+  .wealth-chart-tooltip dl,
+  .wealth-chart-tooltip dl > div {
+    display: grid;
+    gap: 0.15rem;
+    margin: 0;
+  }
+
+  .wealth-chart-tooltip dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-block-start: 0.3rem;
+    padding-block-start: 0.45rem;
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .wealth-chart-tooltip dd {
+    margin: 0;
+    font-size: var(--font-size-sm);
   }
 
   .net-worth-zero-line {
@@ -1863,6 +1940,45 @@
         translate: 0 0.5rem;
       }
     }
+
+    .net-worth-line {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: wealth-line-draw 700ms var(--ease-out) 120ms forwards;
+    }
+
+    .net-worth-area {
+      animation: wealth-area-reveal 600ms var(--ease-out) 260ms both;
+      transform-box: fill-box;
+      transform-origin: bottom;
+    }
+
+    .wealth-chart circle {
+      animation: wealth-point-entry 320ms var(--ease-out) both;
+      animation-delay: calc(420ms + var(--point-delay));
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    @keyframes wealth-line-draw {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    @keyframes wealth-area-reveal {
+      from {
+        opacity: 0;
+        transform: scaleY(0.94);
+      }
+    }
+
+    @keyframes wealth-point-entry {
+      from {
+        opacity: 0;
+        transform: scale(0.6);
+      }
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1889,6 +2005,13 @@
 
     .net-worth-area {
       fill: none;
+    }
+
+    .wealth-chart-tooltip {
+      color: CanvasText;
+      background: Canvas;
+      border: 1px solid CanvasText;
+      backdrop-filter: none;
     }
 
     .wealth-chart circle.is-selected,
