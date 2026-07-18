@@ -2,21 +2,16 @@ import {
   ArrowRight,
   CalendarCheck,
   Check,
-  Coins,
   Database,
-  Download,
   Plus,
   ReceiptText,
   Repeat2,
   Settings2,
   Tags,
-  Target,
   Trash2,
-  Upload,
 } from "lucide-react";
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import "./manage.css";
-import { artifactUrls } from "../../api/artifacts";
 import {
   manageViewOrder,
   pathForView,
@@ -25,7 +20,6 @@ import {
 } from "../../app/routes";
 import {
   ActionButton,
-  DownloadLink,
   IconButton,
   SubmitButton,
 } from "../../shared/components/actions";
@@ -38,7 +32,6 @@ import { money } from "../../shared/format/money";
 import { periodLabel } from "../../shared/format/periods";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { localizedNotice } from "../../shared/i18n/notices";
-import { PreferenceChoiceGroups } from "../../shared/preferences/PreferenceControls";
 import type {
   CategoryRule,
   CategoryRuleInput,
@@ -55,11 +48,12 @@ import {
   useRecurringTemplates,
   useSaveCategoryRule,
   useSaveRecurringTemplate,
-  useUpdateLedgerSettings,
   preloadCategoryRules,
   preloadLedgerSettings,
   preloadRecurringTemplates,
 } from "./hooks";
+import { ManageDataView } from "./ManageDataView";
+import { ManagePreferencesView } from "./ManagePreferencesView";
 
 export function preloadManageView(section: ManageSection) {
   if (section === "manageAutomations") {
@@ -122,7 +116,7 @@ export function ManageView({
         <CategoriesView navigation={navigation} setNotice={setNotice} />
       ) : null}
       {section === "manageData" ? (
-        <DataView
+        <ManageDataView
           navigation={navigation}
           selectedPeriod={selectedPeriod}
           onOpenTransactionImport={onOpenTransactionImport}
@@ -130,7 +124,7 @@ export function ManageView({
         />
       ) : null}
       {section === "managePreferences" ? (
-        <PreferencesView
+        <ManagePreferencesView
           navigation={navigation}
           setNotice={setNotice}
           onCurrencyChange={onCurrencyChange}
@@ -791,184 +785,6 @@ function CategoriesView({
           </button>
         </div>
       </ModalDialog>
-    </>
-  );
-}
-
-function DataView({
-  navigation,
-  selectedPeriod,
-  onOpenTransactionImport,
-  onOpenBudgetImport,
-}: {
-  navigation: ReactNode;
-  selectedPeriod: { month: number; year: number };
-  onOpenTransactionImport: () => void;
-  onOpenBudgetImport: () => void;
-}) {
-  const { t } = useI18n();
-  const transactionFilters = {
-    ...selectedPeriod,
-    category: "",
-    transaction_type: "" as const,
-  };
-  const budgetFilters = { ...selectedPeriod, category: "" };
-  return (
-    <>
-      <PageHeader
-        eyebrow={t("manage.eyebrow")}
-        title={t("manage.data.title")}
-        summary={t("manage.data.summary")}
-      />
-      {navigation}
-      <section className="manage-data-grid" aria-label={t("manage.data.title")}>
-        <article className="manage-data-card">
-          <ReceiptText aria-hidden="true" />
-          <div>
-            <h2>{t("manage.data.transactionsTitle")}</h2>
-            <p>{t("manage.data.transactionsSummary")}</p>
-            <small>{t("manage.data.duplicateNote")}</small>
-          </div>
-          <div className="manage-data-actions">
-            <ActionButton
-              icon={Upload}
-              variant="secondary"
-              onClick={onOpenTransactionImport}
-            >
-              {t("common.importCsv")}
-            </ActionButton>
-            <DownloadLink
-              icon={Download}
-              href={artifactUrls.transactionsCsv(transactionFilters)}
-              download
-            >
-              {t("common.exportCsv")}
-            </DownloadLink>
-          </div>
-        </article>
-        <article className="manage-data-card">
-          <Target aria-hidden="true" />
-          <div>
-            <h2>{t("manage.data.budgetsTitle")}</h2>
-            <p>{t("manage.data.budgetsSummary")}</p>
-            <small>{t("manage.data.budgetImportNote")}</small>
-          </div>
-          <div className="manage-data-actions">
-            <ActionButton
-              icon={Upload}
-              variant="secondary"
-              onClick={onOpenBudgetImport}
-            >
-              {t("common.importCsv")}
-            </ActionButton>
-            <DownloadLink
-              icon={Download}
-              href={artifactUrls.budgetsCsv(budgetFilters)}
-              download
-            >
-              {t("common.exportCsv")}
-            </DownloadLink>
-          </div>
-        </article>
-      </section>
-      <section className="manage-note" aria-labelledby="local-data-title">
-        <Database aria-hidden="true" size={22} />
-        <div>
-          <h2 id="local-data-title">{t("manage.data.localTitle")}</h2>
-          <p>{t("manage.data.localSummary")}</p>
-        </div>
-      </section>
-    </>
-  );
-}
-
-function PreferencesView({
-  navigation,
-  setNotice,
-  onCurrencyChange,
-}: {
-  navigation: ReactNode;
-  setNotice: (notice: string) => void;
-  onCurrencyChange: (currency: string) => void;
-}) {
-  const { t } = useI18n();
-  const settingsResource = useLedgerSettings();
-  const [currency, setCurrencyValue] = useState("USD");
-  useEffect(() => {
-    if (settingsResource.data?.currency) {
-      // Initialize the editable draft from the asynchronously loaded ledger setting.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCurrencyValue(settingsResource.data.currency);
-    }
-  }, [settingsResource.data?.currency]);
-  const mutation = useUpdateLedgerSettings((response, nextCurrency) => {
-    setNotice(localizedNotice(response, t));
-    onCurrencyChange(nextCurrency);
-  });
-
-  return (
-    <>
-      <PageHeader
-        eyebrow={t("manage.eyebrow")}
-        title={t("manage.preferences.title")}
-        summary={t("manage.preferences.summary")}
-      />
-      {navigation}
-      {settingsResource.status === "error" ? (
-        <ErrorBanner
-          message={settingsResource.error.message}
-          onRetry={settingsResource.refetch}
-        />
-      ) : null}
-      {mutation.status === "error" ? (
-        <ErrorBanner message={mutation.error.message} />
-      ) : null}
-      <section className="manage-preferences-grid">
-        <article className="manage-group">
-          <header>
-            <div>
-              <h2>{t("manage.preferences.currencyTitle")}</h2>
-              <p>{t("manage.preferences.currencySummary")}</p>
-            </div>
-          </header>
-          <form
-            className="manage-preference-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void mutation.mutate(currency);
-            }}
-          >
-            <Field
-              id="manage-settings-currency"
-              label={t("rules.settingsCurrency")}
-              hint={t("rules.settingsHint")}
-            >
-              <select
-                id="manage-settings-currency"
-                value={currency}
-                onChange={(event) => setCurrencyValue(event.target.value)}
-              >
-                <option value="USD">USD ($)</option>
-                <option value="TRY">TRY (₺)</option>
-                <option value="EUR">EUR (€)</option>
-                <option value="GBP">GBP (£)</option>
-              </select>
-            </Field>
-            <SubmitButton busy={mutation.status === "pending"} icon={Coins}>
-              {t("rules.settingsSaveBtn")}
-            </SubmitButton>
-          </form>
-        </article>
-        <article className="manage-group">
-          <header>
-            <div>
-              <h2>{t("manage.preferences.appearanceTitle")}</h2>
-              <p>{t("manage.preferences.appearanceSummary")}</p>
-            </div>
-          </header>
-          <PreferenceChoiceGroups idPrefix="manage-preferences" />
-        </article>
-      </section>
     </>
   );
 }

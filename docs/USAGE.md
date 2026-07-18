@@ -107,7 +107,7 @@ secondary Manage area:
   desktop rail, the compact-header preferences panel, and Manage → Preferences. With no stored
   theme, the interface initially follows the operating-system color scheme.
 
-The Python server exposes JSON under `/api` and serves the compiled React + Vite app from the same local origin. Money values in API responses are decimal strings, preserving the SQLite/`Decimal` behavior used by the CLI.
+The Python server exposes JSON under `/api` and serves the compiled React + Vite app from the same local origin. Money values in API responses are decimal strings, preserving the SQLite/`Decimal` behavior used by the CLI. Individual amounts and balances may be at most `90071992547409.91`; the Web UI formats that boundary and derives displayed totals without losing cents.
 
 For frontend development with a fresh copy of the detailed demo:
 
@@ -328,6 +328,11 @@ finance-tracker ledger-restore backups/demo.sqlite3 --confirm --db-path demo.sql
 
 Run `ledger-verify` periodically and before restoring. Keep the original backup until the restored
 ledger has been opened and checked.
+
+Verification checks the declared application schema, required indexes, SQLite integrity, and
+foreign-key consistency. Restore prepares a copy beside the active ledger, migrates and re-verifies
+that copy, and only then atomically replaces the active file. A rejected backup never replaces the
+active ledger.
 
 ## Import CSV
 

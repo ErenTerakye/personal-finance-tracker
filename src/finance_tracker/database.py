@@ -101,6 +101,72 @@ ON account_balance_snapshots(effective_date);
 
 MIGRATIONS: tuple[str, ...] = (SCHEMA_SQL, ACCOUNT_SCHEMA_SQL)
 
+_V1_TABLE_COLUMNS: dict[str, tuple[str, ...]] = {
+    "transactions": ("id", "type", "amount", "category", "description", "date", "created_at"),
+    "budgets": ("id", "category", "month", "year", "amount", "created_at"),
+    "category_rules": ("id", "alias", "category", "created_at"),
+    "recurring_templates": (
+        "id",
+        "type",
+        "amount",
+        "category",
+        "description",
+        "day_of_month",
+        "active",
+        "created_at",
+    ),
+    "settings": ("key", "value"),
+}
+
+_V2_TABLE_COLUMNS: dict[str, tuple[str, ...]] = {
+    **_V1_TABLE_COLUMNS,
+    "accounts": ("id", "name", "type", "archived_on", "created_at"),
+    "account_balance_snapshots": (
+        "id",
+        "account_id",
+        "amount",
+        "effective_date",
+        "created_at",
+        "updated_at",
+    ),
+}
+
+_V1_INDEXES = frozenset(
+    {
+        "idx_transactions_date",
+        "idx_transactions_category",
+        "idx_transactions_type",
+        "idx_transactions_filter",
+        "idx_transactions_duplicate",
+        "idx_budgets_period",
+        "idx_budgets_period_category",
+        "idx_category_rules_alias",
+        "idx_recurring_templates_active",
+    }
+)
+
+_V2_INDEXES = _V1_INDEXES | {
+    "idx_accounts_type_active",
+    "idx_account_balance_snapshots_account_date",
+    "idx_account_balance_snapshots_date",
+}
+
+SCHEMA_TABLE_COLUMNS: tuple[dict[str, tuple[str, ...]], ...] = (
+    _V1_TABLE_COLUMNS,
+    _V2_TABLE_COLUMNS,
+)
+SCHEMA_INDEXES: tuple[frozenset[str], ...] = (_V1_INDEXES, frozenset(_V2_INDEXES))
+SCHEMA_FOREIGN_KEYS: tuple[
+    dict[str, frozenset[tuple[str, str, str, str]]], ...
+] = (
+    {},
+    {
+        "account_balance_snapshots": frozenset(
+            {("account_id", "accounts", "id", "CASCADE")}
+        )
+    },
+)
+
 
 class _ClosingConnection(sqlite3.Connection):
     """Make direct ``with connect(...)`` usage own and close its handle."""
@@ -185,3 +251,55 @@ def initialize_database(db_path: Path | str) -> None:
                 raise
     finally:
         connection.close()
+
+
+def schema_contract_violations(
+    connection: sqlite3.Connection, schema_version: int
+) -> tuple[str, ...]:
+    """Return application-schema mismatches for a supported declared version."""
+    if not 1 <= schema_version <= SCHEMA_VERSION:
+        return (f"unsupported schema version {schema_version}",)
+
+    violations: list[str] = []
+    required_tables = SCHEMA_TABLE_COLUMNS[schema_version - 1]
+    rows = connection.execute(
+        "SELECT name, type FROM sqlite_schema WHERE type IN ('table', 'index')"
+    ).fetchall()
+    objects = {(str(row[0]), str(row[1])) for row in rows}
+
+    for table, expected_columns in required_tables.items():
+        if (table, "table") not in objects:
+            violations.append(f"missing table {table}")
+            continue
+        actual_columns = tuple(
+            str(row[1])
+            for row in connection.execute(f'PRAGMA table_info("{table}")').fetchall()
+        )
+        if actual_columns != expected_columns:
+            violations.append(
+                f"table {table} columns are {actual_columns!r}; "
+                f"expected {expected_columns!r}"
+            )
+
+    missing_indexes = sorted(
+        index
+        for index in SCHEMA_INDEXES[schema_version - 1]
+        if (index, "index") not in objects
+    )
+    violations.extend(f"missing index {index}" for index in missing_indexes)
+    for table, required_foreign_keys in SCHEMA_FOREIGN_KEYS[schema_version - 1].items():
+        if (table, "table") not in objects:
+            continue
+        actual_foreign_keys = {
+            (str(row[3]), str(row[2]), str(row[4]), str(row[6]))
+            for row in connection.execute(
+                f'PRAGMA foreign_key_list("{table}")'
+            ).fetchall()
+        }
+        missing_foreign_keys = sorted(required_foreign_keys - actual_foreign_keys)
+        violations.extend(
+            f"missing foreign key {table}.{source} -> {target_table}.{target_column} "
+            f"ON DELETE {on_delete}"
+            for source, target_table, target_column, on_delete in missing_foreign_keys
+        )
+    return tuple(violations)

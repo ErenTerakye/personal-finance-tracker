@@ -98,6 +98,27 @@ def test_api_transaction_validation_and_not_found_errors_are_json(tmp_path):
     assert not_found_response.json()["error"]["message"] == "Transaction 404 was not found."
 
 
+def test_api_preserves_supported_high_value_boundary_and_rejects_overflow(tmp_path):
+    client = TestClient(create_app(tmp_path / "finance.sqlite3"))
+    payload = {
+        "type": "income",
+        "amount": "90071992547409.91",
+        "category": "Other",
+        "description": "Boundary",
+        "date": "2026-06-12",
+    }
+
+    accepted = client.post("/api/transactions", json=payload)
+    rejected = client.post(
+        "/api/transactions", json={**payload, "amount": "90071992547409.92"}
+    )
+
+    assert accepted.status_code == 201
+    assert accepted.json()["transaction"]["amount"] == "90071992547409.91"
+    assert rejected.status_code == 400
+    assert "no greater than 90071992547409.91" in rejected.json()["error"]["message"]
+
+
 def test_api_transaction_csv_import_reports_skipped_rows_and_export_filters(tmp_path):
     db_path = tmp_path / "finance.sqlite3"
     client = TestClient(create_app(db_path))

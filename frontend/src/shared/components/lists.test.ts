@@ -31,9 +31,9 @@ describe("budget attention queue calculations", () => {
         attentionStatus(4, "Health", "near limit", "8.00", "92.0"),
       ]),
     ).toEqual({
-      overAmount: 1590,
+      overAmount: "1590.00",
       overCount: 2,
-      nearAmount: 13.7,
+      nearAmount: "13.70",
       nearCount: 2,
     });
   });

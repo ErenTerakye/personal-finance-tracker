@@ -75,6 +75,9 @@ Browser composition exposes exactly four primary destinations: Overview (`/`), T
 (`/transactions`), Budgets (`/budgets`), and Accounts (`/accounts`). Lower-frequency setup is
 secondary under `/manage/*`. The app layer owns canonical-route metadata, compatibility redirects,
 document titles, route focus, browser-history continuity, and cross-feature context handoff.
+`app/routeLifecycle.ts` owns route module preparation, compatibility normalization, period parsing,
+idle scheduling, and focus readiness. Manage's data and preferences sections and the budget
+inspector are feature-local owners rather than responsibilities embedded in their route composers.
 Feature modules continue to own their workflows and never import one another. Compatibility paths
 translate `/cash-flow` to `/`, `/net-worth` to `/accounts`, and `/rules` to
 `/manage/automations`, retaining only relevant query parameters.
@@ -99,9 +102,11 @@ the cumulative lazy CSS loaded by any route at 8 KiB, and all CSS at 32 KiB. Rou
 from Vite's production manifest and include shared component styles, so splitting a route across
 multiple files cannot hide stylesheet growth. Styles shared by the default dashboard and multiple
 routes remain in the initial bundle when doing so reduces route requests and aggregate compressed
-transfer without approaching the initial limit. The aggregate ceiling leaves approximately 20%
-maintenance headroom at the measured 23.70 KiB production baseline; it should be revisited from
-measured output rather than raised automatically when utilization grows.
+transfer without approaching the initial limit. The aggregate ceiling leaves approximately 6%
+maintenance headroom at the measured 30.18 KiB production baseline. The 32 KiB aggregate ceiling is
+the executable release contract; raising it requires measured output and rationale here rather than
+an automatic adjustment when utilization grows. The Accounts and Overview route utilization is an
+optimization signal, not a reason to split styles solely to satisfy source-size metrics.
 
 The UI targets Baseline 2026 and progressively enhances native dialogs, popovers, container queries,
 same-document view transitions, and modern CSS. Core navigation, forms, dialogs, and CRUD remain
@@ -114,20 +119,26 @@ motion are verification targets.
 SQLite schema changes remain ordered in `database.py` and tracked with `PRAGMA user_version`. An
 existing unversioned v1 database is stamped and upgraded in place without discarding records.
 Connections enable foreign keys, WAL, a busy timeout, and `synchronous=NORMAL` with explicit Python
-3.14 transaction behavior. Money remains `Decimal` in Python and decimal text in SQLite and JSON;
-dates remain ISO text.
+3.14 transaction behavior. Money remains `Decimal` in Python and decimal text in SQLite and JSON.
+Individual transaction, budget, recurring, and balance values are capped at
+`90071992547409.91`—the largest cent value whose integer minor units fit in JavaScript's safe
+integer range. The browser formats decimal strings directly and uses integer-cent helpers for
+display-side sums, differences, and comparisons; floating-point chart coordinates are
+presentation-only. Dates remain ISO text.
 
 The 39 CLI commands, 40 HTTP operations, OpenAPI schema names, CSV headers, SQLite schema/indexes,
 documented canonical and compatibility browser routes, security headers, and package entrypoints
 frozen by
 [`ARCHITECTURE_CLEANUP_SPEC.md`](ARCHITECTURE_CLEANUP_SPEC.md) are compatibility contracts. Tests
 characterize those contracts, and generated OpenAPI output is changed only through the generator.
-`npm run check:generated` regenerates OpenAPI types and the packaged SPA, checks bundle budgets, and
-fails on tracked or untracked drift in either generated surface.
+`npm run check:generated` snapshots and regenerates OpenAPI types and the packaged SPA, checks
+bundle budgets, and fails on any added, removed, or modified file in either generated surface.
 
 Complete-ledger recovery is separate from interoperable CSV workflows. `LedgerRecoveryService`
-uses SQLite's backup API for consistent WAL-aware copies, verifies integrity and supported schema
-versions read-only, and restores through a verified temporary database followed by atomic replace.
+uses SQLite's backup API for consistent WAL-aware copies and validates declared-version table,
+column, and index manifests along with integrity and foreign keys. Restore copies into the active
+ledger directory, migrates and re-verifies that temporary database against the current contract,
+and atomically replaces the active file only after preparation succeeds.
 
 ## Demo source and generated artifacts
 

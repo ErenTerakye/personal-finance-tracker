@@ -5,6 +5,17 @@ from decimal import Decimal, InvalidOperation
 
 from finance_tracker.exceptions import ValidationError
 
+MAX_SAFE_MONEY = Decimal("90071992547409.91")
+
+
+def validate_money_range(amount: Decimal, field_name: str) -> Decimal:
+    """Keep cent values within JavaScript's exact safe-integer range."""
+    if abs(amount) > MAX_SAFE_MONEY:
+        raise ValidationError(
+            f"{field_name} must be no greater than {MAX_SAFE_MONEY}."
+        )
+    return amount
+
 
 def parse_amount(value: str | int | float | Decimal) -> Decimal:
     try:
@@ -14,7 +25,7 @@ def parse_amount(value: str | int | float | Decimal) -> Decimal:
 
     if amount <= 0:
         raise ValidationError("Amount must be greater than zero.")
-    return amount
+    return validate_money_range(amount, "Amount")
 
 
 def validate_month(value: int) -> int:

@@ -18,7 +18,14 @@ import { ModalDialog } from "../../shared/components/dialogs";
 import { ErrorBanner } from "../../shared/components/feedback";
 import { Field } from "../../shared/components/fields";
 import { formatDate, todayIso } from "../../shared/format/dates";
-import { currencySymbol, money, signedMoney } from "../../shared/format/money";
+import {
+  compareMoney,
+  currencySymbol,
+  money,
+  signedMoney,
+  subtractMoney,
+  sumMoney,
+} from "../../shared/format/money";
 import { useMutation } from "../../shared/hooks/useMutation";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import type { NetWorthAccountAnalytics } from "../../types";
@@ -68,22 +75,25 @@ export function BalanceCheckInDialog({
   const liabilities = accounts.filter(
     (account) => account.type === "liability",
   );
-  const currentNetWorth = accounts.reduce(
-    (total, account) =>
-      total +
-      (account.type === "asset" ? 1 : -1) *
-        Number(account.current_balance ?? 0),
-    0,
+  const currentNetWorth = sumMoney(
+    accounts.map((account) =>
+      account.type === "asset"
+        ? (account.current_balance ?? "0.00")
+        : `-${account.current_balance ?? "0.00"}`,
+    ),
   );
-  const projectedNetWorth = accounts.reduce((total, account) => {
-    const amount = amounts[account.account_id]?.trim();
-    const resolvedAmount =
-      amount && Number.isFinite(Number(amount))
-        ? Number(amount)
-        : Number(account.current_balance ?? 0);
-    return total + (account.type === "asset" ? 1 : -1) * resolvedAmount;
-  }, 0);
-  const projectedChange = projectedNetWorth - currentNetWorth;
+  const projectedNetWorth = sumMoney(
+    accounts.map((account) => {
+      const amount = amounts[account.account_id]?.trim();
+      const resolvedAmount =
+        amount && Number.isFinite(Number(amount))
+          ? amount
+          : (account.current_balance ?? "0.00");
+      return account.type === "asset" ? resolvedAmount : `-${resolvedAmount}`;
+    }),
+  );
+  const projectedChange = subtractMoney(projectedNetWorth, currentNetWorth);
+  const projectedDirection = compareMoney(projectedChange, 0);
   const hasInvalidAmount = updates.some(
     (update) =>
       update.amount === "" ||
@@ -149,21 +159,21 @@ export function BalanceCheckInDialog({
             <strong>{money(projectedNetWorth)}</strong>
             <span
               className={
-                projectedChange === 0
+                projectedDirection === 0
                   ? "balance-impact-change"
                   : `balance-impact-change ${
-                      projectedChange > 0 ? "positive" : "negative"
+                      projectedDirection > 0 ? "positive" : "negative"
                     }`
               }
             >
-              {projectedChange === 0 ? (
+              {projectedDirection === 0 ? (
                 <ArrowRight aria-hidden="true" />
-              ) : projectedChange > 0 ? (
+              ) : projectedDirection > 0 ? (
                 <ArrowUpRight aria-hidden="true" />
               ) : (
                 <ArrowDownRight aria-hidden="true" />
               )}
-              {projectedChange === 0
+              {projectedDirection === 0
                 ? t("netWorth.checkIn.noImpact")
                 : t("netWorth.checkIn.impact", {
                     amount: signedMoney(projectedChange),
@@ -285,10 +295,12 @@ function BalanceAccountGroup({
           const id = `check-in-${account.account_id}`;
           const value = amounts[account.account_id] ?? "";
           const changed = balanceChanged(account, value);
-          const current = Number(account.current_balance ?? 0);
-          const next = Number(value);
+          const current = account.current_balance ?? "0.00";
           const difference =
-            value.trim() && Number.isFinite(next) ? next - current : 0;
+            value.trim() && Number.isFinite(Number(value))
+              ? subtractMoney(value, current)
+              : "0.00";
+          const differenceDirection = compareMoney(difference, 0);
           return (
             <li
               className={`balance-account-row${changed ? " is-changed" : ""}`}
@@ -348,10 +360,10 @@ function BalanceAccountGroup({
                   <>
                     <span
                       className={
-                        difference === 0
+                        differenceDirection === 0
                           ? "balance-delta"
                           : `balance-delta ${
-                              difference > 0 ? "positive" : "negative"
+                              differenceDirection > 0 ? "positive" : "negative"
                             }`
                       }
                     >
@@ -401,11 +413,6 @@ function balanceChanged(
   const next = value.trim();
   if (!next) return false;
   if (account.current_balance === null) return true;
-  const nextNumber = Number(next);
-  const currentNumber = Number(account.current_balance);
-  return (
-    !Number.isFinite(nextNumber) ||
-    !Number.isFinite(currentNumber) ||
-    nextNumber !== currentNumber
-  );
+  if (!Number.isFinite(Number(next))) return true;
+  return compareMoney(next, account.current_balance) !== 0;
 }

@@ -108,7 +108,7 @@ progressive data menus, and English/Turkish labels keep the application predicta
 flattening each destination into the same layout. The current design goal is documented in
 [docs/WEB_UI_COHESION_AND_FLOW_GOAL.md](docs/WEB_UI_COHESION_AND_FLOW_GOAL.md).
 
-Architecture: FastAPI exposes JSON endpoints under `/api`, and a React + Vite + TypeScript SPA is served from the same local server after `npm run build`. Money values are sent as decimal strings so the browser never depends on floating-point rounding for stored amounts.
+Architecture: FastAPI exposes JSON endpoints under `/api`, and a React + Vite + TypeScript SPA is served from the same local server after `npm run build`. Money values are sent as decimal strings and browser-side display arithmetic uses integer cents. Individual amounts and balances are supported through `90071992547409.91` without losing a cent.
 
 The browser application includes:
 

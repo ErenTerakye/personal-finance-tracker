@@ -19,7 +19,6 @@ import {
   Search,
   Trash2,
   Upload,
-  X,
 } from "lucide-react";
 import type { BudgetFilters } from "../../api/client";
 import { artifactUrls } from "../../api/artifacts";
@@ -29,7 +28,14 @@ import { ModalDialog } from "../../shared/components/dialogs";
 import { EmptyState, ErrorBanner } from "../../shared/components/feedback";
 import { PageHeader } from "../../shared/components/lists";
 import { PeriodControl } from "../../shared/components/PeriodControl";
-import { money } from "../../shared/format/money";
+import {
+  absoluteMoney,
+  compareMoney,
+  money,
+  nonNegativeMoney,
+  subtractMoney,
+  sumMoney,
+} from "../../shared/format/money";
 import { periodLabel } from "../../shared/format/periods";
 import type { BudgetInput, BudgetRecord } from "../../types";
 import { localizedNotice } from "../../shared/i18n/notices";
@@ -47,6 +53,7 @@ import {
   preloadBudgets,
 } from "./useBudgets";
 import { BudgetFormDialog } from "./components/BudgetFormDialog";
+import { BudgetInspector } from "./components/BudgetInspector";
 import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
 import { RollingNumber } from "../../shared/components/RollingNumber";
 
@@ -103,7 +110,7 @@ export function BudgetsView({
       return a.budget.category.localeCompare(b.budget.category);
     }
     if (sortBy === "spent") {
-      return Number(b.actual_expenses) - Number(a.actual_expenses);
+      return compareMoney(b.actual_expenses, a.actual_expenses);
     }
     const priority = (value: string) =>
       value === "over budget" ? 2 : value === "near limit" ? 1 : 0;
@@ -247,36 +254,35 @@ export function BudgetsView({
     await importMutation.mutate(csvText);
   }
 
-  const totalPlanned = statuses.reduce(
-    (sum, status) => sum + Number(status.budget.amount),
-    0,
+  const totalPlanned = sumMoney(statuses.map((status) => status.budget.amount));
+  const coveredSpending = sumMoney(
+    statuses.map((status) => status.actual_expenses),
   );
-  const coveredSpending = statuses.reduce(
-    (sum, status) => sum + Number(status.actual_expenses),
-    0,
-  );
-  const totalSpent = Number(periodTransition.data?.totalExpenses ?? 0);
+  const totalSpent = periodTransition.data?.totalExpenses ?? "0.00";
   const previousStatuses = periodTransition.previousData?.statuses ?? statuses;
-  const previousPlanned = previousStatuses.reduce(
-    (sum, status) => sum + Number(status.budget.amount),
-    0,
+  const previousPlanned = sumMoney(
+    previousStatuses.map((status) => status.budget.amount),
   );
-  const previousCovered = previousStatuses.reduce(
-    (sum, status) => sum + Number(status.actual_expenses),
-    0,
+  const previousCovered = sumMoney(
+    previousStatuses.map((status) => status.actual_expenses),
   );
-  const previousSpent = Number(
-    periodTransition.previousData?.totalExpenses ?? totalSpent,
+  const previousSpent =
+    periodTransition.previousData?.totalExpenses ?? totalSpent;
+  const previousUncovered = nonNegativeMoney(
+    subtractMoney(previousSpent, previousCovered),
   );
-  const previousUncovered = Math.max(0, previousSpent - previousCovered);
-  const remaining = totalPlanned - coveredSpending;
-  const uncovered = Math.max(0, totalSpent - coveredSpending);
+  const remaining = subtractMoney(totalPlanned, coveredSpending);
+  const uncovered = nonNegativeMoney(
+    subtractMoney(totalSpent, coveredSpending),
+  );
   const selectedStatus = statuses.find(
     (status) => status.budget.category === selectedCategory,
   );
   const hasCategoryFilter = Boolean(filters.category?.trim());
   const utilization =
-    totalPlanned > 0 ? (coveredSpending / totalPlanned) * 100 : 0;
+    compareMoney(totalPlanned, 0) > 0
+      ? (Number(coveredSpending) / Number(totalPlanned)) * 100
+      : 0;
   const planProgress = Math.min(Math.max(utilization, 0), 100);
   const overCount = statuses.filter(
     (status) => status.status === "over budget",
@@ -412,9 +418,9 @@ export function BudgetsView({
                 >
                   <div>
                     <span>{t("budgets.pulse.variance")}</span>
-                    <strong>{money(Math.abs(remaining))}</strong>
+                    <strong>{money(absoluteMoney(remaining))}</strong>
                     <em>
-                      {remaining >= 0
+                      {compareMoney(remaining, 0) >= 0
                         ? t("budgets.pulse.left")
                         : t("budgets.pulse.over")}
                     </em>
@@ -435,7 +441,7 @@ export function BudgetsView({
                   </p>
                   <h2>{planPulseTitle}</h2>
                   <p>{planPulseMessage}</p>
-                  {uncovered > 0 ? (
+                  {compareMoney(uncovered, 0) > 0 ? (
                     <p className="plan-uncovered-note">
                       <AlertTriangle aria-hidden="true" size={18} />
                       <span>
@@ -475,7 +481,7 @@ export function BudgetsView({
                   </dd>
                 </div>
                 <div
-                  className={`plan-metric ${uncovered > 0 ? "plan-metric-alert" : "plan-metric-covered"}`}
+                  className={`plan-metric ${compareMoney(uncovered, 0) > 0 ? "plan-metric-alert" : "plan-metric-covered"}`}
                 >
                   <dt>{t("budgets.uncovered")}</dt>
                   <dd>
@@ -487,7 +493,7 @@ export function BudgetsView({
                   </dd>
                   <dd className="plan-metric-note">
                     {t(
-                      uncovered > 0
+                      compareMoney(uncovered, 0) > 0
                         ? "budgets.metric.uncovered"
                         : "budgets.metric.covered",
                     )}
@@ -566,7 +572,7 @@ export function BudgetsView({
                 <p className="loading-state">{t("budgets.recordsLoading")}</p>
               ) : hasCategoryFilter && visibleStatuses.length === 0 ? (
                 <p className="quiet-state">{t("budgets.empty.noMatch")}</p>
-              ) : statuses.length === 0 && totalSpent > 0 ? (
+              ) : statuses.length === 0 && compareMoney(totalSpent, 0) > 0 ? (
                 <EmptyState
                   icon={PiggyBank}
                   eyebrow={t("budgets.empty.eyebrow")}
@@ -596,7 +602,7 @@ export function BudgetsView({
                     const isSelected =
                       inspectorOpen &&
                       selectedCategory === status.budget.category;
-                    const over = Number(status.remaining) < 0;
+                    const over = compareMoney(status.remaining, 0) < 0;
                     const presentation = statusPresentation(status.status);
                     const StatusIcon = presentation.Icon;
                     return (
@@ -661,7 +667,7 @@ export function BudgetsView({
                               {over
                                 ? t("budgets.board.amountOver", {
                                     amount: money(
-                                      Math.abs(Number(status.remaining)),
+                                      absoluteMoney(status.remaining),
                                     ),
                                   })
                                 : t("budgets.board.amountLeft", {
@@ -678,102 +684,18 @@ export function BudgetsView({
             </div>
 
             {selectedStatus ? (
-              <div
-                className="plan-inspector-layer"
-                aria-hidden={!inspectorOpen}
-                inert={!inspectorOpen}
-              >
-                <aside
-                  id={inspectorId}
-                  className={`plan-inspector ${statusPresentation(selectedStatus.status).tone}${inspectorOpen ? " is-open" : ""}`}
-                  aria-labelledby={inspectorTitleId}
-                >
-                  <div className="plan-inspector-content">
-                    <div className="plan-inspector-heading">
-                      <div>
-                        <span className="plan-status-badge">
-                          {statusPresentation(selectedStatus.status).label}
-                        </span>
-                        <h3 id={inspectorTitleId}>
-                          {selectedStatus.budget.category}
-                        </h3>
-                        <p>{t("budgets.inspector.summary")}</p>
-                      </div>
-                      <button
-                        className="icon-button secondary plan-inspector-close"
-                        type="button"
-                        aria-label={t("budgets.inspector.close")}
-                        onClick={() => closeInspector({ restoreFocus: true })}
-                      >
-                        <X aria-hidden="true" size={18} />
-                      </button>
-                    </div>
-                    <dl className="plan-inspector-metrics">
-                      <div>
-                        <dt>{t("budgets.inspector.limit")}</dt>
-                        <dd>{money(selectedStatus.budget.amount)}</dd>
-                      </div>
-                      <div>
-                        <dt>{t("budgets.inspector.spent")}</dt>
-                        <dd>{money(selectedStatus.actual_expenses)}</dd>
-                      </div>
-                      <div>
-                        <dt>
-                          {t(
-                            Number(selectedStatus.remaining) < 0
-                              ? "budgets.inspector.over"
-                              : "budgets.inspector.available",
-                          )}
-                        </dt>
-                        <dd>
-                          {money(Math.abs(Number(selectedStatus.remaining)))}
-                        </dd>
-                      </div>
-                    </dl>
-                    <div className="plan-inspector-footer">
-                      <p className="plan-inspector-insight">
-                        <CircleGauge aria-hidden="true" size={18} />
-                        {t("budgets.inspector.used", {
-                          percent: selectedStatus.percent_used,
-                        })}
-                      </p>
-                      <div className="plan-inspector-actions">
-                        <button
-                          className="button secondary"
-                          type="button"
-                          onClick={() =>
-                            onReviewTransactions(
-                              selectedStatus.budget.category,
-                              selectedStatus.budget.month,
-                              selectedStatus.budget.year,
-                            )
-                          }
-                        >
-                          {t("budgets.inspector.viewTransactions")}
-                        </button>
-                        <button
-                          className="button primary"
-                          type="button"
-                          onClick={() => openEdit(selectedStatus.budget)}
-                        >
-                          {t("budgets.inspector.edit", {
-                            category: selectedStatus.budget.category,
-                          })}
-                        </button>
-                        <button
-                          className="button danger"
-                          type="button"
-                          onClick={() =>
-                            setPendingDelete(selectedStatus.budget)
-                          }
-                        >
-                          {t("budgets.dialog.deleteBtn")}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </aside>
-              </div>
+              <BudgetInspector
+                status={selectedStatus}
+                open={inspectorOpen}
+                id={inspectorId}
+                titleId={inspectorTitleId}
+                tone={statusPresentation(selectedStatus.status).tone}
+                statusLabel={statusPresentation(selectedStatus.status).label}
+                onClose={() => closeInspector({ restoreFocus: true })}
+                onReviewTransactions={onReviewTransactions}
+                onEdit={openEdit}
+                onDelete={setPendingDelete}
+              />
             ) : null}
           </div>
         </section>

@@ -187,6 +187,13 @@
     border-block-start: 1px solid var(--rule);
   }
 
+  .rail-preference-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-inline: 0.85rem;
+  }
+
   .local-data-status {
     display: inline-flex;
     align-items: center;
@@ -196,16 +203,6 @@
     padding-inline: 0.85rem;
     color: var(--muted);
     font-size: var(--font-size-xs);
-  }
-
-  .desktop-utility-bar {
-    position: absolute;
-    top: clamp(1.25rem, 3vw, 3.5rem);
-    right: var(--page-gutter);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    z-index: 10;
   }
 
   .compact-app-bar {

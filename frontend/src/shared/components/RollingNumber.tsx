@@ -1,20 +1,20 @@
 import { useState } from "react";
 
-export function RollingNumber({
+export function RollingNumber<T extends string | number>({
   value,
   previousValue = value,
   format,
   className = "",
 }: {
-  value: number;
-  previousValue?: number;
-  format: (value: number) => string;
+  value: T;
+  previousValue?: T;
+  format: (value: T) => string;
   className?: string;
 }) {
   const formatted = format(value);
   const previousFormatted = format(previousValue);
   const changed = previousFormatted !== formatted;
-  const direction = value >= previousValue ? "up" : "down";
+  const direction = Number(value) >= Number(previousValue) ? "up" : "down";
   const transitionKey = `${previousFormatted}\u0000${formatted}`;
   const [completedTransition, setCompletedTransition] = useState<string>();
   const animating = changed && completedTransition !== transitionKey;

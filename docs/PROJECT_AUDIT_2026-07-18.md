@@ -2,334 +2,282 @@
 
 ## Executive summary
 
-Personal Finance Tracker is unusually complete for a portfolio-scale local application. Its domain
-boundaries are explicit, money handling is decimal-safe at the application boundary, migrations are
-versioned and tested, API types are generated, browser workflows have broad cross-browser coverage,
-and the accessibility suite exercises more than an automated score.
+Personal Finance Tracker is a strong portfolio-scale local application. Its backend layers are
+clear, its core financial calculations use `Decimal`, migrations and transaction boundaries have
+focused tests, FastAPI drives generated TypeScript contracts, the packaged SPA is reproducible, and
+the browser suite covers accessibility and responsive behavior across three engines.
 
-The project is not blocked by a broad rewrite. The most valuable next work is concentrated in two
-release-critical defects and four hardening areas:
+The audit also prompted substantial hardening that is now present on `main`: SQLite connections are
+closed deterministically, generated API and SPA drift fails CI, non-loopback hosting requires
+explicit opt-in, quality gates include warnings and coverage, frontend feature boundaries are
+checked generically, and complete-ledger recovery commands were added.
 
-1. **Close every SQLite connection deterministically.** The current service pattern leaks database
-   connections because a `sqlite3.Connection` context manager does not close the connection.
-2. **Make packaged SPA drift fail CI.** A clean production build does not match the SPA assets
-   checked into the Python package, and CI does not compare those generated assets with Git.
-3. **Require explicit opt-in before serving an unauthenticated ledger beyond loopback.** A warning
-   is too weak for a server with mutating financial endpoints and no authentication.
-4. **Add complete-ledger backup and restore.** CSV portability covers transactions and budgets but
-   not accounts, balance history, rules, recurring templates, or settings.
-5. **Bring frontend dependency and Hooks lint rules back in line with the documented architecture.**
-6. **Reduce responsibility concentration in the largest route modules and make quality regressions
-   visible through warning and coverage gates.**
+Post-remediation validation originally found one release-blocking defect in that new recovery workflow:
+`ledger-verify` accepts a structurally invalid SQLite file based only on integrity and
+`user_version`, and `ledger-restore` can replace the active ledger with it before migration fails.
+The follow-up remediation in this working tree closes that defect and the remaining contract,
+precision, maintainability, and release-hygiene findings. The evidence below retains the original
+failure descriptions so the reason for each change remains reviewable.
 
-The recommended order is to fix connection ownership first, add the packaged-build drift gate
-second, then address remote binding and full-ledger recovery before further feature work.
+## Current risk register
+
+| Priority | Finding | Status |
+| --- | --- | --- |
+| P0 | Restore can replace the active ledger with a structurally invalid database | Fixed and regression-gated |
+| P1 | The documented CSS bundle contract does not match the executable gate | Fixed at 32 KiB gzip |
+| P2 | Browser-side financial arithmetic loses decimal precision at high values | Fixed with an explicit range and integer-cent helpers |
+| P2 | Several frontend route and stylesheet modules remain responsibility hotspots | Stable workflow seams extracted |
+| P2 | Local generation commands leave avoidable environment/worktree friction | Fixed and re-verified |
+| Resolved | SQLite connection leak | Fixed and regression-gated |
+| Resolved | Packaged SPA drift not detected by CI | Fixed and verified |
+| Resolved | Accidental unauthenticated non-loopback hosting | Fixed and tested |
+| Resolved | Frontend dependency and Hooks lint gaps | Fixed and checked |
+| Resolved | Coverage, warning, and repository-sidecar gaps | Fixed and checked |
 
 ## Scope and method
 
-This audit reviewed the repository as a local-first finance product and as a public portfolio
-artifact. It covered:
+The audit treated the repository as both a local-first finance product and a public portfolio
+artifact. It reviewed:
 
-- Python domain models, services, repositories, SQLite configuration and migrations;
-- Typer and FastAPI adapter boundaries, error handling, security headers, and hosting behavior;
-- React composition, API transport, resource/mutation hooks, forms, dialogs, charts, i18n, CSS,
-  accessibility, responsive behavior, and bundle controls;
-- unit, integration, architecture, browser, packaged full-stack, coverage, and dependency checks;
-- README, architecture, usage, roadmap, release, and generated-artifact documentation;
-- repository hygiene and the state of generated files.
+- domain models, services, repositories, SQLite connection behavior, schema, and migrations;
+- CLI, FastAPI routers and schemas, error translation, hosting behavior, and security headers;
+- CSV, report, chart, account-history, backup, verification, and restore workflows;
+- React composition, API transport, resource and mutation hooks, forms, dialogs, charts, i18n,
+  styling, accessibility, responsive behavior, and bundle controls;
+- unit, integration, architecture, browser, packaged full-stack, coverage, packaging, generated
+  artifacts, and dependency checks;
+- README, Usage, Architecture, Roadmap, Project Plan, and release documentation.
 
-The review used the project's Baseline 2026 browser policy and current accessibility/form guidance.
-No manual screen-reader session, multi-hour database soak test, or non-loopback penetration test was
-performed. Those are called out where they would add confidence.
+The frontend review used the repository's Baseline 2026 policy and current accessibility, form, and
+deferred-rendering guidance. The audit did not include a manual screen-reader session, destructive
+testing against a real user ledger, a multi-hour concurrency soak, or a non-loopback penetration
+test.
 
-## Priority findings
+## Remediated findings
 
-### P0 — SQLite connections are committed but not closed
+### P0 — Restore trusts version metadata without validating the ledger schema
 
 **Evidence**
 
-- `database.connect()` returns a raw `sqlite3.Connection`.
-- Services use `with connect(self.db_path) as connection:` in 37 source call sites.
-- A SQLite connection's context manager commits or rolls back the transaction; it does not call
-  `close()`.
-- Running the Python suite with coverage produced **1,218 `ResourceWarning`s** for unclosed SQLite
-  connections, despite all 107 tests passing.
-- The worktree contained `demo.sqlite3-wal` and `demo.sqlite3-shm` before the audit. Those files are
-  not proof of the leak by themselves, but they are consistent with an open WAL-mode ledger and
-  expose the repository-hygiene gap described later.
+- `LedgerRecoveryService.verify()` checks that the file is readable, `PRAGMA integrity_check`
+  returns `ok`, and `PRAGMA user_version` is between 1 and the current version.
+- It does not verify required tables, columns, indexes, foreign keys, or an application-owned schema
+  signature before declaring the file a valid ledger.
+- `restore()` verifies the source, copies it to a temporary file, verifies that copy with the same
+  incomplete checks, and then replaces the active database. Only after replacement does it call
+  `initialize_database()`.
+- A valid empty SQLite database stamped with `PRAGMA user_version = 1` is accepted by
+  `ledger-verify`. Restoring it replaces the active ledger and then fails with
+  `sqlite3.OperationalError: no such table: settings` while attempting the v2 migration.
+- The existing recovery tests cover a complete current backup, corrupt bytes, an unsupported future
+  version, and CLI confirmation. They do not cover structurally incomplete or falsely versioned
+  databases.
 
 **Impact**
 
-Long-running Web UI sessions and command-heavy processes can accumulate file descriptors and
-database handles. That increases the risk of resource exhaustion, delayed WAL cleanup, confusing
-locking behavior, and platform-dependent failures that short tests will not expose.
+The command intended to protect user data can destroy the active ledger after reporting the source
+as verified. `--confirm` protects against accidental invocation, but it cannot make an invalid
+backup safe. This is release-blocking because the README and Usage documentation now advertise
+complete-ledger recovery as a supported ownership feature.
 
 **Recommended change**
 
-Add one database-owned transaction context manager that opens, commits or rolls back, and always
-closes the connection in `finally`. Migrate services to that API instead of relying on the raw
-connection context protocol. Keep transaction ownership in services and repository commit behavior
-unchanged.
+Prepare the restore completely before touching the active path:
 
-Add a regression test that repeatedly executes a representative service operation, forces garbage
-collection with `ResourceWarning` treated as an error, and proves no connection remains open. Run
-the normal Python suite with at least `error::ResourceWarning` once the existing leak is fixed.
+1. copy the backup into a temporary database in the active ledger's directory;
+2. validate a version-specific schema manifest, including required tables and critical columns;
+3. run all required migrations against that temporary database;
+4. run `integrity_check`, `foreign_key_check`, and the current schema-contract check on the migrated
+   temporary database;
+5. close every handle, then atomically replace the active file only after every step succeeds.
+
+Return the final migrated schema version, not the source version. Add a regression test using an
+integrity-clean but structurally incomplete v1 file and prove both that restore is rejected and that
+the original active ledger remains readable and unchanged. Also test a genuine v1 backup through
+migration and a current-version database with a missing required table.
 
 **Acceptance criteria**
 
-- Every application-created connection has one obvious owner and deterministic close path.
-- Success still commits and exceptions still roll back atomically.
-- `.venv/bin/python -m pytest -W error::ResourceWarning` passes.
-- A repeated Web/API operation does not grow open database descriptors.
+- No rejected backup can mutate or replace the active ledger.
+- Verification proves application compatibility, not just SQLite file integrity.
+- A valid older backup is migrated and re-verified before replacement.
+- The reported schema version describes the restored active ledger.
 
-### P0 — The packaged Web UI is stale and CI cannot detect it
+### P1 — Architecture documentation and the CSS budget gate disagree
 
 **Evidence**
 
-- `npm run build` succeeds and passes all bundle budgets.
-- A sequential clean audit build changed `asset-manifest.json`, `index.html`, the initial CSS/JS
-  hashes, and every lazy JavaScript chunk hash under `src/finance_tracker/web/static/spa/`.
-- The generated build produced a different initial bundle (`index-D1eJJZnF.js` and
-  `index-BQD1Amom.css`) from the checked-in package (`index-cb6_Komw.js` and
-  `index-CCYq5sPH.css`).
-- CI checks drift for `frontend/src/generated/api.ts`, but after `npm run build` it does not run a
-  Git diff/status check for the packaged SPA directory.
-- The packaged full-stack test passes against the checked-in assets. That proves the old bundle is
-  functional, not that it represents the current React source.
+- `docs/ARCHITECTURE.md`, the declared architecture source of truth, says total production CSS is
+  capped at **32 KiB gzip** and records a **23.70 KiB** baseline.
+- `scripts/check_bundle.mjs` actually permits **40 KiB gzip** total CSS.
+- The audited build contains **30.18 KiB gzip** total CSS, with the Accounts route at **6.93 KiB of
+  its 8 KiB route budget** and initial CSS at **8.29 KiB of 12 KiB**.
+- The current output passes both the documented 32 KiB total and the executable 40 KiB limit, so
+  this is not a present budget failure. It is a contract failure: future growth between 32 and 40
+  KiB would pass CI contrary to the architecture document.
 
 **Impact**
 
-The CLI package can ship browser code different from the reviewed frontend source. A source fix can
-pass unit, lint, E2E, build, and full-stack checks while the wheel still contains an older UI. This
-weakens release reproducibility and is especially visible in a portfolio repository where generated
-assets are intentionally committed.
+Reviewers cannot tell which limit is intentional, and a budget increase can occur without the
+measured rationale the architecture document itself requires. The stale baseline also hides that
+aggregate CSS grew by roughly 27% from the documented figure.
 
 **Recommended change**
 
-Choose and document one generated-asset policy. The current architecture implies that packaged SPA
-assets remain committed, so CI should:
+Choose one limit and make the script, Architecture, release checklist, and release evidence agree.
+If 40 KiB is intentional, record why the ceiling changed, the current 30.18 KiB baseline, and the
+remaining headroom. If 32 KiB remains the intended contract, lower the executable gate. Treat the
+Accounts and Overview route CSS utilization as an optimization signal rather than splitting files
+solely to satisfy line counts.
 
-1. run OpenAPI generation;
-2. build the SPA;
-3. run bundle checks;
-4. fail if either generated API types or any tracked/untracked file under the packaged SPA differs.
-
-Use a clean checkout for release builds and add a single script such as `check:generated` so local
-and CI behavior cannot diverge. Regenerate and commit the current SPA once the gate exists.
-
-**Acceptance criteria**
-
-- Two consecutive clean builds are byte-for-byte stable.
-- CI fails when frontend source changes without refreshed packaged assets.
-- The wheel smoke test runs against assets generated in the same job.
-- The release checklist and README use the same generated-artifact command.
-
-### P1 — Non-loopback hosting needs an explicit safety gate
+### P2 — Browser-side arithmetic weakens the decimal-safe money contract
 
 **Evidence**
 
-- The default host is safely set to `127.0.0.1`.
-- `finance-tracker web --host 0.0.0.0` is allowed after printing a warning.
-- The API has mutating endpoints and intentionally has no authentication or authorization.
-- Security headers and same-origin browser behavior do not prevent a network client from calling an
-  exposed API directly.
+- The backend accepts and preserves `Decimal` values as decimal text in SQLite and JSON.
+- The frontend converts those strings to binary `Number` in `shared/format/money.ts`, daily activity
+  totals, budget aggregates, chart geometry, balance comparisons, and other derived display values.
+- The backend accepts `90071992547409.91` exactly, while JavaScript converts it to
+  `90071992547409.9` and formats it as `$90,071,992,547,409.90`, losing one cent.
+- Normal household-scale values are unaffected, and authoritative reports remain calculated in
+  Python with `Decimal`.
 
 **Impact**
 
-A copied development command, container configuration, or LAN demo can expose private financial
-data and destructive operations to other network users. The current message informs the user but
-does not prevent accidental exposure.
+The UI can display or derive a value different from the stored ledger for sufficiently large
+amounts. This is an edge case for the current product scale, but it contradicts an otherwise strong
+decimal-text wire contract and could become more relevant for high-inflation currencies or large
+asset portfolios.
 
 **Recommended change**
 
-Reject non-loopback hosts by default. Require a deliberately named flag such as
-`--allow-remote-unauthenticated` to proceed, print the resolved bind address and database path, and
-cover IPv4/IPv6 loopback classification with tests. This preserves the no-authentication scope while
-making the trust-boundary exception unmistakable.
+Define an explicit supported amount range. Either reject values beyond the largest cent-exact
+JavaScript-safe amount at the domain boundary, or add small string/decimal helpers for browser-side
+addition, comparison, and formatting without introducing a broad state or finance dependency.
+Whichever policy is chosen, test the same boundary through model, API, and browser formatting.
 
-### P1 — There is no complete-ledger recovery workflow
+### P2 — Responsibility remains concentrated in frontend hotspots
 
 **Evidence**
 
-- Transaction and budget CSV import/export are well tested.
-- Accounts, dated balance snapshots, category rules, recurring templates, and settings are not part
-  of those exports.
-- The Accounts feature increases the amount of irreplaceable data stored only in SQLite.
-- Documentation explains demo rebuilding but does not give a supported backup, integrity-check,
-  restore, or recovery workflow for a user's real ledger.
+- The audit remediation successfully reduced `NetWorthView.tsx` from 1,303 lines to 299 and
+  `WealthOverview.tsx` from 1,003 lines to 564 by extracting account lifecycle, balance check-in,
+  and trend-explorer workflows.
+- Remaining large workflow modules include `ManageView.tsx` (989 lines), `BudgetsView.tsx` (868),
+  and `app/App.tsx` (851).
+- Large style surfaces include `net-worth.css` (1,993 lines), `dashboard-components.css` (1,422),
+  and `budgets.css` (1,189).
+- The English and Turkish locale dictionaries are approximately 840 lines each. Type-level parity
+  now protects their structure, but additions still require coordinated review across large files.
 
-**Impact**
-
-Users can believe “export” protects their data while losing account history and configuration.
-Because the product is local-first and has no cloud sync, recovery is a core ownership feature, not
-an enterprise expansion.
+Line count is not itself a defect, and arbitrary size gates would work against the repository's
+architecture. Here it is a change-coupling signal: navigation state, route preparation, dialogs,
+data orchestration, and several independent Manage or budget workflows still share broad review
+surfaces.
 
 **Recommended change**
 
-Provide a complete-ledger backup command using SQLite's backup API so WAL state is captured safely.
-Pair it with an integrity/schema-version check and a deliberately confirmed restore workflow. CSV
-should remain the interoperable format for transactions and budgets; the database backup should be
-the fidelity-preserving format for the whole ledger. Document where backups live and how to verify
-and restore one. Browser download can follow later if it does not complicate the local trust model.
+Continue extracting only stable workflow seams: Manage section owners, budget inspector/form
+orchestration, and route-state/history coordination are the clearest candidates. Keep feature-local
+components local, preserve the feature dependency rule, and avoid creating generic components that
+only hide line count.
 
-### P1 — Frontend architecture enforcement has drifted from the architecture document
+### P2 — Local quality commands have avoidable hygiene friction
 
 **Evidence**
 
-- The documented rule says features may not import other features.
-- ESLint has separate cross-feature rules for `transactions`, `budgets`, `dashboard`, and `rules`.
-- Current feature directories also include `manage` and `net-worth`, but neither has a matching rule.
-- The rule lists are hand-maintained and name only selected sibling features, so a new feature is
-  unprotected until configuration is updated correctly.
-- `react-hooks/exhaustive-deps` and `react-hooks/set-state-in-effect` are disabled for the entire
-  frontend. These rules target stale closures and effect-driven render chains in exactly the custom
-  resource, routing, media, transition, and preference code this project owns.
-- `@typescript-eslint/no-explicit-any` is also disabled globally rather than scoped to necessary
-  adapter/test boundaries.
-
-**Impact**
-
-The repository can violate its main frontend dependency contract while lint remains green. Global
-Hooks exceptions make future asynchronous state defects easier to introduce and harder to review.
+- `npm run check:generated` calls `python3`; it failed outside an activated virtual environment
+  because FastAPI was unavailable, then passed when `.venv/bin` was placed first on `PATH`. The
+  documentation does instruct contributors to activate the environment, so behavior is documented
+  but not self-diagnosing.
+- `npm run test:coverage` creates `frontend/coverage/`, which is not ignored and makes a clean
+  worktree appear dirty after running a documented release command.
+- Vitest emits an `ExperimentalWarning` about unavailable localStorage during both unit and coverage
+  runs even though tests pass.
 
 **Recommended change**
 
-Replace per-feature sibling lists with one rule that forbids any `features/*` module importing a
-different `features/*` subtree. Add a small architecture test if ESLint glob semantics make that
-awkward. Re-enable Hooks rules and fix findings incrementally, using narrow documented suppressions
-only where an intentional custom-hook invariant is tested. Scope `any` exceptions to generated,
-test, or boundary code.
+Ignore the generated coverage directory, or direct coverage output to an already ignored build
+location. Make OpenAPI generation fail with an actionable environment message or allow an explicit
+Python executable override. Remove or document the benign Vitest warning so real warning regressions
+remain visible.
 
-### P2 — Responsibility is concentrated in a few frontend hotspots
+## Hardening completed during the audit
 
-**Evidence**
+The following original findings were resolved and revalidated:
 
-- `NetWorthView.tsx` is 1,303 lines and `WealthOverview.tsx` is 1,003 lines.
-- `ManageView.tsx` is 987 lines, `BudgetsView.tsx` is 862 lines, and `app/App.tsx` is 851 lines.
-- `net-worth.css` is 1,993 lines, `dashboard-components.css` is 1,422 lines, and `budgets.css` is
-  1,189 lines.
-- The two locale dictionaries are about 840 lines each and must remain structurally synchronized.
-- The largest modules mix data preparation, workflow state, dialogs, analytics, layout, and view
-  composition even though the repository otherwise favors capability ownership.
-
-Line count alone is not a defect, and the existing architecture specification correctly rejects
-arbitrary line-count gates. Here it is a signal of review surface and change coupling: account,
-budget, and Manage work is likely to touch files with many unrelated responsibilities.
-
-**Recommended change**
-
-Decompose by stable responsibility, not by visual fragment. Good seams include account lifecycle,
-balance check-in, history analytics, Manage section routes, budget inspector/form orchestration, and
-route-state/history coordination. Keep feature-local components feature-local and preserve the
-existing dependency direction. Add a typed locale-key parity test or generation step so dictionary
-drift is caught without manually comparing two large files.
-
-### P2 — Quality signals are broad but not regression-gated
-
-**Evidence**
-
-- Python coverage is **91%** overall, with service and report code generally above 90%; CLI account
-  commands are the largest low-coverage area at 45%.
-- Frontend coverage is **79.03% lines**, **77.93% statements**, **73.23% branches**, and **71.70%
-  functions**.
-- Neither pytest nor Vitest coverage is part of normal CI, and no conservative regression threshold
-  is configured.
-- The standard Python suite passed while the connection leak emitted no visible warning; the same
-  suite under coverage exposed 1,218 warnings.
-
-**Recommended change**
-
-Add coverage reporting to CI with conservative floors just below the current baseline, then raise
-them only when useful. More importantly, fail on `ResourceWarning` and retain focused behavior tests
-for transaction boundaries, migrations, generated contracts, accessibility, and packaged delivery.
-Coverage should protect against large regressions, not become a substitute for those tests.
-
-### P2 — Repository and public-documentation hygiene need a short cleanup
-
-**Evidence**
-
-- `.gitignore` ignores `*.sqlite3` and `*.sqlite3-journal` but not `*.sqlite3-wal` or
-  `*.sqlite3-shm`; both appeared as untracked files at audit start.
-- `ROADMAP.md` reports 69 Python tests and 25 frontend unit tests, while the current runs contain
-  107 and 145 respectively.
-- The roadmap describes Total Net Worth as a fifth browser destination, while the current
-  architecture intentionally exposes four primary destinations and integrates net worth into
-  Accounts.
-- The roadmap's “last verified” section can become stale immediately and duplicates release
-  evidence maintained elsewhere.
-
-**Recommended change**
-
-Ignore SQLite WAL/SHM sidecars explicitly without broadening ignores beyond local ledger artifacts.
-Replace fragile test counts in the roadmap with links to CI/release evidence, and align destination
-language with `docs/ARCHITECTURE.md`. Keep historical goal/release documents as records, but make
-README, Architecture, Usage, Roadmap, and the release checklist agree on current behavior.
+- **Connection ownership:** the database now owns a close-safe transaction context, service call
+  sites use it, `ResourceWarning` is an error, and a repeated-operation descriptor test passes.
+- **Packaged SPA truth:** `npm run check:generated` regenerates OpenAPI types and the production SPA,
+  runs bundle checks, and rejects tracked or untracked drift. CI builds the wheel from that output.
+- **Hosting trust boundary:** non-loopback hosts are rejected unless
+  `--allow-remote-unauthenticated` is supplied; IPv4, IPv6, and hostname behavior is tested.
+- **Recovery capability:** WAL-aware complete-ledger backup, verification, confirmation, and restore
+  commands now exist and preserve all domains for a valid current backup. The P0 finding above must
+  be closed before treating restore validation as complete.
+- **Frontend enforcement:** a generic architecture script prevents cross-feature imports; Hooks
+  rules are re-enabled; `any` exceptions are scoped to tests; locale dictionaries have typed parity.
+- **Quality gates:** Python and frontend coverage floors are in CI, Python resource warnings fail,
+  and dependency, lint, formatting, CSS architecture, generated-contract, bundle, browser, and
+  package checks remain in the release workflow.
+- **Repository hygiene:** SQLite WAL and SHM sidecars are ignored, and volatile test counts and stale
+  route language were removed from the Roadmap.
 
 ## Areas that are already strong
 
-These should be preserved while addressing the priorities above:
-
 - **Layering:** adapters, services, repositories, models, CSV, reports, and charts have clear owners;
-  Python architecture tests enforce important parts of the direction.
-- **Transaction semantics:** service-level operations and migration rollback have focused tests.
-- **Money contracts:** Python uses `Decimal`, API money is serialized as text, and SQLite stores
-  decimal text rather than binary floating point.
-- **API contracts:** FastAPI OpenAPI drives generated TypeScript types; request schemas reject unsafe
-  input and API errors are normalized.
-- **Local security posture:** loopback is the default; API responses are `no-store`; CSP,
-  `nosniff`, referrer, permission, and frame protections are present; dependency audits were clean.
-- **Accessibility:** native dialogs, keyboard workflows, focus behavior, forced colors, 200% text
-  reflow, reduced motion, chart tables, and automated axe checks are covered across Chromium,
-  Firefox, and WebKit. Manual screen-reader testing remains useful release validation, but no major
-  accessibility defect was identified in this audit.
-- **Responsive behavior:** the E2E matrix covers 320px through 1920px and multiple interaction
-  modes rather than relying on screenshots alone.
-- **Performance discipline:** route splitting and explicit gzip budgets are present and the current
-  source build is within every configured budget.
-- **Dependency health:** both npm and Python advisory audits reported no known vulnerabilities.
+  architecture tests enforce the important dependency directions.
+- **Transaction semantics:** services own commits and rollbacks, repositories do neither, and
+  atomic account and recurring workflows have focused regression coverage.
+- **Financial storage:** Python calculations use `Decimal`; money is serialized and stored as text;
+  dates use ISO text; reports are deterministic.
+- **API contracts:** FastAPI OpenAPI drives generated TypeScript types, request schemas reject extra
+  fields, API errors are normalized, and CSV bodies are size- and encoding-bounded.
+- **Local security posture:** loopback is the default; remote exposure requires explicit opt-in;
+  API responses are `no-store`; CSP, `nosniff`, referrer, permission, and frame protections are
+  present; npm and Python advisory audits were clean.
+- **Accessibility:** semantic landmarks, native dialogs, keyboard workflows, focus restoration,
+  forced colors, 200% text reflow, reduced motion, chart data alternatives, and automated axe checks
+  are exercised across Chromium, Firefox, and WebKit.
+- **Responsive behavior:** browser tests cover 320px through 1920px and multiple interaction modes.
+- **Performance discipline:** route splitting and gzip budgets are executable; every current JS,
+  CSS, and route budget passed.
+- **Delivery:** the sdist and wheel build successfully with the packaged SPA, and real React,
+  FastAPI, and SQLite read/write workflows pass in the full-stack browser suite.
 
-## Suggested implementation sequence
+## Recommended implementation order
 
-### Phase 1 — Reliability and release truth
-
-1. Introduce the close-safe database transaction context and migrate all service call sites.
-2. Turn `ResourceWarning` into an error and add a connection lifecycle regression test.
-3. Add the generated SPA drift check to CI and refresh the checked-in production build.
-4. Verify wheel contents and packaged full-stack behavior from that same build.
-
-### Phase 2 — Protect user data and the trust boundary
-
-1. Require explicit opt-in for non-loopback hosting.
-2. Add full-ledger backup, validation, and restore commands plus documentation.
-3. Ignore SQLite WAL/SHM sidecars and add a release check for accidental ledger artifacts.
-
-### Phase 3 — Reduce future regression cost
-
-1. Generalize frontend feature-boundary enforcement.
-2. Re-enable Hooks linting with narrow, reviewed exceptions.
-3. Decompose the account, Manage, budget, and app-composition hotspots along workflow boundaries.
-4. Add conservative coverage regression floors and locale-key parity validation.
-5. Refresh Roadmap/current-state documentation and remove duplicated volatile counts.
+1. Fix restore validation and prove rejected backups cannot change the active ledger.
+2. Reconcile the CSS architecture contract with the executable budget and current measurements.
+3. Choose and test an explicit high-value money policy for the browser boundary.
+4. Remove coverage/environment warning friction from the documented local check sequence.
+5. Continue hotspot extraction only when feature work touches a stable workflow seam.
+6. Before release, add a manual screen-reader pass and a disposable backup/restore rehearsal using a
+   genuine migrated v1 ledger.
 
 ## Verification performed
 
-| Command | Result |
+| Command or check | Result |
 | --- | --- |
-| `.venv/bin/python -m pytest` | 107 passed |
+| `.venv/bin/python -m pytest --cov=finance_tracker --cov-fail-under=90` | 122 passed; 91.07% coverage; resource-warning gate active |
 | `.venv/bin/python -m ruff check .` | Passed |
-| `.venv/bin/python -m mypy` | Passed across 80 source files |
-| Python coverage audit | 91% total; exposed 1,218 unclosed-connection warnings |
+| `.venv/bin/python -m mypy` | Passed across 82 source files |
 | `npm test` | 145 passed across 22 files |
-| `npm run test:coverage` | 79.03% lines; 73.23% branches |
-| `npm run lint` | Passed, including Stylelint and CSS architecture checks |
+| `npm run test:coverage` | Passed thresholds; 79.03% lines, 73.29% branches, 71.76% functions |
+| `npm run lint` | Passed ESLint, feature architecture, Stylelint, and CSS architecture checks |
 | `npm run format:check` | Passed |
-| `npm run generate:api` | Passed; generated API type remained clean |
-| `npm run build` | Passed; revealed packaged SPA drift |
-| `npm run check:bundle` | Passed all JS/CSS and route budgets |
+| `npm run check:generated` with the documented virtual environment active | Generated API and packaged SPA matched source |
+| `npm run check:bundle` | Passed; 89.34 KiB initial JS, 8.29 KiB initial CSS, 30.18 KiB total CSS |
 | `npm run test:e2e` | 303 passed across Chromium, Firefox, and WebKit |
-| `npm run test:e2e:fullstack` | 3 passed against packaged FastAPI/SQLite application |
+| `npm run test:e2e:fullstack` | 3 passed against packaged FastAPI and SQLite |
 | `npm audit --audit-level=high` | No vulnerabilities |
 | `.venv/bin/python -m pip_audit` | No known third-party vulnerabilities |
+| `.venv/bin/python -m build` | sdist and wheel built successfully with packaged SPA assets |
+| Targeted invalid-restore probe | Reproduced P0: integrity-clean fake v1 accepted, active replacement attempted, migration failed |
 
-The audit intentionally did not modify the pre-existing untracked `demo.sqlite3-wal` and
-`demo.sqlite3-shm` files.
+## Audit limitations
+
+Automated checks cannot establish full usability or operational resilience. Release confidence would
+benefit from a manual screen-reader session, keyboard-only use with real data density, a long-running
+Web/API descriptor and concurrency soak, restore interruption testing, and a restore rehearsal on
+copies of realistic older ledgers. None of those tests should use a user's only ledger copy.

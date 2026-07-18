@@ -4,6 +4,24 @@ const colorSchemeStorageKey = "finance-tracker-color-scheme";
 const viewports = [320, 390, 430, 768, 1024, 1280, 1440, 1800, 1920];
 const themeViewports = [390, 1280];
 
+test("formats the supported high-value boundary without losing a cent", async ({
+  page,
+}) => {
+  await mockApi(page, {
+    transactionPayload: {
+      ...transaction(),
+      amount: "90071992547409.91",
+      description: "Boundary amount",
+    },
+  });
+  await page.goto("/transactions?month=6&year=2026");
+
+  await expect(
+    page.getByText("$90,071,992,547,409.91", { exact: true }).first(),
+  ).toBeVisible();
+  await expect(page.getByText("$90,071,992,547,409.90")).toHaveCount(0);
+});
+
 test("uses the full recent transaction card as its hit target", async ({
   page,
 }) => {
@@ -1442,10 +1460,12 @@ async function mockApi(
   page: Page,
   {
     netWorthOverviewPayload = netWorthOverview(),
+    transactionPayload = transaction(),
   }: {
     netWorthOverviewPayload?:
       | ReturnType<typeof netWorthOverview>
       | ReturnType<typeof populatedNetWorthOverview>;
+    transactionPayload?: ReturnType<typeof transaction>;
   } = {},
 ) {
   await page.route("**/api/**", async (route) => {
@@ -1488,7 +1508,7 @@ async function mockApi(
       return;
     }
     if (url.pathname === "/api/transactions") {
-      await route.fulfill({ json: { transactions: [transaction()] } });
+      await route.fulfill({ json: { transactions: [transactionPayload] } });
       return;
     }
     if (url.pathname === "/api/budgets/status") {

@@ -27,7 +27,12 @@ import {
 } from "../../shared/components/lists";
 import { ActionButton } from "../../shared/components/actions";
 import { EmptyState, ErrorBanner } from "../../shared/components/feedback";
-import { money, percent } from "../../shared/format/money";
+import {
+  absoluteMoney,
+  compareMoney,
+  money,
+  percent,
+} from "../../shared/format/money";
 import { useMediaQuery } from "../../shared/hooks/useMediaQuery";
 import { periodLabel } from "../../shared/format/periods";
 import { useI18n } from "../../shared/i18n/I18nProvider";
@@ -90,9 +95,11 @@ export function DashboardView({
 
   const categories = Object.entries(data.report.expenses_by_category)
     .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => Number(b.value) - Number(a.value));
-  const net = Number(data.report.net_savings);
-  const netDelta = Number(data.report.net_savings_delta);
+    .sort((a, b) => compareMoney(b.value, a.value));
+  const net = data.report.net_savings;
+  const netDirection = compareMoney(net, 0);
+  const netDelta = data.report.net_savings_delta;
+  const netDeltaDirection = compareMoney(netDelta, 0);
   const attention = rankBudgetAttention(data.budget_statuses);
   const attentionSummary = summarizeBudgetAttention(attention);
   const attentionDetail =
@@ -143,10 +150,10 @@ export function DashboardView({
         eyebrow={tUpper("dashboard.eyebrow")}
         title={t("dashboard.overviewTitle")}
         summary={
-          net >= 0
+          netDirection >= 0
             ? t("dashboard.narrative.positive", { amount: money(net) })
             : t("dashboard.narrative.negative", {
-                amount: money(Math.abs(net)),
+                amount: money(absoluteMoney(net)),
               })
         }
         className="dashboard-heading dashboard-context-header"
@@ -198,26 +205,28 @@ export function DashboardView({
             period: displayPeriodLabel,
           })}
         >
-          <div className={`balance-story ${net < 0 ? "negative" : "positive"}`}>
+          <div
+            className={`balance-story ${netDirection < 0 ? "negative" : "positive"}`}
+          >
             <p className="eyebrow">{tUpper("dashboard.kpi.netPosition")}</p>
             <strong>
               <RollingNumber
-                value={Number(data.report.net_savings)}
-                previousValue={Number(
+                value={data.report.net_savings}
+                previousValue={
                   periodTransition.previousData?.report.net_savings ??
-                    data.report.net_savings,
-                )}
+                  data.report.net_savings
+                }
                 format={money}
               />
             </strong>
             <p>
-              {netDelta === 0
+              {netDeltaDirection === 0
                 ? t("dashboard.narrative.unchanged")
                 : t(
-                    netDelta > 0
+                    netDeltaDirection > 0
                       ? "dashboard.narrative.better"
                       : "dashboard.narrative.lower",
-                    { amount: money(Math.abs(netDelta)) },
+                    { amount: money(absoluteMoney(netDelta)) },
                   )}
             </p>
             <dl className="cashflow-comparison">
@@ -225,11 +234,11 @@ export function DashboardView({
                 <dt>{t("dashboard.kpi.income")}</dt>
                 <dd>
                   <RollingNumber
-                    value={Number(data.report.total_income)}
-                    previousValue={Number(
+                    value={data.report.total_income}
+                    previousValue={
                       periodTransition.previousData?.report.total_income ??
-                        data.report.total_income,
-                    )}
+                      data.report.total_income
+                    }
                     format={money}
                   />
                 </dd>
@@ -238,11 +247,11 @@ export function DashboardView({
                 <dt>{t("dashboard.kpi.expenses")}</dt>
                 <dd>
                   <RollingNumber
-                    value={Number(data.report.total_expenses)}
-                    previousValue={Number(
+                    value={data.report.total_expenses}
+                    previousValue={
                       periodTransition.previousData?.report.total_expenses ??
-                        data.report.total_expenses,
-                    )}
+                      data.report.total_expenses
+                    }
                     format={money}
                   />
                 </dd>

@@ -47,6 +47,9 @@ finance-tracker web --db-path demo.sqlite3
 npm run check:generated
 ```
 
+The generator automatically uses the repository `.venv` when present. For another prepared Python
+environment, set `FINANCE_TRACKER_PYTHON=/path/to/python`.
+
 - [ ] Build the Python package:
 
 ```bash
@@ -71,6 +74,10 @@ npm audit --audit-level=high
 .venv/bin/python -m pip_audit
 .venv/bin/python -m build
 ```
+
+The bundle check must enforce the Architecture contract, including the 32 KiB gzip total CSS
+ceiling. Record any intentional ceiling change and its measured baseline in `docs/ARCHITECTURE.md`
+before release.
 
 - [ ] Create and verify a disposable complete-ledger backup, then test a confirmed restore into a
       separate temporary `--db-path`.

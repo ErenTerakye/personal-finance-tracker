@@ -11,14 +11,20 @@ import type { CSSProperties } from "react";
 import type { TransactionRecord } from "../../../types";
 import { EmptyState } from "../../../shared/components/feedback";
 import { formatDate, getFormatterLocale } from "../../../shared/format/dates";
-import { money } from "../../../shared/format/money";
+import {
+  absoluteMoney,
+  compareMoney,
+  money,
+  subtractMoney,
+  sumMoney,
+} from "../../../shared/format/money";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 
 type ActivityGroup = {
   date: string;
   transactions: TransactionRecord[];
-  income: number;
-  expenses: number;
+  income: string;
+  expenses: string;
 };
 
 function groupTransactions(transactions: TransactionRecord[]): ActivityGroup[] {
@@ -27,14 +33,14 @@ function groupTransactions(transactions: TransactionRecord[]): ActivityGroup[] {
     const group = groups.get(transaction.date) ?? {
       date: transaction.date,
       transactions: [],
-      income: 0,
-      expenses: 0,
+      income: "0.00",
+      expenses: "0.00",
     };
     group.transactions.push(transaction);
     if (transaction.type === "income") {
-      group.income += Number(transaction.amount);
+      group.income = sumMoney([group.income, transaction.amount]);
     } else {
-      group.expenses += Number(transaction.amount);
+      group.expenses = sumMoney([group.expenses, transaction.amount]);
     }
     groups.set(transaction.date, group);
   }
@@ -105,7 +111,8 @@ export function ActivityLedger({
   return (
     <ol className="ledger-days" role="list">
       {groupTransactions(transactions).map((group) => {
-        const net = group.income - group.expenses;
+        const net = subtractMoney(group.income, group.expenses);
+        const netDirection = compareMoney(net, 0);
         return (
           <li className="ledger-day" key={group.date}>
             <header className="ledger-day-header">
@@ -120,9 +127,9 @@ export function ActivityLedger({
                   )}
                 </span>
               </div>
-              <strong className={net >= 0 ? "income" : "expense"}>
-                {net >= 0 ? "+" : "−"}
-                {money(Math.abs(net))}
+              <strong className={netDirection >= 0 ? "income" : "expense"}>
+                {netDirection >= 0 ? "+" : "−"}
+                {money(absoluteMoney(net))}
               </strong>
             </header>
             <ol className="ledger-entries" role="list">

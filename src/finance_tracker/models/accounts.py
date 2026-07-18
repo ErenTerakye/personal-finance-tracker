@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 
 from finance_tracker.exceptions import ValidationError
-from finance_tracker.models.common import parse_date, validate_text
+from finance_tracker.models.common import parse_date, validate_money_range, validate_text
 
 
 class AccountType(StrEnum):
@@ -32,7 +32,7 @@ def parse_balance(value: str | int | float | Decimal) -> Decimal:
         raise ValidationError("Balance must be a valid number.") from exc
     if amount < 0:
         raise ValidationError("Balance must be zero or greater.")
-    return amount
+    return validate_money_range(amount, "Balance")
 
 
 def parse_snapshot_date(value: str | date) -> date:

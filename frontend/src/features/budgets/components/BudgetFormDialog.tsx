@@ -12,7 +12,13 @@ import type { BudgetInput, BudgetStatus } from "../../../types";
 import { SubmitButton } from "../../../shared/components/actions";
 import { ModalDialog } from "../../../shared/components/dialogs";
 import { ErrorBanner } from "../../../shared/components/feedback";
-import { currencySymbol, money } from "../../../shared/format/money";
+import {
+  absoluteMoney,
+  compareMoney,
+  currencySymbol,
+  money,
+  subtractMoney,
+} from "../../../shared/format/money";
 import { monthNames, periodLabel } from "../../../shared/format/periods";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { normalizeBudgetAmountDraft } from "../budgetForm";
@@ -64,8 +70,8 @@ export function BudgetFormDialog({
   );
   const amount = Number(form.amount);
   const validAmount = Number.isFinite(amount) && amount > 0;
-  const spent = Number(matchedStatus?.actual_expenses ?? 0);
-  const remaining = validAmount ? amount - spent : null;
+  const spent = matchedStatus?.actual_expenses ?? "0.00";
+  const remaining = validAmount ? subtractMoney(form.amount, spent) : null;
   const categoryLabel = form.category.trim() || t("budgets.dialog.noCategory");
   const submitLabel =
     mode === "edit"
@@ -253,12 +259,12 @@ export function BudgetFormDialog({
                 <div>
                   <dt>
                     {t(
-                      remaining !== null && remaining < 0
+                      remaining !== null && compareMoney(remaining, 0) < 0
                         ? "budgets.dialog.overAfterSave"
                         : "budgets.dialog.leftAfterSave",
                     )}
                   </dt>
-                  <dd>{money(Math.abs(remaining ?? 0))}</dd>
+                  <dd>{money(absoluteMoney(remaining ?? 0))}</dd>
                 </div>
               </dl>
             ) : (

@@ -21,7 +21,13 @@ import { ActionButton, DownloadLink } from "../../shared/components/actions";
 import { ModalDialog } from "../../shared/components/dialogs";
 import { ErrorBanner } from "../../shared/components/feedback";
 import { PageHeader } from "../../shared/components/lists";
-import { money } from "../../shared/format/money";
+import {
+  absoluteMoney,
+  compareMoney,
+  money,
+  subtractMoney,
+  sumMoney,
+} from "../../shared/format/money";
 import { periodLabel } from "../../shared/format/periods";
 import type {
   TransactionInput,
@@ -263,16 +269,23 @@ export function TransactionsView({
     filters.transaction_type ? t(`common.${filters.transaction_type}`) : null,
   ].filter((label): label is string => Boolean(label));
 
-  const activitySummary = visibleTransactions.reduce(
-    (summary, transaction) => {
-      const amount = Number(transaction.amount);
-      if (transaction.type === "income") summary.income += amount;
-      else summary.expenses += amount;
-      return summary;
-    },
-    { income: 0, expenses: 0 },
+  const activitySummary = {
+    income: sumMoney(
+      visibleTransactions
+        .filter((transaction) => transaction.type === "income")
+        .map((transaction) => transaction.amount),
+    ),
+    expenses: sumMoney(
+      visibleTransactions
+        .filter((transaction) => transaction.type === "expense")
+        .map((transaction) => transaction.amount),
+    ),
+  };
+  const netActivity = subtractMoney(
+    activitySummary.income,
+    activitySummary.expenses,
   );
-  const netActivity = activitySummary.income - activitySummary.expenses;
+  const netDirection = compareMoney(netActivity, 0);
   const hasRefinements = Boolean(search.trim() || activeFilterLabels.length);
 
   return (
@@ -352,7 +365,7 @@ export function TransactionsView({
             </div>
           </article>
           <article
-            className={`activity-stat net ${netActivity < 0 ? "negative" : "positive"}`}
+            className={`activity-stat net ${netDirection < 0 ? "negative" : "positive"}`}
           >
             <span className="activity-stat-icon">
               <Scale aria-hidden="true" size={20} />
@@ -360,8 +373,8 @@ export function TransactionsView({
             <div>
               <span>{t("transactions.snapshot.net")}</span>
               <strong>
-                {netActivity > 0 ? "+" : netActivity < 0 ? "−" : ""}
-                {money(Math.abs(netActivity))}
+                {netDirection > 0 ? "+" : netDirection < 0 ? "−" : ""}
+                {money(absoluteMoney(netActivity))}
               </strong>
             </div>
           </article>

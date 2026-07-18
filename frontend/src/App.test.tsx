@@ -191,12 +191,15 @@ describe("app composition", () => {
     // The theme toggle button should have aria-label "Use dark mode" initially (since default is light)
     const themeToggle = screen.getByRole("button", { name: "Use dark mode" });
     expect(themeToggle).toBeVisible();
+    expect(themeToggle.closest("footer")).toHaveClass("rail-utilities");
+    expect(themeToggle.closest("aside")).toHaveClass("app-rail");
 
     // The language toggle button should show target language "TR" and have aria-label "Switch to Turkish"
     const langToggle = screen.getByRole("button", {
       name: "Switch to Turkish",
     });
     expect(langToggle).toHaveTextContent("TR");
+    expect(langToggle.closest("aside")).toHaveClass("app-rail");
 
     // Clicking language toggle should switch language to Turkish
     await userEvent.click(langToggle);
@@ -229,6 +232,15 @@ describe("app composition", () => {
     // Verify gear icon link exists with aria-label "Manage"
     const manageLink = screen.getByRole("link", { name: "Manage" });
     expect(manageLink).toBeVisible();
+
+    expect(
+      screen.getByRole("button", { name: "Use dark mode" }).closest("header"),
+    ).toHaveClass("compact-app-bar");
+    expect(
+      screen
+        .getByRole("button", { name: "Switch to Turkish" })
+        .closest("header"),
+    ).toHaveClass("compact-app-bar");
 
     // Verify "Open preferences" button does not exist
     expect(

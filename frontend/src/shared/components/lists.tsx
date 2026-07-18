@@ -1,7 +1,14 @@
 import { AlertTriangle, ChevronDown, CircleAlert } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import { formatActivityDate } from "../format/dates";
-import { money, percent, signedMoney } from "../format/money";
+import {
+  absoluteMoney,
+  compareMoney,
+  money,
+  percent,
+  signedMoney,
+  sumMoney,
+} from "../format/money";
 import type { BudgetStatus, TransactionRecord } from "../../types";
 import { EmptyState } from "./feedback";
 import { useI18n } from "../i18n/I18nProvider";
@@ -76,9 +83,9 @@ export type BudgetReviewTarget = {
 };
 
 export type BudgetAttentionSummary = {
-  overAmount: number;
+  overAmount: string;
   overCount: number;
-  nearAmount: number;
+  nearAmount: string;
   nearCount: number;
 };
 
@@ -94,8 +101,10 @@ export function rankBudgetAttention(statuses: BudgetStatus[]): BudgetStatus[] {
       if (priorityDifference !== 0) return priorityDifference;
 
       if (a.status === "over budget" && b.status === "over budget") {
-        const impactDifference =
-          Math.abs(Number(b.remaining)) - Math.abs(Number(a.remaining));
+        const impactDifference = compareMoney(
+          absoluteMoney(b.remaining),
+          absoluteMoney(a.remaining),
+        );
         if (impactDifference !== 0) return impactDifference;
       }
 
@@ -116,14 +125,17 @@ export function summarizeBudgetAttention(
     (summary, status) => {
       if (status.status === "over budget") {
         summary.overCount += 1;
-        summary.overAmount += Math.max(0, -Number(status.remaining));
+        summary.overAmount = sumMoney([
+          summary.overAmount,
+          absoluteMoney(status.remaining),
+        ]);
       } else if (status.status === "near limit") {
         summary.nearCount += 1;
-        summary.nearAmount += Math.max(0, Number(status.remaining));
+        summary.nearAmount = sumMoney([summary.nearAmount, status.remaining]);
       }
       return summary;
     },
-    { overAmount: 0, overCount: 0, nearAmount: 0, nearCount: 0 },
+    { overAmount: "0.00", overCount: 0, nearAmount: "0.00", nearCount: 0 },
   );
 }
 
@@ -153,7 +165,7 @@ export function BudgetPressureList({
     );
     const variance = overBudget
       ? t("dashboard.attention.amountOver", {
-          amount: money(Math.abs(Number(status.remaining))),
+          amount: money(absoluteMoney(status.remaining)),
         })
       : t("dashboard.attention.amountLeft", {
           amount: money(status.remaining),
@@ -289,8 +301,8 @@ export function ActivityList({
       {transactions.map((transaction) => {
         const isIncome = transaction.type === "income";
         const signedAmount = isIncome
-          ? Math.abs(Number(transaction.amount))
-          : -Math.abs(Number(transaction.amount));
+          ? transaction.amount
+          : `-${transaction.amount}`;
 
         return (
           <li
@@ -329,7 +341,7 @@ function ActivityItemContent({
   isIncome,
 }: {
   transaction: TransactionRecord;
-  signedAmount: number;
+  signedAmount: string;
   isIncome: boolean;
 }) {
   const { t } = useI18n();

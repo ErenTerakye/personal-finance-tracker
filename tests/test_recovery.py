@@ -3,6 +3,7 @@ import sqlite3
 from typer.testing import CliRunner
 
 from finance_tracker.cli import app
+from finance_tracker.database import MIGRATIONS
 from finance_tracker.services import (
     AccountService,
     BudgetService,
@@ -96,3 +97,108 @@ def test_verify_rejects_unsupported_schema_version(tmp_path):
 
     assert result.exit_code == 1
     assert "Unsupported ledger schema version" in result.output
+
+
+def test_restore_rejects_incomplete_v1_without_replacing_active_ledger(tmp_path):
+    ledger = tmp_path / "ledger.sqlite3"
+    backup = tmp_path / "incomplete-v1.sqlite3"
+    transactions = TransactionService(ledger)
+    transactions.add_transaction("income", "10", "Other", "Safe", "2026-07-18")
+    connection = sqlite3.connect(backup)
+    try:
+        connection.execute("PRAGMA user_version = 1")
+        connection.commit()
+    finally:
+        connection.close()
+
+    result = CliRunner().invoke(
+        app,
+        ["ledger-restore", str(backup), "--confirm", "--db-path", str(ledger)],
+    )
+
+    assert result.exit_code == 1
+    assert "Ledger schema does not match its declared version" in result.output
+    assert TransactionService(ledger).list_transactions()[0].description == "Safe"
+
+
+def test_restore_migrates_genuine_v1_before_replacing_active_ledger(tmp_path):
+    ledger = tmp_path / "ledger.sqlite3"
+    backup = tmp_path / "valid-v1.sqlite3"
+    TransactionService(ledger).add_transaction("income", "10", "Other", "Old", "2026-07-18")
+    connection = sqlite3.connect(backup)
+    try:
+        connection.executescript(MIGRATIONS[0])
+        connection.execute(
+            "INSERT INTO transactions (type, amount, category, description, date) "
+            "VALUES ('expense', '12.50', 'Food', 'Migrated', '2026-07-18')"
+        )
+        connection.execute(
+            "INSERT INTO settings (key, value) VALUES ('currency', 'TRY')"
+        )
+        connection.execute("PRAGMA user_version = 1")
+        connection.commit()
+    finally:
+        connection.close()
+
+    restored = LedgerRecoveryService(ledger).restore(backup)
+
+    assert restored.schema_version == 2
+    assert restored.integrity == "ok"
+    assert TransactionService(ledger).list_transactions()[0].description == "Migrated"
+    assert SettingsService(ledger).get_currency() == "TRY"
+    assert AccountService(ledger).list_accounts("2026-07-18") == []
+
+
+def test_verify_rejects_current_schema_with_missing_required_table(tmp_path):
+    backup = tmp_path / "missing-table.sqlite3"
+    TransactionService(backup).add_transaction(
+        "income", "10", "Other", "Incomplete", "2026-07-18"
+    )
+    connection = sqlite3.connect(backup)
+    try:
+        connection.execute("PRAGMA foreign_keys = OFF")
+        connection.execute("DROP TABLE accounts")
+        connection.commit()
+    finally:
+        connection.close()
+
+    result = CliRunner().invoke(app, ["ledger-verify", str(backup)])
+
+    assert result.exit_code == 1
+    assert "missing table accounts" in result.output
+
+
+def test_verify_rejects_current_schema_without_required_foreign_key(tmp_path):
+    backup = tmp_path / "missing-foreign-key.sqlite3"
+    TransactionService(backup).add_transaction(
+        "income", "10", "Other", "Incomplete", "2026-07-18"
+    )
+    connection = sqlite3.connect(backup)
+    try:
+        connection.executescript(
+            """
+            PRAGMA foreign_keys = OFF;
+            DROP TABLE account_balance_snapshots;
+            CREATE TABLE account_balance_snapshots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL,
+                amount TEXT NOT NULL,
+                effective_date TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (account_id, effective_date)
+            );
+            CREATE INDEX idx_account_balance_snapshots_account_date
+            ON account_balance_snapshots(account_id, effective_date DESC);
+            CREATE INDEX idx_account_balance_snapshots_date
+            ON account_balance_snapshots(effective_date);
+            """
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    result = CliRunner().invoke(app, ["ledger-verify", str(backup)])
+
+    assert result.exit_code == 1
+    assert "missing foreign key account_balance_snapshots.account_id" in result.output

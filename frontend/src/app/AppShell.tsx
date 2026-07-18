@@ -111,6 +111,10 @@ export function AppShell({
             </a>
           </nav>
           <footer className="rail-utilities">
+            <div className="rail-preference-controls">
+              <ThemeToggle />
+              <LangToggle />
+            </div>
             <span className="local-data-status">
               <Database aria-hidden="true" size={15} />
               {t("common.localSqlite")}
@@ -166,12 +170,6 @@ export function AppShell({
         ref={mainRef}
         aria-busy={busy || undefined}
       >
-        {!compactLayout && (
-          <div className="desktop-utility-bar">
-            <ThemeToggle />
-            <LangToggle />
-          </div>
-        )}
         <Notice message={notice} />
         <div
           className="sr-only"

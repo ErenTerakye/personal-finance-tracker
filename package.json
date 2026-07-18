@@ -19,7 +19,7 @@
     "lint": "eslint frontend/src frontend/e2e frontend/e2e-fullstack vite.config.ts vitest.config.ts playwright.config.ts playwright.fullstack.config.ts --max-warnings 0 && node scripts/check_frontend_architecture.mjs && stylelint \"frontend/src/**/*.css\" && npm run check:css",
     "format": "prettier --write \"frontend/src/**/*.{ts,tsx,css}\" \"frontend/e2e/**/*.ts\" \"frontend/e2e-fullstack/**/*.ts\" \"scripts/*.mjs\" \"*.{ts,json}\"",
     "format:check": "prettier --check \"frontend/src/**/*.{ts,tsx,css}\" \"frontend/e2e/**/*.ts\" \"frontend/e2e-fullstack/**/*.ts\" \"scripts/*.mjs\" \"*.{ts,json}\"",
-    "generate:api": "python3 scripts/export_openapi.py && openapi-typescript build/openapi.json -o frontend/src/generated/api.ts && prettier --write frontend/src/generated/api.ts",
+    "generate:api": "node scripts/run_export_openapi.mjs && openapi-typescript build/openapi.json -o frontend/src/generated/api.ts && prettier --write frontend/src/generated/api.ts",
     "check:generated": "node scripts/check_generated.mjs",
     "check:bundle": "node scripts/check_bundle.mjs",
     "check:css": "node scripts/check_css_architecture.mjs",

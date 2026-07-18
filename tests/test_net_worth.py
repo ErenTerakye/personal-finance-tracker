@@ -42,6 +42,18 @@ def test_account_service_resolves_as_of_balances_and_replaces_same_day(tmp_path)
     assert len(service.list_snapshots(cash.id)) == 2
 
 
+def test_balance_rejects_values_above_safe_cent_boundary(tmp_path):
+    service = AccountService(tmp_path / "finance.sqlite3")
+
+    account = service.create_account(
+        "Vault", "asset", "90071992547409.91", "2026-01-01"
+    )
+
+    assert account.id is not None
+    with pytest.raises(ValidationError, match="no greater than 90071992547409.91"):
+        service.set_balance(account.id, "90071992547409.92", "2026-01-02")
+
+
 def test_net_worth_reports_assets_minus_liabilities_and_unresolved_history(tmp_path):
     service = AccountService(tmp_path / "finance.sqlite3")
     asset = service.create_account("Savings", "asset", "1000", "2026-03-10")

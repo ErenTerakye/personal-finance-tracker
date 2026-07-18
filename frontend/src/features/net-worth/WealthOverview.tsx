@@ -13,7 +13,12 @@ import { useState } from "react";
 import { ActionButton } from "../../shared/components/actions";
 import { Field } from "../../shared/components/fields";
 import { formatDate, todayIso } from "../../shared/format/dates";
-import { money, signedMoney } from "../../shared/format/money";
+import {
+  absoluteMoney,
+  compareMoney,
+  money,
+  signedMoney,
+} from "../../shared/format/money";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import type { NetWorthAccountAnalytics, NetWorthOverview } from "../../types";
 import { TrendExplorer } from "./NetWorthTrendExplorer";
@@ -138,11 +143,11 @@ export function WealthOverview({
   onRangeChange: (value: NetWorthRange) => void;
 } & OverviewActions) {
   const { t } = useI18n();
-  const total = Number(data.summary.total_net_worth);
+  const totalDirection = compareMoney(data.summary.total_net_worth, 0);
   const change =
     data.comparison.change_amount === null
       ? null
-      : Number(data.comparison.change_amount);
+      : compareMoney(data.comparison.change_amount, 0);
   const coverage = activeCoverage(data);
   const coveragePercent = Math.min(
     100,
@@ -165,7 +170,11 @@ export function WealthOverview({
       >
         <article
           className={`wealth-primary-metric ${
-            total < 0 ? "is-negative" : total > 0 ? "is-positive" : "is-zero"
+            totalDirection < 0
+              ? "is-negative"
+              : totalDirection > 0
+                ? "is-positive"
+                : "is-zero"
           }`}
         >
           <div className="metric-label">
@@ -246,10 +255,11 @@ function MovementInsight({ data }: { data: NetWorthOverview }) {
   const { t } = useI18n();
   const accounts = [...data.accounts]
     .filter((account) => account.contribution_change !== null)
-    .sort(
-      (a, b) =>
-        Math.abs(Number(b.contribution_change)) -
-        Math.abs(Number(a.contribution_change)),
+    .sort((a, b) =>
+      compareMoney(
+        absoluteMoney(b.contribution_change ?? "0"),
+        absoluteMoney(a.contribution_change ?? "0"),
+      ),
     )
     .slice(0, 3);
 
@@ -269,7 +279,7 @@ function MovementInsight({ data }: { data: NetWorthOverview }) {
       {accounts.length ? (
         <ol className="movement-list">
           {accounts.map((account) => {
-            const change = Number(account.contribution_change);
+            const change = compareMoney(account.contribution_change ?? "0", 0);
             return (
               <li key={account.account_id}>
                 <span className="movement-rank" aria-hidden="true">
@@ -463,7 +473,7 @@ function PortfolioRow({
   const change =
     account.contribution_change === null
       ? null
-      : Number(account.contribution_change);
+      : compareMoney(account.contribution_change, 0);
   const share = Math.max(
     0,
     Math.min(100, Number(account.composition_percent ?? 0)),

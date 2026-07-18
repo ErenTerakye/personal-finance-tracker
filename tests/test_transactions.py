@@ -47,6 +47,20 @@ def test_add_transaction_validates_input(
         service.add_transaction(transaction_type, amount, category, "", transaction_date)
 
 
+def test_amount_accepts_safe_cent_boundary_and_rejects_larger_value(tmp_path):
+    service = TransactionService(tmp_path / "finance.sqlite3")
+
+    transaction = service.add_transaction(
+        "income", "90071992547409.91", "Other", "Boundary", "2026-06-01"
+    )
+
+    assert transaction.amount == Decimal("90071992547409.91")
+    with pytest.raises(ValidationError, match="no greater than 90071992547409.91"):
+        service.add_transaction(
+            "income", "90071992547409.92", "Other", "Too large", "2026-06-01"
+        )
+
+
 def test_delete_transaction(tmp_path):
     service = TransactionService(tmp_path / "finance.sqlite3")
     transaction = service.add_transaction("expense", "15", "Food", "Coffee", "2026-06-02")
