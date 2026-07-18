@@ -193,6 +193,10 @@ describe("app composition", () => {
     expect(themeToggle).toBeVisible();
     expect(themeToggle.closest("footer")).toHaveClass("rail-utilities");
     expect(themeToggle.closest("aside")).toHaveClass("app-rail");
+    expect(
+      themeToggle.closest("footer")?.querySelector(".rail-manage-navigation"),
+    ).toContainElement(screen.getByRole("link", { name: "Manage" }));
+    expect(screen.queryByText("Local SQLite")).not.toBeInTheDocument();
 
     // The language toggle button should show target language "TR" and have aria-label "Switch to Turkish"
     const langToggle = screen.getByRole("button", {

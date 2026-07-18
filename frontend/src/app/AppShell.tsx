@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  Database,
   House,
   Plus,
   ReceiptText,
@@ -90,35 +89,34 @@ export function AppShell({
             <Plus aria-hidden="true" size={19} />
             <span>{t("common.addTransaction")}</span>
           </button>
-          <nav className="rail-manage-navigation" aria-label={t("nav.manage")}>
-            <a
-              className="rail-action"
-              href={viewMeta.manageAutomations.path}
-              aria-current={isManageView(view) ? "page" : undefined}
-              onFocus={() => onPrepare("manageAutomations")}
-              onPointerEnter={() => onPrepare("manageAutomations")}
-              onPointerDown={() => onPrepare("manageAutomations")}
-              onClick={(event) => {
-                if (!shouldHandleNavigation(event)) return;
-                event.preventDefault();
-                onNavigate("manageAutomations");
-              }}
-            >
-              <span className="navigation-icon" aria-hidden="true">
-                <Settings size={19} />
-              </span>
-              <span>{t("nav.manage")}</span>
-            </a>
-          </nav>
           <footer className="rail-utilities">
+            <nav
+              className="rail-manage-navigation"
+              aria-label={t("nav.manage")}
+            >
+              <a
+                className="rail-action"
+                href={viewMeta.manageAutomations.path}
+                aria-current={isManageView(view) ? "page" : undefined}
+                onFocus={() => onPrepare("manageAutomations")}
+                onPointerEnter={() => onPrepare("manageAutomations")}
+                onPointerDown={() => onPrepare("manageAutomations")}
+                onClick={(event) => {
+                  if (!shouldHandleNavigation(event)) return;
+                  event.preventDefault();
+                  onNavigate("manageAutomations");
+                }}
+              >
+                <span className="navigation-icon" aria-hidden="true">
+                  <Settings size={19} />
+                </span>
+                <span>{t("nav.manage")}</span>
+              </a>
+            </nav>
             <div className="rail-preference-controls">
               <ThemeToggle />
               <LangToggle />
             </div>
-            <span className="local-data-status">
-              <Database aria-hidden="true" size={15} />
-              {t("common.localSqlite")}
-            </span>
           </footer>
         </aside>
       )}

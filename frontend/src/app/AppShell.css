@@ -86,7 +86,7 @@
     inset: 0 auto 0 0;
     z-index: 20;
     display: grid;
-    grid-template-rows: auto auto auto 1fr auto;
+    grid-template-rows: auto auto auto 1fr;
     gap: 1.5rem;
     inline-size: 16rem;
     padding: 1.25rem 1rem;
@@ -173,36 +173,28 @@
   }
 
   .rail-manage-navigation {
-    align-self: end;
+    min-inline-size: 0;
+    flex: 1;
   }
 
   .rail-manage-navigation .rail-action {
     inline-size: 100%;
+    gap: 0.5rem;
+    padding-inline: 0.625rem;
   }
 
   .rail-utilities {
-    display: grid;
+    align-self: end;
+    display: flex;
+    align-items: center;
     gap: 0.5rem;
-    padding-block-start: 0.75rem;
-    border-block-start: 1px solid var(--rule);
   }
 
   .rail-preference-controls {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding-inline: 0.85rem;
-  }
-
-  .local-data-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    min-inline-size: 0;
-    min-block-size: 2rem;
-    padding-inline: 0.85rem;
-    color: var(--muted);
-    font-size: var(--font-size-xs);
+    flex: none;
   }
 
   .compact-app-bar {

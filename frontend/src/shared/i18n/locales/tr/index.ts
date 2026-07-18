@@ -15,7 +15,6 @@ export const tr = {
     duplicate: "yinelenen",
     invalid: "geçersiz",
     brandMarkSub: "Yerel Finans",
-    localSqlite: "Yerel SQLite",
     hostedDemo: "Barındırılan demo",
     loading: "Defter ayarları yükleniyor...",
     loadingRoute: "{name} yükleniyor...",

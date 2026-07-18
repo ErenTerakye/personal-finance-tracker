@@ -182,7 +182,7 @@ export function TrendExplorer({ history }: { history: NetWorthHistory }) {
             />
           ) : null}
           <path className="net-worth-area" d={chart.areaPath} />
-          <path className="net-worth-line" d={chart.linePath} pathLength="1" />
+          <path className="net-worth-line" d={chart.linePath} />
           <line
             className="chart-selection-line"
             x1={chart.points[selected].x}

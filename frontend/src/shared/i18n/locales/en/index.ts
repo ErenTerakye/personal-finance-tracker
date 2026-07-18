@@ -12,7 +12,6 @@ export const en = {
     duplicate: "duplicate",
     invalid: "invalid",
     brandMarkSub: "Local Finance",
-    localSqlite: "Local SQLite",
     hostedDemo: "Hosted demo",
     loading: "Loading ledger settings...",
     loadingRoute: "Loading {name}...",

@@ -1891,9 +1891,7 @@
     }
 
     .net-worth-line {
-      stroke-dasharray: 1;
-      stroke-dashoffset: 1;
-      animation: wealth-line-draw 700ms var(--ease-out) 120ms forwards;
+      animation: wealth-line-reveal 500ms var(--ease-out) 120ms both;
     }
 
     .net-worth-area {
@@ -1909,9 +1907,9 @@
       transform-origin: center;
     }
 
-    @keyframes wealth-line-draw {
-      to {
-        stroke-dashoffset: 0;
+    @keyframes wealth-line-reveal {
+      from {
+        opacity: 0;
       }
     }
 

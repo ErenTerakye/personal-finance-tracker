@@ -73,6 +73,9 @@ describe("net worth workflow", () => {
       name: /Net worth over time/,
     });
     expect(chart.querySelector("path")?.getAttribute("d")).not.toContain("NaN");
+    expect(chart.querySelector(".net-worth-line")).not.toHaveAttribute(
+      "pathLength",
+    );
     const points = within(chart).getAllByRole("button");
     expect(points).toHaveLength(2);
     await userEvent.tab();

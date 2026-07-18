@@ -955,6 +955,35 @@ for (const width of themeViewports) {
   });
 }
 
+test("groups desktop sidebar utilities in one clean row", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await mockApi(page);
+  await page.goto("/");
+
+  const utilities = page.locator(".rail-utilities");
+  const controls = [
+    utilities.getByRole("link", { name: "Manage" }),
+    utilities.getByRole("button", { name: "Use dark mode" }),
+    utilities.getByRole("button", { name: "Switch to Turkish" }),
+  ];
+
+  await expect(page.getByText("Local SQLite")).toHaveCount(0);
+  await expect(utilities).toHaveCSS("border-top-style", "none");
+
+  const utilityBounds = await utilities.boundingBox();
+  expect(utilityBounds).not.toBeNull();
+  for (const control of controls) {
+    await expect(control).toBeVisible();
+    const bounds = await control.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(utilityBounds!.x);
+    expect(bounds!.y).toBe(utilityBounds!.y);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(
+      utilityBounds!.x + utilityBounds!.width,
+    );
+  }
+});
+
 test.describe("theme system preference", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
