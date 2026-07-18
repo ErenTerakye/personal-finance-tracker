@@ -354,6 +354,55 @@ test("aligns compact page actions with their heading content", async ({
   }
 });
 
+test("adapts the dashboard toolbar only at the wide layout breakpoint", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 900 });
+  await mockApi(page);
+  await page.goto("/");
+
+  const actions = page.getByLabel("Next actions");
+  const toolbar = page.locator(".dashboard-toolbar");
+  const [compactActionsBox, compactToolbarBox] = await Promise.all([
+    actions.boundingBox(),
+    toolbar.boundingBox(),
+  ]);
+
+  expect(compactActionsBox).not.toBeNull();
+  expect(compactToolbarBox).not.toBeNull();
+  expect(
+    Math.abs(compactActionsBox!.width - compactToolbarBox!.width),
+  ).toBeLessThanOrEqual(1);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+
+  const exportButton = page.getByRole("button", {
+    name: "Download dashboard artifacts",
+  });
+  const addButton = actions.getByRole("button", {
+    name: "Add transaction",
+  });
+  const budgetButton = actions.getByRole("button", { name: "Set budget" });
+  const [wideActionsBox, wideToolbarBox, exportBox, addBox, budgetBox] =
+    await Promise.all([
+      actions.boundingBox(),
+      toolbar.boundingBox(),
+      exportButton.boundingBox(),
+      addButton.boundingBox(),
+      budgetButton.boundingBox(),
+    ]);
+
+  expect(wideActionsBox).not.toBeNull();
+  expect(wideToolbarBox).not.toBeNull();
+  expect(exportBox).not.toBeNull();
+  expect(addBox).not.toBeNull();
+  expect(budgetBox).not.toBeNull();
+  expect(wideActionsBox!.width).toBeLessThan(wideToolbarBox!.width * 0.5);
+  expect(addBox!.x - (exportBox!.x + exportBox!.width)).toBeLessThanOrEqual(10);
+  expect(Math.abs(addBox!.y - exportBox!.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(budgetBox!.y - exportBox!.y)).toBeLessThanOrEqual(1);
+});
+
 test("opens category guardrails without covering or rearranging cards", async ({
   page,
 }) => {

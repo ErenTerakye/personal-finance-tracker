@@ -1,4 +1,10 @@
 @layer features {
+  @property --plan-progress-rendered {
+    syntax: "<percentage>";
+    inherits: false;
+    initial-value: 0%;
+  }
+
   .plan-page-heading {
     padding-block-end: clamp(0.5rem, 2vw, 1.25rem);
   }
@@ -58,10 +64,11 @@
     padding: clamp(1.2rem, 3vw, 2rem);
     background: conic-gradient(
       from -90deg,
-      var(--plan-tone) var(--plan-progress),
+      var(--plan-tone) var(--plan-progress-rendered),
       color-mix(in oklab, var(--plan-tone) 13%, var(--surface-2)) 0
     );
     border-radius: 50%;
+    contain: layout style paint;
   }
 
   .plan-orbit::before {
@@ -142,6 +149,7 @@
     align-items: flex-start;
     gap: 0.6rem;
     max-inline-size: 58ch;
+    min-block-size: 3.25rem;
     margin-block-start: 1.25rem;
     padding: 0.8rem 0.9rem;
     color: var(--warning);
@@ -149,6 +157,19 @@
     border-inline-start: 3px solid currentcolor;
     border-radius: var(--radius-sm);
     font-size: var(--font-size-sm);
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity var(--motion-control) var(--ease-out),
+      translate var(--motion-control) var(--ease-out),
+      visibility var(--motion-control);
+    transition-behavior: allow-discrete;
+  }
+
+  .plan-uncovered-note.is-reserved {
+    opacity: 0;
+    translate: 0 0.25rem;
+    visibility: hidden;
   }
 
   .plan-uncovered-note svg {
@@ -755,6 +776,18 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .plan-orbit {
+      animation: none;
+    }
+
+    .plan-uncovered-note {
+      transition: none;
+    }
+
+    .plan-uncovered-note.is-reserved {
+      translate: none;
+    }
+
     .plan-category-card,
     .plan-category-card-topline > svg,
     .plan-card-progress > span,
@@ -764,6 +797,31 @@
 
     .plan-category-card:hover {
       translate: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .plan-orbit {
+      animation: plan-orbit-arrival var(--motion-value) var(--ease-out) both;
+      transition: --plan-progress-rendered 700ms var(--ease-value);
+    }
+
+    .plan-orbit::before {
+      animation: plan-orbit-core-arrival var(--motion-value) var(--ease-out)
+        both;
+    }
+  }
+
+  @keyframes plan-orbit-arrival {
+    from {
+      opacity: 0.65;
+      scale: 0.94;
+    }
+  }
+
+  @keyframes plan-orbit-core-arrival {
+    from {
+      scale: 1.06;
     }
   }
 

@@ -13,6 +13,39 @@
     min-inline-size: 0;
   }
 
+  .dashboard-toolbar {
+    display: grid;
+    gap: var(--space-4);
+    inline-size: 100%;
+    min-inline-size: 0;
+  }
+
+  @media (min-width: 64rem) {
+    @container workspace-main (min-width: 44rem) {
+      .dashboard-toolbar {
+        display: flex;
+        align-items: safe center;
+        gap: 0.55rem;
+      }
+
+      .dashboard-heading-tools {
+        flex: 1 1 auto;
+      }
+
+      .dashboard-primary-actions {
+        display: flex;
+        flex: none;
+        flex-wrap: nowrap;
+        inline-size: fit-content;
+        max-inline-size: 100%;
+      }
+
+      .dashboard-primary-actions .button {
+        inline-size: auto;
+      }
+    }
+  }
+
   @container workspace-main (min-width: 44rem) {
     .analysis-grid,
     .dashboard-analysis-pair {

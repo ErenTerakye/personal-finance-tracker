@@ -90,6 +90,13 @@ describe("budgets workflow", () => {
     expect(screen.getByText("Uncovered spending").parentElement).toHaveClass(
       "plan-metric-alert",
     );
+    expect(document.querySelector(".plan-uncovered-note")).not.toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+    expect(document.querySelector(".plan-orbit")).toHaveStyle({
+      "--plan-progress-rendered": "80%",
+    });
     const categoryButton = screen.getByRole("button", {
       name: /Food, near limit/,
     });
@@ -118,6 +125,51 @@ describe("budgets workflow", () => {
     expect(
       screen.getByRole("searchbox", { name: "Find a category" }),
     ).toBeVisible();
+  });
+
+  it("reserves the guardrail warning footprint when all spending is covered", async () => {
+    const budgetRecord = {
+      id: 1,
+      category: "Food",
+      amount: "500.00",
+      month: 7,
+      year: 2026,
+      created_at: null,
+    };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith("/api/budgets/status")) {
+        return response({
+          statuses: [
+            {
+              budget: budgetRecord,
+              actual_expenses: "400.00",
+              remaining: "100.00",
+              percent_used: "80.0",
+              status: "near limit",
+            },
+          ],
+        });
+      }
+      if (url.startsWith("/api/budgets")) {
+        return response({ budgets: [budgetRecord] });
+      }
+      return response(
+        dashboardPayload({
+          report: { ...dashboardPayload({}).report, total_expenses: "400.00" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Budgets/i }),
+    );
+
+    const reservedWarning = document.querySelector(".plan-uncovered-note");
+    expect(reservedWarning).toHaveClass("is-reserved");
+    expect(reservedWarning).toHaveAttribute("aria-hidden", "true");
   });
 
   it("previews the impact of a budget before it is saved", async () => {

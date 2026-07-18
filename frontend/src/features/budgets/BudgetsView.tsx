@@ -266,6 +266,7 @@ export function BudgetsView({
   const previousCovered = sumMoney(
     previousStatuses.map((status) => status.actual_expenses),
   );
+  const previousRemaining = subtractMoney(previousPlanned, previousCovered);
   const previousSpent =
     periodTransition.previousData?.totalExpenses ?? totalSpent;
   const previousUncovered = nonNegativeMoney(
@@ -284,6 +285,7 @@ export function BudgetsView({
       ? (Number(coveredSpending) / Number(totalPlanned)) * 100
       : 0;
   const planProgress = Math.min(Math.max(utilization, 0), 100);
+  const hasUncoveredSpending = compareMoney(uncovered, 0) > 0;
   const overCount = statuses.filter(
     (status) => status.status === "over budget",
   ).length;
@@ -413,12 +415,20 @@ export function BudgetsView({
                 <div
                   className="plan-orbit"
                   style={
-                    { "--plan-progress": `${planProgress}%` } as CSSProperties
+                    {
+                      "--plan-progress-rendered": `${planProgress}%`,
+                    } as CSSProperties
                   }
                 >
                   <div>
                     <span>{t("budgets.pulse.variance")}</span>
-                    <strong>{money(absoluteMoney(remaining))}</strong>
+                    <strong>
+                      <RollingNumber
+                        value={absoluteMoney(remaining)}
+                        previousValue={absoluteMoney(previousRemaining)}
+                        format={money}
+                      />
+                    </strong>
                     <em>
                       {compareMoney(remaining, 0) >= 0
                         ? t("budgets.pulse.left")
@@ -441,16 +451,17 @@ export function BudgetsView({
                   </p>
                   <h2>{planPulseTitle}</h2>
                   <p>{planPulseMessage}</p>
-                  {compareMoney(uncovered, 0) > 0 ? (
-                    <p className="plan-uncovered-note">
-                      <AlertTriangle aria-hidden="true" size={18} />
-                      <span>
-                        {t("budgets.pulse.uncoveredNote", {
-                          amount: money(uncovered),
-                        })}
-                      </span>
-                    </p>
-                  ) : null}
+                  <p
+                    className={`plan-uncovered-note${hasUncoveredSpending ? "" : " is-reserved"}`}
+                    aria-hidden={!hasUncoveredSpending}
+                  >
+                    <AlertTriangle aria-hidden="true" size={18} />
+                    <span>
+                      {t("budgets.pulse.uncoveredNote", {
+                        amount: money(uncovered),
+                      })}
+                    </span>
+                  </p>
                 </div>
               </div>
               <dl className="plan-metrics">
@@ -481,7 +492,7 @@ export function BudgetsView({
                   </dd>
                 </div>
                 <div
-                  className={`plan-metric ${compareMoney(uncovered, 0) > 0 ? "plan-metric-alert" : "plan-metric-covered"}`}
+                  className={`plan-metric ${hasUncoveredSpending ? "plan-metric-alert" : "plan-metric-covered"}`}
                 >
                   <dt>{t("budgets.uncovered")}</dt>
                   <dd>
@@ -493,7 +504,7 @@ export function BudgetsView({
                   </dd>
                   <dd className="plan-metric-note">
                     {t(
-                      compareMoney(uncovered, 0) > 0
+                      hasUncoveredSpending
                         ? "budgets.metric.uncovered"
                         : "budgets.metric.covered",
                     )}

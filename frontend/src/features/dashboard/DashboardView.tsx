@@ -158,42 +158,42 @@ export function DashboardView({
         }
         className="dashboard-heading dashboard-context-header"
         context={
-          <div
-            className="dashboard-heading-tools dashboard-actions"
-            aria-label={t("dashboard.toolsLabel")}
-          >
-            <PeriodControl
-              label={t("dashboard.changePeriod")}
-              value={selectedPeriod}
-              onChange={setSelectedPeriod}
-              onPrepare={(period) => {
-                void preloadDashboard(period.month, period.year).catch(
-                  () => undefined,
-                );
-              }}
-              busy={periodTransition.pending}
-            />
-            <ReportMenu
-              month={selectedPeriod.month}
-              year={selectedPeriod.year}
-            />
-          </div>
-        }
-        actions={
-          <div
-            className="action-cluster"
-            aria-label={t("dashboard.detail.actions")}
-          >
-            <ActionButton icon={Plus} onClick={onAddTransaction}>
-              {t("common.addTransaction")}
-            </ActionButton>
-            <ActionButton
-              icon={PiggyBank}
-              variant="secondary"
-              onClick={onCreateBudget}
+          <div className="dashboard-toolbar">
+            <div
+              className="dashboard-heading-tools dashboard-actions"
+              aria-label={t("dashboard.toolsLabel")}
             >
-              {t("common.setBudget")}
-            </ActionButton>
+              <PeriodControl
+                label={t("dashboard.changePeriod")}
+                value={selectedPeriod}
+                onChange={setSelectedPeriod}
+                onPrepare={(period) => {
+                  void preloadDashboard(period.month, period.year).catch(
+                    () => undefined,
+                  );
+                }}
+                busy={periodTransition.pending}
+              />
+              <ReportMenu
+                month={selectedPeriod.month}
+                year={selectedPeriod.year}
+              />
+            </div>
+            <div
+              className="action-cluster dashboard-primary-actions"
+              aria-label={t("dashboard.detail.actions")}
+            >
+              <ActionButton icon={Plus} onClick={onAddTransaction}>
+                {t("common.addTransaction")}
+              </ActionButton>
+              <ActionButton
+                icon={PiggyBank}
+                variant="secondary"
+                onClick={onCreateBudget}
+              >
+                {t("common.setBudget")}
+              </ActionButton>
+            </div>
           </div>
         }
       />

@@ -222,7 +222,7 @@ function PrimaryNavigationItem({
         <span className="navigation-icon" aria-hidden="true">
           {active && filledIcon ? (
             <FilledPrimaryNavigationIcon item={item} />
-          ) : filledIcon && item === "overview" ? (
+          ) : item === "overview" ? (
             <OutlineOverviewIcon />
           ) : (
             <Icon size={22} strokeWidth={2} fill="none" />
