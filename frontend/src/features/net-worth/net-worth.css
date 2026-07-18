@@ -126,6 +126,7 @@
   .wealth-primary-metric {
     --wealth-primary-accent: var(--action);
 
+    container: wealth-primary-metric / inline-size;
     position: relative;
     display: grid;
     align-content: space-between;
@@ -168,11 +169,12 @@
     z-index: 1;
     margin-block: 1.25rem;
     font-family: var(--font-mono);
-    font-size: clamp(2.4rem, 5.2cqi, 4.8rem);
+    font-size: clamp(2.4rem, 13cqi, 4.8rem);
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--tracking-numeric);
     line-height: 0.95;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    text-wrap: nowrap;
   }
 
   .wealth-primary-metric > p {

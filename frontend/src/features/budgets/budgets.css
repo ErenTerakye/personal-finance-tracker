@@ -47,7 +47,7 @@
 
   .plan-pulse-main {
     display: grid;
-    grid-template-columns: minmax(12rem, 0.6fr) minmax(0, 1.4fr);
+    grid-template-columns: minmax(15rem, 0.75fr) minmax(0, 1.25fr);
     align-items: center;
     gap: clamp(1.5rem, 4vw, 4rem);
     max-inline-size: 72rem;
@@ -55,6 +55,7 @@
   }
 
   .plan-orbit {
+    container: plan-orbit / inline-size;
     position: relative;
     display: grid;
     place-items: center;
@@ -84,26 +85,39 @@
     position: relative;
     z-index: 1;
     display: grid;
-    gap: 0.2rem;
+    gap: 0.35rem;
+    inline-size: 100%;
     text-align: center;
   }
 
-  .plan-orbit span,
-  .plan-orbit em {
+  .plan-orbit > div > span {
     color: var(--muted);
-    font-size: var(--font-size-xs);
-    font-style: normal;
+    font-size: clamp(var(--font-size-sm), 6cqi, var(--font-size-base));
     font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-label-strong);
+    line-height: var(--line-compact);
+    text-transform: uppercase;
+    text-wrap: balance;
   }
 
   .plan-orbit strong {
     color: var(--ink);
     font-family: var(--font-mono);
-    font-size: clamp(1.35rem, 3vw, 2.05rem);
+    font-size: clamp(2rem, 20cqi, 2.75rem);
+    font-weight: var(--font-weight-bold);
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--tracking-numeric);
     line-height: 1;
     white-space: nowrap;
+  }
+
+  .plan-orbit > div > em {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: clamp(var(--font-size-sm), 6cqi, var(--font-size-base));
+    font-style: normal;
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-compact);
   }
 
   .plan-pulse-copy {

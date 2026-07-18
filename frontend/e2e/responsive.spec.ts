@@ -776,6 +776,41 @@ for (const width of viewports) {
       await expect(
         page.getByText("Travel", { exact: true }).first(),
       ).toBeVisible();
+      const pulseTypography = await page
+        .locator(".plan-orbit")
+        .evaluate((orbit) => {
+          const variance = orbit.querySelector<HTMLElement>("span");
+          const amount = orbit.querySelector<HTMLElement>("strong");
+          const renderedAmount = amount?.querySelector<HTMLElement>(
+            ".rolling-number-digits",
+          );
+          const state = orbit.querySelector<HTMLElement>("em");
+          if (!variance || !amount || !renderedAmount || !state) {
+            throw new Error("Expected complete plan variance summary");
+          }
+          return {
+            amountFits: renderedAmount.scrollWidth <= amount.clientWidth + 1,
+            amountSize: Number.parseFloat(
+              getComputedStyle(renderedAmount).fontSize,
+            ),
+            amountWeight: Number.parseInt(
+              getComputedStyle(renderedAmount).fontWeight,
+              10,
+            ),
+            stateSize: Number.parseFloat(getComputedStyle(state).fontSize),
+            varianceSize: Number.parseFloat(
+              getComputedStyle(variance).fontSize,
+            ),
+          };
+        });
+      expect(pulseTypography.amountFits).toBe(true);
+      expect(pulseTypography.amountSize).toBeGreaterThanOrEqual(32);
+      expect(pulseTypography.amountSize).toBeGreaterThan(
+        pulseTypography.varianceSize * 2,
+      );
+      expect(pulseTypography.amountWeight).toBeGreaterThanOrEqual(700);
+      expect(pulseTypography.stateSize).toBeGreaterThanOrEqual(14);
+      expect(pulseTypography.varianceSize).toBeGreaterThanOrEqual(14);
       await page.locator(".data-menu > summary").click();
       await expect(
         page.getByRole("button", { name: "Import CSV" }),
@@ -1231,6 +1266,49 @@ test.describe("accounts scoreboard theme", () => {
     );
     await expect(tooltip).toContainText("Jul 16, 2026");
     await expect(tooltip).toContainText("+$10,000.00");
+  });
+
+  test("keeps total net worth on one line across desktop card widths", async ({
+    page,
+  }) => {
+    const overview = populatedNetWorthOverview();
+    await page.unroute("**/api/**");
+    await mockApi(page, {
+      netWorthOverviewPayload: {
+        ...overview,
+        summary: {
+          ...overview.summary,
+          total_assets: "64865.00",
+          total_liabilities: "8585.00",
+          total_net_worth: "56280.00",
+        },
+      },
+    });
+
+    await page.goto("/accounts");
+    const total = page.locator(".wealth-primary-metric > strong");
+    await expect(total).toHaveText("+$56,280.00");
+
+    for (const width of [1440, 1800, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect
+        .poll(() =>
+          total.evaluate((element) => {
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            const lineTops = new Set(
+              Array.from(range.getClientRects()).map((rect) =>
+                Math.round(rect.top),
+              ),
+            );
+            return {
+              lines: lineTops.size,
+              fits: element.scrollWidth <= element.clientWidth + 1,
+            };
+          }),
+        )
+        .toEqual({ lines: 1, fits: true });
+    }
   });
 });
 

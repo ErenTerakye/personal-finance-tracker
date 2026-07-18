@@ -1,4 +1,8 @@
 @layer components {
+  .entry-dialog-expense {
+    --entry-accent: var(--expenses);
+  }
+
   .entry-dialog-income {
     --entry-accent: var(--cash);
   }
