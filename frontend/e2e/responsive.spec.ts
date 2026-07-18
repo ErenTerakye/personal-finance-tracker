@@ -1218,9 +1218,13 @@ async function captureThemeLayout(page: Page) {
 }
 
 async function expectRailPreferenceControls(page: Page) {
-  if ((page.viewportSize()?.width ?? 0) <= 1023) return;
-  await expect(page.locator(".theme-toggle")).toBeVisible();
-  await expect(page.locator(".lang-toggle")).toBeVisible();
+  const compactLayout = (page.viewportSize()?.width ?? 0) <= 1023;
+  const container = page.locator(
+    compactLayout ? ".compact-app-bar" : ".app-rail",
+  );
+
+  await expect(container.locator(".theme-toggle")).toBeVisible();
+  await expect(container.locator(".lang-toggle")).toBeVisible();
 }
 
 async function expectAdaptiveCompactCommandBar(page: Page, width: number) {
