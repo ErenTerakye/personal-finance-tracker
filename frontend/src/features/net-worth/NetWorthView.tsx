@@ -118,20 +118,14 @@ export function NetWorthView({
         title={t("netWorth.accountsTitle")}
         summary={t("netWorth.accountsSummary")}
         actions={
-          <div className="wealth-header-actions">
-            <ActionButton
-              icon={accountCount ? WalletCards : CircleDollarSign}
-              onClick={() =>
-                setDialog(accountCount ? { kind: "checkIn" } : { kind: "add" })
-              }
-            >
-              {t(
-                accountCount
-                  ? "netWorth.actions.updateBalances"
-                  : "netWorth.actions.addAccount",
-              )}
-            </ActionButton>
-            {accountCount ? (
+          accountCount ? (
+            <div className="wealth-header-actions">
+              <ActionButton
+                icon={WalletCards}
+                onClick={() => setDialog({ kind: "checkIn" })}
+              >
+                {t("netWorth.actions.updateBalances")}
+              </ActionButton>
               <ActionButton
                 icon={CircleDollarSign}
                 variant="secondary"
@@ -139,8 +133,8 @@ export function NetWorthView({
               >
                 {t("netWorth.actions.addAccount")}
               </ActionButton>
-            ) : null}
-          </div>
+            </div>
+          ) : null
         }
       />
       {resource.status === "error" ? (

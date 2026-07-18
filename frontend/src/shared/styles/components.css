@@ -17,7 +17,7 @@
     border-radius: var(--radius-pill);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
-    letter-spacing: 0.005em;
+    letter-spacing: var(--tracking-action);
     line-height: var(--line-compact);
     text-decoration: none;
     transition:
@@ -297,7 +297,7 @@
     color: var(--muted);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-label);
     text-transform: uppercase;
   }
 
@@ -531,7 +531,7 @@
   .panel-header h2,
   .filter-bar h2 {
     font-size: var(--font-size-lg);
-    letter-spacing: -0.018em;
+    letter-spacing: var(--tracking-heading);
     overflow-wrap: anywhere;
     text-wrap: balance;
     text-box: trim-both cap alphabetic;
@@ -694,7 +694,7 @@
     color: var(--action);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
-    letter-spacing: 0.06em;
+    letter-spacing: var(--tracking-label-strong);
     text-transform: uppercase;
   }
 

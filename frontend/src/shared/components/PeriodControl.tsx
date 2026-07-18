@@ -132,7 +132,7 @@ export function PeriodControl({
     resetPicker();
     requestAnimationFrame(() => {
       applyFocusOrigin(triggerRef.current, focusOrigin.current);
-      triggerRef.current?.focus();
+      triggerRef.current?.focus({ preventScroll: true });
     });
   }
 

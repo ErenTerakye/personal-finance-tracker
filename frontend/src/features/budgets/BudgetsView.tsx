@@ -3,6 +3,7 @@ import {
   type FormEvent,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -127,6 +128,11 @@ export function BudgetsView({
   );
   const inspectorId = useId();
   const inspectorTitleId = useId();
+  const boardRef = useRef<HTMLElement>(null);
+  const boardScrollAnchor = useRef<{
+    boardTop: number;
+    periodKey: string;
+  } | null>(null);
   const categoryButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const loading = budgetResource.status === "loading";
   const initialLoading = loading && !periodTransition.data;
@@ -300,12 +306,53 @@ export function BudgetsView({
     over: overCount,
     near: nearCount,
   });
+  const requestedPeriodKey = budgetPeriodKey(requestedPeriod);
+  const presentedPeriodKey = budgetPeriodKey(presentedPeriod);
+
+  useLayoutEffect(() => {
+    const anchor = boardScrollAnchor.current;
+    if (!anchor || anchor.periodKey !== requestedPeriodKey) return;
+
+    restoreBoardScrollAnchor(boardRef.current, anchor.boardTop);
+    if (
+      budgetResource.status !== "success" ||
+      presentedPeriodKey !== requestedPeriodKey
+    ) {
+      return;
+    }
+
+    let finalFrame = 0;
+    const settleFrame = window.requestAnimationFrame(() => {
+      restoreBoardScrollAnchor(boardRef.current, anchor.boardTop);
+      finalFrame = window.requestAnimationFrame(() => {
+        restoreBoardScrollAnchor(boardRef.current, anchor.boardTop);
+        if (boardScrollAnchor.current === anchor) {
+          boardScrollAnchor.current = null;
+        }
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(settleFrame);
+      window.cancelAnimationFrame(finalFrame);
+    };
+  }, [budgetResource.status, presentedPeriodKey, requestedPeriodKey]);
 
   function updateFilters(next: BudgetFilters) {
     writeBudgetFilters(next);
     setFilters(next);
     setInspectorOpen(false);
     setSelectedCategory(null);
+  }
+
+  function updatePeriod(period: { month: number; year: number }) {
+    const board = boardRef.current;
+    if (board && window.scrollY > 0) {
+      boardScrollAnchor.current = {
+        boardTop: board.getBoundingClientRect().top,
+        periodKey: budgetPeriodKey(period),
+      };
+    }
+    updateFilters({ ...filters, ...period });
   }
 
   function closeInspector({ restoreFocus = false } = {}) {
@@ -363,7 +410,7 @@ export function BudgetsView({
           <PeriodControl
             label={t("budgets.filterPeriod")}
             value={requestedPeriod}
-            onChange={(period) => updateFilters({ ...filters, ...period })}
+            onChange={updatePeriod}
           />
         }
         actions={
@@ -515,7 +562,11 @@ export function BudgetsView({
           )}
         </article>
 
-        <section className="plan-board" aria-labelledby="plan-board-title">
+        <section
+          ref={boardRef}
+          className="plan-board"
+          aria-labelledby="plan-board-title"
+        >
           <header className="plan-board-header">
             <div>
               <p className="eyebrow">{t("budgets.board.eyebrow")}</p>
@@ -530,7 +581,7 @@ export function BudgetsView({
               <PeriodControl
                 label={t("budgets.filterPeriod")}
                 value={requestedPeriod}
-                onChange={(period) => updateFilters({ ...filters, ...period })}
+                onChange={updatePeriod}
               />
             </div>
             <label className="plan-search" htmlFor="plan-category-search">
@@ -798,4 +849,21 @@ function writeBudgetSort(value: "priority" | "category" | "spent") {
   if (value === "priority") url.searchParams.delete("sort");
   else url.searchParams.set("sort", value);
   window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+}
+
+function budgetPeriodKey(period: { month: number; year: number }) {
+  return `${period.year}-${period.month}`;
+}
+
+function restoreBoardScrollAnchor(
+  board: HTMLElement | null,
+  expectedTop: number,
+) {
+  if (!board) return;
+  const offset = board.getBoundingClientRect().top - expectedTop;
+  if (Math.abs(offset) < 0.5) return;
+  window.scrollTo({
+    top: window.scrollY + offset,
+    behavior: "instant",
+  });
 }

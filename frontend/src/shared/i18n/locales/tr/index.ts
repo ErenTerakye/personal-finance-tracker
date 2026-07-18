@@ -221,7 +221,19 @@ export const tr = {
       eyebrow: "Elle girilen yerel bakiyeler",
       title: "İlk hesabınızı ekleyin",
       message:
-        "Aylık nakit akışı gelir eksi giderdir. Net değer, yalnızca bu yerel defterde saklanan tarihli varlık ve borç bakiyelerini kullanır.",
+        "Finansal durumunuzu şekillendiren hesapları net ve özel bir görünümde bir araya getirin. Bugün bildiğiniz herhangi bir bakiyeyle başlayın.",
+      benefitAccounts: "Varlıkları ve borçları yan yana takip edin.",
+      benefitHistory: "Bakiyeler değiştikçe anlamlı bir geçmiş oluşturun.",
+      benefitLocal: "Her bakiyeyi yerel defterinizde tutun.",
+      guideEyebrow: "Basit bir başlangıç",
+      guideTitle: "Bildiğinizle başlayın",
+      assetTitle: "Para ve mülk",
+      assetDetail: "Vadesiz hesap, birikim, yatırım, nakit veya mülk.",
+      liabilityTitle: "Borçlarınız",
+      liabilityDetail:
+        "Kredi kartları, krediler, konut kredileri veya diğer borçlar.",
+      localNote:
+        "Banka bağlantısı gerekmez. Hesap eklemek işlem geçmişinizi değiştirmez.",
     },
     unresolvedAll: {
       title: "Takip edilen bakiyeler daha sonra başlıyor",
@@ -347,10 +359,25 @@ export const tr = {
     },
     form: {
       name: "Hesap adı",
+      nameHint:
+        "Acil durum fonu gibi kolay tanıyacağınız kısa bir ad kullanın.",
       type: "Hesap türü",
+      typeHint: "Bu bakiyenin net değerinize nasıl yansıyacağını seçin.",
+      assetDescription: "Sahip olduğunuz ve değer ekleyen bir hesap.",
+      liabilityDescription: "Borçlu olduğunuz ve değeri azaltan bir tutar.",
       initialBalance: "İlk bakiye",
+      balanceHint: "Seçilen tarihte kullanılabilir olan bakiyeyi girin.",
       liabilityHint: "Borçları pozitif borç tutarı olarak girin.",
       effectiveDate: "Geçerlilik tarihi",
+      dateHint: "Hesap geçmişiniz bu tarihten başlar.",
+      guideTitle: "Sonra ne olur",
+      guideType:
+        "Hesap türü, bakiyenin net değere eklenmesini veya net değerden düşülmesini belirler.",
+      guideBalance: "Bu ilk bakiye, hesabın geçmişindeki ilk kayıt olur.",
+      guideLocal:
+        "Hesap bu yerel defterde kalır; daha sonra güncellenebilir veya arşivlenebilir.",
+      readyHint:
+        "İstediğiniz zaman daha fazla hesap ekleyebilir veya bu bakiyeyi güncelleyebilirsiniz.",
       replaceHint: "Kaydetmek aynı tarihteki mevcut bakiyeyi değiştirir.",
       closingDate: "Kapanış tarihi",
       confirmZero:

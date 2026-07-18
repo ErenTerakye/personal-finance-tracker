@@ -33,10 +33,73 @@ describe("net worth workflow", () => {
       await screen.findByRole("heading", { name: "Accounts", level: 1 }),
     ).toBeVisible();
     expect(screen.getByText("Add your first account")).toBeVisible();
+    expect(screen.getByText("Start with what you know")).toBeVisible();
+    expect(screen.getByText(/No bank connection is required/)).toBeVisible();
+    expect(screen.getAllByRole("button", { name: "Add account" })).toHaveLength(
+      1,
+    );
     expect(
       screen.queryByRole("img", { name: /Net worth over time/ }),
     ).toBeNull();
     expect(document.title).toContain("Accounts");
+  });
+
+  it("guides and submits first-account setup", async () => {
+    window.history.pushState({}, "", "/accounts");
+    const fetchMock = mockFetch({
+      "/api/settings": { currency: "USD" },
+      "/api/accounts": {
+        notice: "Account added.",
+        notice_code: "account.created",
+        account: {},
+      },
+      "/api/net-worth/overview": overview(emptySummary, [], []),
+    });
+
+    render(<App />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Add account" }),
+    );
+    const dialog = screen.getByRole("dialog", { name: "Add account" });
+    expect(dialog).toHaveClass("account-setup-dialog");
+    expect(
+      within(dialog).getByRole("heading", { name: "What happens next" }),
+    ).toBeVisible();
+
+    await userEvent.click(
+      within(dialog).getByRole("radio", { name: /Liability/ }),
+    );
+    expect(
+      within(dialog).getByText("Enter liabilities as a positive amount owed."),
+    ).toBeVisible();
+    await userEvent.type(
+      within(dialog).getByRole("textbox", { name: "Account name" }),
+      "Travel card",
+    );
+    await userEvent.type(
+      within(dialog).getByRole("textbox", { name: "Initial balance" }),
+      "725.40",
+    );
+    const effectiveDate = within(dialog).getByLabelText("Effective date");
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Add account" }),
+    );
+
+    const createRequest = fetchMock.mock.calls.find(
+      ([input]) => String(input) === "/api/accounts",
+    );
+    expect(createRequest).toBeDefined();
+    const options = (
+      createRequest as unknown as [RequestInfo | URL, RequestInit | undefined]
+    )?.[1];
+    expect(options?.method).toBe("POST");
+    expect(JSON.parse(String(options?.body))).toEqual({
+      name: "Travel card",
+      type: "liability",
+      initial_balance: "725.40",
+      initial_balance_date: (effectiveDate as HTMLInputElement).value,
+    });
   });
 
   it("renders signed totals, account composition, focusable points, and table data", async () => {

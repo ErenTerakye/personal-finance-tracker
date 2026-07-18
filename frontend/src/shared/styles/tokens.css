@@ -96,6 +96,16 @@
     --line-compact: 1.35;
     --line-normal: 1.55;
 
+    /* Role-based tracking keeps body copy and financial figures at each font's
+       natural spacing. Use tighter values only for large sans-serif headings. */
+    --tracking-display: -0.035em;
+    --tracking-title: -0.02em;
+    --tracking-heading: -0.01em;
+    --tracking-action: normal;
+    --tracking-numeric: normal;
+    --tracking-label: 0.04em;
+    --tracking-label-strong: 0.065em;
+
     accent-color: var(--action);
     scrollbar-color: var(--rule-strong) transparent;
   }

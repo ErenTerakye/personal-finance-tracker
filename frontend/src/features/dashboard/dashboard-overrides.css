@@ -17,7 +17,7 @@
     font-family: var(--font-mono);
     font-size: clamp(2.6rem, 9cqi, 5.5rem);
     font-weight: 600;
-    letter-spacing: -0.045em;
+    letter-spacing: var(--tracking-numeric);
     line-height: var(--line-tight);
     overflow-wrap: anywhere;
   }

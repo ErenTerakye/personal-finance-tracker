@@ -6,7 +6,6 @@ import {
   Landmark,
   Plus,
   ShieldCheck,
-  Sparkles,
   WalletCards,
 } from "lucide-react";
 import { useState } from "react";
@@ -37,33 +36,65 @@ export function WealthFirstUse({ onAdd }: { onAdd: () => void }) {
   return (
     <section className="wealth-onboarding" aria-labelledby="wealth-first-title">
       <div className="wealth-onboarding-copy">
+        <span className="wealth-onboarding-icon" aria-hidden="true">
+          <WalletCards />
+        </span>
         <p className="eyebrow">{t("netWorth.firstUse.eyebrow")}</p>
         <h2 id="wealth-first-title">{t("netWorth.firstUse.title")}</h2>
         <p>{t("netWorth.firstUse.message")}</p>
+        <ul className="wealth-onboarding-benefits" role="list">
+          <li>
+            <CheckCircle2 aria-hidden="true" />
+            {t("netWorth.firstUse.benefitAccounts")}
+          </li>
+          <li>
+            <CheckCircle2 aria-hidden="true" />
+            {t("netWorth.firstUse.benefitHistory")}
+          </li>
+          <li>
+            <CheckCircle2 aria-hidden="true" />
+            {t("netWorth.firstUse.benefitLocal")}
+          </li>
+        </ul>
         <ActionButton icon={Plus} onClick={onAdd}>
           {t("netWorth.actions.addAccount")}
         </ActionButton>
       </div>
-      <div className="wealth-onboarding-preview" aria-hidden="true">
-        <div className="onboarding-preview-total">
-          <span>{t("netWorth.total")}</span>
-          <strong>—</strong>
-          <Sparkles />
+      <aside
+        className="wealth-onboarding-guide"
+        aria-labelledby="wealth-first-guide-title"
+      >
+        <header>
+          <p className="eyebrow">{t("netWorth.firstUse.guideEyebrow")}</p>
+          <h3 id="wealth-first-guide-title">
+            {t("netWorth.firstUse.guideTitle")}
+          </h3>
+        </header>
+        <div className="wealth-onboarding-types">
+          <article>
+            <span aria-hidden="true">
+              <Landmark />
+            </span>
+            <div>
+              <h4>{t("netWorth.firstUse.assetTitle")}</h4>
+              <p>{t("netWorth.firstUse.assetDetail")}</p>
+            </div>
+          </article>
+          <article>
+            <span aria-hidden="true">
+              <WalletCards />
+            </span>
+            <div>
+              <h4>{t("netWorth.firstUse.liabilityTitle")}</h4>
+              <p>{t("netWorth.firstUse.liabilityDetail")}</p>
+            </div>
+          </article>
         </div>
-        <div className="onboarding-preview-cards">
-          <span>
-            <Landmark />
-            {t("netWorth.assets")}
-          </span>
-          <span>
-            <WalletCards />
-            {t("netWorth.liabilities")}
-          </span>
+        <div className="wealth-onboarding-local-note">
+          <ShieldCheck aria-hidden="true" />
+          <p>{t("netWorth.firstUse.localNote")}</p>
         </div>
-        <svg viewBox="0 0 440 150" preserveAspectRatio="none">
-          <path d="M8 132 C 70 112, 102 124, 152 84 S 252 92, 298 52 S 374 46, 432 10" />
-        </svg>
-      </div>
+      </aside>
     </section>
   );
 }

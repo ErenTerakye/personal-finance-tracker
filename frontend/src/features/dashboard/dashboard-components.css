@@ -114,7 +114,7 @@
     color: var(--muted);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
-    letter-spacing: 0.065em;
+    letter-spacing: var(--tracking-label);
     line-height: var(--line-compact);
     text-transform: uppercase;
   }
@@ -166,7 +166,7 @@
     font-family: var(--font-mono);
     font-size: 0.6875rem;
     font-weight: var(--font-weight-semibold);
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-label);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -304,7 +304,7 @@
     color: var(--muted);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
-    letter-spacing: 0.055em;
+    letter-spacing: var(--tracking-label);
     line-height: var(--line-compact);
     text-transform: uppercase;
   }
@@ -873,7 +873,7 @@
     color: var(--muted);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-label-strong);
     text-transform: uppercase;
   }
 

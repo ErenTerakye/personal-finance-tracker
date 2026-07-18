@@ -218,7 +218,18 @@ export const en = {
       eyebrow: "Manual, local balances",
       title: "Add your first account",
       message:
-        "Monthly cashflow shows income minus expenses. Net worth uses dated balances for assets and debts, stored only in this local ledger.",
+        "Bring the accounts that shape your financial position into one clear, private view. Start with any balance you know today.",
+      benefitAccounts: "Track assets and debts side by side.",
+      benefitHistory: "Build a useful history as balances change.",
+      benefitLocal: "Keep every balance in your local ledger.",
+      guideEyebrow: "A simple starting point",
+      guideTitle: "Start with what you know",
+      assetTitle: "Money and property",
+      assetDetail: "Checking, savings, investments, cash, or property.",
+      liabilityTitle: "Money you owe",
+      liabilityDetail: "Credit cards, loans, mortgages, or other debt.",
+      localNote:
+        "No bank connection is required. Adding an account does not change your transaction history.",
     },
     unresolvedAll: {
       title: "Tracked balances begin later",
@@ -345,10 +356,25 @@ export const en = {
     },
     form: {
       name: "Account name",
+      nameHint: "Use a short name you will recognize, such as Emergency fund.",
       type: "Account type",
+      typeHint: "Choose how this balance contributes to your net worth.",
+      assetDescription: "Something you own that adds value.",
+      liabilityDescription: "Money you owe that reduces value.",
       initialBalance: "Initial balance",
+      balanceHint: "Enter the balance available on the selected date.",
       liabilityHint: "Enter liabilities as a positive amount owed.",
       effectiveDate: "Effective date",
+      dateHint: "Your history starts from this date.",
+      guideTitle: "What happens next",
+      guideType:
+        "The account type determines whether the balance adds to or subtracts from net worth.",
+      guideBalance:
+        "This opening balance becomes the first point in the account's history.",
+      guideLocal:
+        "The account stays in this local ledger and can be updated or archived later.",
+      readyHint:
+        "You can add more accounts or update this balance at any time.",
       replaceHint: "Saving replaces an existing balance on the same date.",
       closingDate: "Closing date",
       confirmZero:

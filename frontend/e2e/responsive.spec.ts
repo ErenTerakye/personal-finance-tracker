@@ -22,6 +22,41 @@ test("formats the supported high-value boundary without losing a cent", async ({
   await expect(page.getByText("$90,071,992,547,409.90")).toHaveCount(0);
 });
 
+test("keeps compact account setup padded and action-focused", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 900 });
+  await mockApi(page);
+  await page.goto("/accounts");
+
+  await page.getByRole("button", { name: "Add account" }).click();
+  const dialog = page.getByRole("dialog", { name: "Add account" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator(".account-setup-guide")).toBeHidden();
+  await expect(dialog.locator(".account-setup-actions")).toBeInViewport();
+  await expectDialogFitsViewport(page, dialog);
+
+  const layout = await dialog.evaluate((node) => {
+    const fields = node.querySelector<HTMLElement>(".account-setup-fields");
+    const typeCard = node.querySelector<HTMLElement>(
+      ".account-type-options span",
+    );
+    const actions = node.querySelector<HTMLElement>(".account-setup-actions");
+    if (!fields || !typeCard || !actions) {
+      throw new Error("Expected compact account setup regions");
+    }
+    return {
+      fieldPadding: Number.parseFloat(getComputedStyle(fields).paddingInline),
+      typeCardHeight: typeCard.getBoundingClientRect().height,
+      actionsPosition: getComputedStyle(actions).position,
+    };
+  });
+
+  expect(layout.fieldPadding).toBeGreaterThanOrEqual(24);
+  expect(layout.typeCardHeight).toBeLessThanOrEqual(96);
+  expect(layout.actionsPosition).toBe("sticky");
+});
+
 test("uses the full recent transaction card as its hit target", async ({
   page,
 }) => {
@@ -213,22 +248,31 @@ test("keeps compact navigation live through rapid tab switches", async ({
       );
       if (!link) throw new Error(`Missing compact navigation link ${nextPath}`);
 
+      const surfaceProbe = document.createElement("span");
+      surfaceProbe.style.backgroundColor = "var(--surface)";
+      element.append(surfaceProbe);
+
       link.click();
       const current = element.querySelector<HTMLAnchorElement>(
         'a[aria-current="page"]',
       );
-      return {
+      const state = {
         backdropFilter: getComputedStyle(element).backdropFilter,
+        backgroundColor: getComputedStyle(element).backgroundColor,
         currentPath: current?.getAttribute("href"),
         periodSnapshotActive: document.documentElement.classList.contains(
           "period-view-transition",
         ),
         pathname: window.location.pathname,
+        surface: getComputedStyle(surfaceProbe).backgroundColor,
       };
+      surfaceProbe.remove();
+      return state;
     }, path);
 
-    expect(state).toEqual({
-      backdropFilter: "blur(16px)",
+    expect(state.backdropFilter).toBe("none");
+    expect(state.backgroundColor).toBe(state.surface);
+    expect(state).toMatchObject({
       currentPath: path,
       periodSnapshotActive: false,
       pathname: path,
@@ -463,6 +507,38 @@ test("opens category guardrails without covering or rearranging cards", async ({
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await expect(inspector).toBeHidden();
   expect(await readCardGeometry()).toEqual(before);
+});
+
+test("keeps the budget board scroll position when its period changes", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 700 });
+  await mockApi(page);
+  await page.goto("/budgets?month=6&year=2026");
+
+  const boardPeriod = page.locator(".plan-period-control");
+  await boardPeriod.scrollIntoViewIfNeeded();
+  const scrollY = await page.evaluate(() => window.scrollY);
+  const boardTop = await page
+    .locator(".plan-board")
+    .evaluate((board) => board.getBoundingClientRect().top);
+  expect(scrollY).toBeGreaterThan(0);
+
+  await boardPeriod
+    .getByRole("button", {
+      name: "Previous month, May 2026",
+    })
+    .click();
+
+  await expect(page).toHaveURL(/month=5&year=2026/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollY);
+  await expect
+    .poll(() =>
+      page
+        .locator(".plan-board")
+        .evaluate((board) => Math.round(board.getBoundingClientRect().top)),
+    )
+    .toBe(Math.round(boardTop));
 });
 
 test("keeps the compact app bar configured above period snapshots", async ({

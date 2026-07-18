@@ -102,7 +102,7 @@
   .page-heading h1 {
     max-inline-size: 18ch;
     font-size: clamp(2rem, 4.5cqi, 2.75rem);
-    letter-spacing: -0.04em;
+    letter-spacing: var(--tracking-title);
     overflow-wrap: anywhere;
   }
 
@@ -127,7 +127,7 @@
     color: var(--action);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
-    letter-spacing: 0.075em;
+    letter-spacing: var(--tracking-label-strong);
     line-height: var(--line-compact);
     text-transform: uppercase;
   }

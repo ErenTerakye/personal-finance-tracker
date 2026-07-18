@@ -1,4 +1,15 @@
-import { Archive, History, Pencil, Save, Trash2 } from "lucide-react";
+import {
+  Archive,
+  CalendarDays,
+  CreditCard,
+  History,
+  Landmark,
+  ListChecks,
+  Pencil,
+  Save,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 import { useMemo, useReducer, useState } from "react";
 import { api } from "../../api/client";
 import { SubmitButton } from "../../shared/components/actions";
@@ -137,78 +148,146 @@ export function AddAccountDialog({ open, onClose, onChanged }: DialogProps) {
       description={t("netWorth.dialog.addDescription")}
       onClose={onClose}
       initialFocusId="account-name"
+      className="entry-dialog account-setup-dialog"
     >
       {mutation.status === "error" ? (
         <ErrorBanner message={mutation.error.message} />
       ) : null}
       <form
-        className="net-worth-form"
+        className="net-worth-form account-setup-form"
         onSubmit={(event) => {
           event.preventDefault();
           void mutation.mutate(form);
         }}
       >
-        <Field id="account-name" label={t("netWorth.form.name")}>
-          <input
-            id="account-name"
-            name="name"
-            required
-            autoComplete="off"
-            value={form.name}
-            onChange={(event) => setForm({ ...form, name: event.target.value })}
-          />
-        </Field>
-        <fieldset>
-          <legend>{t("netWorth.form.type")}</legend>
-          <div className="account-type-options">
-            {(["asset", "liability"] as const).map((type) => (
-              <label key={type}>
+        <div className="account-setup-content">
+          <div className="account-setup-fields">
+            <fieldset className="account-kind-fieldset">
+              <legend>{t("netWorth.form.type")}</legend>
+              <p id="account-type-hint">{t("netWorth.form.typeHint")}</p>
+              <div className="account-type-options">
+                {(["asset", "liability"] as const).map((type) => {
+                  const Icon = type === "asset" ? Landmark : CreditCard;
+                  return (
+                    <label key={type}>
+                      <input
+                        type="radio"
+                        name="account-type"
+                        value={type}
+                        aria-describedby="account-type-hint"
+                        checked={form.type === type}
+                        onChange={() => setForm({ ...form, type })}
+                      />
+                      <span>
+                        <Icon aria-hidden="true" />
+                        <strong>{t(`netWorth.account.${type}`)}</strong>
+                        <small>
+                          {t(
+                            type === "asset"
+                              ? "netWorth.form.assetDescription"
+                              : "netWorth.form.liabilityDescription",
+                          )}
+                        </small>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <Field
+              id="account-name"
+              label={t("netWorth.form.name")}
+              hint={t("netWorth.form.nameHint")}
+            >
+              <input
+                id="account-name"
+                name="name"
+                required
+                autoComplete="off"
+                enterKeyHint="next"
+                value={form.name}
+                onChange={(event) =>
+                  setForm({ ...form, name: event.target.value })
+                }
+              />
+            </Field>
+            <div className="account-opening-fields">
+              <Field
+                id="initial-balance"
+                label={t("netWorth.form.initialBalance")}
+                hint={
+                  form.type === "liability"
+                    ? t("netWorth.form.liabilityHint")
+                    : t("netWorth.form.balanceHint")
+                }
+              >
                 <input
-                  type="radio"
-                  name="account-type"
-                  checked={form.type === type}
-                  onChange={() => setForm({ ...form, type })}
+                  id="initial-balance"
+                  name="initial_balance"
+                  inputMode="decimal"
+                  pattern="[0-9]+(?:\.[0-9]{1,2})?"
+                  required
+                  enterKeyHint="next"
+                  value={form.initial_balance}
+                  onChange={(event) =>
+                    setForm({ ...form, initial_balance: event.target.value })
+                  }
                 />
-                <span>{t(`netWorth.account.${type}`)}</span>
-              </label>
-            ))}
+              </Field>
+              <Field
+                id="initial-date"
+                label={t("netWorth.form.effectiveDate")}
+                hint={t("netWorth.form.dateHint")}
+              >
+                <input
+                  id="initial-date"
+                  name="initial_balance_date"
+                  type="date"
+                  max={todayIso()}
+                  required
+                  value={form.initial_balance_date}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      initial_balance_date: event.target.value,
+                    })
+                  }
+                />
+              </Field>
+            </div>
           </div>
-        </fieldset>
-        <Field
-          id="initial-balance"
-          label={t("netWorth.form.initialBalance")}
-          hint={t("netWorth.form.liabilityHint")}
-        >
-          <input
-            id="initial-balance"
-            name="initial_balance"
-            inputMode="decimal"
-            pattern="[0-9]+(?:\.[0-9]{1,2})?"
-            required
-            value={form.initial_balance}
-            onChange={(event) =>
-              setForm({ ...form, initial_balance: event.target.value })
-            }
+          <aside
+            className="account-setup-guide"
+            aria-labelledby="setup-guide-title"
+          >
+            <span className="account-setup-guide-icon" aria-hidden="true">
+              <ListChecks />
+            </span>
+            <h3 id="setup-guide-title">{t("netWorth.form.guideTitle")}</h3>
+            <ol>
+              <li>
+                <Landmark aria-hidden="true" />
+                <span>{t("netWorth.form.guideType")}</span>
+              </li>
+              <li>
+                <CalendarDays aria-hidden="true" />
+                <span>{t("netWorth.form.guideBalance")}</span>
+              </li>
+              <li>
+                <ShieldCheck aria-hidden="true" />
+                <span>{t("netWorth.form.guideLocal")}</span>
+              </li>
+            </ol>
+          </aside>
+        </div>
+        <div className="account-setup-actions">
+          <p>{t("netWorth.form.readyHint")}</p>
+          <DialogActions
+            busy={mutation.status === "pending"}
+            onClose={onClose}
+            submit={t("netWorth.actions.addAccount")}
           />
-        </Field>
-        <Field id="initial-date" label={t("netWorth.form.effectiveDate")}>
-          <input
-            id="initial-date"
-            name="initial_balance_date"
-            type="date"
-            max={todayIso()}
-            required
-            value={form.initial_balance_date}
-            onChange={(event) =>
-              setForm({ ...form, initial_balance_date: event.target.value })
-            }
-          />
-        </Field>
-        <DialogActions
-          busy={mutation.status === "pending"}
-          onClose={onClose}
-          submit={t("netWorth.actions.addAccount")}
-        />
+        </div>
       </form>
     </ModalDialog>
   );

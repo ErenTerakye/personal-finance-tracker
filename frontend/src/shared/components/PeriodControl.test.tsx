@@ -256,11 +256,13 @@ describe("PeriodControl", () => {
     const trigger = screen.getByRole("button", {
       name: "Choose period, current period is June 2026",
     });
+    const focus = vi.spyOn(trigger, "focus");
     await userEvent.click(trigger);
     await userEvent.click(screen.getByRole("button", { name: "July" }));
 
     await waitFor(() => expect(trigger).toHaveFocus());
     expect(trigger).toHaveAttribute("data-focus-origin", "pointer");
+    expect(focus).toHaveBeenLastCalledWith({ preventScroll: true });
   });
 
   it("discards an uncommitted year when the sheet is dismissed", async () => {

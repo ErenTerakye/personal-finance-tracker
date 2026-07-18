@@ -90,9 +90,9 @@
 
   .net-worth-range-options input:checked + span,
   .account-type-options input:checked + span {
-    color: var(--surface);
-    background: var(--ink);
-    border-color: var(--ink);
+    color: var(--ink);
+    background: var(--surface-3);
+    border-color: var(--rule-strong);
   }
 
   .net-worth-range-options input:focus-visible + span,
@@ -170,7 +170,7 @@
     font-family: var(--font-mono);
     font-size: clamp(2.4rem, 5.2cqi, 4.8rem);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.065em;
+    letter-spacing: var(--tracking-numeric);
     line-height: 0.95;
     overflow-wrap: anywhere;
   }
@@ -245,7 +245,7 @@
     font-family: var(--font-mono);
     font-size: clamp(1.35rem, 2.6cqi, 2rem);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.035em;
+    letter-spacing: var(--tracking-numeric);
     overflow-wrap: anywhere;
   }
 
@@ -854,117 +854,164 @@
   }
 
   .wealth-onboarding {
-    position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.85fr);
-    align-items: center;
-    gap: clamp(2rem, 8cqi, 7rem);
-    min-block-size: min(46rem, 74dvh);
-    padding: clamp(1.5rem, 6cqi, 5rem);
-    color: var(--surface);
+    grid-template-columns: minmax(0, 1.12fr) minmax(18rem, 0.88fr);
+    min-block-size: min(34rem, 66dvh);
     background:
       radial-gradient(
-        circle at 80% 18%,
-        color-mix(in srgb, var(--action) 38%, transparent),
+        circle at 12% 5%,
+        color-mix(in srgb, var(--action) 10%, transparent),
         transparent 34%
       ),
-      var(--ink);
-    border: 1px solid var(--ink);
-    border-radius: calc(var(--radius) * 1.8);
+      var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: calc(var(--radius) * 1.45);
+    box-shadow: var(--shadow-sm);
     overflow: clip;
   }
 
   .wealth-onboarding-copy {
-    position: relative;
-    z-index: 1;
     display: grid;
+    align-content: center;
     justify-items: start;
-    gap: 1rem;
-    max-inline-size: 48rem;
+    gap: clamp(2rem, 8cqi, 7rem);
+    padding: clamp(1.5rem, 6cqi, 5rem);
   }
 
-  .wealth-onboarding h1 {
-    color: inherit;
-    font-size: clamp(3.2rem, 10cqi, 8rem);
-    letter-spacing: -0.07em;
-    line-height: 0.88;
+  .wealth-onboarding-icon {
+    display: grid;
+    place-items: center;
+    inline-size: 3.5rem;
+    block-size: 3.5rem;
+    color: var(--action);
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--action) 16%, var(--surface)),
+      var(--surface)
+    );
+    border: 1px solid color-mix(in srgb, var(--action) 24%, var(--rule));
+    border-radius: 1rem;
+  }
+
+  .wealth-onboarding-icon svg {
+    inline-size: 1.65rem;
+    block-size: 1.65rem;
+  }
+
+  .wealth-onboarding h2 {
+    max-inline-size: 14ch;
+    font-size: clamp(2rem, 5cqi, 3.65rem);
+    letter-spacing: var(--tracking-title);
+    line-height: 1;
+    text-wrap: balance;
   }
 
   .wealth-onboarding p:not(.eyebrow) {
-    max-inline-size: 58ch;
-    color: color-mix(in srgb, var(--surface) 72%, transparent);
-    font-size: clamp(1rem, 2cqi, 1.15rem);
+    max-inline-size: 54ch;
+    color: var(--muted);
     text-wrap: pretty;
   }
 
-  .wealth-onboarding-preview {
-    position: relative;
+  .wealth-onboarding-benefits {
     display: grid;
-    gap: 0.75rem;
-    padding: 1.2rem;
-    color: var(--ink);
-    background: var(--surface);
-    border: 1px solid color-mix(in srgb, var(--surface) 50%, transparent);
-    border-radius: calc(var(--radius) * 1.4);
-    rotate: 2deg;
+    gap: 1rem;
+    margin: 0.25rem 0;
   }
 
-  .onboarding-preview-total {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.5rem;
-    padding: 1rem;
-    background: var(--surface-2);
-    border-radius: var(--radius);
-  }
-
-  .onboarding-preview-total strong {
-    grid-column: 1 / -1;
-    font-family: var(--font-mono);
-    font-size: clamp(2rem, 5cqi, 4rem);
-  }
-
-  .onboarding-preview-total svg {
-    color: var(--action);
-  }
-
-  .onboarding-preview-cards {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.65rem;
-  }
-
-  .onboarding-preview-cards span {
+  .wealth-onboarding-benefits li {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    min-block-size: 5rem;
-    padding: 0.75rem;
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    font-weight: var(--font-weight-semibold);
+    gap: 0.75rem;
+    color: var(--muted);
+    font-size: var(--font-size-sm);
   }
 
-  .onboarding-preview-cards span:first-child svg {
+  .wealth-onboarding-benefits svg {
+    flex: 0 0 auto;
+    inline-size: 1.1rem;
+    block-size: 1.1rem;
     color: var(--cash);
   }
 
-  .onboarding-preview-cards span:last-child svg {
-    color: var(--expenses);
+  .wealth-onboarding-guide {
+    display: grid;
+    align-content: center;
+    gap: 1.25rem;
+    padding: 1.2rem;
+    background: var(--surface-2);
+    border-inline-start: 1px solid var(--rule);
   }
 
-  .wealth-onboarding-preview > svg {
-    inline-size: 100%;
-    block-size: 8rem;
+  .wealth-onboarding-guide header {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .wealth-onboarding-guide h3 {
+    font-size: var(--font-size-xl);
+    letter-spacing: var(--tracking-title);
+  }
+
+  .wealth-onboarding-types {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .wealth-onboarding-types article {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+
+  .wealth-onboarding-types article > span {
+    display: grid;
+    place-items: center;
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
     color: var(--action);
+    background: color-mix(in srgb, var(--action) 9%, var(--surface));
+    border-radius: 0.75rem;
   }
 
-  .wealth-onboarding-preview > svg path {
-    fill: none;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-width: 5;
-    vector-effect: non-scaling-stroke;
+  .wealth-onboarding-types article:first-child > span {
+    color: var(--cash);
+    background: color-mix(in srgb, var(--cash) 9%, var(--surface));
+  }
+
+  .wealth-onboarding-types article:last-child > span {
+    color: var(--expenses);
+    background: color-mix(in srgb, var(--expenses) 9%, var(--surface));
+  }
+
+  .wealth-onboarding-types h4 {
+    font-size: var(--font-size-base);
+  }
+
+  .wealth-onboarding-types p:not(.eyebrow) {
+    margin-block-start: 0.25rem;
+    font-size: var(--font-size-sm);
+  }
+
+  .wealth-onboarding-local-note {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.65rem;
+    padding-block-start: 1rem;
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .wealth-onboarding-local-note svg {
+    color: var(--cash);
+  }
+
+  .wealth-onboarding-local-note p:not(.eyebrow) {
+    font-size: var(--font-size-sm);
   }
 
   .wealth-muted {
@@ -974,7 +1021,7 @@
 
   .net-worth-form {
     display: grid;
-    gap: 1rem;
+    gap: 0.5rem;
     padding-block-start: 1rem;
   }
 
@@ -985,6 +1032,183 @@
   .net-worth-form input {
     min-block-size: var(--tap-target);
     font-size: 1rem;
+  }
+
+  .account-setup-dialog {
+    inline-size: min(52rem, calc(100% - 1.5rem));
+  }
+
+  .account-setup-dialog .modal-header p {
+    max-inline-size: 50ch;
+  }
+
+  .account-setup-form {
+    gap: 0;
+    padding-block-start: 0;
+  }
+
+  .account-setup-dialog > .error-banner {
+    margin: 1.25rem clamp(1.25rem, 4vw, 2rem) 0;
+  }
+
+  .account-setup-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(14rem, 0.72fr);
+  }
+
+  .account-setup-fields {
+    display: grid;
+    gap: 1rem;
+    padding: clamp(1.1rem, 3vw, 1.5rem) clamp(1rem, 4vw, 2rem);
+  }
+
+  .account-kind-fieldset {
+    padding: 0;
+    border: 0;
+  }
+
+  .account-kind-fieldset legend {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .account-kind-fieldset > p {
+    margin-block-start: 0.25rem;
+    color: var(--muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .account-setup-dialog .account-type-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-block-start: 0.65rem;
+  }
+
+  .account-setup-dialog .account-type-options label {
+    min-inline-size: 0;
+  }
+
+  .account-setup-dialog .account-type-options span {
+    grid-template-columns: auto minmax(0, 1fr);
+    place-items: initial;
+    align-items: center;
+    gap: 0.25rem 0.65rem;
+    inline-size: 100%;
+    min-block-size: 5.5rem;
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    text-align: start;
+  }
+
+  .account-setup-dialog .account-type-options span > svg {
+    grid-row: 1 / span 2;
+    inline-size: 1.4rem;
+    block-size: 1.4rem;
+    color: var(--action);
+  }
+
+  .account-setup-dialog .account-type-options label:first-child svg {
+    color: var(--cash);
+  }
+
+  .account-setup-dialog .account-type-options label:last-child svg {
+    color: var(--expenses);
+  }
+
+  .account-setup-dialog .account-type-options strong {
+    color: var(--ink);
+    font-size: var(--font-size-base);
+  }
+
+  .account-setup-dialog .account-type-options small {
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  .account-setup-dialog .account-type-options input:checked + span {
+    background: color-mix(in srgb, var(--action) 8%, var(--surface));
+    border-color: var(--action);
+    box-shadow: inset 0 0 0 1px var(--action);
+  }
+
+  .account-opening-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, 0.78fr);
+    align-items: start;
+    gap: 1rem;
+  }
+
+  .account-setup-guide {
+    display: grid;
+    align-content: start;
+    gap: 0.75rem;
+    padding: clamp(1.25rem, 4vw, 2rem);
+    background: var(--surface-2);
+    border-inline-start: 1px solid var(--rule);
+  }
+
+  .account-setup-guide-icon {
+    display: grid;
+    place-items: center;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    color: var(--action);
+    background: color-mix(in srgb, var(--action) 10%, var(--surface));
+    border-radius: 0.8rem;
+  }
+
+  .account-setup-guide h3 {
+    font-size: var(--font-size-lg);
+    letter-spacing: var(--tracking-title);
+  }
+
+  .account-setup-guide ol {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .account-setup-guide li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0.55rem;
+    color: var(--muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .account-setup-guide li svg {
+    inline-size: 1.1rem;
+    block-size: 1.1rem;
+    color: var(--action);
+  }
+
+  .account-setup-actions {
+    position: sticky;
+    z-index: 2;
+    inset-block-end: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem clamp(1.25rem, 4vw, 2rem);
+    background: var(--surface);
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .account-setup-actions > p {
+    color: var(--muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .account-setup-actions .dialog-actions {
+    flex-wrap: nowrap;
+    padding: 0;
+    border: 0;
   }
 
   .dialog-actions {
@@ -1040,7 +1264,7 @@
   .balance-studio-dialog .modal-header h2 {
     color: inherit;
     font-size: clamp(1.75rem, 4cqi, 2.65rem);
-    letter-spacing: -0.045em;
+    letter-spacing: var(--tracking-title);
   }
 
   .balance-studio-dialog .modal-header p {
@@ -1162,7 +1386,7 @@
     font-family: var(--font-mono);
     font-size: clamp(1.45rem, 3.3cqi, 2.25rem);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.04em;
+    letter-spacing: var(--tracking-numeric);
     line-height: 1.1;
     overflow-wrap: anywhere;
   }
@@ -1515,7 +1739,7 @@
 
     .balance-studio-dialog .modal-header h2 {
       font-size: 1.7rem;
-      letter-spacing: -0.035em;
+      letter-spacing: var(--tracking-title);
     }
 
     .balance-studio-dialog .modal-header p {
@@ -1758,7 +1982,16 @@
       align-content: center;
     }
 
-    .wealth-onboarding-preview {
+    .wealth-onboarding-guide {
+      border-block-start: 1px solid var(--rule);
+      border-inline-start: 0;
+    }
+
+    .account-setup-content {
+      grid-template-columns: 1fr;
+    }
+
+    .account-setup-guide {
       display: none;
     }
 
@@ -1775,6 +2008,35 @@
     .wealth-header-actions,
     .wealth-header-actions .button {
       inline-size: 100%;
+    }
+
+    .wealth-onboarding-copy,
+    .wealth-onboarding-guide {
+      padding: 1.5rem;
+    }
+
+    .account-setup-dialog .account-type-options,
+    .account-opening-fields,
+    .account-setup-actions {
+      grid-template-columns: 1fr;
+    }
+
+    .account-setup-dialog .account-type-options span {
+      min-block-size: 5rem;
+    }
+
+    .account-setup-actions > p {
+      display: none;
+    }
+
+    .account-setup-actions .dialog-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+      inline-size: 100%;
+    }
+
+    .account-setup-actions .button {
+      min-inline-size: 0;
     }
 
     .wealth-scoreboard > article,
@@ -1940,6 +2202,16 @@
       color: CanvasText;
       background: Canvas !important;
       border: 2px solid CanvasText !important;
+    }
+
+    .wealth-onboarding-guide,
+    .account-setup-guide {
+      background: Canvas;
+    }
+
+    .account-setup-dialog .account-type-options input:checked + span {
+      border: 2px solid Highlight;
+      box-shadow: none;
     }
 
     .net-worth-line,

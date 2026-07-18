@@ -50,6 +50,14 @@ for (const relativePath of sourceCssFiles) {
   if (/@import\s/i.test(source)) {
     throw new Error(`${relativePath} must not contain runtime @import rules.`);
   }
+  const nonTokenTracking = [
+    ...source.matchAll(/letter-spacing\s*:\s*([^;]+);/g),
+  ].find((match) => !/^var\(--tracking-[a-z-]+\)$/.test(match[1].trim()));
+  if (nonTokenTracking) {
+    throw new Error(
+      `${relativePath} must use a role-based --tracking-* token for letter-spacing.`,
+    );
+  }
   const unexpected = declared.find((name) => name !== owner);
   if (unexpected) {
     throw new Error(

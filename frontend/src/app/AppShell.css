@@ -320,10 +320,9 @@
       view-transition-name: compact-navigation;
       display: block;
       padding-block-end: env(safe-area-inset-bottom);
-      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      background: var(--surface);
       border-block-start: 1px solid var(--rule);
       box-shadow: 0 -0.5rem 1.5rem rgb(5 12 19 / 0.08);
-      backdrop-filter: blur(16px);
     }
 
     .bottom-navigation ul {

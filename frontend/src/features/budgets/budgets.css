@@ -12,7 +12,7 @@
   .plan-page-heading h1 {
     max-inline-size: 16ch;
     font-size: clamp(2.25rem, 6vw, 4.75rem);
-    letter-spacing: -0.065em;
+    letter-spacing: var(--tracking-display);
   }
 
   .plan-page-heading > div:first-child > p:last-child {
@@ -101,7 +101,7 @@
     font-family: var(--font-mono);
     font-size: clamp(1.35rem, 3vw, 2.05rem);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.055em;
+    letter-spacing: var(--tracking-numeric);
     line-height: 1;
     white-space: nowrap;
   }
@@ -132,7 +132,7 @@
     margin-block-start: 0.7rem;
     color: var(--ink);
     font-size: clamp(1.65rem, 4vw, 3rem);
-    letter-spacing: -0.05em;
+    letter-spacing: var(--tracking-display);
     line-height: var(--line-tight);
     text-wrap: balance;
   }
@@ -204,7 +204,7 @@
     color: var(--muted);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-bold);
-    letter-spacing: 0.035em;
+    letter-spacing: var(--tracking-label);
     text-transform: uppercase;
   }
 
@@ -215,7 +215,7 @@
     font-size: clamp(1.25rem, 4vw, 2rem);
     font-weight: var(--font-weight-bold);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.04em;
+    letter-spacing: var(--tracking-numeric);
     overflow-wrap: anywhere;
   }
 
@@ -225,7 +225,7 @@
     font-size: var(--font-size-xs);
     font-family: var(--font-sans);
     font-weight: var(--font-weight-medium);
-    letter-spacing: 0;
+    letter-spacing: var(--tracking-action);
   }
 
   .plan-metric-alert dd {
@@ -256,7 +256,7 @@
     margin-block-start: 0.15rem;
     color: var(--ink);
     font-size: clamp(1.5rem, 4vw, 2.4rem);
-    letter-spacing: -0.045em;
+    letter-spacing: var(--tracking-title);
   }
 
   .plan-board-header > div > p:last-child {
@@ -465,7 +465,7 @@
     font-family: var(--font-mono);
     font-size: var(--font-size-xl);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.035em;
+    letter-spacing: var(--tracking-numeric);
   }
 
   .plan-category-spend span,
@@ -590,7 +590,7 @@
     margin-block-start: 0.65rem;
     color: var(--ink);
     font-size: clamp(var(--font-size-xl), 3cqi, var(--font-size-2xl));
-    letter-spacing: -0.045em;
+    letter-spacing: var(--tracking-title);
     line-height: var(--line-tight);
   }
 
@@ -631,7 +631,7 @@
     font-size: clamp(var(--font-size-base), 2.25cqi, var(--font-size-xl));
     font-weight: var(--font-weight-bold);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.035em;
+    letter-spacing: var(--tracking-numeric);
     line-height: var(--line-compact);
     overflow-wrap: anywhere;
   }
@@ -915,7 +915,7 @@
     font-size: clamp(1.85rem, 6vw, 2.7rem);
     font-weight: var(--font-weight-bold);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.045em;
+    letter-spacing: var(--tracking-numeric);
     line-height: 1;
   }
 
