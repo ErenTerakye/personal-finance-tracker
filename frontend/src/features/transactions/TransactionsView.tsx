@@ -85,7 +85,10 @@ export function TransactionsView({
   const { t } = useI18n();
   const transactionResource = useTransactions(filters);
   const categoryResource = useTransactionCategories();
-  const transactions = transactionResource.data?.transactions ?? [];
+  const transactions = useMemo(
+    () => transactionResource.data?.transactions ?? [],
+    [transactionResource.data?.transactions],
+  );
   const visibleTransactions = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
     const matches = query
@@ -145,6 +148,8 @@ export function TransactionsView({
   }
 
   useEffect(() => {
+    // Prop-to-query synchronization is deliberate; the app owns the selected period.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilters((current) => ({
       ...current,
       month: selectedPeriod.month,
@@ -162,9 +167,13 @@ export function TransactionsView({
     if (createRequestId <= handledCreateRequest.current) return;
     handledCreateRequest.current = createRequestId;
     openCreate();
+    // openCreate must read the latest mutation state without retriggering this request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [createRequestId]);
 
   useEffect(() => {
+    // Browser-history changes intentionally hydrate this feature's complete route state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilters(readTransactionFilters(selectedPeriod));
     setSearch(readSearchParam());
     setImportOpen(

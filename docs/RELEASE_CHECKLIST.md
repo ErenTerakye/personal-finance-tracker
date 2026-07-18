@@ -41,10 +41,10 @@ finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 finance-tracker web --db-path demo.sqlite3
 ```
 
-- [ ] Refresh packaged SPA assets:
+- [ ] Regenerate and verify OpenAPI types plus packaged SPA assets:
 
 ```bash
-npm run build
+npm run check:generated
 ```
 
 - [ ] Build the Python package:
@@ -56,15 +56,13 @@ npm run build
 - [ ] Run the full documented check set:
 
 ```bash
-.venv/bin/python -m pytest
+.venv/bin/python -m pytest --cov=finance_tracker --cov-report=term-missing --cov-fail-under=90
 .venv/bin/python -m ruff check .
 .venv/bin/python -m mypy
-npm test
+npm run test:coverage
 npm run lint
 npm run format:check
-npm run generate:api
-git diff --exit-code -- frontend/src/generated/api.ts
-npm run build
+npm run check:generated
 npm run check:css
 npm run check:bundle
 npm run test:e2e
@@ -73,6 +71,9 @@ npm audit --audit-level=high
 .venv/bin/python -m pip_audit
 .venv/bin/python -m build
 ```
+
+- [ ] Create and verify a disposable complete-ledger backup, then test a confirmed restore into a
+      separate temporary `--db-path`.
 
 - [ ] Confirm README badges, docs, static showcase, screenshots, packaged SPA assets, and `ROADMAP.md` describe the same release state.
 

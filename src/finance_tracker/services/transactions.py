@@ -2,7 +2,8 @@
 
 from pathlib import Path
 
-from finance_tracker.database import connect, initialize_database
+from finance_tracker.database import initialize_database
+from finance_tracker.database import transaction as database_transaction
 from finance_tracker.models.transactions import (
     Transaction,
     TransactionFilters,
@@ -33,7 +34,7 @@ class TransactionService:
             description=description,
             transaction_date=transaction_date,
         )
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             transaction = _canonical_transaction(connection, transaction)
             return TransactionRepository(connection).add(transaction)
 
@@ -46,7 +47,7 @@ class TransactionService:
         description: str | None = None,
         transaction_date: str | None = None,
     ) -> Transaction:
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             repository = TransactionRepository(connection)
             current = repository.get(transaction_id)
             updated = Transaction.create(
@@ -76,7 +77,7 @@ class TransactionService:
             category=category,
             transaction_type=parse_transaction_type(transaction_type) if transaction_type else None,
         )
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             return TransactionRepository(connection).list(filters)
 
     def list_transactions_page(
@@ -94,28 +95,28 @@ class TransactionService:
             category=category,
             transaction_type=parse_transaction_type(transaction_type) if transaction_type else None,
         )
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             repository = TransactionRepository(connection)
             return repository.list(filters, limit=limit, offset=offset), repository.count_filtered(
                 filters
             )
 
     def delete_transaction(self, transaction_id: int) -> None:
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             TransactionRepository(connection).delete(transaction_id)
 
     def transaction_exists(self, transaction: Transaction) -> bool:
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             return TransactionRepository(connection).exists_matching(
                 _canonical_transaction(connection, transaction)
             )
 
     def prepare_transaction(self, transaction: Transaction) -> Transaction:
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             return _canonical_transaction(connection, transaction)
 
     def add_transaction_if_new(self, transaction: Transaction) -> Transaction | None:
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             repository = TransactionRepository(connection)
             canonical = _canonical_transaction(connection, transaction)
             if repository.exists_matching(canonical):
@@ -123,7 +124,7 @@ class TransactionService:
             return repository.add(canonical)
 
     def count_transactions(self) -> int:
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             return TransactionRepository(connection).count()
 
 

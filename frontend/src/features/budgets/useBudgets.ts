@@ -29,7 +29,7 @@ export function useBudgets(
     async (signal: AbortSignal) => {
       const [budgetResponse, statusResponse, dashboardResponse] =
         await Promise.all([
-          api.budgets(filters, signal),
+          api.budgets({ month, year, category }, signal),
           api.budgetStatuses(month, year, signal),
           api.dashboard(month, year, signal),
         ]);

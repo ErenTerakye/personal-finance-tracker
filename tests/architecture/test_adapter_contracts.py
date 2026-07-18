@@ -11,7 +11,7 @@ from finance_tracker.web.app import create_app
 
 CLI_PARAMETER_NAMES = {
     "init": ("db_path",),
-    "web": ("host", "port", "db_path", "reload"),
+    "web": ("host", "port", "db_path", "reload", "allow_remote_unauthenticated"),
     "add": ("transaction_type", "amount", "category", "description", "transaction_date", "db_path"),
     "list": ("month", "year", "category", "transaction_type", "db_path"),
     "delete": ("transaction_id", "db_path"),
@@ -61,6 +61,9 @@ CLI_PARAMETER_NAMES = {
     "account-delete": ("account_id", "confirm", "db_path"),
     "net-worth": ("as_of", "db_path"),
     "net-worth-history": ("as_of", "months", "db_path"),
+    "ledger-backup": ("destination", "overwrite", "db_path"),
+    "ledger-verify": ("backup_path",),
+    "ledger-restore": ("backup_path", "confirm", "db_path"),
 }
 
 POSITIONAL_PARAMETERS = {
@@ -91,6 +94,9 @@ POSITIONAL_PARAMETERS = {
     ("account-balance-delete", "account_id"),
     ("account-archive", "account_id"),
     ("account-delete", "account_id"),
+    ("ledger-backup", "destination"),
+    ("ledger-verify", "backup_path"),
+    ("ledger-restore", "backup_path"),
 }
 
 OPTION_SPELLINGS = {
@@ -98,6 +104,7 @@ OPTION_SPELLINGS = {
     "account_type": ("--type",),
     "as_of": ("--as-of",),
     "allow_duplicates": ("--allow-duplicates",),
+    "allow_remote_unauthenticated": ("--allow-remote-unauthenticated",),
     "amount": ("--amount", "-a"),
     "balance": ("--balance",),
     "category": ("--category", "-c"),
@@ -116,6 +123,7 @@ OPTION_SPELLINGS = {
     "months": ("--months",),
     "name": ("--name",),
     "port": ("--port",),
+    "overwrite": ("--overwrite",),
     "preview": ("--preview",),
     "reload": ("--reload",),
     "transaction_date": ("--date",),
@@ -148,7 +156,13 @@ REQUIRED_OPTIONS = {
 
 CLI_PARAMETER_DEFAULTS = {
     "init": {"db_path": None},
-    "web": {"host": "127.0.0.1", "port": 8000, "db_path": None, "reload": False},
+    "web": {
+        "host": "127.0.0.1",
+        "port": 8000,
+        "db_path": None,
+        "reload": False,
+        "allow_remote_unauthenticated": False,
+    },
     "add": {"description": "", "transaction_date": None, "db_path": None},
     "list": {
         "month": None,
@@ -207,6 +221,9 @@ CLI_PARAMETER_DEFAULTS = {
     "account-delete": {"confirm": False, "db_path": None},
     "net-worth": {"as_of": None, "db_path": None},
     "net-worth-history": {"as_of": None, "months": 12, "db_path": None},
+    "ledger-backup": {"overwrite": False, "db_path": None},
+    "ledger-verify": {},
+    "ledger-restore": {"confirm": False, "db_path": None},
 }
 
 HTTP_OPERATIONS = {
@@ -326,7 +343,7 @@ def test_cli_command_and_parameter_manifest_is_frozen():
     root = get_command(app)
 
     assert set(root.commands) == set(CLI_PARAMETER_NAMES)
-    assert len(root.commands) == 36
+    assert len(root.commands) == 39
     for command_name, parameter_names in CLI_PARAMETER_NAMES.items():
         parameters = root.commands[command_name].params
         actual_names = tuple(parameter.name for parameter in parameters)

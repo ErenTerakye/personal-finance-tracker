@@ -5,8 +5,8 @@
 Personal Finance Tracker is a single-user, local-first layered modular monolith. The Typer CLI and
 React browser UI share one SQLite ledger on the user's machine through the same Python use cases.
 The FastAPI server binds to `127.0.0.1` by default and has no authentication, remote account,
-telemetry, cloud sync, background worker, or service worker. Binding it to a non-loopback interface
-exposes an unauthenticated financial ledger and is intentionally discouraged.
+telemetry, cloud sync, background worker, or service worker. Non-loopback binding is rejected unless
+the operator passes `--allow-remote-unauthenticated`, making that trust-boundary exception explicit.
 
 ## Containers and dependency direction
 
@@ -49,7 +49,7 @@ A CLI command or FastAPI router validates transport input and calls a concrete s
 opens a configured connection, constructs repositories for that connection, and owns the complete
 transaction. Repositories execute SQL and return domain models. Successful use cases commit at the
 service boundary; failures roll back before project exceptions are translated by the inbound
-adapter.
+adapter. The database-owned transaction context always closes its connection after either outcome.
 
 This explicit construction is deliberately small. The project has one persistence implementation
 and does not use repository protocols, a dependency-injection container, or a global server-state
@@ -117,11 +117,17 @@ Connections enable foreign keys, WAL, a busy timeout, and `synchronous=NORMAL` w
 3.14 transaction behavior. Money remains `Decimal` in Python and decimal text in SQLite and JSON;
 dates remain ISO text.
 
-The 36 CLI commands, 40 HTTP operations, OpenAPI schema names, CSV headers, SQLite schema/indexes,
+The 39 CLI commands, 40 HTTP operations, OpenAPI schema names, CSV headers, SQLite schema/indexes,
 documented canonical and compatibility browser routes, security headers, and package entrypoints
 frozen by
 [`ARCHITECTURE_CLEANUP_SPEC.md`](ARCHITECTURE_CLEANUP_SPEC.md) are compatibility contracts. Tests
 characterize those contracts, and generated OpenAPI output is changed only through the generator.
+`npm run check:generated` regenerates OpenAPI types and the packaged SPA, checks bundle budgets, and
+fails on tracked or untracked drift in either generated surface.
+
+Complete-ledger recovery is separate from interoperable CSV workflows. `LedgerRecoveryService`
+uses SQLite's backup API for consistent WAL-aware copies, verifies integrity and supported schema
+versions read-only, and restores through a verified temporary database followed by atomic replace.
 
 ## Demo source and generated artifacts
 

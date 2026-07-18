@@ -25,6 +25,8 @@ export function TransactionFilterForm({
   const { t } = useI18n();
 
   useEffect(() => {
+    // Keep the debounced input aligned with externally reset filters.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCategorySearch(filters.category || "");
   }, [filters.category]);
 

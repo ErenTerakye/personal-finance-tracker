@@ -1,7 +1,11 @@
 """SQLite connection setup and ordered schema migrations."""
 
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
+from types import TracebackType
+from typing import Literal
 
 SCHEMA_VERSION = 2
 BUSY_TIMEOUT_MS = 5_000
@@ -98,6 +102,21 @@ ON account_balance_snapshots(effective_date);
 MIGRATIONS: tuple[str, ...] = (SCHEMA_SQL, ACCOUNT_SCHEMA_SQL)
 
 
+class _ClosingConnection(sqlite3.Connection):
+    """Make direct ``with connect(...)`` usage own and close its handle."""
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> Literal[False]:
+        try:
+            return super().__exit__(exc_type, exc_value, traceback)
+        finally:
+            self.close()
+
+
 def _configure(connection: sqlite3.Connection) -> None:
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
@@ -110,10 +129,30 @@ def connect(db_path: Path | str) -> sqlite3.Connection:
     """Open a configured PEP 249 transaction-managed connection."""
     path = Path(db_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(path, timeout=BUSY_TIMEOUT_MS / 1_000, autocommit=True)
+    connection = sqlite3.connect(
+        path,
+        timeout=BUSY_TIMEOUT_MS / 1_000,
+        autocommit=True,
+        factory=_ClosingConnection,
+    )
     _configure(connection)
     connection.autocommit = False
     return connection
+
+
+@contextmanager
+def transaction(db_path: Path | str) -> Iterator[sqlite3.Connection]:
+    """Own one configured connection and its complete transaction lifecycle."""
+    connection = connect(db_path)
+    try:
+        yield connection
+    except BaseException:
+        connection.rollback()
+        raise
+    else:
+        connection.commit()
+    finally:
+        connection.close()
 
 
 def initialize_database(db_path: Path | str) -> None:

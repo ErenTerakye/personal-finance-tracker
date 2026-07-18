@@ -1,6 +1,29 @@
+import gc
+import os
 import sqlite3
+from contextlib import closing
+
+import pytest
 
 from finance_tracker.database import SCHEMA_VERSION, connect, initialize_database
+from finance_tracker.services import TransactionService
+
+
+def test_repeated_service_operations_do_not_grow_open_database_descriptors(tmp_path):
+    descriptor_directory = "/dev/fd"
+    if not os.path.isdir(descriptor_directory):
+        pytest.skip("descriptor inspection is unavailable on this platform")
+    service = TransactionService(tmp_path / "finance.sqlite3")
+    service.add_transaction("income", "1", "Test", "Descriptor check", "2026-07-18")
+    gc.collect()
+    before = len(os.listdir(descriptor_directory))
+
+    for _ in range(100):
+        service.list_transactions()
+
+    gc.collect()
+    after = len(os.listdir(descriptor_directory))
+    assert after <= before + 1
 
 
 def test_initialize_database_creates_transactions_table(tmp_path):
@@ -155,7 +178,7 @@ def test_initialize_database_creates_settings_table_and_defaults_currency(tmp_pa
 
 def test_initialize_database_versions_and_preserves_unversioned_ledger(tmp_path):
     db_path = tmp_path / "finance.sqlite3"
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         connection.execute(
             """
             CREATE TABLE transactions (

@@ -221,6 +221,8 @@ tempCodeRunnerFile.py
 /exports/
 *.sqlite3
 *.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
 playwright-report/
 test-results/
 
@@ -255,4 +257,3 @@ Desktop.ini
 
 # OpenAI / AI Agent settings
 .openai/
-

@@ -144,6 +144,8 @@ export function BudgetsView({
   });
 
   useEffect(() => {
+    // Prop-to-query synchronization is deliberate; the route owns the selected period.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilters((current) => ({
       ...current,
       month: selectedPeriod.month,
@@ -155,11 +157,15 @@ export function BudgetsView({
     if (createRequestId <= handledCreateRequest.current) return;
     handledCreateRequest.current = createRequestId;
     openCreate();
+    // openCreate must read the latest form and mutation state without retriggering this request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [createRequestId]);
 
   useEffect(() => {
     const nextFilters = readBudgetFilters(selectedPeriod);
     const category = nextFilters.category || null;
+    // Browser-history changes intentionally hydrate this feature's complete route state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilters(nextFilters);
     setSelectedCategory(category);
     setInspectorOpen(Boolean(category));

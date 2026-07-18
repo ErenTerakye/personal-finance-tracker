@@ -896,6 +896,8 @@ function PreferencesView({
   const [currency, setCurrencyValue] = useState("USD");
   useEffect(() => {
     if (settingsResource.data?.currency) {
+      // Initialize the editable draft from the asynchronously loaded ledger setting.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrencyValue(settingsResource.data.currency);
     }
   }, [settingsResource.data?.currency]);

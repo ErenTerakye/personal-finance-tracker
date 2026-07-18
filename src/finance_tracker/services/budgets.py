@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 
-from finance_tracker.database import connect, initialize_database
+from finance_tracker.database import initialize_database
+from finance_tracker.database import transaction as database_transaction
 from finance_tracker.models.budgets import Budget, BudgetFilters
 from finance_tracker.models.transactions import TransactionFilters, TransactionType
 from finance_tracker.repositories.budgets import BudgetRepository
@@ -29,7 +30,7 @@ class BudgetService:
 
     def set_budget(self, category: str, amount: str, month: int, year: int) -> Budget:
         budget = Budget.create(category=category, amount=amount, month=month, year=year)
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             budget = Budget(
                 category=CategoryRuleRepository(connection).resolve_category(budget.category),
                 amount=budget.amount,
@@ -45,7 +46,7 @@ class BudgetService:
         category: str | None = None,
     ) -> list[Budget]:
         filters = BudgetFilters(month=month, year=year, category=category)
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             return BudgetRepository(connection).list(filters)
 
     def list_budgets_page(
@@ -57,19 +58,19 @@ class BudgetService:
         offset: int = 0,
     ) -> tuple[list[Budget], int]:
         filters = BudgetFilters(month=month, year=year, category=category)
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             repository = BudgetRepository(connection)
             return repository.list(filters, limit=limit, offset=offset), repository.count_filtered(
                 filters
             )
 
     def delete_budget(self, budget_id: int) -> None:
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             BudgetRepository(connection).delete(budget_id)
 
     def budget_statuses(self, month: int, year: int) -> list[BudgetStatus]:
         filters = BudgetFilters(month=month, year=year)
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             budgets = BudgetRepository(connection).list(filters)
             transactions = TransactionRepository(connection).list(
                 TransactionFilters(

@@ -1,6 +1,7 @@
 """Frozen SQLite schema and migration behavior."""
 
 import sqlite3
+from contextlib import closing
 
 import pytest
 
@@ -110,7 +111,7 @@ def test_fresh_database_matches_the_frozen_schema_and_index_manifest(tmp_path):
 
     database.initialize_database(db_path)
 
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
         assert _normalized_schema(connection) == EXPECTED_SCHEMA
 
@@ -118,7 +119,7 @@ def test_fresh_database_matches_the_frozen_schema_and_index_manifest(tmp_path):
 def test_current_v2_database_is_not_migrated_again(tmp_path, monkeypatch):
     db_path = tmp_path / "current.sqlite3"
     database.initialize_database(db_path)
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         connection.execute(
             """
             INSERT INTO transactions (type, amount, category, description, date)
@@ -130,7 +131,7 @@ def test_current_v2_database_is_not_migrated_again(tmp_path, monkeypatch):
 
     database.initialize_database(db_path)
 
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         row = connection.execute(
             "SELECT amount, description FROM transactions WHERE id = 1"
         ).fetchone()
@@ -140,7 +141,7 @@ def test_current_v2_database_is_not_migrated_again(tmp_path, monkeypatch):
 
 def test_current_v1_database_upgrades_and_preserves_rows_and_settings(tmp_path):
     db_path = tmp_path / "version-one.sqlite3"
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         connection.executescript(database.SCHEMA_SQL)
         connection.execute(
             "INSERT INTO settings (key, value) VALUES ('currency', 'TRY')"
@@ -155,7 +156,7 @@ def test_current_v1_database_upgrades_and_preserves_rows_and_settings(tmp_path):
 
     database.initialize_database(db_path)
 
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
         assert connection.execute(
             "SELECT amount, description FROM transactions"
@@ -171,14 +172,14 @@ def test_current_v1_database_upgrades_and_preserves_rows_and_settings(tmp_path):
 def test_database_rejects_a_future_schema_version_without_mutation(tmp_path):
     db_path = tmp_path / "future.sqlite3"
     database.initialize_database(db_path)
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         connection.execute(f"PRAGMA user_version = {database.SCHEMA_VERSION + 1}")
         before = _normalized_schema(connection)
 
     with pytest.raises(RuntimeError, match="newer than supported version"):
         database.initialize_database(db_path)
 
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         assert connection.execute("PRAGMA user_version").fetchone()[0] == (
             database.SCHEMA_VERSION + 1
         )
@@ -196,6 +197,6 @@ def test_failed_migration_rolls_back_all_schema_changes(tmp_path, monkeypatch):
     with pytest.raises(sqlite3.OperationalError, match='near "THIS"'):
         database.initialize_database(db_path)
 
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         assert connection.execute("PRAGMA user_version").fetchone()[0] == 0
         assert _normalized_schema(connection) == {}

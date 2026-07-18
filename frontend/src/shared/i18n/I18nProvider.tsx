@@ -29,7 +29,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       }
     } catch {}
     if (typeof navigator !== "undefined") {
-      const lang = navigator.language || (navigator as any).userLanguage || "";
+      const legacyNavigator = navigator as Navigator & {
+        userLanguage?: string;
+      };
+      const lang = navigator.language || legacyNavigator.userLanguage || "";
       if (lang.toLowerCase().startsWith("tr")) {
         return "tr";
       }
@@ -59,14 +62,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     key: string,
     variables?: Record<string, string | number>,
   ): string => {
-    const parts = key.split(".");
-    let enVal: any = en;
-    let trVal: any = tr;
-
-    for (const part of parts) {
-      if (enVal) enVal = enVal[part];
-      if (trVal) trVal = trVal[part];
-    }
+    const enVal = lookupTranslation(en, key);
+    const trVal = lookupTranslation(tr, key);
 
     let result = locale === "tr" ? trVal : enVal;
     if (result === undefined || result === null) {
@@ -98,14 +95,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     key: string,
     variables?: Record<string, string | number>,
   ): string => {
-    const parts = key.split(".");
-    let enVal: any = en;
-    let trVal: any = tr;
-
-    for (const part of parts) {
-      if (enVal) enVal = enVal[part];
-      if (trVal) trVal = trVal[part];
-    }
+    const enVal = lookupTranslation(en, key);
+    const trVal = lookupTranslation(tr, key);
 
     let result = locale === "tr" ? trVal : enVal;
     let resolvedLang: Language = locale;
@@ -143,6 +134,17 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       {children}
     </i18nContext.Provider>
   );
+}
+
+function lookupTranslation(dictionary: unknown, key: string): unknown {
+  let value = dictionary;
+  for (const part of key.split(".")) {
+    if (typeof value !== "object" || value === null || !(part in value)) {
+      return undefined;
+    }
+    value = (value as Record<string, unknown>)[part];
+  }
+  return value;
 }
 
 export function useI18n() {

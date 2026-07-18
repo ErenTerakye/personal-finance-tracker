@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from finance_tracker.database import connect, initialize_database
+from finance_tracker.database import initialize_database
+from finance_tracker.database import transaction as database_transaction
 from finance_tracker.models.common import validate_month, validate_year
 from finance_tracker.models.recurring import RecurringTemplate
 from finance_tracker.models.transactions import Transaction
@@ -41,16 +42,16 @@ class RecurringTemplateService:
             description=description,
             day_of_month=day_of_month,
         )
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             template = _canonical_template(connection, template)
             return RecurringTemplateRepository(connection).add(template)
 
     def list_templates(self, active_only: bool = False) -> list[RecurringTemplate]:
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             return RecurringTemplateRepository(connection).list(active_only=active_only)
 
     def delete_template(self, template_id: int) -> None:
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             RecurringTemplateRepository(connection).delete(template_id)
 
     def apply_templates(self, month: int, year: int) -> RecurringApplyResult:
@@ -59,7 +60,7 @@ class RecurringTemplateService:
         _, last_day = monthrange(year, month)
         created: list[Transaction] = []
         skipped_duplicates = 0
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             templates = RecurringTemplateRepository(connection).list(active_only=True)
             transactions = TransactionRepository(connection)
             for template in templates:

@@ -20,6 +20,8 @@ export function BudgetFilterForm({
   const { t } = useI18n();
 
   useEffect(() => {
+    // Reset the unapplied draft only when the committed parent filter changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraft(filters);
   }, [filters]);
 

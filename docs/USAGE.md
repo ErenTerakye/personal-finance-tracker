@@ -66,6 +66,16 @@ For the reviewer demo, use the generated sample database:
 finance-tracker web --host 127.0.0.1 --port 8000 --db-path demo.sqlite3
 ```
 
+The server rejects non-loopback hosts by default because the ledger has no authentication. For an
+intentional trusted-network demo, the explicit escape hatch is:
+
+```bash
+finance-tracker web --host 0.0.0.0 --allow-remote-unauthenticated --db-path demo.sqlite3
+```
+
+The command prints the bind address and database path. Anyone who can reach that address can read
+and mutate the ledger, so do not use this option for a real ledger or an untrusted network.
+
 The Web UI uses four primary destinations—Overview, Transactions, Budgets, and Accounts—with a
 secondary Manage area:
 
@@ -293,6 +303,31 @@ Delete a budget:
 ```bash
 finance-tracker budget-delete 1
 ```
+
+## Complete-Ledger Backup and Restore
+
+CSV remains the portable format for transactions and budgets. To protect every ledger record—
+including accounts and balance history, rules, recurring templates, and settings—use a SQLite
+backup:
+
+```bash
+finance-tracker ledger-backup backups/finance-2026-07-18.sqlite3
+finance-tracker ledger-verify backups/finance-2026-07-18.sqlite3
+```
+
+The backup uses SQLite's online backup API, so committed WAL data is captured consistently. Store
+backups on a different disk or another location you control. Existing files require `--overwrite`.
+
+Restore atomically replaces the selected active ledger only after integrity and supported-schema
+checks, and requires explicit confirmation:
+
+```bash
+finance-tracker ledger-restore backups/finance-2026-07-18.sqlite3 --confirm
+finance-tracker ledger-restore backups/demo.sqlite3 --confirm --db-path demo.sqlite3
+```
+
+Run `ledger-verify` periodically and before restoring. Keep the original backup until the restored
+ledger has been opened and checked.
 
 ## Import CSV
 

@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
@@ -444,3 +445,60 @@ def test_cli_web_command_still_accepts_custom_db_path(monkeypatch, tmp_path):
     assert captured["host"] == "127.0.0.1"
     assert captured["port"] == 8123
     assert captured["app"].state.db_path == tmp_path / "demo.sqlite3"
+
+
+@pytest.mark.parametrize("host", ["127.0.0.1", "127.12.34.56", "::1", "[::1]", "localhost"])
+def test_cli_web_allows_loopback_hosts(monkeypatch, tmp_path, host):
+    captured = {}
+    monkeypatch.setattr("uvicorn.run", lambda app, host, port: captured.update(host=host))
+
+    result = CliRunner().invoke(
+        app,
+        ["web", "--host", host, "--db-path", str(tmp_path / "finance.sqlite3")],
+    )
+
+    assert result.exit_code == 0
+    assert captured["host"] == host
+
+
+@pytest.mark.parametrize("host", ["0.0.0.0", "::", "192.168.1.10", "finance.local"])
+def test_cli_web_rejects_remote_hosts_without_explicit_opt_in(monkeypatch, tmp_path, host):
+    called = False
+
+    def fake_run(app, host, port):
+        nonlocal called
+        called = True
+
+    monkeypatch.setattr("uvicorn.run", fake_run)
+    result = CliRunner().invoke(
+        app,
+        ["web", "--host", host, "--db-path", str(tmp_path / "finance.sqlite3")],
+    )
+
+    assert result.exit_code == 2
+    assert "refusing to expose" in result.output
+    assert called is False
+
+
+def test_cli_web_remote_opt_in_prints_bind_and_database(monkeypatch, tmp_path):
+    captured = {}
+    db_path = tmp_path / "finance.sqlite3"
+    monkeypatch.setattr("uvicorn.run", lambda app, host, port: captured.update(host=host))
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "web",
+            "--host",
+            "0.0.0.0",
+            "--allow-remote-unauthenticated",
+            "--db-path",
+            str(db_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured["host"] == "0.0.0.0"
+    assert "Bind address: 0.0.0.0" in result.output
+    assert f"Database: {db_path}" in result.output
+    assert "remote unauthenticated access was explicitly enabled" in result.output

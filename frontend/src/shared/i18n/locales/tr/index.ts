@@ -1,3 +1,6 @@
+import type { TranslationShape } from "../../types";
+import type { en } from "../en";
+
 export const tr = {
   common: {
     skipLink: "Ana içeriğe atla",
@@ -843,4 +846,4 @@ export const tr = {
     "Gym Membership": "Spor Salonu Üyeliği",
     "Electric Bill": "Elektrik Faturası",
   },
-} as const;
+} as const satisfies TranslationShape<typeof en>;

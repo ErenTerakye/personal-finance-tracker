@@ -72,6 +72,8 @@ export function PeriodControl({
   const { t } = useI18n();
 
   useEffect(() => {
+    // The picker draft must reset when navigation changes the committed period.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraft(value);
   }, [value]);
 

@@ -12,6 +12,8 @@ export function useMediaQuery(query: string): boolean {
     const mediaQuery = window.matchMedia(query);
     const updateMatches = (event: MediaQueryListEvent) =>
       setMatches(event.matches);
+    // Re-read immediately because the query itself may have changed between renders.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMatches(mediaQuery.matches);
     mediaQuery.addEventListener("change", updateMatches);
     return () => mediaQuery.removeEventListener("change", updateMatches);

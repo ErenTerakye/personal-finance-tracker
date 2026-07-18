@@ -21,6 +21,7 @@ from finance_tracker.cli.category_rules import (
     category_rule_set,
 )
 from finance_tracker.cli.csv_commands import export_budgets, export_csv, import_budgets, import_csv
+from finance_tracker.cli.recovery import ledger_backup, ledger_restore, ledger_verify
 from finance_tracker.cli.recurring import (
     recurring_add,
     recurring_apply,
@@ -71,3 +72,6 @@ app.command("account-archive")(account_archive)
 app.command("account-delete")(account_delete)
 app.command("net-worth")(net_worth)
 app.command("net-worth-history")(net_worth_history)
+app.command("ledger-backup")(ledger_backup)
+app.command("ledger-verify")(ledger_verify)
+app.command("ledger-restore")(ledger_restore)

@@ -43,6 +43,8 @@ export function CsvImportDialog({
 
   useEffect(() => {
     if (!open) {
+      // Closing the workflow intentionally clears sensitive file contents and options.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFile(null);
       setCsvText("");
       setAllowDuplicates(false);

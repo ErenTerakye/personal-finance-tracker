@@ -8,5 +8,14 @@ export default defineConfig({
     fileParallelism: false,
     globals: true,
     setupFiles: "src/test/setup.ts",
+    coverage: {
+      provider: "v8",
+      thresholds: {
+        branches: 72,
+        functions: 70,
+        lines: 77,
+        statements: 77,
+      },
+    },
   },
 });

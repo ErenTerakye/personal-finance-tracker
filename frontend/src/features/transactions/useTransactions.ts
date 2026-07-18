@@ -24,7 +24,11 @@ import type {
 export function useTransactions(filters: TransactionFilters) {
   const { month, year, category, transaction_type: transactionType } = filters;
   const load = useCallback(
-    (signal: AbortSignal) => api.transactions(filters, signal),
+    (signal: AbortSignal) =>
+      api.transactions(
+        { month, year, category, transaction_type: transactionType },
+        signal,
+      ),
     [month, year, category, transactionType],
   );
   const cacheKey = transactionResourceKey(filters);

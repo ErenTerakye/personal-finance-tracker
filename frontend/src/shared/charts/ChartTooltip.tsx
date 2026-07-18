@@ -24,7 +24,11 @@ export function useChartTooltip(
   const [active, setActive] = useState<TooltipData | null>(null);
 
   useEffect(() => {
+    // Data/range changes invalidate a tooltip that points at the previous chart geometry.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActive(null);
+    // Callers provide the concrete chart data/range values that invalidate geometry.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
 
   useEffect(() => {
@@ -63,6 +67,8 @@ export function useChartTooltip(
 export function ChartTooltip({ active }: { active: TooltipData | null }) {
   const [lastActive, setLastActive] = useState<TooltipData | null>(active);
   useEffect(() => {
+    // Retain the last geometry briefly so CSS can animate the tooltip out.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (active) setLastActive(active);
   }, [active]);
   const displayed = active ?? lastActive;

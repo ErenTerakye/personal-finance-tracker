@@ -41,6 +41,8 @@ EXPECTED_EXPORTS = {
         "BudgetService",
         "BudgetStatus",
         "CategoryRuleService",
+        "LedgerRecoveryService",
+        "LedgerVerification",
         "RecurringApplyResult",
         "RecurringTemplateService",
         "SettingsService",

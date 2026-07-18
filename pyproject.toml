@@ -62,6 +62,8 @@ finance_tracker = [
 testpaths = ["tests"]
 pythonpath = ["src"]
 filterwarnings = [
+    "error::ResourceWarning",
+    "error::_pytest.warning_types.PytestUnraisableExceptionWarning",
     "error::starlette.exceptions.StarletteDeprecationWarning",
 ]
 

@@ -1,5 +1,6 @@
 """Database setup and optional local web-server CLI commands."""
 
+from ipaddress import ip_address
 from typing import Annotated
 
 import typer
@@ -7,6 +8,16 @@ import typer
 from finance_tracker.cli.common import DbPathOption
 from finance_tracker.config import resolve_db_path
 from finance_tracker.services import TransactionService
+
+
+def _is_loopback_host(host: str) -> bool:
+    normalized = host.strip().removeprefix("[").removesuffix("]")
+    if normalized.casefold() == "localhost":
+        return True
+    try:
+        return ip_address(normalized).is_loopback
+    except ValueError:
+        return False
 
 
 def init(db_path: DbPathOption = None) -> None:
@@ -27,6 +38,13 @@ def web(
         bool,
         typer.Option("--reload", help="Enable auto-reload for development"),
     ] = False,
+    allow_remote_unauthenticated: Annotated[
+        bool,
+        typer.Option(
+            "--allow-remote-unauthenticated",
+            help="Explicitly expose the unauthenticated ledger beyond loopback",
+        ),
+    ] = False,
 ) -> None:
     """Run the local browser-based finance dashboard."""
     resolved_path = resolve_db_path(db_path)
@@ -43,11 +61,21 @@ def web(
         )
         raise typer.Exit(code=1) from exc
 
-    typer.echo(f"Starting finance tracker web UI at http://{host}:{port}")
-    typer.echo(f"Using database: {resolved_path}")
-    if host not in {"127.0.0.1", "localhost", "::1"}:
+    if not _is_loopback_host(host) and not allow_remote_unauthenticated:
         typer.secho(
-            "Warning: this unauthenticated local ledger is being exposed beyond loopback.",
+            "Error: refusing to expose an unauthenticated ledger beyond loopback. "
+            "Pass --allow-remote-unauthenticated only when you accept that risk.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    typer.echo(f"Starting finance tracker web UI at http://{host}:{port}")
+    typer.echo(f"Bind address: {host}")
+    typer.echo(f"Database: {resolved_path}")
+    if not _is_loopback_host(host):
+        typer.secho(
+            "Warning: remote unauthenticated access was explicitly enabled.",
             fg=typer.colors.YELLOW,
             err=True,
         )

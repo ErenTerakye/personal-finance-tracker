@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from finance_tracker.database import connect, initialize_database
+from finance_tracker.database import initialize_database
+from finance_tracker.database import transaction as database_transaction
 from finance_tracker.exceptions import ValidationError
 from finance_tracker.models.accounts import (
     Account,
@@ -46,7 +47,7 @@ class AccountService:
     ) -> Account:
         account = Account.create(name, account_type)
         effective_date = parse_snapshot_date(initial_balance_date)
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             stored = AccountRepository(connection).add(account)
             assert stored.id is not None
             BalanceSnapshotRepository(connection).upsert(
@@ -61,19 +62,19 @@ class AccountService:
         include_archived: bool = False,
     ) -> list[ResolvedAccount]:
         resolved_date = parse_snapshot_date(as_of or date.today())
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             return AccountRepository(connection).list_resolved(
                 resolved_date,
                 include_archived=include_archived,
             )
 
     def get_account(self, account_id: int) -> Account:
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             return AccountRepository(connection).get(account_id)
 
     def edit_account_name(self, account_id: int, name: str) -> Account:
         clean_name = validate_text(name, "account name")
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             repository = AccountRepository(connection)
             account = repository.get(account_id)
             self._require_active(account)
@@ -86,7 +87,7 @@ class AccountService:
         effective_date: str | date,
     ) -> SnapshotMutation:
         snapshot = BalanceSnapshot.create(account_id, amount, effective_date)
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             account = AccountRepository(connection).get(account_id)
             self._require_active(account)
             stored, replaced = BalanceSnapshotRepository(connection).upsert(snapshot)
@@ -107,7 +108,7 @@ class AccountService:
             BalanceSnapshot.create(account_id, amount, resolved_date)
             for account_id, amount in updates
         ]
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             accounts = AccountRepository(connection)
             snapshots = BalanceSnapshotRepository(connection)
             for snapshot in prepared:
@@ -124,13 +125,13 @@ class AccountService:
             )
 
     def list_snapshots(self, account_id: int) -> list[BalanceSnapshot]:
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             AccountRepository(connection).get(account_id)
             return BalanceSnapshotRepository(connection).list_for_account(account_id)
 
     def delete_snapshot(self, account_id: int, effective_date: str | date) -> None:
         resolved_date = parse_snapshot_date(effective_date)
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             account = AccountRepository(connection).get(account_id)
             self._require_active(account)
             snapshots = BalanceSnapshotRepository(connection)
@@ -152,7 +153,7 @@ class AccountService:
                 "Archiving requires confirmation that a closing zero balance will be recorded."
             )
         resolved_date = parse_snapshot_date(closing_date)
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             accounts = AccountRepository(connection)
             snapshots = BalanceSnapshotRepository(connection)
             account = accounts.get(account_id)
@@ -166,7 +167,7 @@ class AccountService:
             return accounts.archive(account_id, resolved_date)
 
     def delete_account(self, account_id: int) -> None:
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             accounts = AccountRepository(connection)
             snapshots = BalanceSnapshotRepository(connection)
             account = accounts.get(account_id)
@@ -182,7 +183,7 @@ class AccountService:
         through: str | date | None = None,
     ) -> tuple[list[Account], list[BalanceSnapshot]]:
         resolved_date = parse_snapshot_date(through or date.today())
-        with connect(self.db_path) as connection:
+        with database_transaction(self.db_path) as connection:
             return (
                 AccountRepository(connection).list_all(),
                 BalanceSnapshotRepository(connection).list_all(through=resolved_date),

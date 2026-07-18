@@ -12,7 +12,7 @@ The application uses a layered structure:
 
 - `cli/` owns Typer composition, command groups, terminal output, and process exit behavior.
 - `models/` owns domain objects and validation helpers by capability.
-- `services/` coordinates transactional use cases and keeps entrypoints away from persistence details.
+- `services/` coordinates transactional use cases, deterministic connection closure, and complete-ledger recovery while keeping entrypoints away from persistence details.
 - `repositories/` owns SQL queries and row mapping without committing transactions.
 - `database.py` owns SQLite connection setup and ordered `PRAGMA user_version` migrations.
 - `csv_io/` owns portable transaction and budget CSV import/export behavior.
@@ -118,6 +118,7 @@ Supported commands:
 - `account-balance-set`, `account-balance-list`, and `account-balance-delete`: manage dated balances.
 - `account-archive` and `account-delete`: close or correct eligible accounts safely.
 - `net-worth` and `net-worth-history`: report total assets minus total liabilities as of a date.
+- `ledger-backup`, `ledger-verify`, and `ledger-restore`: protect and recover the complete SQLite ledger.
 
 Database path defaults to `./data/finance_tracker.sqlite3`, which is local runtime state and ignored
 by git. Users can override it with `--db-path` or `FINANCE_TRACKER_DB`; reproducible demos should
@@ -136,6 +137,8 @@ The Web UI is an intentional scope expansion from the original CLI-first milesto
 ```bash
 finance-tracker web --host 127.0.0.1 --port 8000
 ```
+
+Non-loopback hosts require the explicit `--allow-remote-unauthenticated` trust-boundary override.
 
 The Python app exposes JSON endpoints under `/api` and serves the compiled React SPA for browser routes. During development, Vite proxies `/api` to the FastAPI process at `127.0.0.1:8000`. OpenAPI generates checked-in TypeScript wire types; list responses are paginated while CSV exports remain complete.
 
@@ -227,4 +230,6 @@ Use pytest with temporary SQLite databases. Cover:
 - Playwright coverage includes keyboard navigation, dialogs, responsive reflow, theme/motion
   preferences, and automated accessibility scans across the primary browser routes.
 - CLI smoke flows through Typer's test runner.
-- GitHub Actions runs pytest and Ruff on Python 3.14, plus frontend unit tests, production build, and Playwright responsive E2E tests on Node 24.
+- GitHub Actions runs warning/coverage-gated pytest and Ruff on Python 3.14, plus coverage-gated
+  frontend tests, generated API/SPA drift checks, a same-job wheel build, and Playwright responsive
+  E2E tests on Node 24.

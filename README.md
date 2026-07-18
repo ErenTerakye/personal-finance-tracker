@@ -13,6 +13,7 @@ A local-first finance tracker with a Typer CLI, FastAPI JSON API, React browser 
 - Normalize category aliases so imports and manual entries roll into clean categories.
 - Create monthly recurring transaction templates and apply them explicitly when needed.
 - Import and export transactions and budgets with CSV files.
+- Back up, verify, and restore the complete SQLite ledger, including account history and settings.
 - Store records locally in SQLite.
 - Track asset and liability accounts with dated manual balance snapshots and deterministic total
   net worth history.
@@ -236,17 +237,14 @@ frontend/src/
 After activating the virtual environment, run:
 
 ```bash
-.venv/bin/python -m pytest
+.venv/bin/python -m pytest --cov=finance_tracker --cov-fail-under=90
 .venv/bin/python -m ruff check .
 .venv/bin/python -m mypy
-npm test
+npm run test:coverage
 npm run lint
 npm run format:check
-npm run generate:api
-git diff --exit-code frontend/src/generated/api.ts
-npm run build
+npm run check:generated
 npm run check:css
-npm run check:bundle
 npm run test:e2e
 npm run test:e2e:fullstack
 .venv/bin/python -m pip_audit
