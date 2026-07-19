@@ -28,12 +28,28 @@ Use a custom path:
 finance-tracker data init --db-path demo.sqlite3
 ```
 
-## Interactive Terminal Workspace
+## Inline Terminal Home
 
-Run the command without a subcommand in an interactive terminal:
+Run the command without a subcommand:
 
 ```bash
 finance-tracker --db-path demo.sqlite3
+```
+
+This prints the current month's cash flow, net worth, budget attention, and recent activity directly
+in terminal scrollback. Interactive terminals also get a focused action menu for adding a
+transaction, reviewing the month, checking budgets, recording account balances, or opening the
+full-screen workspace. Navigate with the arrow keys and Enter, use `1`–`5` for direct selection, or
+press `Q` to quit. Each action completes and returns to the shell. When input or output is not a TTY,
+the command prints the snapshot and command hints without prompting. Use `--output json` for a
+machine-readable snapshot.
+
+## Full-Screen Terminal Workspace
+
+Launch the persistent workspace explicitly:
+
+```bash
+finance-tracker --db-path demo.sqlite3 tui
 ```
 
 The workspace provides Overview, Transactions, Budgets, Accounts, and Manage destinations. It
@@ -54,7 +70,8 @@ finance-tracker --db-path demo.sqlite3 --yes data restore backups/demo.sqlite3
 
 JSON success responses use `{"ok":true,"data":...}`. Expected failures use
 `{"ok":false,"error":{"code":"…","message":"…"}}` on stderr. Exit codes are 0 for success,
-1 for domain/runtime failures, and 2 for invalid invocation or an unavailable TTY.
+1 for domain/runtime failures, and 2 for invalid invocation or an unavailable TTY requested by
+`tui`.
 
 ## Reviewer Demo
 

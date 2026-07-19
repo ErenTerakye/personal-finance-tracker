@@ -9,6 +9,7 @@ from typing import Annotated
 
 import typer
 
+from finance_tracker.cli.home import open_inline_home
 from finance_tracker.cli.runtime import CliRuntime, configure_runtime, current_runtime
 
 
@@ -49,7 +50,7 @@ def root_callback(
         typer.Option("--yes", help="Confirm destructive non-interactive operations."),
     ] = False,
 ) -> None:
-    """Open the interactive ledger or run a grouped automation command."""
+    """Show the inline ledger home or run a grouped automation command."""
     normalized_output = output.lower()
     if normalized_output not in {"table", "json"}:
         raise typer.BadParameter("Output must be 'table' or 'json'.", param_hint="--output")
@@ -66,7 +67,7 @@ def root_callback(
     if db_path is not None:
         os.environ["FINANCE_TRACKER_DB"] = str(db_path)
     if ctx.invoked_subcommand is None:
-        launch_tui(db_path)
+        open_inline_home(launch_workspace=launch_tui)
 
 
 def tui_command() -> None:

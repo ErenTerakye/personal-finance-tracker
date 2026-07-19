@@ -63,8 +63,50 @@ def test_v2_removed_command_reports_exact_migration_without_running(tmp_path):
     assert "finance-tracker budget status" in result.output
 
 
-def test_bare_command_refuses_to_launch_tui_without_an_interactive_terminal():
-    result = CliRunner().invoke(app)
+def test_bare_command_renders_inline_home_without_requiring_a_tty(tmp_path):
+    result = CliRunner().invoke(app, ["--db-path", str(tmp_path / "cli.sqlite3")])
+
+    assert result.exit_code == 0
+    assert "Finance Tracker" in result.output
+    assert "Net worth" in result.output
+    assert "Workspace: finance-tracker tui" in result.output
+
+
+def test_bare_command_supports_machine_readable_output(tmp_path):
+    result = CliRunner().invoke(
+        app,
+        ["--db-path", str(tmp_path / "cli.sqlite3"), "--output", "json"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["data"]["report"]["transaction_count"] == 0
+
+
+def test_inline_home_can_add_a_transaction(monkeypatch, tmp_path):
+    answers = iter(["expense", "12.50", "Food", "Lunch", "2026-07-19"])
+    monkeypatch.setattr("finance_tracker.cli.home.is_interactive_terminal", lambda: True)
+    monkeypatch.setattr("finance_tracker.cli.home._launch_menu", lambda snapshot: "add")
+    monkeypatch.setattr(
+        "finance_tracker.cli.home.typer.prompt", lambda *args, **kwargs: next(answers)
+    )
+    db_path = tmp_path / "cli.sqlite3"
+
+    added = CliRunner().invoke(app, ["--db-path", str(db_path)])
+    listed = CliRunner().invoke(
+        app,
+        ["--db-path", str(db_path), "transaction", "list", "--month", "7", "--year", "2026"],
+    )
+
+    assert added.exit_code == 0
+    assert "Added #1" in added.output
+    assert listed.exit_code == 0
+    assert "Lunch" in listed.output
+
+
+def test_explicit_tui_command_still_requires_an_interactive_terminal():
+    result = CliRunner().invoke(app, ["tui"])
 
     assert result.exit_code == 2
     assert "requires an interactive terminal" in result.output

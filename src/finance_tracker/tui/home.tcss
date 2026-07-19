@@ -1,0 +1,56 @@
+App {
+    background: ansi_default;
+}
+
+Screen,
+Screen:inline {
+    height: 17;
+    min-height: 17;
+    max-height: 17;
+    padding: 0 1;
+    border-top: none;
+    border-bottom: none;
+    background: ansi_default;
+    color: #e4e8ee;
+}
+
+#brand {
+    height: 4;
+}
+
+#pulse {
+    height: 3;
+    padding-top: 1;
+}
+
+#actions {
+    width: 72;
+    height: 5;
+    border: none;
+    padding: 0;
+    background: ansi_default;
+}
+
+#actions:focus {
+    border: none;
+    background-tint: transparent;
+    background: ansi_default;
+}
+
+#actions > .option-list--option {
+    padding: 0;
+}
+
+#actions > .option-list--option-highlighted,
+#actions:focus > .option-list--option-highlighted {
+    color: #83c9c3;
+    background: transparent;
+    text-style: bold;
+}
+
+#shortcuts {
+    height: 2;
+    padding-top: 1;
+    background: ansi_default;
+    color: #667487;
+}

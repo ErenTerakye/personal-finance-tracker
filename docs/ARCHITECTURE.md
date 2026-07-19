@@ -46,12 +46,15 @@ formatting, i18n, theme, charts, and layered styles. Browser transport is isolat
 
 ## Terminal delivery
 
-The Typer root launches Textual only when stdin/stdout are interactive and the terminal is capable;
-otherwise grouped commands remain the deterministic fallback. The TUI operates directly on the
-selected SQLite ledger, uses five stable destinations, responsive 80×24 layouts, modal forms,
-keyboard/mouse input, non-color status labels, and the built-in fuzzy command palette. No FastAPI
-process is required. Command-mode JSON wraps money and dates without changing their decimal/ISO
-contracts, and destructive automation requires explicit confirmation.
+The Typer root renders an inline overview by default. Interactive terminals receive a compact
+Textual launcher in normal scrollback with arrow, number, mouse, and quit bindings; pipes receive a
+non-blocking snapshot and command hints, while `--output json` remains machine-readable. The
+full-screen Textual workspace launches only through the explicit `tui` command and only when the
+terminal is capable. The TUI operates directly on the selected SQLite ledger,
+uses five stable destinations, responsive 80×24 layouts, modal forms, keyboard/mouse input,
+non-color status labels, and the built-in fuzzy command palette. No FastAPI process is required.
+Command-mode JSON wraps money and dates without changing their decimal/ISO contracts, and
+destructive automation requires explicit confirmation.
 
 ## Request and transaction flow
 

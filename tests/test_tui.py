@@ -1,10 +1,30 @@
 import asyncio
+from datetime import date
 
-from textual.widgets import DataTable, Input, TabbedContent
+from textual.widgets import DataTable, Input, OptionList, TabbedContent
 
-from finance_tracker.services import AccountService, TransactionService
+from finance_tracker.services import AccountService, OverviewService, TransactionService
 from finance_tracker.tui.app import FinanceTrackerTui
+from finance_tracker.tui.home import FinanceTrackerHome
 from finance_tracker.tui.views import AccountsView, TransactionsView
+
+
+def test_inline_home_supports_arrow_key_selection(tmp_path):
+    async def scenario() -> None:
+        snapshot = OverviewService(tmp_path / "home.sqlite3").get(
+            7, 2026, as_of=date(2026, 7, 19)
+        )
+        app = FinanceTrackerHome(snapshot)
+        async with app.run_test(size=(80, 24)) as pilot:
+            options = app.query_one("#actions", OptionList)
+            assert options.highlighted == 0
+            assert "FINANCE TRACKER" in str(app.query_one("#brand").render())
+
+            await pilot.press("down", "enter")
+
+        assert app.return_value == "transactions"
+
+    asyncio.run(scenario())
 
 
 def test_tui_mounts_at_baseline_size_and_supports_keyboard_navigation(tmp_path):

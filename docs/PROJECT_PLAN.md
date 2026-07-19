@@ -91,7 +91,8 @@ finance-tracker
 
 Supported commands:
 
-- Bare `finance-tracker` and `tui` open the full-screen terminal workspace.
+- Bare `finance-tracker` prints an inline ledger home and offers focused one-shot actions in a TTY.
+- `tui` explicitly opens the persistent full-screen terminal workspace.
 - `overview` prints monthly cash flow, budget attention, recent activity, and net worth.
 - `transaction add|list|edit|delete|import|export` owns ledger entries and CSV movement.
 - `budget set|list|status|delete|import|export` owns monthly category plans.

@@ -4,13 +4,14 @@
 ![Python 3.14](https://img.shields.io/badge/python-3.14-blue)
 ![Node 24](https://img.shields.io/badge/node-24-43853d)
 
-A local-first finance tracker with an interactive Textual workspace, grouped Typer commands,
-FastAPI JSON API, React browser UI, SQLite persistence, CSV workflows, and data visualization.
+A local-first finance tracker with an inline interactive CLI, optional Textual workspace, grouped
+Typer commands, FastAPI JSON API, React browser UI, SQLite persistence, CSV workflows, and data
+visualization.
 
 ## Highlights
 
-- Open a keyboard-first terminal workspace with Overview, Transactions, Budgets, Accounts, and
-  Manage destinations, responsive layouts, direct forms, a command palette, and mouse support.
+- Use a scrollback-friendly terminal home for everyday actions, or open a keyboard-first workspace
+  with Overview, Transactions, Budgets, Accounts, and Manage destinations.
 - Automate every terminal workflow through grouped commands, global database selection,
   machine-readable JSON envelopes, predictable exit codes, and safe confirmations.
 - Add, edit, list, delete, import, and export financial transactions.
@@ -57,13 +58,14 @@ finance-tracker report net-worth-history --months 120 --as-of 2026-07-16 --db-pa
 finance-tracker web --db-path demo.sqlite3
 ```
 
-The bare `finance-tracker` command opens the terminal workspace; `finance-tracker web` opens the
-browser workspace at `http://127.0.0.1:8000`. The detailed fictional demo has 120 months of net-worth
-history from August 2016 through July 2026, plus 281 merchant-level transactions across 16–20
-active days per month in its detailed trailing year. It includes realistic same-day activity,
-budgets, category aliases, recurring entries, asset/liability histories, an archived account, and
-meaningful report states. `demo.sqlite3` is generated local state, intentionally ignored by git,
-and can be rebuilt at any time.
+The bare `finance-tracker` command shows an inline ledger snapshot and focused action menu, then
+returns to the shell. Use `finance-tracker tui` for the full-screen terminal workspace, or
+`finance-tracker web` for the browser workspace at `http://127.0.0.1:8000`. The detailed fictional
+demo has 120 months of net-worth history from August 2016 through July 2026, plus 281 merchant-level
+transactions across 16–20 active days per month in its detailed trailing year. It includes
+realistic same-day activity, budgets, category aliases, recurring entries, asset/liability
+histories, an archived account, and meaningful report states. `demo.sqlite3` is generated local
+state, intentionally ignored by git, and can be rebuilt at any time.
 
 The default database path is `./data/finance_tracker.sqlite3`. That file is local runtime state for your own machine and may not match the documented demo. For the reviewer demo, start the local Web UI against the generated demo database:
 
@@ -105,12 +107,19 @@ Reviewer screenshots are refreshed from the detailed July 2026 demo using
 
 ![Budgets desktop screenshot](docs/assets/screenshots/budgets-desktop.png)
 
-## Terminal Workspace and Grouped Commands
+## Inline Home, Terminal Workspace, and Grouped Commands
 
-Run `finance-tracker` in an interactive terminal to open the full-screen local workspace. Use
-`1`–`5` for destinations, `Ctrl+P` for the fuzzy command palette, `/` for search, `A` for the global
-transaction form, `R` to refresh, and `?` for the complete keyboard guide. The layout works from
-80×24 upward and exposes the same actions through buttons and optional mouse input.
+Run `finance-tracker` to see the current month's cash flow, net worth, budget attention, and recent
+activity without leaving the normal terminal scrollback. In an interactive terminal, choose a
+one-shot action to add a transaction, review the month, inspect budgets, check in balances, or open
+the full-screen workspace. Navigate with the arrow keys and Enter, select directly with `1`–`5`, or
+quit with `Q`. Non-interactive use prints the snapshot and command hints without prompting;
+`--output json` returns the same overview contract as the explicit `overview` command.
+
+Run `finance-tracker tui` when you want the persistent full-screen workspace. Use `1`–`5` for
+destinations, `Ctrl+P` for the fuzzy command palette, `/` for search, `A` for the global transaction
+form, `R` to refresh, and `?` for the complete keyboard guide. The layout works from 80×24 upward
+and exposes the same actions through buttons and optional mouse input.
 
 For scripts, select the database globally and request a stable JSON envelope:
 
