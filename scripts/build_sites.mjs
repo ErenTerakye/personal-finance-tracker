@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
@@ -7,6 +8,26 @@ const output = resolve(project, "dist");
 const client = resolve(output, "client");
 const spa = resolve(project, "src/finance_tracker/web/static/spa");
 const server = resolve(output, "server/index.js");
+
+const explicitPython = process.env.FINANCE_TRACKER_PYTHON;
+const pythonCandidates = explicitPython
+  ? [explicitPython]
+  : [".venv/bin/python", ".venv/Scripts/python.exe", "python3"];
+const python = pythonCandidates.find(
+  (candidate) =>
+    candidate === "python3" || existsSync(resolve(project, candidate)),
+);
+if (!python) {
+  throw new Error(
+    "Sites demo export needs Python 3.14+; create .venv or set FINANCE_TRACKER_PYTHON.",
+  );
+}
+const accountDemo = JSON.parse(
+  execFileSync(python, ["-m", "scripts.export_sites_demo"], {
+    cwd: project,
+    encoding: "utf8",
+  }),
+);
 
 const transactionCsv = await readFile(
   resolve(project, "examples/sample_transactions.csv"),
@@ -82,6 +103,10 @@ const workerSource = String.raw`const transactions = ${JSON.stringify(hostedTran
 
 const budgets = ${JSON.stringify(hostedBudgets)};
 
+const accounts = ${JSON.stringify(accountDemo.accounts)};
+
+const DEMO_AS_OF = "2026-07-16";
+
 const rules = [
   { id: 1, alias: "groceries", category: "Food", created_at: "2026-01-01T09:00:00" },
   { id: 2, alias: "supermarket", category: "Food", created_at: "2026-01-01T09:00:00" },
@@ -114,6 +139,19 @@ function apiResponse(request, url) {
   const path = url.pathname;
   if (path === "/api/settings") return json({ currency: "USD" });
   if (path === "/api/dashboard") return json(dashboard(url));
+  if (path === "/api/accounts" && request.method === "GET") {
+    return json({ accounts: accountRecords(url) });
+  }
+  const snapshotMatch = path.match(/^\/api\/accounts\/(\d+)\/balance-snapshots$/);
+  if (snapshotMatch && request.method === "GET") {
+    const account = accounts.find((item) => item.id === Number(snapshotMatch[1]));
+    return account
+      ? json({ balance_snapshots: [...account.snapshots].reverse().map(snapshotResponse) })
+      : json({ error: "Hosted demo account not found." }, 404);
+  }
+  if (path === "/api/net-worth/overview") return json(netWorthOverview(url));
+  if (path === "/api/net-worth/history") return json(netWorthHistory(url));
+  if (path === "/api/net-worth") return json(netWorthSummary(url.searchParams.get("as_of") || DEMO_AS_OF));
   if (path === "/api/transactions" && request.method === "GET") {
     const filtered = filterTransactions(url);
     return json({ transactions: filtered, page: page(filtered.length) });
@@ -150,8 +188,132 @@ function dashboard(url) {
     month, year, period_label: new Date(Date.UTC(year, month - 1, 1)).toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" }),
     report, trend: { months: trendMonths, total_income: sum(trendMonths, "total_income"), total_expenses: sum(trendMonths, "total_expenses"), net_savings: sum(trendMonths, "net_savings"), transaction_count: trendMonths.reduce((total, item) => total + item.transaction_count, 0), top_expense_categories: report.expenses_by_category },
     savings_rate: income ? fixed((Number(report.net_savings) / income) * 100) : "0.00",
-    recent_transactions: monthTransactions.slice(0, 5), budget_statuses: budgetStatuses(url), currency: "USD",
+    recent_transactions: monthTransactions.slice(0, 5), budget_statuses: budgetStatuses(url), net_worth: netWorthSummary(DEMO_AS_OF), currency: "USD",
   };
+}
+
+function accountRecords(url) {
+  const asOf = url.searchParams.get("as_of") || DEMO_AS_OF;
+  const includeArchived = url.searchParams.get("include_archived") === "true";
+  return accounts.filter((account) => includeArchived || !account.archived_on).map((account) => {
+    const snapshot = latestSnapshot(account, asOf);
+    return {
+      id: account.id, name: account.name, type: account.type, archived_on: account.archived_on,
+      created_at: account.created_at, as_of: asOf,
+      resolved_balance: snapshot?.amount ?? null,
+      resolved_balance_date: snapshot?.effective_date ?? null,
+      currency: "USD",
+    };
+  });
+}
+
+function snapshotResponse(snapshot) {
+  return { ...snapshot, currency: "USD" };
+}
+
+function latestSnapshot(account, asOf) {
+  let latest = null;
+  for (const snapshot of account.snapshots) {
+    if (snapshot.effective_date <= asOf && (!latest || snapshot.effective_date >= latest.effective_date)) latest = snapshot;
+  }
+  return latest;
+}
+
+function netWorthSummary(asOf) {
+  let totalAssets = 0;
+  let totalLiabilities = 0;
+  let resolvedAssetCount = 0;
+  let resolvedLiabilityCount = 0;
+  let unresolvedAccountCount = 0;
+  for (const account of accounts) {
+    const snapshot = latestSnapshot(account, asOf);
+    if (!snapshot) {
+      unresolvedAccountCount += 1;
+    } else if (account.type === "asset") {
+      totalAssets += Number(snapshot.amount);
+      resolvedAssetCount += 1;
+    } else {
+      totalLiabilities += Number(snapshot.amount);
+      resolvedLiabilityCount += 1;
+    }
+  }
+  return {
+    as_of: asOf, total_assets: fixed(totalAssets), total_liabilities: fixed(totalLiabilities),
+    total_net_worth: fixed(totalAssets - totalLiabilities),
+    active_account_count: accounts.filter((account) => !account.archived_on).length,
+    archived_account_count: accounts.filter((account) => account.archived_on).length,
+    resolved_asset_count: resolvedAssetCount, resolved_liability_count: resolvedLiabilityCount,
+    unresolved_account_count: unresolvedAccountCount, currency: "USD",
+  };
+}
+
+function netWorthHistory(url) {
+  const asOf = url.searchParams.get("as_of") || DEMO_AS_OF;
+  const months = Math.min(120, Math.max(1, Number(url.searchParams.get("months")) || 12));
+  const points = Array.from({ length: months }, (_, index) => netWorthSummary(historyDate(asOf, months - index - 1)));
+  const previous = points.at(-2);
+  const current = points.at(-1);
+  const change = previous ? Number(current.total_net_worth) - Number(previous.total_net_worth) : null;
+  return {
+    as_of: asOf, months, points,
+    change_amount: change === null ? null : fixed(change),
+    change_percent: change === null || Number(previous.total_net_worth) === 0 ? null : (change / Math.abs(Number(previous.total_net_worth)) * 100).toFixed(1),
+    currency: "USD",
+  };
+}
+
+function netWorthOverview(url) {
+  const history = netWorthHistory(url);
+  const asOf = history.as_of;
+  const startDate = history.points[0].as_of;
+  const includeArchived = url.searchParams.get("include_archived") === "true";
+  const visibleAccounts = accounts.filter((account) => includeArchived || !account.archived_on);
+  const analytics = visibleAccounts.map((account) => {
+    const start = latestSnapshot(account, startDate);
+    const end = latestSnapshot(account, asOf);
+    const typeTotal = Number(account.type === "asset" ? history.points.at(-1).total_assets : history.points.at(-1).total_liabilities);
+    const contribution = start && end ? (Number(end.amount) - Number(start.amount)) * (account.type === "asset" ? 1 : -1) : null;
+    return {
+      account_id: account.id, name: account.name, type: account.type, archived_on: account.archived_on,
+      current_balance: end?.amount ?? null, current_balance_date: end?.effective_date ?? null,
+      comparison_balance: start?.amount ?? null, comparison_balance_date: start?.effective_date ?? null,
+      contribution_change: contribution === null ? null : fixed(contribution),
+      composition_percent: end && typeTotal !== 0 ? (Number(end.amount) / typeTotal * 100).toFixed(1) : null,
+      currency: "USD",
+    };
+  }).sort((left, right) => {
+    if (left.contribution_change === null) return right.contribution_change === null ? left.name.localeCompare(right.name) : 1;
+    if (right.contribution_change === null) return -1;
+    return Math.abs(Number(right.contribution_change)) - Math.abs(Number(left.contribution_change)) || left.type.localeCompare(right.type) || left.name.localeCompare(right.name);
+  });
+  const comparisonAvailable = visibleAccounts.length > 0 && visibleAccounts.every((account) => latestSnapshot(account, startDate) && latestSnapshot(account, asOf));
+  const startValue = Number(history.points[0].total_net_worth);
+  const endValue = Number(history.points.at(-1).total_net_worth);
+  const change = comparisonAvailable ? endValue - startValue : null;
+  const resolvedDates = analytics.map((account) => account.current_balance_date).filter(Boolean).sort();
+  return {
+    summary: history.points.at(-1), history,
+    comparison: {
+      start_date: startDate, end_date: asOf, available: comparisonAvailable,
+      start_value: comparisonAvailable ? fixed(startValue) : null,
+      end_value: comparisonAvailable ? fixed(endValue) : null,
+      change_amount: change === null ? null : fixed(change),
+      change_percent: change === null || startValue === 0 ? null : (change / Math.abs(startValue) * 100).toFixed(1),
+    },
+    accounts: analytics,
+    coverage: {
+      resolved_account_count: history.points.at(-1).resolved_asset_count + history.points.at(-1).resolved_liability_count,
+      unresolved_account_count: history.points.at(-1).unresolved_account_count,
+      oldest_balance_date: resolvedDates[0] ?? null,
+    },
+    currency: "USD",
+  };
+}
+
+function historyDate(asOf, monthsBefore) {
+  if (monthsBefore === 0) return asOf;
+  const current = new Date(asOf + "T00:00:00Z");
+  return new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth() - monthsBefore + 1, 0)).toISOString().slice(0, 10);
 }
 
 function reportFor(items, month, year) {
