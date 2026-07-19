@@ -286,6 +286,7 @@ export const en = {
       updateBalances: "Update balances",
       updateBalance: "Update balance",
       manage: "Manage",
+      forAccount: "Actions for {name}",
       history: "History",
       showArchived: "Show archived accounts",
       editNameFor: "Edit name for {name}",

@@ -263,9 +263,11 @@ describe("net worth workflow", () => {
 
     render(<App />);
 
+    expect(screen.queryByRole("button", { name: "Manage" })).toBeNull();
     await userEvent.click(
-      (await screen.findAllByRole("button", { name: "Manage" }))[0],
+      await screen.findByRole("button", { name: "Actions for Savings" }),
     );
+    await userEvent.click(screen.getByRole("menuitem", { name: "Manage" }));
     await userEvent.click(screen.getByRole("button", { name: "History" }));
     await userEvent.click(
       await screen.findByRole("button", { name: "Delete account" }),

@@ -290,6 +290,7 @@ export const tr = {
       updateBalances: "Bakiyeleri güncelle",
       updateBalance: "Bakiyeyi güncelle",
       manage: "Yönet",
+      forAccount: "{name} için işlemler",
       history: "Geçmiş",
       showArchived: "Arşivlenmiş hesapları göster",
       editNameFor: "{name} adını düzenle",

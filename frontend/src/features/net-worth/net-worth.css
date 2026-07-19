@@ -839,13 +839,43 @@
   }
 
   .portfolio-account-actions {
+    position: relative;
     display: flex;
     justify-content: flex-end;
-    gap: 0.35rem;
   }
 
-  .portfolio-account-actions .button {
-    min-block-size: 2.55rem;
+  .portfolio-actions-trigger {
+    inline-size: var(--tap-target);
+    block-size: var(--tap-target);
+    min-inline-size: var(--tap-target);
+    border-radius: 50%;
+  }
+
+  .portfolio-actions-menu {
+    position: absolute;
+    z-index: 4;
+    inset-block-start: calc(100% + 0.35rem);
+    inset-inline-end: 0;
+    display: grid;
+    min-inline-size: 11.5rem;
+    padding: 0.35rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .portfolio-actions-menu button {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-block-size: var(--tap-target);
+    padding-inline: 0.75rem;
+    color: var(--ink);
+    text-align: start;
+    background: transparent;
+    border: 0;
+    border-radius: 0.5rem;
   }
 
   .portfolio-empty {
@@ -1224,7 +1254,6 @@
 
   .balance-studio-dialog {
     --balance-contrast-surface: #12202c;
-    --balance-contrast-surface-accent: #213d87;
     --balance-contrast-text: #fffdf8;
     --balance-contrast-muted: #c4ccd7;
 
@@ -1243,17 +1272,7 @@
     padding: clamp(1.25rem, 3cqi, 2.25rem);
     padding-inline-end: clamp(4.25rem, 8cqi, 5.5rem);
     color: var(--balance-contrast-text);
-    background:
-      radial-gradient(
-        circle at 88% -10%,
-        color-mix(
-          in srgb,
-          var(--balance-contrast-surface-accent) 72%,
-          transparent
-        ),
-        transparent 42%
-      ),
-      var(--balance-contrast-surface);
+    background: var(--balance-contrast-surface);
     border-block-end: 1px solid
       color-mix(in srgb, var(--balance-contrast-text) 14%, transparent);
   }
@@ -1668,7 +1687,6 @@
     padding: 0.9rem clamp(1rem, 2.5cqi, 1.6rem);
     background: var(--surface);
     border-block-start: 1px solid var(--rule);
-    box-shadow: 0 -1rem 2rem color-mix(in srgb, var(--ink) 5%, transparent);
   }
 
   .balance-save-status {
@@ -1918,7 +1936,7 @@
 
   @container portfolio (max-width: 68rem) {
     .portfolio-list > li {
-      grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+      grid-template-columns: 2.75rem minmax(0, 1fr) auto auto;
     }
 
     .portfolio-account-share,
@@ -1932,8 +1950,8 @@
     }
 
     .portfolio-account-actions {
-      grid-column: 2 / -1;
-      justify-content: flex-start;
+      grid-column: 4;
+      grid-row: 1;
     }
   }
 
@@ -2078,7 +2096,7 @@
     }
 
     .portfolio-list > li {
-      grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+      grid-template-columns: 2.75rem minmax(0, 1fr) auto auto;
     }
 
     .portfolio-account-balance {
@@ -2088,18 +2106,13 @@
     }
 
     .portfolio-account-share,
-    .portfolio-account-change,
-    .portfolio-account-actions {
+    .portfolio-account-change {
       grid-column: 1 / -1;
     }
 
     .portfolio-account-actions {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .portfolio-account-actions .button {
-      inline-size: 100%;
+      grid-column: 4;
+      grid-row: 1;
     }
 
     .balance-check-in-dialog,

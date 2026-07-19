@@ -18,8 +18,9 @@ npm run dev:demo
 
 The builder deliberately uses the project's public services and CSV adapters. It creates:
 
-- 137 transactions across a complete trailing year, including salary, freelance work, a bonus,
-  refunds, fixed costs, discretionary spending, health, learning, giving, gifts, and travel.
+- 281 transactions across a complete trailing year. Each month contains 22–25 merchant-level
+  entries across 16–20 active days, including realistic same-day clusters, salary, freelance work,
+  a bonus, refunds, fixed costs, everyday purchases, health, learning, giving, gifts, and travel.
 - 120 monthly budgets with July examples of on-track, near-limit, and over-budget categories.
 - Five category aliases, with source rows such as `groceries`, `metro`, and `streaming` normalized
   during import.
@@ -29,6 +30,10 @@ The builder deliberately uses the project's public services and CSV adapters. It
   snapshots for a meaningful 12-month net-worth history.
 - A USD ledger setting suitable for exercising English/Turkish locale formatting independently
   from the stored currency.
+
+The hosted Sites build reads these same transaction and budget CSV files at build time, so the
+portfolio deployment and the local SQLite demo present the same cashflow story instead of separate
+hand-maintained samples.
 
 Useful review points after building:
 

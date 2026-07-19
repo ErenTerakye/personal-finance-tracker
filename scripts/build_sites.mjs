@@ -1,4 +1,4 @@
-import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 
@@ -8,36 +8,93 @@ const client = resolve(output, "client");
 const spa = resolve(project, "src/finance_tracker/web/static/spa");
 const server = resolve(output, "server/index.js");
 
-const workerSource = String.raw`const transactions = [
-  { id: 1, type: "income", amount: "4200.00", category: "Salary", description: "July salary", date: "2026-07-01", created_at: "2026-07-01T09:00:00" },
-  { id: 2, type: "expense", amount: "1500.00", category: "Rent", description: "Apartment rent", date: "2026-07-02", created_at: "2026-07-02T09:00:00" },
-  { id: 3, type: "expense", amount: "205.20", category: "Utilities", description: "Electric and internet", date: "2026-07-06", created_at: "2026-07-06T09:00:00" },
-  { id: 4, type: "expense", amount: "428.75", category: "Food", description: "Groceries and summer market", date: "2026-07-09", created_at: "2026-07-09T09:00:00" },
-  { id: 5, type: "income", amount: "450.00", category: "Freelance", description: "Landing page update", date: "2026-06-26", created_at: "2026-06-26T09:00:00" },
-  { id: 6, type: "expense", amount: "486.40", category: "Food", description: "Groceries and farmers market", date: "2026-06-10", created_at: "2026-06-10T09:00:00" },
-  { id: 7, type: "expense", amount: "185.00", category: "Travel", description: "Family visit fuel", date: "2026-06-24", created_at: "2026-06-24T09:00:00" },
-  { id: 8, type: "income", amount: "4200.00", category: "Salary", description: "May salary", date: "2026-05-01", created_at: "2026-05-01T09:00:00" },
-  { id: 9, type: "expense", amount: "1500.00", category: "Rent", description: "Apartment rent", date: "2026-05-02", created_at: "2026-05-02T09:00:00" },
-  { id: 10, type: "expense", amount: "355.25", category: "Food", description: "Groceries and farmers market", date: "2026-05-09", created_at: "2026-05-09T09:00:00" },
-  { id: 11, type: "income", amount: "4200.00", category: "Salary", description: "April salary", date: "2026-04-01", created_at: "2026-04-01T09:00:00" },
-  { id: 12, type: "expense", amount: "1500.00", category: "Rent", description: "Apartment rent", date: "2026-04-02", created_at: "2026-04-02T09:00:00" },
-];
+const transactionCsv = await readFile(
+  resolve(project, "examples/sample_transactions.csv"),
+  "utf8",
+);
+const normalizedCategories = new Map([
+  ["groceries", "Food"],
+  ["supermarket", "Food"],
+  ["metro", "Transport"],
+  ["rideshare", "Transport"],
+  ["streaming", "Subscriptions"],
+]);
+const csvTransactions = transactionCsv
+  .trim()
+  .split("\n")
+  .slice(1)
+  .map((line, index) => {
+    const [type, amount, sourceCategory, description, date] = line.split(",");
+    return {
+      id: index + 1,
+      type,
+      amount,
+      category: normalizedCategories.get(sourceCategory) ?? sourceCategory,
+      description,
+      date,
+      created_at: `${date}T09:00:00`,
+    };
+  });
+const recurringTransactions = [
+  ["income", "4200.00", "Salary", "Monthly salary deposit", "2026-07-01"],
+  ["expense", "1500.00", "Rent", "Apartment rent", "2026-07-02"],
+  [
+    "expense",
+    "44.99",
+    "Subscriptions",
+    "Streaming and cloud storage",
+    "2026-07-20",
+  ],
+  ["expense", "35.00", "Fitness", "Community gym membership", "2026-07-24"],
+].map(([type, amount, category, description, date], index) => ({
+  id: csvTransactions.length + index + 1,
+  type,
+  amount,
+  category,
+  description,
+  date,
+  created_at: `${date}T09:00:00`,
+}));
+const hostedTransactions = [...csvTransactions, ...recurringTransactions].sort(
+  (left, right) => right.date.localeCompare(left.date) || right.id - left.id,
+);
+const budgetCsv = await readFile(
+  resolve(project, "examples/sample_budgets.csv"),
+  "utf8",
+);
+const hostedBudgets = budgetCsv
+  .trim()
+  .split("\n")
+  .slice(1)
+  .map((line, index) => {
+    const [category, amount, month, year] = line.split(",");
+    return {
+      id: index + 1,
+      category,
+      amount,
+      month: Number(month),
+      year: Number(year),
+      created_at: `${year}-${month.padStart(2, "0")}-01T09:00:00`,
+    };
+  });
 
-const budgets = [
-  { id: 1, category: "Rent", amount: "1600.00", month: 7, year: 2026, created_at: "2026-07-01T09:00:00" },
-  { id: 2, category: "Food", amount: "480.00", month: 7, year: 2026, created_at: "2026-07-01T09:00:00" },
-  { id: 3, category: "Utilities", amount: "225.00", month: 7, year: 2026, created_at: "2026-07-01T09:00:00" },
-  { id: 4, category: "Travel", amount: "550.00", month: 7, year: 2026, created_at: "2026-07-01T09:00:00" },
-];
+const workerSource = String.raw`const transactions = ${JSON.stringify(hostedTransactions)};
+
+const budgets = ${JSON.stringify(hostedBudgets)};
 
 const rules = [
   { id: 1, alias: "groceries", category: "Food", created_at: "2026-01-01T09:00:00" },
-  { id: 2, alias: "metro", category: "Transport", created_at: "2026-01-01T09:00:00" },
+  { id: 2, alias: "supermarket", category: "Food", created_at: "2026-01-01T09:00:00" },
+  { id: 3, alias: "metro", category: "Transport", created_at: "2026-01-01T09:00:00" },
+  { id: 4, alias: "rideshare", category: "Transport", created_at: "2026-01-01T09:00:00" },
+  { id: 5, alias: "streaming", category: "Subscriptions", created_at: "2026-01-01T09:00:00" },
 ];
 
 const templates = [
-  { id: 1, type: "expense", amount: "1600.00", category: "Rent", description: "Monthly rent", day_of_month: 2, active: true, created_at: "2026-01-01T09:00:00" },
-  { id: 2, type: "income", amount: "4200.00", category: "Salary", description: "Monthly salary", day_of_month: 1, active: true, created_at: "2026-01-01T09:00:00" },
+  { id: 1, type: "income", amount: "4200.00", category: "Salary", description: "Monthly salary deposit", day_of_month: 1, active: true, created_at: "2026-01-01T09:00:00" },
+  { id: 2, type: "expense", amount: "1500.00", category: "Rent", description: "Apartment rent", day_of_month: 2, active: true, created_at: "2026-01-01T09:00:00" },
+  { id: 3, type: "expense", amount: "44.99", category: "Subscriptions", description: "Streaming and cloud storage", day_of_month: 20, active: true, created_at: "2026-01-01T09:00:00" },
+  { id: 4, type: "expense", amount: "35.00", category: "Fitness", description: "Community gym membership", day_of_month: 24, active: true, created_at: "2026-01-01T09:00:00" },
 ];
 
 export default {
@@ -62,7 +119,8 @@ function apiResponse(request, url) {
     return json({ transactions: filtered, page: page(filtered.length) });
   }
   if (path === "/api/budgets" && request.method === "GET") {
-    return json({ budgets, page: page(budgets.length) });
+    const filtered = filterBudgets(url);
+    return json({ budgets: filtered, page: page(filtered.length) });
   }
   if (path === "/api/budgets/status") return json({ statuses: budgetStatuses(url) });
   if (path === "/api/category-rules") return json({ rules });
@@ -92,7 +150,7 @@ function dashboard(url) {
     month, year, period_label: new Date(Date.UTC(year, month - 1, 1)).toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" }),
     report, trend: { months: trendMonths, total_income: sum(trendMonths, "total_income"), total_expenses: sum(trendMonths, "total_expenses"), net_savings: sum(trendMonths, "net_savings"), transaction_count: trendMonths.reduce((total, item) => total + item.transaction_count, 0), top_expense_categories: report.expenses_by_category },
     savings_rate: income ? fixed((Number(report.net_savings) / income) * 100) : "0.00",
-    recent_transactions: monthTransactions.slice(-5).reverse(), budget_statuses: budgetStatuses(url), currency: "USD",
+    recent_transactions: monthTransactions.slice(0, 5), budget_statuses: budgetStatuses(url), currency: "USD",
   };
 }
 
@@ -119,6 +177,10 @@ function budgetStatuses(url) {
 
 function filterTransactions(url) {
   return transactions.filter((item) => (!url.searchParams.get("month") || Number(item.date.slice(5, 7)) === Number(url.searchParams.get("month"))) && (!url.searchParams.get("year") || Number(item.date.slice(0, 4)) === Number(url.searchParams.get("year"))) && (!url.searchParams.get("category") || item.category === url.searchParams.get("category")) && (!url.searchParams.get("transaction_type") || item.type === url.searchParams.get("transaction_type")));
+}
+
+function filterBudgets(url) {
+  return budgets.filter((item) => (!url.searchParams.get("month") || item.month === Number(url.searchParams.get("month"))) && (!url.searchParams.get("year") || item.year === Number(url.searchParams.get("year"))));
 }
 
 function grouped(items, type) {

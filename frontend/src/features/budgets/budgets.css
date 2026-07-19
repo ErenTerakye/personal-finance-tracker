@@ -524,13 +524,7 @@
     padding-block: 0;
     padding-inline: 1.2rem;
     opacity: 0;
-    background:
-      linear-gradient(
-        150deg,
-        color-mix(in oklab, var(--card-tone) 12%, transparent),
-        transparent 12rem
-      ),
-      var(--surface-2);
+    background: var(--surface-2);
     border: 1px solid transparent;
     border-radius: var(--radius);
     pointer-events: none;

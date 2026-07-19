@@ -46,8 +46,9 @@ finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
 finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 ```
 
-The builder seeds a complete trailing year of cashflow, mixed budget states, category aliases,
-recurring templates with duplicate-safe application, and asset/liability histories. See
+The builder seeds a complete trailing year with 281 merchant-level transactions, realistic
+same-day activity, mixed budget states, category aliases, recurring templates with duplicate-safe
+application, and asset/liability histories. See
 [../examples/README.md](../examples/README.md) for the detailed scenario.
 
 ## Run the Local Web UI

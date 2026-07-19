@@ -163,14 +163,6 @@ export function ActivityLedger({
                     </strong>
                     <div className="ledger-entry-actions">
                       <button
-                        className="icon-button ghost ledger-quick-edit"
-                        type="button"
-                        aria-label={t("common.editTransaction", { name })}
-                        onClick={() => onEdit(transaction)}
-                      >
-                        <Pencil aria-hidden="true" size={17} />
-                      </button>
-                      <button
                         className="icon-button ghost action-trigger-btn"
                         type="button"
                         popoverTarget={`row-actions-${transaction.id}`}

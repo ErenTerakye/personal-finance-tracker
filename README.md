@@ -52,9 +52,10 @@ finance-tracker web --db-path demo.sqlite3
 ```
 
 Open the Web UI at `http://127.0.0.1:8000`. The detailed fictional demo spans August 2025
-through July 2026 and includes transactions, budgets, category aliases, recurring entries,
-asset/liability histories, an archived account, and meaningful report states. `demo.sqlite3` is
-generated local state, intentionally ignored by git, and can be rebuilt at any time.
+through July 2026 with 281 merchant-level transactions across 16–20 active days per month,
+realistic same-day activity, budgets, category aliases, recurring entries, asset/liability
+histories, an archived account, and meaningful report states. `demo.sqlite3` is generated local
+state, intentionally ignored by git, and can be rebuilt at any time.
 
 The default database path is `./data/finance_tracker.sqlite3`. That file is local runtime state for your own machine and may not match the documented demo. For the reviewer demo, start the local Web UI against the generated demo database:
 
@@ -165,7 +166,10 @@ The browser interface uses modern platform features progressively, including sem
 
 GitHub Pages can host static files only, so it cannot run the live Python/SQLite app. A static showcase is available in [docs/showcase/index.html](docs/showcase/index.html) for portfolio hosting, while real CRUD requires `finance-tracker web`.
 
-Sites deployment uses `npm run build:sites` to package the React UI with a small hosted-demo Worker adapter and seeded sample data. The published demo is interactive for review, but its changes are session-only; durable CRUD remains available through the local FastAPI + SQLite app.
+Sites deployment uses `npm run build:sites` to package the React UI with a small hosted-demo Worker
+adapter seeded from the same inspectable transaction and budget CSV files as the local demo. The
+published demo is interactive for review, but its changes are session-only; durable CRUD remains
+available through the local FastAPI + SQLite app.
 
 ## Common Commands
 

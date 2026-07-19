@@ -315,16 +315,6 @@
     .ledger-entry:hover {
       background: var(--surface-2);
     }
-
-    .ledger-quick-edit {
-      opacity: 0;
-      transition: opacity var(--motion-micro) var(--ease-out);
-    }
-
-    .ledger-entry:hover .ledger-quick-edit,
-    .ledger-entry:focus-within .ledger-quick-edit {
-      opacity: 1;
-    }
   }
 
   @container workspace-main (min-width: 48rem) {
@@ -365,10 +355,6 @@
 
     .ledger-entry-actions {
       justify-self: end;
-    }
-
-    .ledger-quick-edit {
-      display: none;
     }
   }
 

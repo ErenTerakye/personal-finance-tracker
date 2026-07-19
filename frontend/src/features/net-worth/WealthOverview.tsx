@@ -4,11 +4,12 @@ import {
   CheckCircle2,
   CircleAlert,
   Landmark,
+  MoreHorizontal,
   Plus,
   ShieldCheck,
   WalletCards,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActionButton } from "../../shared/components/actions";
 import { Field } from "../../shared/components/fields";
 import { formatDate, todayIso } from "../../shared/format/dates";
@@ -501,6 +502,10 @@ function PortfolioRow({
   onManage: (account: NetWorthAccountAnalytics) => void;
 }) {
   const { t } = useI18n();
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const actionsTriggerRef = useRef<HTMLButtonElement>(null);
+  const firstActionRef = useRef<HTMLButtonElement>(null);
   const change =
     account.contribution_change === null
       ? null
@@ -509,6 +514,35 @@ function PortfolioRow({
     0,
     Math.min(100, Number(account.composition_percent ?? 0)),
   );
+
+  useEffect(() => {
+    if (!actionsOpen) return;
+
+    firstActionRef.current?.focus();
+    const closeActions = (event: PointerEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent && event.key !== "Escape") return;
+      if (
+        event instanceof PointerEvent &&
+        actionsRef.current?.contains(event.target as Node)
+      ) {
+        return;
+      }
+      setActionsOpen(false);
+      if (event instanceof KeyboardEvent) actionsTriggerRef.current?.focus();
+    };
+
+    document.addEventListener("pointerdown", closeActions);
+    document.addEventListener("keydown", closeActions);
+    return () => {
+      document.removeEventListener("pointerdown", closeActions);
+      document.removeEventListener("keydown", closeActions);
+    };
+  }, [actionsOpen]);
+
+  const runAction = (action: () => void) => {
+    setActionsOpen(false);
+    action();
+  };
 
   return (
     <li className={account.archived_on ? "is-archived" : ""}>
@@ -560,24 +594,70 @@ function PortfolioRow({
           ? t("netWorth.account.unresolved")
           : money(account.current_balance)}
       </strong>
-      <div className="portfolio-account-actions">
-        {!account.archived_on ? (
-          <button
-            className="button secondary"
-            type="button"
-            onClick={() => onUpdate(account)}
-          >
-            <WalletCards aria-hidden="true" size={17} />
-            {t("netWorth.actions.updateBalance")}
-          </button>
-        ) : null}
+      <div className="portfolio-account-actions" ref={actionsRef}>
         <button
-          className="button ghost"
+          ref={actionsTriggerRef}
+          className="icon-button ghost portfolio-actions-trigger"
           type="button"
-          onClick={() => onManage(account)}
+          aria-label={t("netWorth.actions.forAccount", { name: account.name })}
+          aria-haspopup="menu"
+          aria-expanded={actionsOpen}
+          onClick={() => setActionsOpen((open) => !open)}
         >
-          {t("netWorth.actions.manage")}
+          <MoreHorizontal aria-hidden="true" size={20} />
         </button>
+        {actionsOpen ? (
+          <div
+            className="portfolio-actions-menu"
+            role="menu"
+            onKeyDown={(event) => {
+              if (
+                !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
+              ) {
+                return;
+              }
+              event.preventDefault();
+              const items = Array.from(
+                event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                  '[role="menuitem"]',
+                ),
+              );
+              const current = items.indexOf(
+                document.activeElement as HTMLButtonElement,
+              );
+              const next =
+                event.key === "Home"
+                  ? 0
+                  : event.key === "End"
+                    ? items.length - 1
+                    : (current +
+                        (event.key === "ArrowDown" ? 1 : -1) +
+                        items.length) %
+                      items.length;
+              items[next]?.focus();
+            }}
+          >
+            {!account.archived_on ? (
+              <button
+                ref={firstActionRef}
+                type="button"
+                role="menuitem"
+                onClick={() => runAction(() => onUpdate(account))}
+              >
+                <WalletCards aria-hidden="true" size={17} />
+                {t("netWorth.actions.updateBalance")}
+              </button>
+            ) : null}
+            <button
+              ref={account.archived_on ? firstActionRef : undefined}
+              type="button"
+              role="menuitem"
+              onClick={() => runAction(() => onManage(account))}
+            >
+              {t("netWorth.actions.manage")}
+            </button>
+          </div>
+        ) : null}
       </div>
     </li>
   );

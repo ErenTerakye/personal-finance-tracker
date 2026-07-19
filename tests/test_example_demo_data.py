@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -32,7 +33,7 @@ def test_sample_data_builds_rich_reproducible_demo(tmp_path):
     budgets = BudgetService(db_path)
     accounts = AccountService(db_path)
 
-    assert result.transaction_count == 137
+    assert result.transaction_count == 281
     assert result.budget_count == 120
     assert result.category_rule_count == 5
     assert result.recurring_template_count == 4
@@ -48,10 +49,22 @@ def test_sample_data_builds_rich_reproducible_demo(tmp_path):
         context_transactions=transactions.list_transactions(),
     )
     assert july_report.total_income == Decimal("4500.00")
-    assert july_report.total_expenses == Decimal("3476.24")
-    assert july_report.net_savings == Decimal("1023.76")
-    assert july_report.ytd_net_savings == Decimal("10812.27")
+    assert july_report.total_expenses == Decimal("3843.53")
+    assert july_report.net_savings == Decimal("656.47")
+    assert july_report.ytd_net_savings == Decimal("8528.07")
+    assert july_report.transaction_count == 25
     assert len(july_report.expenses_by_category) == 11
+
+    july_transactions = transactions.list_transactions(month=7, year=2026)
+    july_activity = Counter(transaction.date for transaction in july_transactions)
+    assert len(july_activity) == 17
+    assert max(july_activity.values()) == 3
+    assert {transaction.description for transaction in july_transactions} >= {
+        "Neighborhood market groceries",
+        "Coffee and breakfast sandwich",
+        "Transit card top-up",
+        "Pharmacy essentials",
+    }
 
     trend = build_trend_report(
         transactions.list_transactions(),
@@ -59,11 +72,11 @@ def test_sample_data_builds_rich_reproducible_demo(tmp_path):
         end_month=7,
         end_year=2026,
     )
-    assert trend.transaction_count == 137
+    assert trend.transaction_count == 281
     assert trend.total_income == Decimal("52870.00")
-    assert trend.total_expenses == Decimal("33383.78")
-    assert trend.months[0].net_savings == Decimal("1554.46")
-    assert trend.months[-1].net_savings == Decimal("1023.76")
+    assert trend.total_expenses == Decimal("37246.14")
+    assert trend.months[0].net_savings == Decimal("1253.85")
+    assert trend.months[-1].net_savings == Decimal("656.47")
 
     statuses = {
         status.budget.category: status.status
@@ -112,7 +125,7 @@ def test_sample_data_builds_rich_reproducible_demo(tmp_path):
     ) as csv_file:
         preview = preview_transactions_csv_file(csv_file, transactions)
     assert preview.valid_count == 0
-    assert preview.duplicate_count == 133
+    assert preview.duplicate_count == 277
     assert preview.invalid_count == 0
     assert any(
         row.original_category == "groceries"
@@ -129,5 +142,5 @@ def test_sample_data_builds_rich_reproducible_demo(tmp_path):
         tmp_path / "exports" / "budgets.csv",
         budgets.list_budgets(),
     )
-    assert transaction_export.read_text(encoding="utf-8").count("\n") == 138
+    assert transaction_export.read_text(encoding="utf-8").count("\n") == 282
     assert budget_export.read_text(encoding="utf-8").count("\n") == 121

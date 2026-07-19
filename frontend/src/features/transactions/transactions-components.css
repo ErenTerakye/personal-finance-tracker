@@ -86,7 +86,7 @@
 
   .action-trigger-btn {
     padding: 0.4rem;
-    border-radius: var(--radius);
+    border-radius: 50%;
     transition: background 0.15s ease;
   }
 

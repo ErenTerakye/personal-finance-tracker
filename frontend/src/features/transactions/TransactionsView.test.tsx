@@ -406,6 +406,11 @@ describe("transactions workflow", () => {
       await screen.findByRole("link", { name: /Transactions|Activity/i }),
     );
     await within(activeRoute()).findByText("Groceries");
+    expect(
+      within(activeRoute()).queryByRole("button", {
+        name: /Edit .+ transaction/,
+      }),
+    ).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Actions" }));
     const popover = document.getElementById("row-actions-1");
     if (popover && typeof (popover as any).showPopover === "function") {
