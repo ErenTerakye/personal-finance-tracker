@@ -47,15 +47,16 @@ finance-tracker list --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker summary --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
 finance-tracker trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
-finance-tracker net-worth-history --months 12 --as-of 2026-07-16 --db-path demo.sqlite3
+finance-tracker net-worth-history --months 120 --as-of 2026-07-16 --db-path demo.sqlite3
 finance-tracker web --db-path demo.sqlite3
 ```
 
-Open the Web UI at `http://127.0.0.1:8000`. The detailed fictional demo spans August 2025
-through July 2026 with 281 merchant-level transactions across 16–20 active days per month,
-realistic same-day activity, budgets, category aliases, recurring entries, asset/liability
-histories, an archived account, and meaningful report states. `demo.sqlite3` is generated local
-state, intentionally ignored by git, and can be rebuilt at any time.
+Open the Web UI at `http://127.0.0.1:8000`. The detailed fictional demo has 120 months of net-worth
+history from August 2016 through July 2026, plus 281 merchant-level transactions across 16–20
+active days per month in its detailed trailing year. It includes realistic same-day activity,
+budgets, category aliases, recurring entries, asset/liability histories, an archived account, and
+meaningful report states. `demo.sqlite3` is generated local state, intentionally ignored by git,
+and can be rebuilt at any time.
 
 The default database path is `./data/finance_tracker.sqlite3`. That file is local runtime state for your own machine and may not match the documented demo. For the reviewer demo, start the local Web UI against the generated demo database:
 
@@ -74,7 +75,7 @@ finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker category-rule-list --db-path demo.sqlite3
 finance-tracker recurring-list --db-path demo.sqlite3
 finance-tracker account-list --as-of 2026-07-16 --db-path demo.sqlite3
-finance-tracker net-worth-history --months 12 --as-of 2026-07-16 --db-path demo.sqlite3
+finance-tracker net-worth-history --months 120 --as-of 2026-07-16 --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --preview --db-path demo.sqlite3
 finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
 finance-tracker trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3

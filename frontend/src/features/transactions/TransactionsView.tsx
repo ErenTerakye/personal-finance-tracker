@@ -1,4 +1,11 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  FormEvent,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import "./transactions-components.css";
 import "./transactions.css";
 import "./transactions-overrides.css";
@@ -36,6 +43,7 @@ import type {
 } from "../../types";
 import { localizedNotice } from "../../shared/i18n/notices";
 import { useI18n } from "../../shared/i18n/I18nProvider";
+import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
 import {
   defaultTransaction,
   readTransactionFilters,
@@ -86,14 +94,27 @@ export function TransactionsView({
   const [importOpen, setImportOpen] = useState(false);
   const [search, setSearch] = useState(() => readSearchParam());
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
+  const commandBarRef = useRef<HTMLDivElement>(null);
+  const commandBarScrollAnchor = useRef<{
+    top: number;
+    periodKey: string;
+  } | null>(null);
   const ledgerHeadingRef = useRef<HTMLElement>(null);
   const handledCreateRequest = useRef(0);
   const { t } = useI18n();
   const transactionResource = useTransactions(filters);
   const categoryResource = useTransactionCategories();
+  const requestedPeriod = {
+    month: Number(filters.month || selectedPeriod.month),
+    year: Number(filters.year || selectedPeriod.year),
+  };
+  const periodTransition = usePeriodTransition(
+    requestedPeriod,
+    transactionResource,
+  );
   const transactions = useMemo(
-    () => transactionResource.data?.transactions ?? [],
-    [transactionResource.data?.transactions],
+    () => periodTransition.data?.transactions ?? [],
+    [periodTransition.data?.transactions],
   );
   const visibleTransactions = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
@@ -113,7 +134,8 @@ export function TransactionsView({
       return sort === "oldest" ? -byDate : byDate;
     });
   }, [search, sort, transactions]);
-  const loading = transactionResource.status === "loading";
+  const loading =
+    transactionResource.status === "loading" && !periodTransition.data;
   const categories = useMemo(
     () =>
       Array.from(
@@ -287,15 +309,77 @@ export function TransactionsView({
   );
   const netDirection = compareMoney(netActivity, 0);
   const hasRefinements = Boolean(search.trim() || activeFilterLabels.length);
+  const presentedPeriod = periodTransition.presentedPeriod ?? requestedPeriod;
+  const requestedPeriodKey = transactionPeriodKey(requestedPeriod);
+  const presentedPeriodKey = transactionPeriodKey(presentedPeriod);
+
+  useLayoutEffect(() => {
+    const anchor = commandBarScrollAnchor.current;
+    if (!anchor || anchor.periodKey !== requestedPeriodKey) return;
+
+    restoreTransactionScrollAnchor(commandBarRef.current, anchor.top);
+    if (
+      transactionResource.status !== "success" ||
+      presentedPeriodKey !== requestedPeriodKey
+    ) {
+      return;
+    }
+
+    let finalFrame = 0;
+    const settleFrame = window.requestAnimationFrame(() => {
+      restoreTransactionScrollAnchor(commandBarRef.current, anchor.top);
+      finalFrame = window.requestAnimationFrame(() => {
+        restoreTransactionScrollAnchor(commandBarRef.current, anchor.top);
+        if (commandBarScrollAnchor.current === anchor) {
+          commandBarScrollAnchor.current = null;
+        }
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(settleFrame);
+      window.cancelAnimationFrame(finalFrame);
+    };
+  }, [transactionResource.status, presentedPeriodKey, requestedPeriodKey]);
+
+  function updateFilters(next: TransactionFilters) {
+    const periodChanged =
+      Number(next.month) !== Number(filters.month) ||
+      Number(next.year) !== Number(filters.year);
+    const commandBar = commandBarRef.current;
+    if (periodChanged && commandBar && window.scrollY > 0) {
+      commandBarScrollAnchor.current = {
+        top: commandBar.getBoundingClientRect().top,
+        periodKey: transactionPeriodKey({
+          month: Number(next.month),
+          year: Number(next.year),
+        }),
+      };
+    }
+    writeTransactionFilters(next);
+    setFilters(next);
+  }
 
   return (
-    <>
+    <div
+      className={`transactions-period-view${periodTransition.pending ? " is-period-pending" : ""}`}
+      aria-busy={periodTransition.pending}
+    >
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {!periodTransition.pending && periodTransition.presentedPeriod
+          ? t("common.periodLoaded", {
+              period: periodLabel(
+                periodTransition.presentedPeriod.month,
+                periodTransition.presentedPeriod.year,
+              ),
+            })
+          : ""}
+      </p>
       <PageHeader
         eyebrow={t("transactions.eyebrow")}
         title={t("transactions.title")}
         summary={t("transactions.routeSummary", {
           count: visibleTransactions.length,
-          period: periodLabel(Number(filters.month), Number(filters.year)),
+          period: periodLabel(presentedPeriod.month, presentedPeriod.year),
         })}
         className="activity-hero"
         actions={
@@ -380,7 +464,7 @@ export function TransactionsView({
           </article>
         </section>
 
-        <div className="activity-command-bar">
+        <div className="activity-command-bar" ref={commandBarRef}>
           <label className="transaction-search" htmlFor="activity-search">
             <span>{t("transactions.searchLabel")}</span>
             <span className="search-control">
@@ -400,10 +484,7 @@ export function TransactionsView({
           <TransactionFilterForm
             filters={filters}
             selectedPeriod={selectedPeriod}
-            onChange={(next) => {
-              writeTransactionFilters(next);
-              setFilters(next);
-            }}
+            onChange={updateFilters}
           />
           {hasRefinements ? (
             <div
@@ -438,7 +519,7 @@ export function TransactionsView({
           <header className="activity-ledger-header">
             <div>
               <p className="eyebrow">
-                {periodLabel(Number(filters.month), Number(filters.year))}
+                {periodLabel(presentedPeriod.month, presentedPeriod.year)}
               </p>
               <h2>{t("transactions.historyTitle")}</h2>
               <p aria-live="polite">{detailLabel}</p>
@@ -560,8 +641,25 @@ export function TransactionsView({
           <option key={cat} value={cat} />
         ))}
       </datalist>
-    </>
+    </div>
   );
+}
+
+function transactionPeriodKey(period: { month: number; year: number }) {
+  return `${period.year}-${period.month}`;
+}
+
+function restoreTransactionScrollAnchor(
+  commandBar: HTMLElement | null,
+  expectedTop: number,
+) {
+  if (!commandBar) return;
+  const offset = commandBar.getBoundingClientRect().top - expectedTop;
+  if (Math.abs(offset) < 0.5) return;
+  window.scrollTo({
+    top: window.scrollY + offset,
+    behavior: "instant",
+  });
 }
 
 function readSearchParam(): string {

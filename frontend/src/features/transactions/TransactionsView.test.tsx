@@ -157,15 +157,16 @@ describe("transactions workflow", () => {
       screen.getByRole("button", { name: "Advanced filters" }),
     );
     expect(screen.getByLabelText("Transaction filter period")).toBeVisible();
+    const resetFilters = screen.getByRole("button", { name: "Reset filters" });
+    expect(resetFilters).toBeVisible();
+    expect(resetFilters).toBeDisabled();
     await userEvent.type(
       within(
         document.querySelector<HTMLElement>(".transaction-filter-panel")!,
       ).getByLabelText("Category"),
       "Food",
     );
-    expect(
-      await screen.findByRole("button", { name: "Reset filters" }),
-    ).toBeVisible();
+    await waitFor(() => expect(resetFilters).toBeEnabled());
   });
 
   it("summarizes cash movement and groups the timeline by day", async () => {

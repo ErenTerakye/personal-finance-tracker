@@ -541,6 +541,71 @@ test("keeps the budget board scroll position when its period changes", async ({
     .toBe(Math.round(boardTop));
 });
 
+test("keeps transaction filters anchored while their period changes", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 600 });
+  await mockApi(page);
+  await page.route("**/api/transactions**", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname !== "/api/transactions") {
+      await route.fallback();
+      return;
+    }
+    if (url.searchParams.get("month") === "5") {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    await route.fulfill({
+      json: {
+        transactions: Array.from({ length: 18 }, (_, index) => ({
+          ...transaction(),
+          id: index + 1,
+          description: `Transaction ${index + 1}`,
+        })),
+      },
+    });
+  });
+  await page.goto("/transactions?month=6&year=2026");
+
+  await page.getByRole("button", { name: "Advanced filters" }).click();
+  const commandBar = page.locator(".activity-command-bar");
+  const resetFilters = page.getByRole("button", { name: "Reset filters" });
+  await expect(resetFilters).toBeDisabled();
+  await commandBar.scrollIntoViewIfNeeded();
+  const scrollY = await page.evaluate(() => window.scrollY);
+  const commandBarTop = await commandBar.evaluate(
+    (element) => element.getBoundingClientRect().top,
+  );
+  expect(scrollY).toBeGreaterThan(0);
+
+  await page
+    .getByRole("group", { name: "Transaction filter period" })
+    .getByRole("button", { name: "Previous month, May 2026" })
+    .click();
+
+  await expect(page).toHaveURL(/month=5&year=2026/);
+  await expect(page.locator(".transactions-period-view")).toHaveAttribute(
+    "aria-busy",
+    "true",
+  );
+  await expect(
+    page.locator(".activity-ledger .skeleton-container"),
+  ).toHaveCount(0);
+  await expect(resetFilters).toBeEnabled();
+  await expect(page.locator(".transactions-period-view")).toHaveAttribute(
+    "aria-busy",
+    "false",
+  );
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollY);
+  await expect
+    .poll(() =>
+      commandBar.evaluate((element) =>
+        Math.round(element.getBoundingClientRect().top),
+      ),
+    )
+    .toBe(Math.round(commandBarTop));
+});
+
 test("keeps the compact app bar configured above period snapshots", async ({
   page,
 }) => {

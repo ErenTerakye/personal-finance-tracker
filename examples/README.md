@@ -1,7 +1,8 @@
 # Detailed Reviewer Demo
 
-The example data describes one fictional household ledger from August 2025 through July 2026.
-It is synthetic, deterministic, and safe to rebuild.
+The example data describes one fictional household ledger with ten years of net-worth history from
+August 2016 through July 2026 and detailed cashflow from August 2025 onward. It is synthetic,
+deterministic, and safe to rebuild.
 
 Build a fresh demo database:
 
@@ -26,8 +27,11 @@ The builder deliberately uses the project's public services and CSV adapters. It
   during import.
 - Four active recurring templates. The first July application creates the missing recurring
   entries; the second application proves duplicate-safe behavior.
-- Six active asset/liability accounts and one archived account, backed by 71 dated balance
-  snapshots for a meaningful 12-month net-worth history.
+- Six active asset/liability accounts and one archived account, backed by 827 dated balance
+  snapshots for a fully populated 120-month net-worth history. The story starts with negative net
+  worth, follows uneven loan repayment and saving, includes realistic month-to-month cash and
+  investment volatility around recognizable 2020 and 2022 market drawdowns, and ends with a
+  checking-account transition and positive net worth.
 - A USD ledger setting suitable for exercising English/Turkish locale formatting independently
   from the stored currency.
 
@@ -44,7 +48,7 @@ finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker category-rule-list --db-path demo.sqlite3
 finance-tracker recurring-list --db-path demo.sqlite3
 finance-tracker account-list --as-of 2026-07-16 --db-path demo.sqlite3
-finance-tracker net-worth-history --months 12 --as-of 2026-07-16 --db-path demo.sqlite3
+finance-tracker net-worth-history --months 120 --as-of 2026-07-16 --db-path demo.sqlite3
 finance-tracker import-csv examples/sample_transactions.csv --preview --db-path demo.sqlite3
 ```
 

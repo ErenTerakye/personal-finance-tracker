@@ -40,7 +40,7 @@ finance-tracker list --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
 finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
 finance-tracker trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
-finance-tracker net-worth-history --months 12 --as-of 2026-07-16 --db-path demo.sqlite3
+finance-tracker net-worth-history --months 120 --as-of 2026-07-16 --db-path demo.sqlite3
 finance-tracker web --db-path demo.sqlite3
 finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
 finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
@@ -48,7 +48,7 @@ finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
 
 The builder seeds a complete trailing year with 281 merchant-level transactions, realistic
 same-day activity, mixed budget states, category aliases, recurring templates with duplicate-safe
-application, and asset/liability histories. See
+application, and a fully populated 120-month asset/liability history. See
 [../examples/README.md](../examples/README.md) for the detailed scenario.
 
 ## Run the Local Web UI
@@ -161,7 +161,7 @@ finance-tracker account-balance-set 1 13850 --date 2026-07-16
 finance-tracker account-balance-list 1
 finance-tracker account-list --as-of 2026-07-16
 finance-tracker net-worth --as-of 2026-07-16
-finance-tracker net-worth-history --months 12 --as-of 2026-07-16
+finance-tracker net-worth-history --months 120 --as-of 2026-07-16
 ```
 
 Liability balances are positive amounts owed. Snapshot deletion and account archiving require

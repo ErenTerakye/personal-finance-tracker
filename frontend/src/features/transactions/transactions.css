@@ -1,4 +1,8 @@
 @layer features {
+  .transactions-period-view {
+    min-inline-size: 0;
+  }
+
   .activity-hero {
     container: activity-hero / inline-size;
     position: relative;

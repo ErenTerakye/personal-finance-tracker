@@ -120,15 +120,14 @@ export function TransactionFilterForm({
                 </select>
               </Field>
               <div className="filter-actions">
-                {hasActiveFilters ? (
-                  <ActionButton
-                    icon={RotateCcw}
-                    variant="ghost"
-                    onClick={resetFilters}
-                  >
-                    {t("common.resetFilters")}
-                  </ActionButton>
-                ) : null}
+                <ActionButton
+                  icon={RotateCcw}
+                  variant="ghost"
+                  disabled={!hasActiveFilters}
+                  onClick={resetFilters}
+                >
+                  {t("common.resetFilters")}
+                </ActionButton>
               </div>
             </form>
           </FilterBar>

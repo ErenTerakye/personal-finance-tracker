@@ -40,7 +40,7 @@ def test_sample_data_builds_rich_reproducible_demo(tmp_path):
     assert result.recurring_created_count == 4
     assert result.recurring_duplicate_count == 4
     assert result.account_count == 7
-    assert result.snapshot_count == 71
+    assert result.snapshot_count == 827
 
     july_report = build_monthly_report(
         transactions.list_transactions(month=7, year=2026),
@@ -119,6 +119,30 @@ def test_sample_data_builds_rich_reproducible_demo(tmp_path):
     assert net_worth.archived_account_count == 1
     assert history.points[0].total_net_worth == Decimal("36390.00")
     assert history.points[-1].total_net_worth == Decimal("56280.00")
+
+    full_history = build_net_worth_history(
+        all_accounts,
+        snapshots,
+        date.fromisoformat(DEMO_AS_OF),
+        months=120,
+    )
+    assert len(full_history.points) == 120
+    assert full_history.points[0].as_of == date(2016, 8, 31)
+    assert full_history.points[0].unresolved_account_count == 0
+    assert full_history.points[0].total_net_worth == Decimal("-17440.00")
+    assert (
+        full_history.points[43].total_net_worth
+        < full_history.points[42].total_net_worth
+    )
+    monthly_changes = [
+        point.total_net_worth - previous.total_net_worth
+        for previous, point in zip(
+            full_history.points, full_history.points[1:], strict=False
+        )
+    ]
+    assert sum(change < 0 for change in monthly_changes) >= 24
+    assert sum(change < 0 for change in monthly_changes[-11:]) >= 4
+    assert full_history.points[-1].total_net_worth == Decimal("56280.00")
 
     with (EXAMPLES_DIR / "sample_transactions.csv").open(
         newline="", encoding="utf-8"
