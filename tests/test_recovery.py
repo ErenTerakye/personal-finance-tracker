@@ -64,16 +64,12 @@ def test_recovery_cli_requires_confirmation_and_reports_verification(tmp_path):
     TransactionService(ledger).add_transaction("income", "10", "Other", "Safe", "2026-07-18")
     runner = CliRunner()
 
-    created = runner.invoke(
-        app, ["ledger-backup", str(backup), "--db-path", str(ledger)]
-    )
-    verified = runner.invoke(app, ["ledger-verify", str(backup)])
-    refused = runner.invoke(
-        app, ["ledger-restore", str(backup), "--db-path", str(ledger)]
-    )
+    created = runner.invoke(app, ["data", "backup", str(backup), "--db-path", str(ledger)])
+    verified = runner.invoke(app, ["data", "verify", str(backup)])
+    refused = runner.invoke(app, ["data", "restore", str(backup), "--db-path", str(ledger)])
     restored = runner.invoke(
         app,
-        ["ledger-restore", str(backup), "--confirm", "--db-path", str(ledger)],
+        ["data", "restore", str(backup), "--confirm", "--db-path", str(ledger)],
     )
 
     assert created.exit_code == 0
@@ -93,7 +89,7 @@ def test_verify_rejects_unsupported_schema_version(tmp_path):
     finally:
         connection.close()
 
-    result = CliRunner().invoke(app, ["ledger-verify", str(backup)])
+    result = CliRunner().invoke(app, ["data", "verify", str(backup)])
 
     assert result.exit_code == 1
     assert "Unsupported ledger schema version" in result.output
@@ -113,7 +109,7 @@ def test_restore_rejects_incomplete_v1_without_replacing_active_ledger(tmp_path)
 
     result = CliRunner().invoke(
         app,
-        ["ledger-restore", str(backup), "--confirm", "--db-path", str(ledger)],
+        ["data", "restore", str(backup), "--confirm", "--db-path", str(ledger)],
     )
 
     assert result.exit_code == 1
@@ -132,9 +128,7 @@ def test_restore_migrates_genuine_v1_before_replacing_active_ledger(tmp_path):
             "INSERT INTO transactions (type, amount, category, description, date) "
             "VALUES ('expense', '12.50', 'Food', 'Migrated', '2026-07-18')"
         )
-        connection.execute(
-            "INSERT INTO settings (key, value) VALUES ('currency', 'TRY')"
-        )
+        connection.execute("INSERT INTO settings (key, value) VALUES ('currency', 'TRY')")
         connection.execute("PRAGMA user_version = 1")
         connection.commit()
     finally:
@@ -151,9 +145,7 @@ def test_restore_migrates_genuine_v1_before_replacing_active_ledger(tmp_path):
 
 def test_verify_rejects_current_schema_with_missing_required_table(tmp_path):
     backup = tmp_path / "missing-table.sqlite3"
-    TransactionService(backup).add_transaction(
-        "income", "10", "Other", "Incomplete", "2026-07-18"
-    )
+    TransactionService(backup).add_transaction("income", "10", "Other", "Incomplete", "2026-07-18")
     connection = sqlite3.connect(backup)
     try:
         connection.execute("PRAGMA foreign_keys = OFF")
@@ -162,7 +154,7 @@ def test_verify_rejects_current_schema_with_missing_required_table(tmp_path):
     finally:
         connection.close()
 
-    result = CliRunner().invoke(app, ["ledger-verify", str(backup)])
+    result = CliRunner().invoke(app, ["data", "verify", str(backup)])
 
     assert result.exit_code == 1
     assert "missing table accounts" in result.output
@@ -170,9 +162,7 @@ def test_verify_rejects_current_schema_with_missing_required_table(tmp_path):
 
 def test_verify_rejects_current_schema_without_required_foreign_key(tmp_path):
     backup = tmp_path / "missing-foreign-key.sqlite3"
-    TransactionService(backup).add_transaction(
-        "income", "10", "Other", "Incomplete", "2026-07-18"
-    )
+    TransactionService(backup).add_transaction("income", "10", "Other", "Incomplete", "2026-07-18")
     connection = sqlite3.connect(backup)
     try:
         connection.executescript(
@@ -198,7 +188,7 @@ def test_verify_rejects_current_schema_without_required_foreign_key(tmp_path):
     finally:
         connection.close()
 
-    result = CliRunner().invoke(app, ["ledger-verify", str(backup)])
+    result = CliRunner().invoke(app, ["data", "verify", str(backup)])
 
     assert result.exit_code == 1
     assert "missing foreign key account_balance_snapshots.account_id" in result.output

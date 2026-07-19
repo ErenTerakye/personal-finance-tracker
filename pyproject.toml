@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "personal-finance-tracker"
-version = "1.1.0"
-description = "A local-first finance tracker with Typer CLI, FastAPI API, React UI, SQLite, CSV workflows, reports, and charts."
+version = "2.0.0"
+description = "A local-first finance tracker with a Textual workspace, Typer CLI, FastAPI, React, and SQLite."
 readme = "README.md"
 requires-python = ">=3.14"
 license = "MIT"
@@ -23,6 +23,7 @@ classifiers = [
 ]
 dependencies = [
     "matplotlib>=3.8",
+    "textual>=6.0,<7.0",
     "typer>=0.12",
 ]
 
@@ -50,6 +51,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 finance_tracker = [
+    "tui/*.tcss",
     "web/static/**/*.html",
     "web/static/**/*.css",
     "web/static/**/*.js",
@@ -66,6 +68,11 @@ filterwarnings = [
     "error::_pytest.warning_types.PytestUnraisableExceptionWarning",
     "error::starlette.exceptions.StarletteDeprecationWarning",
 ]
+
+[tool.coverage.run]
+# Textual rendering and event wiring are exercised through headless Pilot interaction tests.
+# Keep the Python line gate focused on the framework-neutral core, as with the React adapter.
+omit = ["src/finance_tracker/tui/*"]
 
 [tool.ruff]
 line-length = 100

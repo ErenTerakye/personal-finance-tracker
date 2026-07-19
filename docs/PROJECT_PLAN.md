@@ -10,7 +10,8 @@ The project is intentionally local-first and easy to run. It demonstrates Python
 
 The application uses a layered structure:
 
-- `cli/` owns Typer composition, command groups, terminal output, and process exit behavior.
+- `cli/` owns grouped Typer composition, automation output, migration diagnostics, and exits.
+- `tui/` owns the Textual application shell, responsive terminal views, forms, and interaction.
 - `models/` owns domain objects and validation helpers by capability.
 - `services/` coordinates transactional use cases, deterministic connection closure, and complete-ledger recovery while keeping entrypoints away from persistence details.
 - `repositories/` owns SQL queries and row mapping without committing transactions.
@@ -90,35 +91,18 @@ finance-tracker
 
 Supported commands:
 
-- `init`: create the database and schema.
-- `add`: add an income or expense.
-- `edit`: update selected fields on an existing transaction.
-- `list`: list transactions with optional filters.
-- `delete`: remove a transaction by ID.
-- `budget-set`: set or update a monthly category budget.
-- `budget-list`: list stored budgets with optional filters.
-- `budget-delete`: remove a budget by ID.
-- `budget-status`: compare monthly category budgets with actual expenses.
-- `category-rule-set`: create or update a category alias rule.
-- `category-rule-list`: list category alias rules.
-- `category-rule-delete`: remove a category alias rule by ID.
-- `recurring-add`: create a monthly recurring transaction template.
-- `recurring-list`: list recurring transaction templates.
-- `recurring-delete`: remove a recurring template by ID.
-- `recurring-apply`: manually create a month of transactions from active templates.
-- `summary`: print monthly totals.
-- `report`: print monthly totals and optionally save a PNG chart.
-- `trends`: print multi-month trend totals and optionally save a PNG chart.
-- `import-csv`: import transactions from CSV.
-- `export-csv`: export transactions to CSV.
-- `import-budgets-csv`: import monthly category budgets from CSV.
-- `export-budgets-csv`: export monthly category budgets to CSV.
-- `web`: run the local FastAPI Web UI.
-- `account-add`, `account-list`, and `account-edit`: manage tracked asset/liability accounts.
-- `account-balance-set`, `account-balance-list`, and `account-balance-delete`: manage dated balances.
-- `account-archive` and `account-delete`: close or correct eligible accounts safely.
-- `net-worth` and `net-worth-history`: report total assets minus total liabilities as of a date.
-- `ledger-backup`, `ledger-verify`, and `ledger-restore`: protect and recover the complete SQLite ledger.
+- Bare `finance-tracker` and `tui` open the full-screen terminal workspace.
+- `overview` prints monthly cash flow, budget attention, recent activity, and net worth.
+- `transaction add|list|edit|delete|import|export` owns ledger entries and CSV movement.
+- `budget set|list|status|delete|import|export` owns monthly category plans.
+- `account add|list|edit|archive|delete` and `account balance set|list|delete|check-in`
+  own accounts, dated snapshots, and atomic multi-account updates.
+- `recurring add|list|apply|delete` and `category set|list|delete` own Manage workflows.
+- `report monthly|trends|net-worth|net-worth-history` owns deterministic reporting and charts.
+- `data init|backup|verify|restore`, `settings get|set`, and `web` own local operations.
+
+Global `--db-path`, `--output table|json`, `--no-color`, and `--yes` options apply across groups.
+The v2 surface is intentionally breaking; old names are rejected with migration guidance.
 
 Database path defaults to `./data/finance_tracker.sqlite3`, which is local runtime state and ignored
 by git. Users can override it with `--db-path` or `FINANCE_TRACKER_DB`; reproducible demos should

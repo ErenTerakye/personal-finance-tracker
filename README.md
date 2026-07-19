@@ -4,10 +4,15 @@
 ![Python 3.14](https://img.shields.io/badge/python-3.14-blue)
 ![Node 24](https://img.shields.io/badge/node-24-43853d)
 
-A local-first finance tracker with a Typer CLI, FastAPI JSON API, React browser UI, SQLite persistence, CSV workflows, and data visualization.
+A local-first finance tracker with an interactive Textual workspace, grouped Typer commands,
+FastAPI JSON API, React browser UI, SQLite persistence, CSV workflows, and data visualization.
 
 ## Highlights
 
+- Open a keyboard-first terminal workspace with Overview, Transactions, Budgets, Accounts, and
+  Manage destinations, responsive layouts, direct forms, a command palette, and mouse support.
+- Automate every terminal workflow through grouped commands, global database selection,
+  machine-readable JSON envelopes, predictable exit codes, and safe confirmations.
 - Add, edit, list, delete, import, and export financial transactions.
 - Set monthly category budgets and compare them to actual expenses.
 - Normalize category aliases so imports and manual entries roll into clean categories.
@@ -43,15 +48,17 @@ npm run build
 ```bash
 .venv/bin/python examples/build_demo.py --force
 mkdir -p reports exports
-finance-tracker list --month 7 --year 2026 --db-path demo.sqlite3
-finance-tracker summary --month 7 --year 2026 --db-path demo.sqlite3
-finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
-finance-tracker trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
-finance-tracker net-worth-history --months 120 --as-of 2026-07-16 --db-path demo.sqlite3
+finance-tracker --db-path demo.sqlite3
+finance-tracker transaction list --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker overview --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker report monthly --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
+finance-tracker report trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker report net-worth-history --months 120 --as-of 2026-07-16 --db-path demo.sqlite3
 finance-tracker web --db-path demo.sqlite3
 ```
 
-Open the Web UI at `http://127.0.0.1:8000`. The detailed fictional demo has 120 months of net-worth
+The bare `finance-tracker` command opens the terminal workspace; `finance-tracker web` opens the
+browser workspace at `http://127.0.0.1:8000`. The detailed fictional demo has 120 months of net-worth
 history from August 2016 through July 2026, plus 281 merchant-level transactions across 16–20
 active days per month in its detailed trailing year. It includes realistic same-day activity,
 budgets, category aliases, recurring entries, asset/liability histories, an archived account, and
@@ -71,17 +78,17 @@ Run a fresh local demo without touching the default database:
 ```bash
 .venv/bin/python examples/build_demo.py --force
 mkdir -p reports exports
-finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
-finance-tracker category-rule-list --db-path demo.sqlite3
-finance-tracker recurring-list --db-path demo.sqlite3
-finance-tracker account-list --as-of 2026-07-16 --db-path demo.sqlite3
-finance-tracker net-worth-history --months 120 --as-of 2026-07-16 --db-path demo.sqlite3
-finance-tracker import-csv examples/sample_transactions.csv --preview --db-path demo.sqlite3
-finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
-finance-tracker trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker budget status --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker category list --db-path demo.sqlite3
+finance-tracker recurring list --db-path demo.sqlite3
+finance-tracker account list --as-of 2026-07-16 --db-path demo.sqlite3
+finance-tracker report net-worth-history --months 120 --as-of 2026-07-16 --db-path demo.sqlite3
+finance-tracker transaction import examples/sample_transactions.csv --preview --db-path demo.sqlite3
+finance-tracker report monthly --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
+finance-tracker report trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
 finance-tracker web --db-path demo.sqlite3
-finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
-finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
+finance-tracker transaction export exports/transactions.csv --db-path demo.sqlite3
+finance-tracker budget export exports/budgets.csv --db-path demo.sqlite3
 ```
 
 See [examples/README.md](examples/README.md) for the scenario inventory and suggested review
@@ -97,6 +104,24 @@ Reviewer screenshots are refreshed from the detailed July 2026 demo using
 ![Transactions mobile screenshot](docs/assets/screenshots/transactions-mobile.png)
 
 ![Budgets desktop screenshot](docs/assets/screenshots/budgets-desktop.png)
+
+## Terminal Workspace and Grouped Commands
+
+Run `finance-tracker` in an interactive terminal to open the full-screen local workspace. Use
+`1`–`5` for destinations, `Ctrl+P` for the fuzzy command palette, `/` for search, `A` for the global
+transaction form, `R` to refresh, and `?` for the complete keyboard guide. The layout works from
+80×24 upward and exposes the same actions through buttons and optional mouse input.
+
+For scripts, select the database globally and request a stable JSON envelope:
+
+```bash
+finance-tracker --db-path demo.sqlite3 --output json overview --month 7 --year 2026
+finance-tracker --db-path demo.sqlite3 --output json transaction list --type expense
+finance-tracker --db-path demo.sqlite3 --yes data restore backups/demo.sqlite3
+```
+
+The v2 command surface intentionally replaces the former flat names with capability groups. Calling
+a removed v1 name prints its exact replacement and exits without running it.
 
 ## Web UI
 
@@ -175,21 +200,21 @@ available through the local FastAPI + SQLite app.
 ## Common Commands
 
 ```bash
-finance-tracker add income 2500 --category Salary --description "July salary" --date 2026-07-01
-finance-tracker add expense 428.75 --category Food --description "Groceries and summer market" --date 2026-07-09
-finance-tracker edit 2 --amount 52.25 --category Household
-finance-tracker category-rule-set groceries Food
-finance-tracker recurring-add expense 1600 --category Rent --description "Monthly rent" --day 1
-finance-tracker recurring-apply --month 7 --year 2026
-finance-tracker budget-set Food 480 --month 7 --year 2026
-finance-tracker budget-status --month 7 --year 2026
-finance-tracker net-worth --as-of 2026-07-16
-finance-tracker net-worth-history --months 12 --as-of 2026-07-16
-finance-tracker trends --months 6 --end-month 7 --end-year 2026
-finance-tracker list --month 7 --year 2026
-finance-tracker export-csv exports/transactions.csv
-finance-tracker export-budgets-csv exports/budgets.csv
-finance-tracker delete 1
+finance-tracker transaction add income 2500 --category Salary --description "July salary" --date 2026-07-01
+finance-tracker transaction add expense 428.75 --category Food --description "Groceries and summer market" --date 2026-07-09
+finance-tracker transaction edit 2 --amount 52.25 --category Household
+finance-tracker category set groceries Food
+finance-tracker recurring add expense 1600 --category Rent --description "Monthly rent" --day 1
+finance-tracker recurring apply --month 7 --year 2026
+finance-tracker budget set Food 480 --month 7 --year 2026
+finance-tracker budget status --month 7 --year 2026
+finance-tracker report net-worth --as-of 2026-07-16
+finance-tracker report net-worth-history --months 12 --as-of 2026-07-16
+finance-tracker report trends --months 6 --end-month 7 --end-year 2026
+finance-tracker transaction list --month 7 --year 2026
+finance-tracker transaction export exports/transactions.csv
+finance-tracker budget export exports/budgets.csv
+finance-tracker transaction delete 1
 ```
 
 Override the default database path with `--db-path` or the `FINANCE_TRACKER_DB` environment variable.
@@ -224,6 +249,7 @@ src/finance_tracker/
   reports/           # Monthly/trend calculations and text formatting
   charts/            # PNG chart rendering with isolated matplotlib use
   cli/               # Typer composition and capability command groups
+  tui/               # Textual workspace, views, forms, and terminal styling
   web/               # FastAPI composition, schemas, routers, and SPA host
   database.py        # SQLite setup and ordered migrations
 ```

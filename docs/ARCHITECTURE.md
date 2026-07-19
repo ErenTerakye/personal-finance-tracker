@@ -2,8 +2,8 @@
 
 ## Scope and trust model
 
-Personal Finance Tracker is a single-user, local-first layered modular monolith. The Typer CLI and
-React browser UI share one SQLite ledger on the user's machine through the same Python use cases.
+Personal Finance Tracker is a single-user, local-first layered modular monolith. The Textual TUI,
+grouped Typer CLI, and React browser UI share one SQLite ledger through the same Python use cases.
 The FastAPI server binds to `127.0.0.1` by default and has no authentication, remote account,
 telemetry, cloud sync, background worker, or service worker. Non-loopback binding is rejected unless
 the operator passes `--allow-remote-unauthenticated`, making that trust-boundary exception explicit.
@@ -12,7 +12,7 @@ the operator passes `--allow-remote-unauthenticated`, making that trust-boundary
 
 ```text
 Typer command groups ───────┐
-                           ├─> services ─> repositories ─> SQLite
+Textual workspace ──────────┼─> services ─> repositories ─> SQLite
 FastAPI routers/schemas ────┘       │
        ▲                            ├─> CSV adapters
        │                            └─> reports ─> matplotlib charts
@@ -22,11 +22,12 @@ React feature modules ── same-origin JSON/CSV/text/PNG
 - `models/` contains framework-free domain values and validation.
 - `database.py` owns connection configuration, schema SQL, and ordered migrations.
 - `repositories/` owns parameterized SQL and row mapping but never commits independently.
-- `services/` owns application validation, orchestration, and complete commit/rollback units.
+- `services/` owns application validation, orchestration, complete commit/rollback units, and the
+  shared framework-neutral overview read model.
 - `csv_io/`, `reports/`, and `charts/` own their formats and calculations. Matplotlib appears only
   in `charts/`.
-- `cli/` and `web/` are inbound adapters. They call public services and never import repositories or
-  execute SQL.
+- `cli/`, `tui/`, and `web/` are inbound adapters. They call public services and never import
+  repositories or execute SQL. Textual imports remain isolated in `tui/`.
 - Python import boundaries are checked by `tests/architecture/test_python_imports.py`.
 
 The frontend follows one dependency direction:
@@ -43,9 +44,18 @@ composition owns routing and cross-feature composition. `shared/` owns reusable 
 formatting, i18n, theme, charts, and layered styles. Browser transport is isolated in `api/`, and
 `fetch` is used only by `api/client.ts`. ESLint enforces these boundaries.
 
+## Terminal delivery
+
+The Typer root launches Textual only when stdin/stdout are interactive and the terminal is capable;
+otherwise grouped commands remain the deterministic fallback. The TUI operates directly on the
+selected SQLite ledger, uses five stable destinations, responsive 80×24 layouts, modal forms,
+keyboard/mouse input, non-color status labels, and the built-in fuzzy command palette. No FastAPI
+process is required. Command-mode JSON wraps money and dates without changing their decimal/ISO
+contracts, and destructive automation requires explicit confirmation.
+
 ## Request and transaction flow
 
-A CLI command or FastAPI router validates transport input and calls a concrete service. The service
+A CLI command, TUI action, or FastAPI router validates adapter input and calls a concrete service. The service
 opens a configured connection, constructs repositories for that connection, and owns the complete
 transaction. Repositories execute SQL and return domain models. Successful use cases commit at the
 service boundary; failures roll back before project exceptions are translated by the inbound

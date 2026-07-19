@@ -56,9 +56,7 @@ def test_amount_accepts_safe_cent_boundary_and_rejects_larger_value(tmp_path):
 
     assert transaction.amount == Decimal("90071992547409.91")
     with pytest.raises(ValidationError, match="no greater than 90071992547409.91"):
-        service.add_transaction(
-            "income", "90071992547409.92", "Other", "Too large", "2026-06-01"
-        )
+        service.add_transaction("income", "90071992547409.92", "Other", "Too large", "2026-06-01")
 
 
 def test_delete_transaction(tmp_path):
@@ -141,6 +139,7 @@ def test_cli_list_aligns_long_category_names(tmp_path):
     runner.invoke(
         app,
         [
+            "transaction",
             "add",
             "expense",
             "22.50",
@@ -155,7 +154,7 @@ def test_cli_list_aligns_long_category_names(tmp_path):
         ],
     )
 
-    result = runner.invoke(app, ["list", "--db-path", str(db_path)])
+    result = runner.invoke(app, ["transaction", "list", "--db-path", str(db_path)])
 
     assert result.exit_code == 0
     lines = result.output.splitlines()

@@ -36,18 +36,14 @@ def test_account_service_resolves_as_of_balances_and_replaces_same_day(tmp_path)
         "Card": Decimal("250.05"),
         "Cash": Decimal("1000.10"),
     }
-    assert {item.account.name: item.balance for item in current}["Cash"] == Decimal(
-        "1250.35"
-    )
+    assert {item.account.name: item.balance for item in current}["Cash"] == Decimal("1250.35")
     assert len(service.list_snapshots(cash.id)) == 2
 
 
 def test_balance_rejects_values_above_safe_cent_boundary(tmp_path):
     service = AccountService(tmp_path / "finance.sqlite3")
 
-    account = service.create_account(
-        "Vault", "asset", "90071992547409.91", "2026-01-01"
-    )
+    account = service.create_account("Vault", "asset", "90071992547409.91", "2026-01-01")
 
     assert account.id is not None
     with pytest.raises(ValidationError, match="no greater than 90071992547409.91"):
@@ -209,9 +205,7 @@ def test_snapshot_and_account_deletion_guards(tmp_path):
     [
         (lambda service, account_id: service.set_balance(account_id, "-1", "2026-01-01"), "zero"),
         (
-            lambda service, account_id: service.set_balance(
-                account_id, "1", "2099-01-01"
-            ),
+            lambda service, account_id: service.set_balance(account_id, "1", "2099-01-01"),
             "future",
         ),
         (
@@ -224,9 +218,7 @@ def test_snapshot_and_account_deletion_guards(tmp_path):
         ),
     ],
 )
-def test_account_validation_rejects_invalid_balance_lifecycle(
-    tmp_path, operation, message
-):
+def test_account_validation_rejects_invalid_balance_lifecycle(tmp_path, operation, message):
     service = AccountService(tmp_path / "finance.sqlite3")
     account = service.create_account("Cash", "asset", "10", "2026-01-01")
     assert account.id is not None
@@ -256,7 +248,8 @@ def test_cli_account_and_net_worth_flow(tmp_path):
     add_asset = runner.invoke(
         app,
         [
-            "account-add",
+            "account",
+            "add",
             "--name",
             "Cash",
             "--type",
@@ -272,7 +265,8 @@ def test_cli_account_and_net_worth_flow(tmp_path):
     add_liability = runner.invoke(
         app,
         [
-            "account-add",
+            "account",
+            "add",
             "--name",
             "Card",
             "--type",
@@ -287,11 +281,12 @@ def test_cli_account_and_net_worth_flow(tmp_path):
     )
     summary = runner.invoke(
         app,
-        ["net-worth", "--as-of", "2026-07-16", "--db-path", str(db_path)],
+        ["report", "net-worth", "--as-of", "2026-07-16", "--db-path", str(db_path)],
     )
     history = runner.invoke(
         app,
         [
+            "report",
             "net-worth-history",
             "--months",
             "2",
@@ -361,9 +356,12 @@ def test_api_account_snapshot_archive_and_net_worth_flow(tmp_path):
     assert archive_without_confirmation.status_code == 400
     assert archived.json()["account"]["archived_on"] == "2026-07-16"
     assert client.get("/api/accounts").json()["accounts"] == []
-    assert len(
-        client.get(
-            "/api/accounts",
-            params={"include_archived": True},
-        ).json()["accounts"]
-    ) == 1
+    assert (
+        len(
+            client.get(
+                "/api/accounts",
+                params={"include_archived": True},
+            ).json()["accounts"]
+        )
+        == 1
+    )

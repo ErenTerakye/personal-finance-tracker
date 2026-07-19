@@ -43,6 +43,8 @@ EXPECTED_EXPORTS = {
         "CategoryRuleService",
         "LedgerRecoveryService",
         "LedgerVerification",
+        "OverviewService",
+        "OverviewSnapshot",
         "RecurringApplyResult",
         "RecurringTemplateService",
         "SettingsService",

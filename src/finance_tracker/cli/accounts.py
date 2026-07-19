@@ -12,6 +12,7 @@ from finance_tracker.cli.common import (
     format_table,
     handle_error,
 )
+from finance_tracker.cli.runtime import current_runtime
 from finance_tracker.exceptions import FinanceTrackerError, ValidationError
 from finance_tracker.models import parse_snapshot_date
 from finance_tracker.reports import (
@@ -135,6 +136,38 @@ def account_balance_set(
     )
 
 
+def account_balance_check_in(
+    balances: Annotated[
+        list[str],
+        typer.Option(
+            "--balance",
+            help="Account balance as ACCOUNT_ID=AMOUNT; repeat for multiple accounts.",
+        ),
+    ],
+    effective_date: Annotated[
+        str | None, typer.Option("--date", help="Effective date (YYYY-MM-DD)")
+    ] = None,
+    db_path: DbPathOption = None,
+) -> None:
+    """Record multiple account balances in one atomic check-in."""
+    try:
+        updates: list[tuple[int, str]] = []
+        for value in balances:
+            account_id, amount = value.split("=", maxsplit=1)
+            updates.append((int(account_id), amount))
+        result = account_service(db_path).check_in_balances(
+            effective_date or date.today(), updates
+        )
+    except (FinanceTrackerError, ValueError) as exc:
+        if isinstance(exc, FinanceTrackerError):
+            handle_error(exc)
+        handle_error(ValidationError("Balances must use ACCOUNT_ID=AMOUNT."))
+    typer.echo(
+        f"Recorded {len(result.snapshots)} balance(s); "
+        f"replaced {result.replaced_count} existing snapshot(s)."
+    )
+
+
 def account_balance_list(
     account_id: Annotated[int, typer.Argument(help="Account ID")],
     db_path: DbPathOption = None,
@@ -167,7 +200,7 @@ def account_balance_delete(
     db_path: DbPathOption = None,
 ) -> None:
     """Delete a non-sole balance snapshot."""
-    if not confirm:
+    if not (confirm or current_runtime().assume_yes):
         handle_error(ValidationError("Use --confirm to delete a balance snapshot."))
     try:
         account_service(db_path).delete_snapshot(account_id, effective_date)
@@ -191,7 +224,7 @@ def account_archive(
         account = account_service(db_path).archive_account(
             account_id,
             closing_date or date.today(),
-            confirm_zero_balance=confirm,
+            confirm_zero_balance=confirm or current_runtime().assume_yes,
         )
     except FinanceTrackerError as exc:
         handle_error(exc)
@@ -210,7 +243,7 @@ def account_delete(
     db_path: DbPathOption = None,
 ) -> None:
     """Permanently delete an eligible newly created account."""
-    if not confirm:
+    if not (confirm or current_runtime().assume_yes):
         handle_error(ValidationError("Use --confirm to permanently delete an account."))
     try:
         account_service(db_path).delete_account(account_id)

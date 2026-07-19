@@ -11,11 +11,12 @@ FORBIDDEN_PROJECT_DEPENDENCIES = {
     "models": {"database", "repositories", "services", "csv_io", "reports", "charts", "cli", "web"},
     "database": {"repositories", "services", "csv_io", "reports", "charts", "cli", "web"},
     "repositories": {"services", "csv_io", "reports", "charts", "cli", "web"},
-    "services": {"csv_io", "reports", "charts", "cli", "web"},
+    "services": {"csv_io", "charts", "cli", "tui", "web"},
     "csv_io": {"database", "repositories", "reports", "charts", "cli", "web"},
     "reports": {"database", "repositories", "services", "csv_io", "charts", "cli", "web"},
     "charts": {"database", "repositories", "services", "csv_io", "cli", "web"},
     "cli": {"database", "repositories", "web"},
+    "tui": {"database", "repositories", "cli", "web"},
     "web": {"database", "repositories", "cli"},
 }
 
@@ -138,6 +139,8 @@ def test_framework_and_matplotlib_imports_stay_at_their_owned_boundaries():
                 violations.append(f"{relative} imports {imported_name} outside web/schemas")
             if top_level_name == "typer" and relative.parts[0] != "cli":
                 violations.append(f"{relative} imports {imported_name} outside cli")
+            if top_level_name == "textual" and relative.parts[0] != "tui":
+                violations.append(f"{relative} imports {imported_name} outside tui")
 
     assert not violations, "Misplaced framework imports:\n" + "\n".join(violations)
 
@@ -159,7 +162,7 @@ def test_inbound_adapters_contain_no_raw_sql():
         re.I | re.S,
     )
     violations = []
-    for adapter in ("cli", "web"):
+    for adapter in ("cli", "tui", "web"):
         for path in (SOURCE_ROOT / adapter).rglob("*.py"):
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):

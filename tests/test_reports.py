@@ -131,10 +131,11 @@ def test_cli_smoke_flow(tmp_path):
     runner = CliRunner()
     db_path = tmp_path / "finance.sqlite3"
 
-    init_result = runner.invoke(app, ["init", "--db-path", str(db_path)])
+    init_result = runner.invoke(app, ["data", "init", "--db-path", str(db_path)])
     add_result = runner.invoke(
         app,
         [
+            "transaction",
             "add",
             "expense",
             "45.90",
@@ -149,7 +150,7 @@ def test_cli_smoke_flow(tmp_path):
         ],
     )
     summary_result = runner.invoke(
-        app, ["summary", "--month", "6", "--year", "2026", "--db-path", str(db_path)]
+        app, ["report", "monthly", "--month", "6", "--year", "2026", "--db-path", str(db_path)]
     )
 
     assert init_result.exit_code == 0
@@ -165,6 +166,7 @@ def test_cli_edit_updates_transaction(tmp_path):
     add_result = runner.invoke(
         app,
         [
+            "transaction",
             "add",
             "expense",
             "45.90",
@@ -181,6 +183,7 @@ def test_cli_edit_updates_transaction(tmp_path):
     edit_result = runner.invoke(
         app,
         [
+            "transaction",
             "edit",
             "1",
             "--amount",
@@ -191,7 +194,7 @@ def test_cli_edit_updates_transaction(tmp_path):
             str(db_path),
         ],
     )
-    list_result = runner.invoke(app, ["list", "--db-path", str(db_path)])
+    list_result = runner.invoke(app, ["transaction", "list", "--db-path", str(db_path)])
 
     assert add_result.exit_code == 0
     assert edit_result.exit_code == 0
@@ -208,6 +211,7 @@ def test_cli_trends_outputs_multi_month_report_and_saves_chart(tmp_path):
     runner.invoke(
         app,
         [
+            "transaction",
             "add",
             "income",
             "3000",
@@ -222,6 +226,7 @@ def test_cli_trends_outputs_multi_month_report_and_saves_chart(tmp_path):
     runner.invoke(
         app,
         [
+            "transaction",
             "add",
             "expense",
             "120",
@@ -237,6 +242,7 @@ def test_cli_trends_outputs_multi_month_report_and_saves_chart(tmp_path):
     result = runner.invoke(
         app,
         [
+            "report",
             "trends",
             "--months",
             "2",

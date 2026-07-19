@@ -67,26 +67,26 @@ CLI_PARAMETER_NAMES = {
 }
 
 POSITIONAL_PARAMETERS = {
-    ("add", "transaction_type"),
-    ("add", "amount"),
-    ("delete", "transaction_id"),
+    ("transaction", "add", "transaction_type"),
+    ("transaction", "add", "amount"),
+    ("transaction", "delete", "transaction_id"),
     ("budget-set", "category"),
     ("budget-set", "amount"),
     ("budget-delete", "budget_id"),
-    ("category-rule-set", "alias"),
-    ("category-rule-set", "category"),
-    ("category-rule-delete", "rule_id"),
-    ("recurring-add", "transaction_type"),
-    ("recurring-add", "amount"),
-    ("recurring-delete", "template_id"),
+    ("category", "set", "alias"),
+    ("category", "set", "category"),
+    ("category", "delete", "rule_id"),
+    ("recurring", "add", "transaction_type"),
+    ("recurring", "add", "amount"),
+    ("recurring", "delete", "template_id"),
     ("edit", "transaction_id"),
-    ("import-csv", "path"),
+    ("transaction", "import", "path"),
     ("import-budgets-csv", "path"),
-    ("export-csv", "path"),
+    ("transaction", "export", "path"),
     ("export-budgets-csv", "path"),
-    ("settings-get", "key"),
-    ("settings-set", "key"),
-    ("settings-set", "value"),
+    ("settings", "get", "key"),
+    ("settings", "set", "key"),
+    ("settings", "set", "value"),
     ("account-edit", "account_id"),
     ("account-balance-set", "account_id"),
     ("account-balance-set", "amount"),
@@ -132,15 +132,15 @@ OPTION_SPELLINGS = {
 }
 
 REQUIRED_OPTIONS = {
-    ("add", "category"),
+    ("transaction", "add", "category"),
     ("budget-set", "month"),
     ("budget-set", "year"),
     ("budget-status", "month"),
     ("budget-status", "year"),
-    ("recurring-add", "category"),
-    ("recurring-add", "day_of_month"),
-    ("recurring-apply", "month"),
-    ("recurring-apply", "year"),
+    ("recurring", "add", "category"),
+    ("recurring", "add", "day_of_month"),
+    ("recurring", "apply", "month"),
+    ("recurring", "apply", "year"),
     ("summary", "month"),
     ("summary", "year"),
     ("report", "month"),
@@ -339,36 +339,47 @@ def _api_operations(schema: Mapping[str, object]) -> set[tuple[str, str]]:
     return operations
 
 
-def test_cli_command_and_parameter_manifest_is_frozen():
+def test_cli_v2_grouped_command_manifest_is_frozen():
     root = get_command(app)
+    expected = {
+        "transaction": {"add", "list", "edit", "delete", "import", "export"},
+        "budget": {"set", "list", "status", "delete", "import", "export"},
+        "account": {"add", "list", "edit", "archive", "delete", "balance"},
+        "recurring": {"add", "list", "apply", "delete"},
+        "category": {"set", "list", "delete"},
+        "report": {"monthly", "trends", "net-worth", "net-worth-history"},
+        "data": {"init", "backup", "verify", "restore"},
+        "settings": {"get", "set"},
+    }
 
-    assert set(root.commands) == set(CLI_PARAMETER_NAMES)
-    assert len(root.commands) == 39
-    for command_name, parameter_names in CLI_PARAMETER_NAMES.items():
-        parameters = root.commands[command_name].params
-        actual_names = tuple(parameter.name for parameter in parameters)
-        assert actual_names == parameter_names
-        for parameter in parameters:
-            key = (command_name, parameter.name)
-            if key in POSITIONAL_PARAMETERS:
-                assert parameter.opts == [parameter.name]
-                assert parameter.required
-            else:
-                assert tuple(parameter.opts) == OPTION_SPELLINGS[parameter.name]
-                assert parameter.required == (key in REQUIRED_OPTIONS)
-        assert {
-            parameter.name: parameter.default for parameter in parameters if not parameter.required
-        } == CLI_PARAMETER_DEFAULTS[command_name]
+    assert set(root.commands) == {*expected, "tui", "overview", "web"}
+    assert tuple(parameter.name for parameter in root.params) == (
+        "db_path",
+        "output",
+        "no_color",
+        "yes",
+        "install_completion",
+        "show_completion",
+    )
+    for group_name, command_names in expected.items():
+        assert set(root.commands[group_name].commands) == command_names
+    assert set(root.commands["account"].commands["balance"].commands) == {
+        "set",
+        "list",
+        "delete",
+        "check-in",
+    }
 
 
 def test_cli_representative_success_error_and_output_contract(tmp_path):
     db_path = tmp_path / "cli-contract.sqlite3"
     runner = CliRunner()
 
-    initialized = runner.invoke(app, ["init", "--db-path", str(db_path)])
+    initialized = runner.invoke(app, ["data", "init", "--db-path", str(db_path)])
     added = runner.invoke(
         app,
         [
+            "transaction",
             "add",
             "expense",
             "12.50",
@@ -380,10 +391,11 @@ def test_cli_representative_success_error_and_output_contract(tmp_path):
             str(db_path),
         ],
     )
-    listed = runner.invoke(app, ["list", "--db-path", str(db_path)])
+    listed = runner.invoke(app, ["transaction", "list", "--db-path", str(db_path)])
     invalid = runner.invoke(
         app,
         [
+            "transaction",
             "add",
             "expense",
             "0",
@@ -411,13 +423,14 @@ def test_cli_category_rule_and_recurring_command_contracts(tmp_path):
 
     rule_set = runner.invoke(
         app,
-        ["category-rule-set", "groceries", "Food", "--db-path", str(db_path)],
+        ["category", "set", "groceries", "Food", "--db-path", str(db_path)],
     )
-    rule_list = runner.invoke(app, ["category-rule-list", "--db-path", str(db_path)])
+    rule_list = runner.invoke(app, ["category", "list", "--db-path", str(db_path)])
     recurring_add = runner.invoke(
         app,
         [
-            "recurring-add",
+            "recurring",
+            "add",
             "expense",
             "1200",
             "--category",
@@ -428,27 +441,28 @@ def test_cli_category_rule_and_recurring_command_contracts(tmp_path):
             str(db_path),
         ],
     )
-    recurring_list = runner.invoke(app, ["recurring-list", "--db-path", str(db_path)])
+    recurring_list = runner.invoke(app, ["recurring", "list", "--db-path", str(db_path)])
     recurring_apply = runner.invoke(
         app,
-        ["recurring-apply", "--month", "2", "--year", "2026", "--db-path", str(db_path)],
+        ["recurring", "apply", "--month", "2", "--year", "2026", "--db-path", str(db_path)],
     )
     recurring_delete = runner.invoke(
         app,
-        ["recurring-delete", "1", "--db-path", str(db_path)],
+        ["recurring", "delete", "1", "--db-path", str(db_path)],
     )
     rule_delete = runner.invoke(
         app,
-        ["category-rule-delete", "1", "--db-path", str(db_path)],
+        ["category", "delete", "1", "--db-path", str(db_path)],
     )
     missing_rule = runner.invoke(
         app,
-        ["category-rule-delete", "1", "--db-path", str(db_path)],
+        ["category", "delete", "1", "--db-path", str(db_path)],
     )
     invalid_recurring = runner.invoke(
         app,
         [
-            "recurring-add",
+            "recurring",
+            "add",
             "expense",
             "10",
             "--category",
@@ -466,8 +480,7 @@ def test_cli_category_rule_and_recurring_command_contracts(tmp_path):
     assert "groceries" in rule_list.output and "Food" in rule_list.output
     assert recurring_add.exit_code == 0
     assert (
-        "Added recurring template #1: expense $1,200.00 in Rent on day 31"
-        in recurring_add.output
+        "Added recurring template #1: expense $1,200.00 in Rent on day 31" in recurring_add.output
     )
     assert recurring_list.exit_code == 0
     assert "$1,200.00" in recurring_list.output and "Rent" in recurring_list.output
@@ -502,6 +515,7 @@ def test_cli_delete_transaction_csv_and_settings_command_contracts(tmp_path):
     runner.invoke(
         app,
         [
+            "transaction",
             "add",
             "income",
             "100",
@@ -513,18 +527,25 @@ def test_cli_delete_transaction_csv_and_settings_command_contracts(tmp_path):
             str(db_path),
         ],
     )
-    deleted = runner.invoke(app, ["delete", "1", "--db-path", str(db_path)])
-    missing_transaction = runner.invoke(app, ["delete", "1", "--db-path", str(db_path)])
-    imported = runner.invoke(app, ["import-csv", str(import_path), "--db-path", str(db_path)])
-    exported = runner.invoke(app, ["export-csv", str(export_path), "--db-path", str(db_path)])
+    deleted = runner.invoke(app, ["transaction", "delete", "1", "--db-path", str(db_path)])
+    missing_transaction = runner.invoke(
+        app, ["transaction", "delete", "1", "--db-path", str(db_path)]
+    )
+    imported = runner.invoke(
+        app, ["transaction", "import", str(import_path), "--db-path", str(db_path)]
+    )
+    exported = runner.invoke(
+        app, ["transaction", "export", str(export_path), "--db-path", str(db_path)]
+    )
     invalid_import = runner.invoke(
         app,
-        ["import-csv", str(invalid_import_path), "--db-path", str(db_path)],
+        ["transaction", "import", str(invalid_import_path), "--db-path", str(db_path)],
     )
     invalid_export = runner.invoke(
         app,
         [
-            "export-csv",
+            "transaction",
+            "export",
             str(invalid_export_path),
             "--month",
             "13",
@@ -532,18 +553,18 @@ def test_cli_delete_transaction_csv_and_settings_command_contracts(tmp_path):
             str(db_path),
         ],
     )
-    settings_get = runner.invoke(app, ["settings-get", "currency", "--db-path", str(db_path)])
+    settings_get = runner.invoke(app, ["settings", "get", "currency", "--db-path", str(db_path)])
     settings_set = runner.invoke(
         app,
-        ["settings-set", "currency", "TRY", "--db-path", str(db_path)],
+        ["settings", "set", "currency", "TRY", "--db-path", str(db_path)],
     )
     unknown_setting_get = runner.invoke(
         app,
-        ["settings-get", "unknown", "--db-path", str(db_path)],
+        ["settings", "get", "unknown", "--db-path", str(db_path)],
     )
     unknown_setting_set = runner.invoke(
         app,
-        ["settings-set", "unknown", "value", "--db-path", str(db_path)],
+        ["settings", "set", "unknown", "value", "--db-path", str(db_path)],
     )
 
     assert deleted.exit_code == 0

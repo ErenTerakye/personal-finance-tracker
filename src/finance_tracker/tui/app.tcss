@@ -1,0 +1,143 @@
+Screen {
+    background: $surface;
+    color: $text;
+}
+
+#workspace {
+    height: 1fr;
+}
+
+TabbedContent {
+    height: 1fr;
+}
+
+TabPane {
+    padding: 1 2;
+}
+
+.view-title {
+    text-style: bold;
+    color: $accent;
+    margin-bottom: 1;
+}
+
+.context-line {
+    color: $text-muted;
+    margin-bottom: 1;
+}
+
+.metric-row {
+    height: auto;
+    margin-bottom: 1;
+}
+
+.metric {
+    width: 1fr;
+    min-width: 18;
+    height: 4;
+    border: round $primary-background;
+    padding: 0 1;
+    margin-right: 1;
+}
+
+.metric-value {
+    text-style: bold;
+}
+
+.toolbar {
+    height: auto;
+    margin-bottom: 1;
+}
+
+.toolbar Input {
+    width: 1fr;
+    margin-right: 1;
+}
+
+.toolbar Button {
+    margin-right: 1;
+}
+
+DataTable {
+    height: 1fr;
+    border: tall $primary-background;
+}
+
+.compact-table {
+    height: 8;
+}
+
+#overview-scroll, #manage-scroll {
+    height: 1fr;
+}
+
+.section {
+    height: 1fr;
+    margin-bottom: 1;
+}
+
+.section-title {
+    text-style: bold;
+    margin: 1 0;
+}
+
+.empty-state {
+    color: $text-muted;
+    padding: 1;
+}
+
+FormScreen {
+    align: center middle;
+}
+
+#form-dialog {
+    width: 70;
+    max-width: 92%;
+    height: auto;
+    max-height: 90%;
+    background: $panel;
+    border: thick $accent;
+    padding: 1 2;
+}
+
+#form-fields {
+    height: auto;
+    max-height: 22;
+}
+
+.field-label {
+    margin-top: 1;
+}
+
+.dialog-actions {
+    height: auto;
+    align-horizontal: right;
+    margin-top: 1;
+}
+
+.dialog-actions Button {
+    margin-left: 1;
+}
+
+#help-dialog {
+    width: 72;
+    max-width: 94%;
+    height: auto;
+    background: $panel;
+    border: thick $accent;
+    padding: 1 2;
+}
+
+.danger-note {
+    color: $error;
+    margin: 1 0;
+}
+
+.narrow .metric-row {
+    layout: vertical;
+}
+
+.narrow .metric {
+    width: 100%;
+    margin-bottom: 1;
+}

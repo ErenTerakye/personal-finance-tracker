@@ -1,10 +1,11 @@
-"""Typer application composition."""
+"""Typer composition for the breaking v2 grouped command surface."""
 
 import typer
 
 from finance_tracker.cli.accounts import (
     account_add,
     account_archive,
+    account_balance_check_in,
     account_balance_delete,
     account_balance_list,
     account_balance_set,
@@ -21,6 +22,9 @@ from finance_tracker.cli.category_rules import (
     category_rule_set,
 )
 from finance_tracker.cli.csv_commands import export_budgets, export_csv, import_budgets, import_csv
+from finance_tracker.cli.migration import MigrationAwareGroup
+from finance_tracker.cli.output import json_command
+from finance_tracker.cli.overview import overview
 from finance_tracker.cli.recovery import ledger_backup, ledger_restore, ledger_verify
 from finance_tracker.cli.recurring import (
     recurring_add,
@@ -28,50 +32,84 @@ from finance_tracker.cli.recurring import (
     recurring_delete,
     recurring_list,
 )
-from finance_tracker.cli.reports import report, summary, trends
+from finance_tracker.cli.reports import report, trends
+from finance_tracker.cli.root import root_callback, tui_command
 from finance_tracker.cli.settings import settings_get, settings_set
 from finance_tracker.cli.transactions import add, delete, edit, list_transactions
 from finance_tracker.cli.web import init, web
 
-app = typer.Typer(help="Track income and expenses from the command line.")
+app = typer.Typer(
+    help="A local-first financial command center.",
+    no_args_is_help=False,
+    cls=MigrationAwareGroup,
+)
+app.callback(invoke_without_command=True)(root_callback)
 
-# Registration order preserves the established root help surface.
-app.command()(init)
+transaction_app = typer.Typer(help="Create, inspect, and move ledger transactions.")
+budget_app = typer.Typer(help="Plan categories and review budget pressure.")
+account_app = typer.Typer(help="Manage accounts and net-worth inputs.")
+balance_app = typer.Typer(help="Manage dated account balance snapshots.")
+recurring_app = typer.Typer(help="Manage recurring transaction templates.")
+category_app = typer.Typer(help="Normalize imported and entered categories.")
+report_app = typer.Typer(help="Generate deterministic financial reports.")
+data_app = typer.Typer(help="Initialize, protect, and recover the local ledger.")
+settings_app = typer.Typer(help="Manage ledger-wide preferences.")
+
+app.command("tui")(tui_command)
+app.command()(overview)
 app.command()(web)
-app.command()(add)
-app.command("list")(list_transactions)
-app.command()(delete)
-app.command("budget-set")(budget_set)
-app.command("budget-list")(budget_list)
-app.command("budget-delete")(budget_delete)
-app.command("category-rule-set")(category_rule_set)
-app.command("category-rule-list")(category_rule_list)
-app.command("category-rule-delete")(category_rule_delete)
-app.command("recurring-add")(recurring_add)
-app.command("recurring-list")(recurring_list)
-app.command("recurring-delete")(recurring_delete)
-app.command("recurring-apply")(recurring_apply)
-app.command("budget-status")(budget_status)
-app.command()(edit)
-app.command()(summary)
-app.command()(report)
-app.command()(trends)
-app.command("import-csv")(import_csv)
-app.command("import-budgets-csv")(import_budgets)
-app.command("export-csv")(export_csv)
-app.command("export-budgets-csv")(export_budgets)
-app.command("settings-get")(settings_get)
-app.command("settings-set")(settings_set)
-app.command("account-add")(account_add)
-app.command("account-list")(account_list)
-app.command("account-edit")(account_edit)
-app.command("account-balance-set")(account_balance_set)
-app.command("account-balance-list")(account_balance_list)
-app.command("account-balance-delete")(account_balance_delete)
-app.command("account-archive")(account_archive)
-app.command("account-delete")(account_delete)
-app.command("net-worth")(net_worth)
-app.command("net-worth-history")(net_worth_history)
-app.command("ledger-backup")(ledger_backup)
-app.command("ledger-verify")(ledger_verify)
-app.command("ledger-restore")(ledger_restore)
+app.add_typer(transaction_app, name="transaction")
+app.add_typer(budget_app, name="budget")
+app.add_typer(account_app, name="account")
+account_app.add_typer(balance_app, name="balance")
+app.add_typer(recurring_app, name="recurring")
+app.add_typer(category_app, name="category")
+app.add_typer(report_app, name="report")
+app.add_typer(data_app, name="data")
+app.add_typer(settings_app, name="settings")
+
+transaction_app.command()(json_command(add))
+transaction_app.command("list")(json_command(list_transactions))
+transaction_app.command()(json_command(edit))
+transaction_app.command()(json_command(delete))
+transaction_app.command("import")(json_command(import_csv))
+transaction_app.command("export")(json_command(export_csv))
+
+budget_app.command("set")(json_command(budget_set))
+budget_app.command("list")(json_command(budget_list))
+budget_app.command("status")(json_command(budget_status))
+budget_app.command("delete")(json_command(budget_delete))
+budget_app.command("import")(json_command(import_budgets))
+budget_app.command("export")(json_command(export_budgets))
+
+account_app.command("add")(json_command(account_add))
+account_app.command("list")(json_command(account_list))
+account_app.command("edit")(json_command(account_edit))
+account_app.command("archive")(json_command(account_archive))
+account_app.command("delete")(json_command(account_delete))
+balance_app.command("set")(json_command(account_balance_set))
+balance_app.command("list")(json_command(account_balance_list))
+balance_app.command("delete")(json_command(account_balance_delete))
+balance_app.command("check-in")(json_command(account_balance_check_in))
+
+recurring_app.command("add")(json_command(recurring_add))
+recurring_app.command("list")(json_command(recurring_list))
+recurring_app.command("apply")(json_command(recurring_apply))
+recurring_app.command("delete")(json_command(recurring_delete))
+
+category_app.command("set")(json_command(category_rule_set))
+category_app.command("list")(json_command(category_rule_list))
+category_app.command("delete")(json_command(category_rule_delete))
+
+report_app.command("monthly")(json_command(report))
+report_app.command("trends")(json_command(trends))
+report_app.command("net-worth")(json_command(net_worth))
+report_app.command("net-worth-history")(json_command(net_worth_history))
+
+data_app.command("init")(json_command(init))
+data_app.command("backup")(json_command(ledger_backup))
+data_app.command("verify")(json_command(ledger_verify))
+data_app.command("restore")(json_command(ledger_restore))
+
+settings_app.command("get")(json_command(settings_get))
+settings_app.command("set")(json_command(settings_set))

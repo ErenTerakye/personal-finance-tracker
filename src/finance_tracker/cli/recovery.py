@@ -6,6 +6,7 @@ from typing import Annotated
 import typer
 
 from finance_tracker.cli.common import DbPathOption, handle_error
+from finance_tracker.cli.runtime import current_runtime
 from finance_tracker.config import resolve_db_path
 from finance_tracker.exceptions import FinanceTrackerError, ValidationError
 from finance_tracker.services import LedgerRecoveryService
@@ -52,7 +53,7 @@ def ledger_restore(
     db_path: DbPathOption = None,
 ) -> None:
     """Atomically replace the active ledger from a verified backup."""
-    if not confirm:
+    if not (confirm or current_runtime().assume_yes):
         handle_error(ValidationError("Use --confirm to replace the active ledger."))
     active_path = resolve_db_path(db_path)
     try:

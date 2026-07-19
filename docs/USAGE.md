@@ -13,7 +13,7 @@ npm run build
 ## Initialize the Database
 
 ```bash
-finance-tracker init
+finance-tracker data init
 ```
 
 By default this creates `data/finance_tracker.sqlite3`.
@@ -25,8 +25,36 @@ file itself is generated local state and can be rebuilt at any time.
 Use a custom path:
 
 ```bash
-finance-tracker init --db-path demo.sqlite3
+finance-tracker data init --db-path demo.sqlite3
 ```
+
+## Interactive Terminal Workspace
+
+Run the command without a subcommand in an interactive terminal:
+
+```bash
+finance-tracker --db-path demo.sqlite3
+```
+
+The workspace provides Overview, Transactions, Budgets, Accounts, and Manage destinations. It
+supports transaction and budget CRUD, CSV preview/import/export, account lifecycle and atomic
+balance check-ins, recurring templates, category aliases, currency, and complete-ledger recovery.
+Use `1`–`5` to navigate, `Ctrl+P` for the command palette, `/` to search, `A` to add a transaction,
+`R` to refresh, and `?` for keyboard help. Mouse input is optional.
+
+The TUI requires an interactive terminal. Pipes, `TERM=dumb`, screen-reader workflows, and
+automation should use the grouped commands instead. Global options precede the command when used:
+
+```bash
+finance-tracker --db-path demo.sqlite3 overview --month 7 --year 2026
+finance-tracker --db-path demo.sqlite3 --output json transaction list
+finance-tracker --db-path demo.sqlite3 --no-color budget status --month 7 --year 2026
+finance-tracker --db-path demo.sqlite3 --yes data restore backups/demo.sqlite3
+```
+
+JSON success responses use `{"ok":true,"data":...}`. Expected failures use
+`{"ok":false,"error":{"code":"…","message":"…"}}` on stderr. Exit codes are 0 for success,
+1 for domain/runtime failures, and 2 for invalid invocation or an unavailable TTY.
 
 ## Reviewer Demo
 
@@ -36,14 +64,14 @@ charts, and exports CSV files:
 ```bash
 .venv/bin/python examples/build_demo.py --force
 mkdir -p reports exports
-finance-tracker list --month 7 --year 2026 --db-path demo.sqlite3
-finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
-finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
-finance-tracker trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
-finance-tracker net-worth-history --months 120 --as-of 2026-07-16 --db-path demo.sqlite3
+finance-tracker transaction list --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker budget status --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker report monthly --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
+finance-tracker report trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker report net-worth-history --months 120 --as-of 2026-07-16 --db-path demo.sqlite3
 finance-tracker web --db-path demo.sqlite3
-finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
-finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
+finance-tracker transaction export exports/transactions.csv --db-path demo.sqlite3
+finance-tracker budget export exports/budgets.csv --db-path demo.sqlite3
 ```
 
 The builder seeds a complete trailing year with 281 merchant-level transactions, realistic
@@ -155,30 +183,31 @@ finance-tracker web --db-path demo.sqlite3
 Create asset and liability accounts with an initial dated balance:
 
 ```bash
-finance-tracker account-add --name "Everyday savings" --type asset --balance 12400 --date 2026-01-31
-finance-tracker account-add --name "Education loan" --type liability --balance 9200 --date 2026-01-31
-finance-tracker account-balance-set 1 13850 --date 2026-07-16
-finance-tracker account-balance-list 1
-finance-tracker account-list --as-of 2026-07-16
-finance-tracker net-worth --as-of 2026-07-16
-finance-tracker net-worth-history --months 120 --as-of 2026-07-16
+finance-tracker account add --name "Everyday savings" --type asset --balance 12400 --date 2026-01-31
+finance-tracker account add --name "Education loan" --type liability --balance 9200 --date 2026-01-31
+finance-tracker account balance set 1 13850 --date 2026-07-16
+finance-tracker account balance check-in --date 2026-07-16 --balance 1=13850 --balance 2=8750
+finance-tracker account balance list 1
+finance-tracker account list --as-of 2026-07-16
+finance-tracker report net-worth --as-of 2026-07-16
+finance-tracker report net-worth-history --months 120 --as-of 2026-07-16
 ```
 
 Liability balances are positive amounts owed. Snapshot deletion and account archiving require
 `--confirm`; archiving records a closing zero balance while preserving earlier history.
 
 ```bash
-finance-tracker account-edit 1 --name "Emergency savings"
-finance-tracker account-balance-delete 1 --date 2026-06-30 --confirm
-finance-tracker account-archive 2 --date 2026-07-16 --confirm
-finance-tracker account-delete 3 --confirm
+finance-tracker account edit 1 --name "Emergency savings"
+finance-tracker account balance delete 1 --date 2026-06-30 --confirm
+finance-tracker account archive 2 --date 2026-07-16 --confirm
+finance-tracker account delete 3 --confirm
 ```
 
 ## Add Transactions
 
 ```bash
-finance-tracker add income 2500 --category Salary --description "July salary" --date 2026-07-01
-finance-tracker add expense 428.75 --category Food --description "Groceries and summer market" --date 2026-07-09
+finance-tracker transaction add income 2500 --category Salary --description "July salary" --date 2026-07-01
+finance-tracker transaction add expense 428.75 --category Food --description "Groceries and summer market" --date 2026-07-09
 ```
 
 ## Edit Transactions
@@ -186,16 +215,16 @@ finance-tracker add expense 428.75 --category Food --description "Groceries and 
 Update only the fields that need to change:
 
 ```bash
-finance-tracker edit 2 --amount 52.25 --category Household
-finance-tracker edit 2 --type income --description "Reclassified refund" --date 2026-07-13
+finance-tracker transaction edit 2 --amount 52.25 --category Household
+finance-tracker transaction edit 2 --type income --description "Reclassified refund" --date 2026-07-13
 ```
 
 ## List Transactions
 
 ```bash
-finance-tracker list
-finance-tracker list --month 7 --year 2026
-finance-tracker list --type expense --category Food
+finance-tracker transaction list
+finance-tracker transaction list --month 7 --year 2026
+finance-tracker transaction list --type expense --category Food
 ```
 
 ## Category Rules
@@ -204,10 +233,10 @@ Category rules normalize aliases to a canonical category before transactions,
 budgets, reports, and imports store records:
 
 ```bash
-finance-tracker category-rule-set groceries Food
-finance-tracker category-rule-set grocery Food
-finance-tracker category-rule-list
-finance-tracker category-rule-delete 1
+finance-tracker category set groceries Food
+finance-tracker category set grocery Food
+finance-tracker category list
+finance-tracker category delete 1
 ```
 
 After setting `groceries -> Food`, adding or importing a transaction with
@@ -219,11 +248,11 @@ Recurring templates are monthly templates. They never write automatically; apply
 them explicitly for a month:
 
 ```bash
-finance-tracker recurring-add expense 1600 --category Rent --description "Monthly rent" --day 1
-finance-tracker recurring-add income 4200 --category Salary --description "Monthly salary" --day 1
-finance-tracker recurring-list
-finance-tracker recurring-apply --month 7 --year 2026
-finance-tracker recurring-delete 1
+finance-tracker recurring add expense 1600 --category Rent --description "Monthly rent" --day 1
+finance-tracker recurring add income 4200 --category Salary --description "Monthly salary" --day 1
+finance-tracker recurring list
+finance-tracker recurring apply --month 7 --year 2026
+finance-tracker recurring delete 1
 ```
 
 If a template day is past the end of a month, the generated transaction uses the
@@ -233,13 +262,13 @@ default.
 ## Monthly Summary
 
 ```bash
-finance-tracker summary --month 7 --year 2026
+finance-tracker overview --month 7 --year 2026
 ```
 
 ## Monthly Report with Chart
 
 ```bash
-finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png
+finance-tracker report monthly --month 7 --year 2026 --chart reports/july-2026.png
 ```
 
 ## Multi-Month Trends
@@ -247,13 +276,13 @@ finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png
 Print a six-month trend report ending in July 2026:
 
 ```bash
-finance-tracker trends --end-month 7 --end-year 2026
+finance-tracker report trends --end-month 7 --end-year 2026
 ```
 
 Choose a custom period and save a PNG chart:
 
 ```bash
-finance-tracker trends --months 3 --end-month 7 --end-year 2026 --chart reports/trends.png
+finance-tracker report trends --months 3 --end-month 7 --end-year 2026 --chart reports/trends.png
 ```
 
 Monthly reports include YTD totals and month-over-month deltas when enough
@@ -266,19 +295,19 @@ expense categories across the selected period.
 Set or update a monthly category budget:
 
 ```bash
-finance-tracker budget-set Food 480 --month 7 --year 2026
+finance-tracker budget set Food 480 --month 7 --year 2026
 ```
 
 List budgets:
 
 ```bash
-finance-tracker budget-list --month 7 --year 2026
+finance-tracker budget list --month 7 --year 2026
 ```
 
 Compare budgets to actual expenses:
 
 ```bash
-finance-tracker budget-status --month 7 --year 2026
+finance-tracker budget status --month 7 --year 2026
 ```
 
 Example status output:
@@ -302,7 +331,7 @@ Utilities      $225.00    $205.20    $19.80     91.2%   near limit
 Delete a budget:
 
 ```bash
-finance-tracker budget-delete 1
+finance-tracker budget delete 1
 ```
 
 ## Complete-Ledger Backup and Restore
@@ -312,8 +341,8 @@ including accounts and balance history, rules, recurring templates, and settings
 backup:
 
 ```bash
-finance-tracker ledger-backup backups/finance-2026-07-18.sqlite3
-finance-tracker ledger-verify backups/finance-2026-07-18.sqlite3
+finance-tracker data backup backups/finance-2026-07-18.sqlite3
+finance-tracker data verify backups/finance-2026-07-18.sqlite3
 ```
 
 The backup uses SQLite's online backup API, so committed WAL data is captured consistently. Store
@@ -323,8 +352,8 @@ Restore atomically replaces the selected active ledger only after integrity and 
 checks, and requires explicit confirmation:
 
 ```bash
-finance-tracker ledger-restore backups/finance-2026-07-18.sqlite3 --confirm
-finance-tracker ledger-restore backups/demo.sqlite3 --confirm --db-path demo.sqlite3
+finance-tracker data restore backups/finance-2026-07-18.sqlite3 --confirm
+finance-tracker data restore backups/demo.sqlite3 --confirm --db-path demo.sqlite3
 ```
 
 Run `ledger-verify` periodically and before restoring. Keep the original backup until the restored
@@ -338,9 +367,9 @@ active ledger.
 ## Import CSV
 
 ```bash
-finance-tracker import-csv examples/sample_transactions.csv
-finance-tracker import-csv examples/sample_transactions.csv --preview
-finance-tracker import-csv examples/sample_transactions.csv --allow-duplicates
+finance-tracker transaction import examples/sample_transactions.csv
+finance-tracker transaction import examples/sample_transactions.csv --preview
+finance-tracker transaction import examples/sample_transactions.csv --allow-duplicates
 ```
 
 Expected transaction CSV columns:
@@ -352,7 +381,7 @@ type,amount,category,description,date
 Import budgets from CSV:
 
 ```bash
-finance-tracker import-budgets-csv examples/sample_budgets.csv
+finance-tracker budget import examples/sample_budgets.csv
 ```
 
 Expected budget CSV columns:
@@ -364,10 +393,10 @@ category,amount,month,year
 ## Export CSV
 
 ```bash
-finance-tracker export-csv exports/transactions.csv
-finance-tracker export-csv exports/july.csv --month 7 --year 2026
-finance-tracker export-budgets-csv exports/budgets.csv
-finance-tracker export-budgets-csv exports/july-budgets.csv --month 7 --year 2026
+finance-tracker transaction export exports/transactions.csv
+finance-tracker transaction export exports/july.csv --month 7 --year 2026
+finance-tracker budget export exports/budgets.csv
+finance-tracker budget export exports/july-budgets.csv --month 7 --year 2026
 ```
 
 ## Browser CSV and Artifact Downloads

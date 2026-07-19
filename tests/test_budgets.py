@@ -92,7 +92,8 @@ def test_cli_budget_flow(tmp_path):
     set_result = runner.invoke(
         app,
         [
-            "budget-set",
+            "budget",
+            "set",
             "Food",
             "100",
             "--month",
@@ -106,6 +107,7 @@ def test_cli_budget_flow(tmp_path):
     add_result = runner.invoke(
         app,
         [
+            "transaction",
             "add",
             "expense",
             "90",
@@ -121,13 +123,13 @@ def test_cli_budget_flow(tmp_path):
     )
     list_result = runner.invoke(
         app,
-        ["budget-list", "--month", "6", "--year", "2026", "--db-path", str(db_path)],
+        ["budget", "list", "--month", "6", "--year", "2026", "--db-path", str(db_path)],
     )
     status_result = runner.invoke(
         app,
-        ["budget-status", "--month", "6", "--year", "2026", "--db-path", str(db_path)],
+        ["budget", "status", "--month", "6", "--year", "2026", "--db-path", str(db_path)],
     )
-    delete_result = runner.invoke(app, ["budget-delete", "1", "--db-path", str(db_path)])
+    delete_result = runner.invoke(app, ["budget", "delete", "1", "--db-path", str(db_path)])
 
     assert set_result.exit_code == 0
     assert add_result.exit_code == 0
@@ -150,7 +152,8 @@ def test_cli_budget_tables_align_long_category_names(tmp_path):
     runner.invoke(
         app,
         [
-            "budget-set",
+            "budget",
+            "set",
             "Transportation",
             "100",
             "--month",
@@ -164,6 +167,7 @@ def test_cli_budget_tables_align_long_category_names(tmp_path):
     runner.invoke(
         app,
         [
+            "transaction",
             "add",
             "expense",
             "22.50",
@@ -180,11 +184,11 @@ def test_cli_budget_tables_align_long_category_names(tmp_path):
 
     list_result = runner.invoke(
         app,
-        ["budget-list", "--month", "6", "--year", "2026", "--db-path", str(db_path)],
+        ["budget", "list", "--month", "6", "--year", "2026", "--db-path", str(db_path)],
     )
     status_result = runner.invoke(
         app,
-        ["budget-status", "--month", "6", "--year", "2026", "--db-path", str(db_path)],
+        ["budget", "status", "--month", "6", "--year", "2026", "--db-path", str(db_path)],
     )
 
     assert list_result.exit_code == 0

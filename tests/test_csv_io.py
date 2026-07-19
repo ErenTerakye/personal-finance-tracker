@@ -206,12 +206,13 @@ def test_cli_budget_csv_import_and_export_flow(tmp_path):
 
     import_result = runner.invoke(
         app,
-        ["import-budgets-csv", str(import_path), "--db-path", str(db_path)],
+        ["budget", "import", str(import_path), "--db-path", str(db_path)],
     )
     export_result = runner.invoke(
         app,
         [
-            "export-budgets-csv",
+            "budget",
+            "export",
             str(export_path),
             "--month",
             "6",

@@ -10,7 +10,9 @@ would make it stronger without bloating the scope.
 
 ## Current Snapshot
 
-- Python CLI supports transaction add/edit/list/delete, monthly budgets, category
+- Textual provides a full-screen, keyboard-first terminal workspace for Overview, Transactions,
+  Budgets, Accounts, and Manage, backed directly by the local service layer.
+- Grouped Python CLI commands support transaction add/edit/list/delete, monthly budgets, category
   alias rules, recurring transaction templates, CSV import/export with
   transaction preview and duplicate safeguards, monthly summaries, multi-month
   trends, and optional PNG charts.
@@ -59,6 +61,15 @@ hotspot a capability-focused owner and enforcing dependency direction in automat
   multi-user concerns unless the project scope intentionally changes.
 
 ## Completed
+
+### v2.0 Interactive Terminal Workspace
+
+- Replaced the flat 39-command surface with focused capability groups and global database,
+  JSON, color, and confirmation options.
+- Added an adaptive Textual workspace with direct CRUD, CSV preview/import/export, account balance
+  check-ins, reports, automations, preferences, and complete-ledger recovery.
+- Added targeted v1 migration errors, headless terminal interaction tests, and a shared overview
+  service consumed by both terminal and browser adapters.
 
 ### v0.2.0 Portfolio V1 Hardening
 
