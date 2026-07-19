@@ -1,33 +1,54 @@
 import { expect, test } from "@playwright/test";
 
-test("built SPA reads and writes through the real FastAPI and SQLite stack", async ({
+test("built SPA reads and writes account-aware activity through FastAPI and SQLite", async ({
   page,
 }) => {
-  const description = `Full-stack check ${Date.now()}`;
-  const created = await page.request.post("/api/transactions", {
+  const suffix = Date.now();
+  const accountName = `Full-stack checking ${suffix}`;
+  const description = `Full-stack expense ${suffix}`;
+  const accountResponse = await page.request.post("/api/accounts", {
     data: {
-      type: "expense",
+      name: accountName,
+      type: "asset",
+      subtype: "cash",
+      opening_balance: "100.00",
+      opening_date: "2026-07-01",
+    },
+  });
+  expect(accountResponse.status()).toBe(201);
+  const accountId = (await accountResponse.json()).account.id;
+
+  const created = await page.request.post("/api/activities", {
+    data: {
+      kind: "expense",
       amount: "12.34",
       category: "Food",
       description,
       date: "2026-07-10",
+      account_id: accountId,
     },
   });
   expect(created.status()).toBe(201);
-  expect((await created.json()).notice_code).toBe("transaction.created");
+  const createdBody = await created.json();
+  expect(createdBody.notice_code).toBe("activity.created");
+  expect(createdBody.activity.account.after_balance).toBe("87.66");
 
-  await page.goto("/transactions?month=7&year=2026");
+  await page.goto(
+    `/activity?month=7&year=2026&account_id=${accountId}&search=${encodeURIComponent(description)}`,
+  );
   await expect(
-    page.getByRole("heading", { name: "Transactions", exact: true }),
+    page.getByRole("heading", { name: "Activity", exact: true, level: 1 }),
   ).toBeVisible();
-  await expect(page.getByText(description)).toBeVisible();
+  await expect(page.getByText(description, { exact: true })).toBeVisible();
 
-  const response = await page.request.get("/api/transactions?limit=1");
+  const response = await page.request.get(
+    `/api/activities?account_id=${accountId}`,
+  );
   expect(response.headers()["cache-control"]).toBe("no-store");
-  expect((await response.json()).page.total).toBeGreaterThanOrEqual(1);
+  expect((await response.json()).page.total).toBe(2);
 });
 
-test("net worth history and archive persist through FastAPI, SQLite, and reload", async ({
+test("adjustments, history, and zero-balance archive persist through reload", async ({
   page,
 }) => {
   const name = `Full-stack asset ${Date.now()}`;
@@ -41,23 +62,27 @@ test("net worth history and archive persist through FastAPI, SQLite, and reload"
     data: {
       name,
       type: "asset",
-      initial_balance: "1000.00",
-      initial_balance_date: "2026-07-10",
+      subtype: "investment",
+      opening_balance: "1000.00",
+      opening_date: "2026-07-10",
     },
   });
   expect(createdResponse.status()).toBe(201);
-  const created = await createdResponse.json();
-  expect(created.notice_code).toBe("account.created");
-  const accountId = created.account.id;
+  const accountId = (await createdResponse.json()).account.id;
 
-  const snapshotResponse = await page.request.put(
-    `/api/accounts/${accountId}/balance-snapshots/2026-07-12`,
-    { data: { amount: "1250.00" } },
-  );
-  expect(snapshotResponse.ok()).toBe(true);
-  expect((await snapshotResponse.json()).notice_code).toBe(
-    "balance_snapshot.created",
-  );
+  const adjustmentResponse = await page.request.post("/api/activities", {
+    data: {
+      kind: "adjustment",
+      amount: "1250.00",
+      description: "Observed investment value",
+      date: "2026-07-12",
+      account_id: accountId,
+    },
+  });
+  expect(adjustmentResponse.status()).toBe(201);
+  const adjustment = await adjustmentResponse.json();
+  expect(adjustment.notice_code).toBe("activity.created");
+  expect(adjustment.activity.account.balance_effect).toBe("250.00");
 
   const historicalAccountsResponse = await page.request.get(
     "/api/accounts?as_of=2026-07-11",
@@ -66,7 +91,7 @@ test("net worth history and archive persist through FastAPI, SQLite, and reload"
   const historicalAccount = historicalAccounts.accounts.find(
     (account: { id: number }) => account.id === accountId,
   );
-  expect(historicalAccount?.resolved_balance).toBe("1000.00");
+  expect(historicalAccount?.balance).toBe("1000.00");
 
   const currentResponse = await page.request.get(
     "/api/net-worth?as_of=2026-07-12",
@@ -83,43 +108,33 @@ test("net worth history and archive persist through FastAPI, SQLite, and reload"
   expect(history.points).toHaveLength(2);
   expect(history.points.at(-1).total_net_worth).toBe(current.total_net_worth);
 
+  const closingAdjustment = await page.request.post("/api/activities", {
+    data: {
+      kind: "adjustment",
+      amount: "0.00",
+      description: "Account closed",
+      date: "2026-07-15",
+      account_id: accountId,
+    },
+  });
+  expect(closingAdjustment.status()).toBe(201);
+
   const archiveResponse = await page.request.post(
     `/api/accounts/${accountId}/archive`,
-    {
-      data: {
-        closing_date: "2026-07-15",
-        confirm_zero_balance: true,
-      },
-    },
+    { data: { closing_date: "2026-07-15" } },
   );
   expect(archiveResponse.ok()).toBe(true);
   expect((await archiveResponse.json()).notice_code).toBe("account.archived");
 
-  await page.goto("/net-worth?as_of=2026-07-14&months=6");
-  await expect(page).toHaveURL("/accounts?as_of=2026-07-14&months=6");
+  await page.goto("/net-worth?as_of=2026-07-16&months=6");
+  await expect(page).toHaveURL("/accounts?as_of=2026-07-16&months=6");
   await expect(
-    page.getByRole("heading", { name: "Accounts", exact: true }),
+    page.getByRole("heading", { name: "Accounts", exact: true, level: 1 }),
   ).toBeVisible();
-  await page.getByRole("checkbox", { name: "Show archived accounts" }).check();
-  await expect(
-    page
-      .getByRole("region", {
-        name: "Accounts behind the number",
-        exact: true,
-      })
-      .getByText(name, { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText(name, { exact: true })).toBeVisible();
 
   await page.reload();
-  await page.getByRole("checkbox", { name: "Show archived accounts" }).check();
-  await expect(
-    page
-      .getByRole("region", {
-        name: "Accounts behind the number",
-        exact: true,
-      })
-      .getByText(name, { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText(name, { exact: true })).toBeVisible();
 
   const archivedAccountsResponse = await page.request.get(
     "/api/accounts?as_of=2026-07-16&include_archived=true",
@@ -129,6 +144,7 @@ test("net worth history and archive persist through FastAPI, SQLite, and reload"
     (account: { id: number }) => account.id === accountId,
   );
   expect(archivedAccount?.archived_on).toBe("2026-07-15");
+  expect(archivedAccount?.balance).toBe("0.00");
 });
 
 test("packaged SPA renders a client-side not-found view", async ({ page }) => {

@@ -434,7 +434,8 @@ function AppContent() {
               reviewTransactions({
                 month: Number(transaction.date.slice(5, 7)),
                 year: Number(transaction.date.slice(0, 4)),
-                search: transaction.description || transaction.category,
+                search:
+                  transaction.description || transaction.category || undefined,
               })
             }
             onViewTransactions={() => reviewTransactions()}

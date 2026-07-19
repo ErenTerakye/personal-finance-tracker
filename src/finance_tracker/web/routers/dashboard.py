@@ -7,12 +7,12 @@ from fastapi import APIRouter, Request
 from finance_tracker.reports.monthly import calculate_savings_rate
 from finance_tracker.services import OverviewService
 from finance_tracker.web.responses import (
+    activity_response,
     budget_status_response,
     moneyless_decimal,
     monthly_report_response,
     net_worth_summary_response,
     resolve_period,
-    transaction_response,
     trend_report_response,
 )
 from finance_tracker.web.schemas import DashboardResponse, ErrorResponse
@@ -60,7 +60,7 @@ def dashboard(
         savings_rate=moneyless_decimal(
             calculate_savings_rate(overview.report.total_income, overview.report.net_savings)
         ),
-        recent_transactions=[transaction_response(item) for item in overview.recent_transactions],
+        recent_activities=[activity_response(item) for item in overview.recent_activities],
         budget_statuses=[budget_status_response(item) for item in overview.budget_statuses],
         net_worth=net_worth_summary_response(
             overview.net_worth,

@@ -429,8 +429,8 @@ export function PortfolioWorkspace({
   data: NetWorthOverview;
   includeArchived: boolean;
   onIncludeArchived: (value: boolean) => void;
-  onUpdate: (account: NetWorthAccountAnalytics) => void;
-  onManage: (account: NetWorthAccountAnalytics) => void;
+  onUpdate: (account: AugmentedAccountAnalytics) => void;
+  onManage: (account: AugmentedAccountAnalytics) => void;
 }) {
   const { t } = useI18n();
   const [filter, setFilter] = useState<"all" | "asset" | "liability">("all");
@@ -479,7 +479,7 @@ export function PortfolioWorkspace({
         {accounts.map((account) => (
           <PortfolioRow
             key={account.account_id}
-            account={account}
+            account={account as AugmentedAccountAnalytics}
             onUpdate={onUpdate}
             onManage={onManage}
           />
@@ -492,14 +492,21 @@ export function PortfolioWorkspace({
   );
 }
 
+export interface AugmentedAccountAnalytics extends NetWorthAccountAnalytics {
+  opening_balance?: string;
+  opening_date?: string;
+  balance_state: "normal" | "overdrawn" | "credit_balance";
+  subtype?: string;
+}
+
 function PortfolioRow({
   account,
   onUpdate,
   onManage,
 }: {
-  account: NetWorthAccountAnalytics;
-  onUpdate: (account: NetWorthAccountAnalytics) => void;
-  onManage: (account: NetWorthAccountAnalytics) => void;
+  account: AugmentedAccountAnalytics;
+  onUpdate: (account: AugmentedAccountAnalytics) => void;
+  onManage: (account: AugmentedAccountAnalytics) => void;
 }) {
   const { t } = useI18n();
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -554,17 +561,51 @@ function PortfolioRow({
         )}
       </div>
       <div className="portfolio-account-name">
-        <strong>{account.name}</strong>
-        <span>
-          {account.archived_on
-            ? t("netWorth.account.archived", {
-                date: formatDate(account.archived_on),
-              })
-            : account.current_balance_date
-              ? t("netWorth.account.balanceDate", {
-                  date: formatDate(account.current_balance_date),
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <strong>{account.name}</strong>
+          {account.balance_state && account.balance_state !== "normal" && (
+            <span
+              className={`status-chip ${account.balance_state}`}
+              style={{
+                fontSize: "var(--font-size-xs)",
+                padding: "0.1rem 0.4rem",
+                border: "1px solid var(--rule-strong)",
+                borderRadius: "var(--radius-pill)",
+                fontWeight: "var(--font-weight-semibold)",
+              }}
+            >
+              {t(`accounts.states.${account.balance_state}`)}
+            </span>
+          )}
+        </div>
+        <span style={{ display: "grid", gap: "0.1rem" }}>
+          <span>
+            {account.archived_on
+              ? t("netWorth.account.archived", {
+                  date: formatDate(account.archived_on),
                 })
-              : t("netWorth.account.noEarlierBalance")}
+              : account.current_balance_date
+                ? t("netWorth.account.balanceDate", {
+                    date: formatDate(account.current_balance_date),
+                  })
+                : t("netWorth.account.noEarlierBalance")}
+          </span>
+          {account.opening_date ? (
+            <span
+              style={{ color: "var(--muted)", fontSize: "var(--font-size-xs)" }}
+            >
+              {t("accounts.opening")}:{" "}
+              {money(account.opening_balance ?? "0.00")} ·{" "}
+              {account.opening_date}
+            </span>
+          ) : null}
         </span>
       </div>
       <div className="portfolio-account-share">
@@ -595,6 +636,22 @@ function PortfolioRow({
           : money(account.current_balance)}
       </strong>
       <div className="portfolio-account-actions" ref={actionsRef}>
+        <a
+          className="button secondary compact"
+          href={`/activity?account_id=${account.account_id}`}
+          onClick={(event) => {
+            event.preventDefault();
+            window.history.pushState(
+              {},
+              "",
+              `/activity?account_id=${account.account_id}`,
+            );
+            window.dispatchEvent(new PopStateEvent("popstate"));
+          }}
+          style={{ marginInlineEnd: "0.5rem" }}
+        >
+          {t("accounts.activity")}
+        </a>
         <button
           ref={actionsTriggerRef}
           className="icon-button ghost portfolio-actions-trigger"

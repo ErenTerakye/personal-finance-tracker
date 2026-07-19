@@ -11,9 +11,7 @@ MAX_SAFE_MONEY = Decimal("90071992547409.91")
 def validate_money_range(amount: Decimal, field_name: str) -> Decimal:
     """Keep cent values within JavaScript's exact safe-integer range."""
     if abs(amount) > MAX_SAFE_MONEY:
-        raise ValidationError(
-            f"{field_name} must be no greater than {MAX_SAFE_MONEY}."
-        )
+        raise ValidationError(f"{field_name} must be no greater than {MAX_SAFE_MONEY}.")
     return amount
 
 

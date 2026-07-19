@@ -2,23 +2,26 @@
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal, cast
 
 from fastapi.responses import Response
 
 from finance_tracker.csv_io import (
+    ActivityImportPreview,
+    ActivityImportPreviewRow,
     ImportResult,
     TransactionImportPreview,
     TransactionImportPreviewRow,
 )
 from finance_tracker.models import (
-    Account,
-    BalanceSnapshot,
+    ActivityKind,
+    ActivityRecord,
     Budget,
     CategoryRule,
     RecurringTemplate,
     ResolvedAccount,
-    Transaction,
 )
+from finance_tracker.models.transactions import Transaction
 from finance_tracker.reports import (
     MonthlyReport,
     NetWorthHistory,
@@ -29,15 +32,20 @@ from finance_tracker.reports import (
 from finance_tracker.services import BudgetStatus, RecurringApplyResult
 from finance_tracker.web.schemas import (
     AccountResponse,
-    BalanceSnapshotResponse,
+    ActivityAccountEffectResponse,
+    ActivityImportPreviewResponse,
+    ActivityImportPreviewRowResponse,
+    ActivityPreviewRecordResponse,
+    ActivityResponse,
     BudgetResponse,
     BudgetStatusResponse,
     CategoryRuleResponse,
     ImportSummaryResponse,
     MonthlyReportResponse,
     NetWorthAccountAnalyticsResponse,
+    NetWorthAccountStateResponse,
+    NetWorthAttributionResponse,
     NetWorthComparisonResponse,
-    NetWorthCoverageResponse,
     NetWorthHistoryPointResponse,
     NetWorthHistoryResponse,
     NetWorthOverviewResponse,
@@ -59,48 +67,15 @@ def account_response(resolved: ResolvedAccount, currency: str) -> AccountRespons
         id=_require_id(account.id),
         name=account.name,
         type=account.type.value,
+        subtype=account.subtype.value,
         archived_on=account.archived_on.isoformat() if account.archived_on else None,
         created_at=_required_datetime_response(account.created_at),
         as_of=resolved.as_of.isoformat(),
-        resolved_balance=(
-            money_decimal(resolved.balance) if resolved.balance is not None else None
-        ),
-        resolved_balance_date=(
-            resolved.balance_date.isoformat() if resolved.balance_date else None
-        ),
-        currency=currency,
-    )
-
-
-def account_mutation_response(
-    account: Account,
-    as_of: date,
-    balance: Decimal | None,
-    balance_date: date | None,
-    currency: str,
-) -> AccountResponse:
-    return account_response(
-        ResolvedAccount(
-            account=account,
-            as_of=as_of,
-            balance=balance,
-            balance_date=balance_date,
-        ),
-        currency,
-    )
-
-
-def balance_snapshot_response(
-    snapshot: BalanceSnapshot,
-    currency: str,
-) -> BalanceSnapshotResponse:
-    return BalanceSnapshotResponse(
-        id=_require_id(snapshot.id),
-        account_id=snapshot.account_id,
-        amount=money_decimal(snapshot.amount),
-        effective_date=snapshot.effective_date.isoformat(),
-        created_at=_required_datetime_response(snapshot.created_at),
-        updated_at=_required_datetime_response(snapshot.updated_at),
+        balance=money_decimal(resolved.balance),
+        balance_state=resolved.balance_state.value,
+        opening_balance=money_decimal(resolved.opening_balance),
+        opening_date=resolved.opening_date.isoformat(),
+        opening_activity_id=resolved.opening_activity_id,
         currency=currency,
     )
 
@@ -118,7 +93,7 @@ def net_worth_summary_response(
         archived_account_count=summary.archived_account_count,
         resolved_asset_count=summary.resolved_asset_count,
         resolved_liability_count=summary.resolved_liability_count,
-        unresolved_account_count=summary.unresolved_account_count,
+        account_state_warning_count=summary.account_state_warning_count,
         currency=currency,
     )
 
@@ -138,14 +113,12 @@ def net_worth_history_response(
                 total_net_worth=money_decimal(point.total_net_worth),
                 resolved_asset_count=point.resolved_asset_count,
                 resolved_liability_count=point.resolved_liability_count,
-                unresolved_account_count=point.unresolved_account_count,
+                account_state_warning_count=point.account_state_warning_count,
             )
             for point in history.points
         ],
         change_amount=(
-            money_decimal(history.change_amount)
-            if history.change_amount is not None
-            else None
+            money_decimal(history.change_amount) if history.change_amount is not None else None
         ),
         change_percent=(
             moneyless_decimal(history.change_percent)
@@ -193,9 +166,7 @@ def net_worth_overview_response(
                 account_id=account.account_id,
                 name=account.name,
                 type=account.type.value,
-                archived_on=(
-                    account.archived_on.isoformat() if account.archived_on else None
-                ),
+                archived_on=(account.archived_on.isoformat() if account.archived_on else None),
                 current_balance=(
                     money_decimal(account.current_balance)
                     if account.current_balance is not None
@@ -226,21 +197,24 @@ def net_worth_overview_response(
                     if account.composition_percent is not None
                     else None
                 ),
+                balance_state=cast(
+                    Literal["normal", "overdrawn", "credit_balance"],
+                    account.balance_state,
+                ),
                 currency=currency,
             )
             for account in overview.accounts
         ],
-        coverage=NetWorthCoverageResponse(
-            resolved_account_count=(
-                overview.summary.resolved_asset_count
-                + overview.summary.resolved_liability_count
+        account_state=NetWorthAccountStateResponse(
+            warning_count=overview.summary.account_state_warning_count,
+            oldest_activity_date=(
+                overview.oldest_balance_date.isoformat() if overview.oldest_balance_date else None
             ),
-            unresolved_account_count=overview.summary.unresolved_account_count,
-            oldest_balance_date=(
-                overview.oldest_balance_date.isoformat()
-                if overview.oldest_balance_date
-                else None
-            ),
+        ),
+        attribution=NetWorthAttributionResponse(
+            cashflow=money_decimal(overview.attribution.cashflow),
+            adjustments=money_decimal(overview.attribution.adjustments),
+            transfers=money_decimal(overview.attribution.transfers),
         ),
         currency=currency,
     )
@@ -291,6 +265,112 @@ def transaction_response(transaction: Transaction) -> TransactionResponse:
     )
 
 
+def activity_response(record: ActivityRecord) -> ActivityResponse:
+    activity = record.activity
+    net_worth_effect = sum(
+        (
+            effect.balance_effect
+            * (Decimal("1") if effect.account_type.value == "asset" else Decimal("-1"))
+            for effect in record.effects
+        ),
+        Decimal("0.00"),
+    )
+    cashflow_effect = Decimal("0.00")
+    if activity.kind is ActivityKind.INCOME:
+        cashflow_effect = activity.amount
+    elif activity.kind is ActivityKind.EXPENSE:
+        cashflow_effect = -activity.amount
+    return ActivityResponse(
+        id=_require_id(activity.id),
+        kind=activity.kind.value,
+        amount=money_decimal(activity.amount),
+        category=activity.category,
+        description=activity.description,
+        date=activity.date.isoformat(),
+        account=_activity_effect(record, "account"),
+        from_account=_activity_effect(record, "source"),
+        to_account=_activity_effect(record, "destination"),
+        net_worth_effect=money_decimal(net_worth_effect),
+        cashflow_effect=money_decimal(cashflow_effect),
+        created_at=_datetime_response(activity.created_at),
+        updated_at=_datetime_response(activity.updated_at),
+    )
+
+
+def activity_import_preview_response(
+    preview: ActivityImportPreview,
+) -> ActivityImportPreviewResponse:
+    return ActivityImportPreviewResponse(
+        valid_count=preview.valid_count,
+        duplicate_count=preview.duplicate_count,
+        invalid_count=preview.invalid_count,
+        rows=[_activity_import_preview_row(row) for row in preview.rows],
+    )
+
+
+def _activity_import_preview_row(
+    row: ActivityImportPreviewRow,
+) -> ActivityImportPreviewRowResponse:
+    activity = row.activity
+    effects = row.effects
+    return ActivityImportPreviewRowResponse(
+        line_number=row.line_number,
+        status=row.status,
+        activity=(
+            ActivityPreviewRecordResponse(
+                kind=activity.kind.value,
+                amount=money_decimal(activity.amount),
+                category=activity.category,
+                description=activity.description,
+                date=activity.date.isoformat(),
+                account=_preview_effect_name(effects, "account"),
+                from_account=_preview_effect_name(effects, "source"),
+                to_account=_preview_effect_name(effects, "destination"),
+                balance_effects=[
+                    f"{effect.account_name}: {money_decimal(effect.before_balance)} → "
+                    f"{money_decimal(effect.after_balance)} "
+                    f"({money_decimal(effect.balance_effect)})"
+                    for effect in (effects.effects if effects else ())
+                ],
+            )
+            if activity is not None
+            else None
+        ),
+        original_category=row.original_category,
+        error=row.error,
+    )
+
+
+def _activity_effect(record: ActivityRecord, role: str) -> ActivityAccountEffectResponse | None:
+    effect = next((item for item in record.effects if item.role.value == role), None)
+    if effect is None:
+        return None
+    if effect.after_balance >= 0:
+        state = "normal"
+    elif effect.account_type.value == "asset":
+        state = "overdrawn"
+    else:
+        state = "credit_balance"
+    return ActivityAccountEffectResponse(
+        id=effect.account_id,
+        name=effect.account_name,
+        type=effect.account_type.value,
+        subtype=effect.account_subtype.value,
+        role=effect.role.value,
+        before_balance=money_decimal(effect.before_balance),
+        after_balance=money_decimal(effect.after_balance),
+        balance_effect=money_decimal(effect.balance_effect),
+        balance_state=cast(Literal["normal", "overdrawn", "credit_balance"], state),
+    )
+
+
+def _preview_effect_name(record: ActivityRecord | None, role: str) -> str | None:
+    if record is None:
+        return None
+    effect = next((item for item in record.effects if item.role.value == role), None)
+    return effect.account_name if effect else None
+
+
 def budget_response(budget: Budget) -> BudgetResponse:
     return BudgetResponse(
         id=_require_id(budget.id),
@@ -314,11 +394,14 @@ def category_rule_response(rule: CategoryRule) -> CategoryRuleResponse:
 def recurring_template_response(template: RecurringTemplate) -> RecurringTemplateResponse:
     return RecurringTemplateResponse(
         id=_require_id(template.id),
-        type=template.type.value,
+        kind=cast(Literal["income", "expense", "transfer"], template.kind.value),
         amount=money_decimal(template.amount),
         category=template.category,
         description=template.description,
         day_of_month=template.day_of_month,
+        account_id=template.account_id,
+        from_account_id=template.from_account_id,
+        to_account_id=template.to_account_id,
         active=template.active,
         created_at=_datetime_response(template.created_at),
     )
@@ -382,13 +465,13 @@ def trend_report_response(report: TrendReport) -> TrendReportResponse:
 def recurring_apply_response(result: RecurringApplyResult) -> RecurringApplyResponse:
     return RecurringApplyResponse(
         notice=(
-            f"Created {len(result.created)} recurring transaction(s); "
+            f"Created {len(result.created)} recurring activity item(s); "
             f"skipped {result.skipped_duplicates} duplicate(s)."
         ),
         notice_code="recurring_template.applied",
         created_count=len(result.created),
         skipped_duplicates=result.skipped_duplicates,
-        transactions=[transaction_response(transaction) for transaction in result.created],
+        activities=[activity_response(activity) for activity in result.created],
     )
 
 

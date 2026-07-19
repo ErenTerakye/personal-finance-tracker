@@ -83,6 +83,10 @@ export function subtractMoney(
   return fromMinorUnits(minorUnits(left) - minorUnits(right));
 }
 
+export function negateMoney(value: string | number): string {
+  return fromMinorUnits(-minorUnits(value));
+}
+
 export function compareMoney(
   left: string | number,
   right: string | number,

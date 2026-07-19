@@ -9,7 +9,7 @@ import {
   signedMoney,
   sumMoney,
 } from "../format/money";
-import type { BudgetStatus, TransactionRecord } from "../../types";
+import type { ActivityRecord, BudgetStatus } from "../../types";
 import { EmptyState } from "./feedback";
 import { useI18n } from "../i18n/I18nProvider";
 
@@ -282,8 +282,8 @@ export function ActivityList({
   transactions,
   onSelect,
 }: {
-  transactions: TransactionRecord[];
-  onSelect?: (transaction: TransactionRecord) => void;
+  transactions: ActivityRecord[];
+  onSelect?: (transaction: ActivityRecord) => void;
 }) {
   const { t } = useI18n();
 
@@ -299,14 +299,17 @@ export function ActivityList({
   return (
     <ul className="activity-list" role="list">
       {transactions.map((transaction) => {
-        const isIncome = transaction.type === "income";
+        const isIncome = transaction.kind === "income";
+        const isExpense = transaction.kind === "expense";
         const signedAmount = isIncome
           ? transaction.amount
-          : `-${transaction.amount}`;
+          : isExpense
+            ? `-${transaction.amount}`
+            : transaction.cashflow_effect;
 
         return (
           <li
-            className={`activity-item ${isIncome ? "income" : "expense"} ${onSelect ? "activity-item-interactive" : ""}`.trim()}
+            className={`activity-item ${transaction.kind} ${onSelect ? "activity-item-interactive" : ""}`.trim()}
             key={transaction.id}
           >
             {onSelect ? (
@@ -338,9 +341,9 @@ export function ActivityList({
 function ActivityItemContent({
   transaction,
   signedAmount,
-  isIncome,
+  isIncome: _isIncome,
 }: {
-  transaction: TransactionRecord;
+  transaction: ActivityRecord;
   signedAmount: string;
   isIncome: boolean;
 }) {
@@ -348,7 +351,12 @@ function ActivityItemContent({
   return (
     <>
       <div className="activity-copy">
-        <strong className="activity-category">{transaction.category}</strong>
+        <strong className="activity-category">
+          {transaction.category ??
+            transaction.description ??
+            transaction.account?.name ??
+            `${transaction.from_account?.name ?? ""} → ${transaction.to_account?.name ?? ""}`}
+        </strong>
         {transaction.description ? (
           <span className="activity-description">
             {transaction.description}
@@ -358,7 +366,7 @@ function ActivityItemContent({
       <div className="activity-value">
         <strong className="activity-amount">{signedMoney(signedAmount)}</strong>
         <span className="activity-meta">
-          <span>{t(isIncome ? "common.income" : "common.expense")}</span>
+          <span>{t(`activity.kinds.${transaction.kind}`)}</span>
           <span aria-hidden="true">·</span>
           <time dateTime={transaction.date}>
             {formatActivityDate(transaction.date)}

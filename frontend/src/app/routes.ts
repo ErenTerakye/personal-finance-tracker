@@ -24,7 +24,7 @@ export const viewMeta: Record<
 > = {
   overview: { path: "/", titleKey: "nav.overview", primary: true },
   transactions: {
-    path: "/transactions",
+    path: "/activity",
     titleKey: "nav.transactions",
     primary: true,
   },
@@ -58,6 +58,20 @@ export type ResolvedRoute = {
 };
 
 export function resolveRoute(pathname: string, search = ""): ResolvedRoute {
+  if (pathname === "/transactions") {
+    return {
+      view: "transactions",
+      canonicalUrl: canonicalUrl("/activity", search, [
+        "month",
+        "year",
+        "category",
+        "kind",
+        "account_id",
+        "search",
+        "data",
+      ]),
+    };
+  }
   if (pathname === "/cash-flow") {
     return {
       view: "overview",

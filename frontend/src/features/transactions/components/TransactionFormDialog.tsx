@@ -128,7 +128,11 @@ export function TransactionFormDialog({
               value={form.amount}
               onChange={(event) => {
                 const amount = normalizeAmountDraft(event.target.value);
-                if (amount !== null) onChange({ ...form, amount });
+                if (amount !== null) {
+                  onChange({ ...form, amount });
+                } else {
+                  event.target.value = form.amount;
+                }
               }}
             />
           </div>

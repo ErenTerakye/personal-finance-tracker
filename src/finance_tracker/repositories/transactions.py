@@ -91,9 +91,7 @@ class TransactionRepository:
         return int(row["count"])
 
     def delete(self, transaction_id: int) -> None:
-        cursor = self.connection.execute(
-            "DELETE FROM transactions WHERE id = ?", (transaction_id,)
-        )
+        cursor = self.connection.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
         if cursor.rowcount == 0:
             raise TransactionNotFoundError(f"Transaction {transaction_id} was not found.")
 

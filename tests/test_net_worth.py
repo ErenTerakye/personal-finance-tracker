@@ -2,366 +2,178 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
-from fastapi.testclient import TestClient
-from typer.testing import CliRunner
 
-from finance_tracker.cli import app
-from finance_tracker.database import connect
-from finance_tracker.exceptions import AccountNotFoundError, ValidationError
-from finance_tracker.reports import (
-    build_net_worth_history,
-    build_net_worth_overview,
-    build_net_worth_summary,
-)
-from finance_tracker.repositories import BalanceSnapshotRepository
-from finance_tracker.services import AccountService
-from finance_tracker.web.app import create_app
+from finance_tracker.exceptions import ValidationError
+from finance_tracker.models import ActivityKind
+from finance_tracker.reports import build_net_worth_overview, build_net_worth_summary
+from finance_tracker.services import AccountService, ActivityService
 
 
-def test_account_service_resolves_as_of_balances_and_replaces_same_day(tmp_path):
-    service = AccountService(tmp_path / "finance.sqlite3")
-    cash = service.create_account("Cash", "asset", "1000.10", "2026-01-01")
-    card = service.create_account("Card", "liability", "250.05", "2026-01-10")
-    assert cash.id is not None
-    assert card.id is not None
-
-    created = service.set_balance(cash.id, "1200.25", "2026-06-01")
-    replaced = service.set_balance(cash.id, "1250.35", "2026-06-01")
-    historical = service.list_accounts("2026-05-31", include_archived=True)
-    current = service.list_accounts("2026-06-01", include_archived=True)
-
-    assert created.replaced is False
-    assert replaced.replaced is True
-    assert {item.account.name: item.balance for item in historical} == {
-        "Card": Decimal("250.05"),
-        "Cash": Decimal("1000.10"),
-    }
-    assert {item.account.name: item.balance for item in current}["Cash"] == Decimal("1250.35")
-    assert len(service.list_snapshots(cash.id)) == 2
-
-
-def test_balance_rejects_values_above_safe_cent_boundary(tmp_path):
-    service = AccountService(tmp_path / "finance.sqlite3")
-
-    account = service.create_account("Vault", "asset", "90071992547409.91", "2026-01-01")
-
-    assert account.id is not None
-    with pytest.raises(ValidationError, match="no greater than 90071992547409.91"):
-        service.set_balance(account.id, "90071992547409.92", "2026-01-02")
-
-
-def test_net_worth_reports_assets_minus_liabilities_and_unresolved_history(tmp_path):
-    service = AccountService(tmp_path / "finance.sqlite3")
-    asset = service.create_account("Savings", "asset", "1000", "2026-03-10")
-    liability = service.create_account("Loan", "liability", "1200", "2026-04-01")
-    assert asset.id is not None
-    assert liability.id is not None
-    service.set_balance(asset.id, "1600", "2026-06-30")
-    service.set_balance(liability.id, "1000", "2026-06-30")
-    accounts, snapshots = service.report_data("2026-07-16")
-
-    march = build_net_worth_summary(accounts, snapshots, date(2026, 3, 31))
-    june = build_net_worth_summary(accounts, snapshots, date(2026, 6, 30))
-    history = build_net_worth_history(
-        accounts,
-        snapshots,
-        date(2026, 7, 16),
-        months=4,
+def _account(
+    service: AccountService,
+    name: str,
+    account_type: str = "asset",
+    balance: str = "0",
+    *,
+    subtype: str | None = None,
+):
+    return service.create_account(
+        name,
+        account_type,
+        balance,
+        "2026-01-01",
+        subtype or ("cash" if account_type == "asset" else "credit_card"),
     )
 
-    assert march.total_assets == Decimal("1000.00")
-    assert march.total_liabilities == Decimal("0.00")
-    assert march.unresolved_account_count == 1
-    assert june.total_net_worth == Decimal("600.00")
-    assert [point.as_of for point in history.points] == [
-        date(2026, 4, 30),
-        date(2026, 5, 31),
-        date(2026, 6, 30),
-        date(2026, 7, 16),
-    ]
-    assert history.change_amount == Decimal("0.00")
-    assert history.change_percent == Decimal("0.0")
 
+def test_account_creation_is_atomic_and_balance_is_derived_from_opening(tmp_path):
+    accounts = AccountService(tmp_path / "ledger.sqlite3")
+    account = _account(accounts, "Wallet", balance="125.50")
 
-def test_zero_prior_net_worth_omits_history_percentage(tmp_path):
-    service = AccountService(tmp_path / "finance.sqlite3")
-    asset = service.create_account("Cash", "asset", "100", "2026-05-01")
-    liability = service.create_account("Card", "liability", "100", "2026-05-01")
-    assert asset.id is not None
-    assert liability.id is not None
-    service.set_balance(asset.id, "150", "2026-06-01")
-    accounts, snapshots = service.report_data("2026-06-30")
+    resolved = accounts.get_resolved_account(account.id, "2026-01-01")
+    history = ActivityService(accounts.db_path).list_activities(account_id=account.id)
 
-    history = build_net_worth_history(
-        accounts,
-        snapshots,
-        date(2026, 6, 30),
-        months=2,
-    )
-
-    assert history.change_amount == Decimal("50.00")
-    assert history.change_percent is None
-
-
-def test_net_worth_overview_ranks_asset_growth_and_debt_repayment(tmp_path):
-    service = AccountService(tmp_path / "finance.sqlite3")
-    asset = service.create_account("Investments", "asset", "1000", "2026-01-31")
-    debt = service.create_account("Loan", "liability", "700", "2026-01-31")
-    new_asset = service.create_account("New savings", "asset", "200", "2026-07-01")
-    assert asset.id is not None
-    assert debt.id is not None
-    assert new_asset.id is not None
-    service.set_balance(asset.id, "1250", "2026-07-16")
-    service.set_balance(debt.id, "500", "2026-07-16")
-    accounts, snapshots = service.report_data("2026-07-16")
-
-    overview = build_net_worth_overview(
-        accounts,
-        snapshots,
-        date(2026, 7, 16),
-        months=7,
-    )
-
-    by_name = {item.name: item for item in overview.accounts}
-    assert overview.comparison_start == date(2026, 1, 31)
-    assert not overview.comparison_available
-    assert overview.comparison_start_value is None
-    assert overview.comparison_end_value is None
-    assert overview.comparison_change_amount is None
-    assert by_name["Investments"].contribution_change == Decimal("250.00")
-    assert by_name["Loan"].contribution_change == Decimal("200.00")
-    assert by_name["New savings"].contribution_change is None
-    assert by_name["Investments"].composition_percent == Decimal("86.2")
-    assert overview.oldest_balance_date == date(2026, 7, 1)
-
-
-def test_balance_check_in_is_atomic_when_any_write_fails(tmp_path, monkeypatch):
-    db_path = tmp_path / "finance.sqlite3"
-    service = AccountService(db_path)
-    cash = service.create_account("Cash", "asset", "100", "2026-01-01")
-    loan = service.create_account("Loan", "liability", "50", "2026-01-01")
-    assert cash.id is not None
-    assert loan.id is not None
-    original_upsert = BalanceSnapshotRepository.upsert
-    calls = 0
-
-    def fail_second(self, snapshot):
-        nonlocal calls
-        calls += 1
-        if calls == 2:
-            raise RuntimeError("forced batch failure")
-        return original_upsert(self, snapshot)
-
-    monkeypatch.setattr(BalanceSnapshotRepository, "upsert", fail_second)
-
-    with pytest.raises(RuntimeError, match="forced batch failure"):
-        service.check_in_balances(
-            "2026-07-16",
-            [(cash.id, "120"), (loan.id, "40")],
-        )
-
-    assert len(service.list_snapshots(cash.id)) == 1
-    assert len(service.list_snapshots(loan.id)) == 1
-
-
-def test_archive_records_closing_zero_and_protects_mutation(tmp_path):
-    service = AccountService(tmp_path / "finance.sqlite3")
-    account = service.create_account("Old car", "asset", "5000", "2026-01-01")
-    assert account.id is not None
-
-    archived = service.archive_account(
-        account.id,
-        "2026-06-30",
-        confirm_zero_balance=True,
-    )
-    before = service.list_accounts("2026-06-29", include_archived=True)[0]
-    after = service.list_accounts("2026-06-30", include_archived=True)[0]
-
-    assert archived.archived_on == date(2026, 6, 30)
-    assert before.balance == Decimal("5000.00")
-    assert after.balance == Decimal("0.00")
-    with pytest.raises(ValidationError, match="Archived accounts"):
-        service.set_balance(account.id, "10", "2026-07-01")
-
-
-def test_snapshot_and_account_deletion_guards(tmp_path):
-    service = AccountService(tmp_path / "finance.sqlite3")
-    account = service.create_account("Correction", "asset", "10", "2026-01-01")
-    assert account.id is not None
-
-    with pytest.raises(ValidationError, match="sole balance"):
-        service.delete_snapshot(account.id, "2026-01-01")
-    service.set_balance(account.id, "20", "2026-02-01")
-    with pytest.raises(ValidationError, match="exactly one snapshot"):
-        service.delete_account(account.id)
-    service.delete_snapshot(account.id, "2026-02-01")
-    service.delete_account(account.id)
-    with pytest.raises(AccountNotFoundError):
-        service.get_account(account.id)
+    assert resolved.balance == Decimal("125.50")
+    assert resolved.opening_balance == Decimal("125.50")
+    assert [item.activity.kind for item in history] == [ActivityKind.OPENING]
 
 
 @pytest.mark.parametrize(
-    ("operation", "message"),
+    ("account_type", "kind", "expected_balance", "expected_net_worth"),
     [
-        (lambda service, account_id: service.set_balance(account_id, "-1", "2026-01-01"), "zero"),
-        (
-            lambda service, account_id: service.set_balance(account_id, "1", "2099-01-01"),
-            "future",
-        ),
-        (
-            lambda service, account_id: service.archive_account(
-                account_id,
-                "2025-12-31",
-                confirm_zero_balance=True,
-            ),
-            "earlier",
-        ),
+        ("asset", "income", "110.00", "110.00"),
+        ("asset", "expense", "90.00", "90.00"),
+        ("liability", "income", "90.00", "-90.00"),
+        ("liability", "expense", "110.00", "-110.00"),
     ],
 )
-def test_account_validation_rejects_invalid_balance_lifecycle(tmp_path, operation, message):
-    service = AccountService(tmp_path / "finance.sqlite3")
-    account = service.create_account("Cash", "asset", "10", "2026-01-01")
-    assert account.id is not None
-    with pytest.raises(ValidationError, match=message):
-        operation(service, account.id)
+def test_income_and_expense_follow_economic_direction_for_every_account_type(
+    tmp_path, account_type, kind, expected_balance, expected_net_worth
+):
+    accounts = AccountService(tmp_path / f"{account_type}-{kind}.sqlite3")
+    account = _account(accounts, "Account", account_type, "100")
+    activities = ActivityService(accounts.db_path)
+
+    record = activities.add_activity(kind, "10", "Other", "Movement", "2026-01-02", account.id)
+    resolved = accounts.get_resolved_account(account.id, "2026-01-02")
+    report_accounts, report_activities = accounts.report_data("2026-01-02")
+    summary = build_net_worth_summary(report_accounts, report_activities, date(2026, 1, 2))
+
+    assert resolved.balance == Decimal(expected_balance)
+    assert summary.total_net_worth == Decimal(expected_net_worth)
+    assert record.effects[0].after_balance == Decimal(expected_balance)
 
 
-def test_account_creation_rolls_back_when_initial_snapshot_fails(tmp_path, monkeypatch):
-    db_path = tmp_path / "finance.sqlite3"
-    service = AccountService(db_path)
+@pytest.mark.parametrize(
+    ("source_type", "destination_type", "source_balance", "destination_balance"),
+    [
+        ("asset", "asset", "80.00", "30.00"),
+        ("asset", "liability", "80.00", "-10.00"),
+        ("liability", "asset", "120.00", "30.00"),
+        ("liability", "liability", "120.00", "-10.00"),
+    ],
+)
+def test_transfer_preserves_net_worth_across_account_type_pairs(
+    tmp_path, source_type, destination_type, source_balance, destination_balance
+):
+    accounts = AccountService(tmp_path / f"{source_type}-{destination_type}.sqlite3")
+    source = _account(accounts, "Source", source_type, "100")
+    destination = _account(accounts, "Destination", destination_type, "10")
+    activities = ActivityService(accounts.db_path)
+    before_accounts, before_activity = accounts.report_data("2026-01-01")
+    before = build_net_worth_summary(before_accounts, before_activity, date(2026, 1, 1))
 
-    def fail_snapshot(self, snapshot):
-        raise RuntimeError("forced snapshot failure")
+    activities.add_transfer("20", "Move value", "2026-01-02", source.id, destination.id)
+    after_accounts, after_activity = accounts.report_data("2026-01-02")
+    after = build_net_worth_summary(after_accounts, after_activity, date(2026, 1, 2))
 
-    monkeypatch.setattr(BalanceSnapshotRepository, "upsert", fail_snapshot)
-
-    with pytest.raises(RuntimeError, match="forced snapshot failure"):
-        service.create_account("Cash", "asset", "10", "2026-01-01")
-
-    with connect(db_path) as connection:
-        assert connection.execute("SELECT COUNT(*) FROM accounts").fetchone()[0] == 0
-
-
-def test_cli_account_and_net_worth_flow(tmp_path):
-    runner = CliRunner()
-    db_path = tmp_path / "finance.sqlite3"
-    add_asset = runner.invoke(
-        app,
-        [
-            "account",
-            "add",
-            "--name",
-            "Cash",
-            "--type",
-            "asset",
-            "--balance",
-            "1000",
-            "--date",
-            "2026-01-01",
-            "--db-path",
-            str(db_path),
-        ],
+    assert accounts.get_resolved_account(source.id, "2026-01-02").balance == Decimal(source_balance)
+    assert accounts.get_resolved_account(destination.id, "2026-01-02").balance == Decimal(
+        destination_balance
     )
-    add_liability = runner.invoke(
-        app,
-        [
-            "account",
-            "add",
-            "--name",
-            "Card",
-            "--type",
-            "liability",
-            "--balance",
-            "250",
-            "--date",
-            "2026-01-01",
-            "--db-path",
-            str(db_path),
-        ],
-    )
-    summary = runner.invoke(
-        app,
-        ["report", "net-worth", "--as-of", "2026-07-16", "--db-path", str(db_path)],
-    )
-    history = runner.invoke(
-        app,
-        [
-            "report",
-            "net-worth-history",
-            "--months",
-            "2",
-            "--as-of",
-            "2026-07-16",
-            "--db-path",
-            str(db_path),
-        ],
-    )
-
-    assert add_asset.exit_code == 0
-    assert add_liability.exit_code == 0
-    assert "Assets:       $1,000.00" in summary.output
-    assert "Liabilities:  $250.00" in summary.output
-    assert "Net worth:    $750.00" in summary.output
-    assert "2026-06-30" in history.output
-    assert "2026-07-16" in history.output
+    assert after.total_net_worth == before.total_net_worth
 
 
-def test_api_account_snapshot_archive_and_net_worth_flow(tmp_path):
-    client = TestClient(create_app(tmp_path / "finance.sqlite3"))
-    created = client.post(
-        "/api/accounts",
-        json={
-            "name": "Savings",
-            "type": "asset",
-            "initial_balance": "1000.00",
-            "initial_balance_date": "2026-01-01",
-        },
-    )
-    set_balance = client.put(
-        "/api/accounts/1/balance-snapshots/2026-06-30",
-        json={"amount": "1250.50"},
-    )
-    summary = client.get("/api/net-worth", params={"as_of": "2026-07-16"})
-    history = client.get(
-        "/api/net-worth/history",
-        params={"as_of": "2026-07-16", "months": 2},
-    )
-    overview = client.get(
-        "/api/net-worth/overview",
-        params={"as_of": "2026-07-16", "months": 2},
-    )
-    check_in = client.put(
-        "/api/accounts/balance-check-ins/2026-07-16",
-        json={"updates": [{"account_id": 1, "amount": "1300.00"}]},
-    )
-    archive_without_confirmation = client.post(
-        "/api/accounts/1/archive",
-        json={"closing_date": "2026-07-16", "confirm_zero_balance": False},
-    )
-    archived = client.post(
-        "/api/accounts/1/archive",
-        json={"closing_date": "2026-07-16", "confirm_zero_balance": True},
-    )
+def test_adjustment_is_authoritative_over_earlier_activity_edits_and_deletion(tmp_path):
+    accounts = AccountService(tmp_path / "ledger.sqlite3")
+    account = _account(accounts, "Checking", balance="100")
+    activities = ActivityService(accounts.db_path)
+    expense = activities.add_activity("expense", "20", "Food", "Lunch", "2026-02-01", account.id)
+    adjustment = activities.adjust_account(account.id, "90", "2026-02-10", "Bank balance")
 
-    assert created.status_code == 201
-    assert created.json()["account"]["resolved_balance"] == "1000.00"
-    assert set_balance.json()["snapshot"]["amount"] == "1250.50"
-    assert summary.json()["total_net_worth"] == "1250.50"
-    assert history.json()["points"][-1]["as_of"] == "2026-07-16"
-    assert overview.json()["summary"]["total_net_worth"] == "1250.50"
-    assert overview.json()["comparison"]["available"] is True
-    assert overview.json()["comparison"]["change_amount"] == "0.00"
-    assert overview.json()["accounts"][0]["current_balance"] == "1250.50"
-    assert check_in.json()["balance_snapshots"][0]["amount"] == "1300.00"
-    assert archive_without_confirmation.status_code == 400
-    assert archived.json()["account"]["archived_on"] == "2026-07-16"
-    assert client.get("/api/accounts").json()["accounts"] == []
+    activities.edit_activity(
+        expense.activity.id,
+        kind="expense",
+        amount="50",
+        category="Food",
+        description="Lunch corrected",
+        activity_date="2026-02-01",
+        account_id=account.id,
+    )
+    assert accounts.get_resolved_account(account.id, "2026-02-10").balance == Decimal("90.00")
+
+    activities.delete_activity(expense.activity.id)
+    stored_adjustment = activities.get_activity(adjustment.activity.id)
+    assert stored_adjustment.effects[0].balance_effect == Decimal("-10.00")
+    assert accounts.get_resolved_account(account.id, "2026-02-10").balance == Decimal("90.00")
+
+
+def test_same_day_opening_precedes_activity_and_ids_break_ties_stably(tmp_path):
+    accounts = AccountService(tmp_path / "ledger.sqlite3")
+    account = _account(accounts, "Cash", balance="100")
+    activities = ActivityService(accounts.db_path)
+    activities.add_activity("expense", "10", "Food", "First", "2026-01-01", account.id)
+    activities.adjust_account(account.id, "80", "2026-01-01")
+    activities.add_activity("income", "5", "Other", "Last", "2026-01-01", account.id)
+
+    assert accounts.get_resolved_account(account.id, "2026-01-01").balance == Decimal("85.00")
+
+
+def test_negative_balances_have_attention_states_without_arithmetic_changes(tmp_path):
+    accounts = AccountService(tmp_path / "ledger.sqlite3")
+    asset = _account(accounts, "Checking", balance="0")
+    liability = _account(accounts, "Card", "liability", "0")
+    activities = ActivityService(accounts.db_path)
+    activities.add_activity("expense", "25", "Food", "Overdraft", "2026-01-02", asset.id)
+    activities.add_activity("income", "10", "Refund", "Card credit", "2026-01-02", liability.id)
+
+    assert accounts.get_resolved_account(asset.id, "2026-01-02").balance_state.value == "overdrawn"
     assert (
-        len(
-            client.get(
-                "/api/accounts",
-                params={"include_archived": True},
-            ).json()["accounts"]
-        )
-        == 1
+        accounts.get_resolved_account(liability.id, "2026-01-02").balance_state.value
+        == "credit_balance"
     )
+
+
+def test_account_delete_and_archive_enforce_activity_and_zero_balance_guards(tmp_path):
+    accounts = AccountService(tmp_path / "ledger.sqlite3")
+    unused = _account(accounts, "Unused")
+    accounts.delete_account(unused.id)
+    assert accounts.list_accounts() == []
+
+    active = _account(accounts, "Active", balance="10")
+    with pytest.raises(ValidationError, match="balance must be zero"):
+        accounts.archive_account(active.id, "2026-01-02")
+    ActivityService(accounts.db_path).adjust_account(active.id, "0", "2026-01-02")
+    archived = accounts.archive_account(active.id, "2026-01-02")
+    assert archived.archived_on == date(2026, 1, 2)
+    assert accounts.get_account(active.id).active is False
+
+
+def test_net_worth_overview_attributes_cashflow_adjustments_and_zero_transfers(tmp_path):
+    accounts = AccountService(tmp_path / "ledger.sqlite3")
+    cash = _account(accounts, "Cash", balance="100")
+    savings = _account(accounts, "Savings", balance="0")
+    activities = ActivityService(accounts.db_path)
+    activities.add_activity("income", "50", "Salary", "Pay", "2026-02-01", cash.id)
+    activities.add_transfer("20", "Save", "2026-02-02", cash.id, savings.id)
+    activities.adjust_account(savings.id, "25", "2026-02-03", "Interest and valuation")
+    report_accounts, report_activities = accounts.report_data("2026-02-28")
+
+    overview = build_net_worth_overview(
+        report_accounts, report_activities, date(2026, 2, 28), months=2
+    )
+
+    assert overview.summary.total_net_worth == Decimal("155.00")
+    assert overview.attribution.cashflow == Decimal("50.00")
+    assert overview.attribution.adjustments == Decimal("5.00")
+    assert overview.attribution.transfers == Decimal("0.00")

@@ -1,4 +1,4 @@
-"""Account, balance snapshot, and net worth API schemas."""
+"""Account and activity-derived net-worth API schemas."""
 
 from datetime import date
 from typing import Literal
@@ -7,27 +7,35 @@ from pydantic import Field
 
 from finance_tracker.web.schemas.common import ApiModel
 
+AccountSubtypeValue = Literal["cash", "investment", "property", "credit_card", "loan", "other"]
+
 
 class AccountCreateRequest(ApiModel):
-    name: str
+    name: str = Field(min_length=1, max_length=100)
     type: Literal["asset", "liability"]
-    initial_balance: str
-    initial_balance_date: date
+    subtype: AccountSubtypeValue
+    opening_balance: str
+    opening_date: date
 
 
 class AccountPatchRequest(ApiModel):
-    name: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    subtype: AccountSubtypeValue | None = None
 
 
 class AccountResponse(ApiModel):
     id: int
     name: str
     type: Literal["asset", "liability"]
+    subtype: AccountSubtypeValue
     archived_on: str | None
     created_at: str
     as_of: str
-    resolved_balance: str | None
-    resolved_balance_date: str | None
+    balance: str
+    balance_state: Literal["normal", "overdrawn", "credit_balance"]
+    opening_balance: str
+    opening_date: str
+    opening_activity_id: int
     currency: str
 
 
@@ -41,49 +49,8 @@ class AccountMutationResponse(ApiModel):
     account: AccountResponse
 
 
-class BalanceSnapshotRequest(ApiModel):
-    amount: str
-
-
-class BalanceSnapshotResponse(ApiModel):
-    id: int
-    account_id: int
-    amount: str
-    effective_date: str
-    created_at: str
-    updated_at: str
-    currency: str
-
-
-class BalanceSnapshotListResponse(ApiModel):
-    balance_snapshots: list[BalanceSnapshotResponse]
-
-
-class BalanceSnapshotMutationResponse(ApiModel):
-    notice: str
-    notice_code: str
-    snapshot: BalanceSnapshotResponse
-
-
-class BalanceCheckInItemRequest(ApiModel):
-    account_id: int = Field(gt=0)
-    amount: str
-
-
-class BalanceCheckInRequest(ApiModel):
-    updates: list[BalanceCheckInItemRequest] = Field(min_length=1)
-
-
-class BalanceCheckInResponse(ApiModel):
-    notice: str
-    notice_code: str
-    balance_snapshots: list[BalanceSnapshotResponse]
-    replaced_count: int
-
-
 class AccountArchiveRequest(ApiModel):
     closing_date: date
-    confirm_zero_balance: bool
 
 
 class NetWorthSummaryResponse(ApiModel):
@@ -95,7 +62,7 @@ class NetWorthSummaryResponse(ApiModel):
     archived_account_count: int
     resolved_asset_count: int
     resolved_liability_count: int
-    unresolved_account_count: int
+    account_state_warning_count: int
     currency: str
 
 
@@ -106,7 +73,7 @@ class NetWorthHistoryPointResponse(ApiModel):
     total_net_worth: str
     resolved_asset_count: int
     resolved_liability_count: int
-    unresolved_account_count: int
+    account_state_warning_count: int
 
 
 class NetWorthHistoryResponse(ApiModel):
@@ -129,6 +96,7 @@ class NetWorthAccountAnalyticsResponse(ApiModel):
     comparison_balance_date: str | None
     contribution_change: str | None
     composition_percent: str | None
+    balance_state: Literal["normal", "overdrawn", "credit_balance"]
     currency: str
 
 
@@ -142,10 +110,15 @@ class NetWorthComparisonResponse(ApiModel):
     change_percent: str | None
 
 
-class NetWorthCoverageResponse(ApiModel):
-    resolved_account_count: int
-    unresolved_account_count: int
-    oldest_balance_date: str | None
+class NetWorthAccountStateResponse(ApiModel):
+    warning_count: int
+    oldest_activity_date: str | None
+
+
+class NetWorthAttributionResponse(ApiModel):
+    cashflow: str
+    adjustments: str
+    transfers: str
 
 
 class NetWorthOverviewResponse(ApiModel):
@@ -153,5 +126,6 @@ class NetWorthOverviewResponse(ApiModel):
     history: NetWorthHistoryResponse
     comparison: NetWorthComparisonResponse
     accounts: list[NetWorthAccountAnalyticsResponse]
-    coverage: NetWorthCoverageResponse
+    account_state: NetWorthAccountStateResponse
+    attribution: NetWorthAttributionResponse
     currency: str

@@ -20,7 +20,7 @@ export const en = {
     delete: "Delete",
     save: "Save",
     retry: "Retry",
-    addTransaction: "Add transaction",
+    addTransaction: "Add activity",
     setBudget: "Set budget",
     importCsv: "Import CSV",
     exportCsv: "Export CSV",
@@ -47,10 +47,105 @@ export const en = {
   },
   nav: {
     overview: "Overview",
-    transactions: "Transactions",
+    transactions: "Activity",
     budgets: "Budgets",
     accounts: "Accounts",
     manage: "Manage",
+  },
+  activity: {
+    eyebrow: "Unified ledger",
+    title: "Activity",
+    summary: "{count} account-aware activity item(s)",
+    add: "Add activity",
+    filters: "Find activity",
+    filtersSummary: "Search and narrow the ledger by kind or account.",
+    search: "Search",
+    kind: "Kind",
+    account: "Account",
+    ledger: "Account activity",
+    ledgerDetail: "Every entry explains its account balance effect.",
+    tableCaption: "Unified account activity ledger",
+    effect: "Balance effect",
+    empty: "No activity matches these filters.",
+    readOnly: "Read-only",
+    editTitle: "Edit activity",
+    deleteTitle: "Delete activity?",
+    deleteDescription: "This recalculates later account balances.",
+    formDescription:
+      "Choose accounts explicitly and review projected effects before saving.",
+    observedBalance: "Observed balance",
+    transferAccounts: "Transfer accounts",
+    fromAccount: "From account",
+    toAccount: "To account",
+    projected: "Projected effects",
+    completeFields:
+      "Complete the amount and account fields to see projected effects.",
+    chooseAccount: "Choose an account",
+    selectAccount: "Select an account",
+    importTitle: "Import activity CSV",
+    importDescription:
+      "Preview account-aware rows and their calculated effects before import.",
+    kinds: {
+      opening: "Opening",
+      income: "Income",
+      expense: "Expense",
+      transfer: "Transfer",
+      adjustment: "Adjustment",
+    },
+    chooseKind: "Choose activity type",
+    kindsDescription: {
+      income: "Increase your balance with incoming money",
+      expense: "Decrease your balance with outgoing payments",
+      transfer: "Move money between different accounts",
+      adjustment: "Reconcile differences between ledger and actual balance",
+    },
+  },
+  accounts: {
+    attention: "Attention states",
+    provenanceTitle: "What changed net worth",
+    provenanceDetail:
+      "Cashflow and observed balance adjustments reconcile the selected period; transfers net to zero.",
+    cashflowChange: "Income and expenses",
+    adjustmentChange: "Openings and adjustments",
+    transferChange: "Transfers",
+    calculatedDetail:
+      "Balances are calculated from the opening and ordered activity.",
+    tableCaption: "Accounts with calculated balances",
+    name: "Account",
+    type: "Type",
+    subtype: "Subtype",
+    opening: "Opening",
+    openingBalance: "Opening balance",
+    openingDate: "Opening date",
+    balance: "Calculated balance",
+    updateBalance: "Update balance",
+    updateBalanceFor: "Update {name} balance",
+    activity: "Activity",
+    archive: "Archive account",
+    empty: "Add an account to start the activity ledger.",
+    addDescription: "Create an account and its read-only opening activity.",
+    adjustDescription:
+      "Enter the balance you observed. The ledger records the calculated difference as an adjustment.",
+    archiveDescription:
+      "The account can be archived only at a zero calculated balance with no later activity.",
+    deleteDescription:
+      "Only an account with no activity beyond its opening can be deleted.",
+    netWorthEffect: "Net-worth effect",
+    historyTitle: "Calculated net-worth history",
+    historyDetail: "Month-end totals are derived from account activity.",
+    subtypes: {
+      cash: "Cash",
+      investment: "Investment",
+      property: "Property",
+      credit_card: "Credit card",
+      loan: "Loan",
+      other: "Other",
+    },
+    states: {
+      normal: "Normal",
+      overdrawn: "Overdrawn",
+      credit_balance: "Credit balance",
+    },
   },
   theme: {
     system: "Use system color setting",
@@ -73,7 +168,7 @@ export const en = {
     eyebrow: "Financial overview",
     overviewTitle: "Overview",
     title: "Dashboard",
-    summary: "Review cashflow, budget pressure, and recent transactions.",
+    summary: "Review cashflow, budget pressure, and recent activity.",
     narrative: {
       positive: "{amount} remained after expenses this month.",
       negative: "Expenses exceeded income by {amount} this month.",
@@ -106,7 +201,7 @@ export const en = {
       noBudgetsMessage:
         "Set a category budget to turn spending into an actionable plan.",
     },
-    viewAllActivity: "All transactions",
+    viewAllActivity: "All activity",
     changePeriod: "Change dashboard period",
     toolsLabel: "Dashboard period and export tools",
     downloadLabel: "Download dashboard artifacts",
@@ -144,7 +239,7 @@ export const en = {
       pressureTitle: "Budget pressure",
       mixTitle: "Expense mix",
       mixDetail: "Spending by category",
-      activityTitle: "Recent transactions",
+      activityTitle: "Recent activity",
     },
     netWorth: {
       title: "Current net worth",
@@ -152,7 +247,7 @@ export const en = {
       action: "View accounts",
       emptyTitle: "Net worth is not tracked yet",
       emptyMessage:
-        "Add manual asset and liability balances without changing transaction history.",
+        "Add an account with an opening balance to begin tracking net worth.",
       addAccount: "Add account",
       netWorth: "Net worth",
       assets: "Assets",
@@ -161,14 +256,14 @@ export const en = {
       coverage: "{count} account(s) are not tracked yet for today.",
     },
     activity: {
-      emptyTitle: "No recent transactions",
+      emptyTitle: "No recent activity",
       emptyMessage:
         "New ledger entries will appear here after they are posted.",
     },
     empty: {
       eyebrow: "Your ledger is ready",
       loadingTitle: "Loading dashboard",
-      fetching: "Fetching transaction records",
+      fetching: "Fetching activity records",
       preparing: "Preparing the cashflow trend.",
     },
   },
@@ -705,8 +800,8 @@ export const en = {
       readyDetail:
         "Review the entries and duplicate handling before adding them to Transactions.",
       applied: "Recurring entries applied",
-      viewTransactions: "View created transactions",
-      listTitle: "Recurring transaction templates",
+      viewTransactions: "View created activity",
+      listTitle: "Recurring activity templates",
       listSummary:
         "Monthly entries remain inactive until you explicitly review and apply them.",
       active: "Active",
@@ -736,7 +831,7 @@ export const en = {
       title: "Data",
       summary:
         "Import and export portable CSV files while keeping the SQLite ledger on this machine.",
-      transactionsTitle: "Transactions",
+      transactionsTitle: "Activity",
       transactionsSummary:
         "Preview transaction CSV rows before writing. Exports use the selected month and current filter scope.",
       duplicateNote:

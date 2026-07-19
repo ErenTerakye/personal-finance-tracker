@@ -14,13 +14,17 @@ from textual.widgets import Button, DataTable, Input, Static
 
 from finance_tracker.charts import save_monthly_chart, save_trend_chart
 from finance_tracker.csv_io import (
+    export_activities_csv,
     export_budgets_csv,
     export_transactions_csv,
+    import_activities_csv,
     import_budgets_csv,
     import_transactions_csv,
+    preview_activities_csv_file,
     preview_transactions_csv_file,
 )
 from finance_tracker.exceptions import FinanceTrackerError
+from finance_tracker.models import PostingRole
 from finance_tracker.reports import (
     build_net_worth_history,
     build_net_worth_summary,
@@ -30,14 +34,15 @@ from finance_tracker.reports import (
 )
 from finance_tracker.services import (
     AccountService,
+    ActivityService,
     BudgetService,
     CategoryRuleService,
     LedgerRecoveryService,
     OverviewService,
     RecurringTemplateService,
     SettingsService,
-    TransactionService,
 )
+from finance_tracker.services.transactions import TransactionService
 from finance_tracker.tui.forms import FormField, FormScreen
 
 if TYPE_CHECKING:
@@ -90,7 +95,7 @@ class OverviewView(LedgerView):
             yield DataTable(id="overview-trend", classes="compact-table", zebra_stripes=True)
             yield Static("Budgets needing attention", classes="section-title")
             yield DataTable(id="overview-budgets", classes="compact-table", zebra_stripes=True)
-            yield Static("Recent transactions", classes="section-title")
+            yield Static("Recent activity", classes="section-title")
             yield DataTable(id="overview-recent", classes="compact-table", zebra_stripes=True)
 
     def on_mount(self) -> None:
@@ -156,12 +161,13 @@ class OverviewView(LedgerView):
             budgets.add_row("—", "—", "—", "No budgets need attention")
         recent = self.query_one("#overview-recent", DataTable)
         recent.clear()
-        for transaction in snapshot.recent_transactions:
+        for record in snapshot.recent_activities:
+            transaction = record.activity
             recent.add_row(
                 transaction.date.isoformat(),
-                transaction.type.value,
+                transaction.kind.value,
                 money(transaction.amount),
-                transaction.category,
+                transaction.category or "—",
                 transaction.description,
             )
 
@@ -221,7 +227,7 @@ class OverviewView(LedgerView):
             self.report_error(exc)
 
 
-class TransactionsView(LedgerView):
+class LegacyTransactionsView(LedgerView):
     def __init__(self) -> None:
         super().__init__(id="transactions-view")
         self.row_ids: list[int] = []
@@ -654,7 +660,7 @@ class BudgetsView(LedgerView):
             self.report_error(exc)
 
 
-class AccountsView(LedgerView):
+class LegacyAccountsView(LedgerView):
     def __init__(self) -> None:
         super().__init__(id="accounts-view")
         self.row_ids: list[int] = []
@@ -817,7 +823,9 @@ class AccountsView(LedgerView):
             for entry in values["balances"].split(","):
                 account_id, amount = entry.strip().split("=", maxsplit=1)
                 updates.append((int(account_id), amount.strip()))
-            result = AccountService(self.db_path).check_in_balances(values["date"], updates)
+            result = AccountService(self.db_path).check_in_balances(  # type: ignore[attr-defined]
+                values["date"], updates
+            )
             self.refresh_data()
             self.app.notify(f"Recorded {len(result.snapshots)} balance(s).")
         except (FinanceTrackerError, ValueError) as exc:
@@ -836,7 +844,7 @@ class AccountsView(LedgerView):
         if not values or values["confirm"] != "ARCHIVE":
             return
         try:
-            AccountService(self.db_path).archive_account(
+            AccountService(self.db_path).archive_account(  # type: ignore[call-arg]
                 item_id, values["date"], confirm_zero_balance=True
             )
             self.refresh_data()
@@ -917,7 +925,7 @@ class ManageView(LedgerView):
                 str(template.id),
                 template.type.value,
                 format_money(template.amount, currency),
-                template.category,
+                template.category or "—",
                 str(template.day_of_month),
                 template.description,
             )
@@ -937,9 +945,12 @@ class ManageView(LedgerView):
                 FormScreen(
                     "Add recurring template",
                     [
-                        FormField("type", "Type", "expense"),
+                        FormField("kind", "Kind (income, expense, transfer)", "expense"),
                         FormField("amount", "Amount"),
                         FormField("category", "Category"),
+                        FormField("account", "Account ID (income/expense)"),
+                        FormField("from", "Source account ID (transfer)"),
+                        FormField("to", "Destination account ID (transfer)"),
                         FormField("day", "Day of month"),
                         FormField("description", "Description"),
                     ],
@@ -1041,11 +1052,14 @@ class ManageView(LedgerView):
             return
         try:
             RecurringTemplateService(self.db_path).add_template(
-                values["type"],
+                values["kind"],
                 values["amount"],
-                values["category"],
+                values["category"] or None,
                 values["description"],
                 int(values["day"]),
+                account_id=int(values["account"]) if values["account"] else None,
+                from_account_id=int(values["from"]) if values["from"] else None,
+                to_account_id=int(values["to"]) if values["to"] else None,
             )
             self.refresh_data()
         except (FinanceTrackerError, ValueError) as exc:
@@ -1059,7 +1073,7 @@ class ManageView(LedgerView):
                 int(values["month"]), int(values["year"])
             )
             self.app.notify(
-                f"Created {len(result.created)} transaction(s); "
+                f"Created {len(result.created)} activity item(s); "
                 f"skipped {result.skipped_duplicates} duplicate(s)."
             )
         except (FinanceTrackerError, ValueError) as exc:
@@ -1129,3 +1143,468 @@ class ManageView(LedgerView):
             self.app.notify(f"Restored verified ledger to {result.path}.")
         except FinanceTrackerError as exc:
             self.report_error(exc)
+
+
+class ActivityView(LedgerView):
+    """Kind-aware unified ledger used by the v3 workspace."""
+
+    def __init__(self) -> None:
+        super().__init__(id="transactions-view")
+        self.row_ids: list[int] = []
+        self.account_filter: int | None = None
+
+    def compose(self) -> ComposeResult:
+        yield Static("Activity", classes="view-title")
+        yield Static(
+            "Income, expenses, transfers, openings, and adjustments in one account ledger.",
+            classes="context-line",
+        )
+        with Horizontal(classes="toolbar"):
+            yield Input(
+                placeholder="Search category, description, date, kind, or account",
+                id="transaction-search",
+            )
+            yield Button("Add activity", variant="primary", id="activity-add")
+            yield Button("Transfer", id="activity-transfer")
+            yield Button("Edit", id="activity-edit")
+            yield Button("Delete", variant="error", id="activity-delete")
+            yield Button("Import", id="activity-import")
+            yield Button("Export", id="activity-export")
+        yield DataTable(id="transaction-table", cursor_type="row", zebra_stripes=True)
+
+    def on_mount(self) -> None:
+        self.query_one(DataTable).add_columns(
+            "ID", "Date", "Kind", "Amount", "Category", "Account", "Effect", "Description"
+        )
+        self.refresh_data()
+
+    def refresh_data(self) -> None:
+        try:
+            records = ActivityService(self.db_path).list_activities(
+                account_id=self.account_filter,
+                search=self.query_one(Input).value or None,
+            )
+        except FinanceTrackerError as exc:
+            self.report_error(exc)
+            return
+        table = self.query_one(DataTable)
+        table.clear()
+        self.row_ids = []
+        for record in records:
+            item = record.activity
+            assert item.id is not None
+            self.row_ids.append(item.id)
+            names = " → ".join(effect.account_name for effect in record.effects)
+            effects = ", ".join(
+                format_money(effect.balance_effect, self.currency) for effect in record.effects
+            )
+            table.add_row(
+                str(item.id),
+                item.date.isoformat(),
+                item.kind.value,
+                format_money(item.amount, self.currency),
+                item.category or "—",
+                names,
+                effects,
+                item.description,
+                key=str(item.id),
+            )
+
+    def filter_account(self, account_id: int) -> None:
+        self.account_filter = account_id
+        self.refresh_data()
+
+    def selected_id(self) -> int | None:
+        table = self.query_one(DataTable)
+        if not self.row_ids or table.cursor_row >= len(self.row_ids):
+            self.app.notify("Select an activity first.", severity="warning")
+            return None
+        return self.row_ids[table.cursor_row]
+
+    @on(Input.Changed, "#transaction-search")
+    def search_changed(self) -> None:
+        self.refresh_data()
+
+    @on(Button.Pressed)
+    def button_pressed(self, event: Button.Pressed) -> None:
+        action = event.button.id
+        if action == "activity-add":
+            self.open_add()
+        elif action == "activity-transfer":
+            self.open_transfer()
+        elif action == "activity-edit":
+            self.edit_selected()
+        elif action == "activity-delete":
+            self.delete_selected()
+        elif action == "activity-import":
+            self.app.push_screen(
+                FormScreen("Preview activity CSV", [FormField("path", "CSV path")]),
+                self._preview_import,
+            )
+        elif action == "activity-export":
+            self.app.push_screen(
+                FormScreen(
+                    "Export activity",
+                    [FormField("path", "CSV output path", "exports/activities.csv")],
+                ),
+                self._export,
+            )
+
+    def open_add(self) -> None:
+        self.app.push_screen(
+            FormScreen(
+                "Add activity",
+                [
+                    FormField("kind", "Kind (income or expense)", "expense"),
+                    FormField("amount", "Amount"),
+                    FormField("category", "Category"),
+                    FormField("account", "Account ID"),
+                    FormField("description", "Description"),
+                    FormField("date", "Date", date.today().isoformat()),
+                ],
+                submit_label="Add",
+            ),
+            self._add,
+        )
+
+    def open_transfer(self, source_id: int | None = None) -> None:
+        self.app.push_screen(
+            FormScreen(
+                "Transfer between accounts",
+                [
+                    FormField("amount", "Amount"),
+                    FormField("from", "Source account ID", str(source_id or "")),
+                    FormField("to", "Destination account ID"),
+                    FormField("description", "Description"),
+                    FormField("date", "Date", date.today().isoformat()),
+                ],
+                submit_label="Transfer",
+            ),
+            self._transfer,
+        )
+
+    def _add(self, values: dict[str, str] | None) -> None:
+        if not values:
+            return
+        try:
+            ActivityService(self.db_path).add_activity(
+                values["kind"],
+                values["amount"],
+                values["category"],
+                values["description"],
+                values["date"],
+                int(values["account"]),
+            )
+            self.ledger_app.refresh_all()
+            self.app.notify("Activity added.")
+        except (FinanceTrackerError, ValueError) as exc:
+            self.report_error(exc)
+
+    def _transfer(self, values: dict[str, str] | None) -> None:
+        if not values:
+            return
+        try:
+            ActivityService(self.db_path).add_transfer(
+                values["amount"],
+                values["description"],
+                values["date"],
+                int(values["from"]),
+                int(values["to"]),
+            )
+            self.ledger_app.refresh_all()
+            self.app.notify("Transfer added.")
+        except (FinanceTrackerError, ValueError) as exc:
+            self.report_error(exc)
+
+    def edit_selected(self) -> None:
+        item_id = self.selected_id()
+        if item_id is None:
+            return
+        record = ActivityService(self.db_path).get_activity(item_id)
+        item = record.activity
+        if item.kind.value == "opening":
+            self.app.notify("Opening activity is read-only.", severity="warning")
+            return
+        account = item.posting(PostingRole.ACCOUNT)
+        source = item.posting(PostingRole.SOURCE)
+        destination = item.posting(PostingRole.DESTINATION)
+        self.app.push_screen(
+            FormScreen(
+                f"Edit activity #{item_id}",
+                [
+                    FormField("kind", "Kind", item.kind.value),
+                    FormField("amount", "Amount / observed balance", str(item.amount)),
+                    FormField("category", "Category", item.category or ""),
+                    FormField("account", "Account ID", str(account.account_id if account else "")),
+                    FormField(
+                        "from", "Source account ID", str(source.account_id if source else "")
+                    ),
+                    FormField(
+                        "to",
+                        "Destination account ID",
+                        str(destination.account_id if destination else ""),
+                    ),
+                    FormField("description", "Description", item.description),
+                    FormField("date", "Date", item.date.isoformat()),
+                ],
+            ),
+            lambda values: self._edit(item_id, values),
+        )
+
+    def _edit(self, item_id: int, values: dict[str, str] | None) -> None:
+        if not values:
+            return
+        try:
+            ActivityService(self.db_path).edit_activity(
+                item_id,
+                kind=values["kind"],
+                amount=values["amount"],
+                category=values["category"] or None,
+                description=values["description"],
+                activity_date=values["date"],
+                account_id=int(values["account"]) if values["account"] else None,
+                from_account_id=int(values["from"]) if values["from"] else None,
+                to_account_id=int(values["to"]) if values["to"] else None,
+            )
+            self.ledger_app.refresh_all()
+        except (FinanceTrackerError, ValueError) as exc:
+            self.report_error(exc)
+
+    def delete_selected(self) -> None:
+        item_id = self.selected_id()
+        if item_id is None:
+            return
+        self.app.push_screen(
+            FormScreen(
+                f"Delete activity #{item_id}?",
+                [FormField("confirm", "Type DELETE to confirm")],
+                submit_label="Delete",
+                danger=True,
+            ),
+            lambda values: self._delete(item_id, values),
+        )
+
+    def _delete(self, item_id: int, values: dict[str, str] | None) -> None:
+        if not values or values["confirm"] != "DELETE":
+            return
+        try:
+            ActivityService(self.db_path).delete_activity(item_id)
+            self.ledger_app.refresh_all()
+        except FinanceTrackerError as exc:
+            self.report_error(exc)
+
+    def _preview_import(self, values: dict[str, str] | None) -> None:
+        if not values:
+            return
+        path = Path(values["path"])
+        try:
+            with path.open(newline="", encoding="utf-8") as stream:
+                preview = preview_activities_csv_file(stream, ActivityService(self.db_path))
+            self.app.push_screen(
+                FormScreen(
+                    "Import preview",
+                    [FormField("confirm", "Type IMPORT to write valid rows")],
+                    note=(
+                        f"{preview.valid_count} valid, "
+                        f"{preview.duplicate_count} duplicate, "
+                        f"{preview.invalid_count} invalid."
+                    ),
+                ),
+                lambda confirm: self._import(path, confirm),
+            )
+        except (FinanceTrackerError, OSError) as exc:
+            self.report_error(exc)
+
+    def _import(self, path: Path, values: dict[str, str] | None) -> None:
+        if not values or values["confirm"] != "IMPORT":
+            return
+        try:
+            result = import_activities_csv(path, ActivityService(self.db_path))
+            self.ledger_app.refresh_all()
+            self.app.notify(f"Imported {result.imported_count} activity item(s).")
+        except (FinanceTrackerError, OSError) as exc:
+            self.report_error(exc)
+
+    def _export(self, values: dict[str, str] | None) -> None:
+        if not values:
+            return
+        try:
+            service = ActivityService(self.db_path)
+            path = export_activities_csv(
+                Path(values["path"]), service.list_activities(account_id=self.account_filter)
+            )
+            self.app.notify(f"Exported activity to {path}.")
+        except (FinanceTrackerError, OSError) as exc:
+            self.report_error(exc)
+
+
+class ActivityAccountsView(LedgerView):
+    """Account rows with transfer, adjustment, and history actions."""
+
+    def __init__(self) -> None:
+        super().__init__(id="accounts-view")
+        self.row_ids: list[int] = []
+
+    def compose(self) -> ComposeResult:
+        yield Static("Accounts & net worth", classes="view-title")
+        yield Static("", id="net-worth-line", classes="context-line")
+        with Horizontal(classes="toolbar"):
+            yield Button("Add account", variant="primary", id="v3-account-add")
+            yield Button("Update balance", id="v3-account-adjust")
+            yield Button("Transfer", id="v3-account-transfer")
+            yield Button("Activity", id="v3-account-history")
+            yield Button("Archive", id="v3-account-archive")
+            yield Button("Delete", variant="error", id="v3-account-delete")
+        yield DataTable(id="account-table", cursor_type="row", zebra_stripes=True)
+
+    def on_mount(self) -> None:
+        self.query_one(DataTable).add_columns(
+            "ID", "Name", "Type", "Subtype", "Balance", "State", "As of", "Status"
+        )
+        self.refresh_data()
+
+    def refresh_data(self) -> None:
+        try:
+            service = AccountService(self.db_path)
+            accounts = service.list_accounts(include_archived=True)
+            raw_accounts, activities = service.report_data(date.today())
+            summary = build_net_worth_summary(raw_accounts, activities, date.today())
+        except FinanceTrackerError as exc:
+            self.report_error(exc)
+            return
+        self.query_one("#net-worth-line", Static).update(
+            f"Net worth {format_money(summary.total_net_worth, self.currency)} · "
+            f"{summary.account_state_warning_count} account state warning(s)"
+        )
+        table = self.query_one(DataTable)
+        table.clear()
+        self.row_ids = []
+        for item in accounts:
+            assert item.account.id is not None
+            self.row_ids.append(item.account.id)
+            table.add_row(
+                str(item.account.id),
+                item.account.name,
+                item.account.type.value,
+                item.account.subtype.value,
+                format_money(item.balance, self.currency),
+                item.balance_state.value,
+                item.as_of.isoformat(),
+                "active" if item.account.active else "archived",
+            )
+
+    def selected_id(self) -> int | None:
+        table = self.query_one(DataTable)
+        if not self.row_ids or table.cursor_row >= len(self.row_ids):
+            self.app.notify("Select an account first.", severity="warning")
+            return None
+        return self.row_ids[table.cursor_row]
+
+    @on(Button.Pressed)
+    def button_pressed(self, event: Button.Pressed) -> None:
+        item_id = self.selected_id() if event.button.id != "v3-account-add" else None
+        if event.button.id == "v3-account-add":
+            self.app.push_screen(
+                FormScreen(
+                    "Add account",
+                    [
+                        FormField("name", "Name"),
+                        FormField("type", "Type", "asset"),
+                        FormField("subtype", "Subtype", "cash"),
+                        FormField("amount", "Opening balance"),
+                        FormField("date", "Opening date", date.today().isoformat()),
+                    ],
+                ),
+                self._add,
+            )
+        elif item_id is None:
+            return
+        elif event.button.id == "v3-account-adjust":
+            self.app.push_screen(
+                FormScreen(
+                    f"Update account #{item_id} balance",
+                    [
+                        FormField("amount", "Observed balance"),
+                        FormField("date", "Date", date.today().isoformat()),
+                        FormField("description", "Description", "Balance update"),
+                    ],
+                ),
+                lambda values: self._adjust(item_id, values),
+            )
+        elif event.button.id == "v3-account-transfer":
+            self.ledger_app.action_workspace("transactions-tab")
+            self.app.query_one(ActivityView).open_transfer(item_id)
+        elif event.button.id == "v3-account-history":
+            self.ledger_app.action_workspace("transactions-tab")
+            self.app.query_one(ActivityView).filter_account(item_id)
+        elif event.button.id == "v3-account-archive":
+            self.app.push_screen(
+                FormScreen(
+                    f"Archive account #{item_id}",
+                    [
+                        FormField("date", "Closing date", date.today().isoformat()),
+                        FormField("confirm", "Type ARCHIVE to confirm"),
+                    ],
+                    danger=True,
+                    note="Calculated balance must already be zero and no later activity may exist.",
+                ),
+                lambda values: self._archive(item_id, values),
+            )
+        elif event.button.id == "v3-account-delete":
+            self.app.push_screen(
+                FormScreen(
+                    f"Delete account #{item_id}",
+                    [FormField("confirm", "Type DELETE to confirm")],
+                    danger=True,
+                ),
+                lambda values: self._delete(item_id, values),
+            )
+
+    def _add(self, values: dict[str, str] | None) -> None:
+        if not values:
+            return
+        try:
+            AccountService(self.db_path).create_account(
+                values["name"],
+                values["type"],
+                values["amount"],
+                values["date"],
+                values["subtype"],
+            )
+            self.ledger_app.refresh_all()
+        except FinanceTrackerError as exc:
+            self.report_error(exc)
+
+    def _adjust(self, item_id: int, values: dict[str, str] | None) -> None:
+        if not values:
+            return
+        try:
+            AccountService(self.db_path).adjust_account(
+                item_id, values["amount"], values["date"], values["description"]
+            )
+            self.ledger_app.refresh_all()
+        except FinanceTrackerError as exc:
+            self.report_error(exc)
+
+    def _archive(self, item_id: int, values: dict[str, str] | None) -> None:
+        if not values or values["confirm"] != "ARCHIVE":
+            return
+        try:
+            AccountService(self.db_path).archive_account(item_id, values["date"])
+            self.ledger_app.refresh_all()
+        except FinanceTrackerError as exc:
+            self.report_error(exc)
+
+    def _delete(self, item_id: int, values: dict[str, str] | None) -> None:
+        if not values or values["confirm"] != "DELETE":
+            return
+        try:
+            AccountService(self.db_path).delete_account(item_id)
+            self.ledger_app.refresh_all()
+        except FinanceTrackerError as exc:
+            self.report_error(exc)
+
+
+# Preserve import names used by the app while replacing the v2 implementations.
+TransactionsView = ActivityView
+AccountsView = ActivityAccountsView

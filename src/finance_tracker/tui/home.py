@@ -12,10 +12,10 @@ from finance_tracker.reports import format_money
 from finance_tracker.services import OverviewSnapshot
 
 _ACTIONS = (
-    ("add", "Add transaction", "Record income or expense"),
-    ("transactions", "Review this month", "Browse current ledger activity"),
+    ("add", "Add activity", "Record income or expense"),
+    ("activity", "Review activity", "Browse the unified account ledger"),
     ("budgets", "Check budgets", "See category pressure"),
-    ("balances", "Check in balances", "Update account snapshots"),
+    ("adjust", "Update account balance", "Record an observed balance"),
     ("workspace", "Workspace", "Open advanced full-screen mode"),
 )
 
@@ -29,9 +29,9 @@ class FinanceTrackerHome(App[str | None]):
         Binding("q", "quit_home", "Quit", priority=True, show=False),
         Binding("escape", "quit_home", "Quit", priority=True, show=False),
         Binding("1", "choose('add')", "Add", priority=True, show=False),
-        Binding("2", "choose('transactions')", "Transactions", priority=True, show=False),
+        Binding("2", "choose('activity')", "Activity", priority=True, show=False),
         Binding("3", "choose('budgets')", "Budgets", priority=True, show=False),
-        Binding("4", "choose('balances')", "Balances", priority=True, show=False),
+        Binding("4", "choose('adjust')", "Update balance", priority=True, show=False),
         Binding("5", "choose('workspace')", "Workspace", priority=True, show=False),
     ]
 
@@ -107,7 +107,7 @@ class FinanceTrackerHome(App[str | None]):
         pulse.append("\n")
         pulse.append(" Net worth ", style="bold #c8bd67")
         pulse.append(f"{format_money(self.snapshot.net_worth.total_net_worth, currency)}   ")
-        pulse.append(f"{report.transaction_count} transactions   ", style="#a9b2c0")
+        pulse.append(f"{report.transaction_count} cashflow activities   ", style="#a9b2c0")
         pulse.append(f"{attention} budgets need attention", style="#a9b2c0")
         return pulse
 

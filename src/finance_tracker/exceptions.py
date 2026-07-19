@@ -13,6 +13,10 @@ class TransactionNotFoundError(FinanceTrackerError):
     """Raised when a transaction cannot be found."""
 
 
+class ActivityNotFoundError(FinanceTrackerError):
+    """Raised when an activity cannot be found."""
+
+
 class BudgetNotFoundError(FinanceTrackerError):
     """Raised when a budget cannot be found."""
 

@@ -1,429 +1,235 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import App from "../../app/App";
-import { installAppTestLifecycle, mockFetch } from "../../test/appTestSupport";
+import {
+  installAppTestLifecycle,
+  mockFetch,
+  response,
+} from "../../test/appTestSupport";
 
 installAppTestLifecycle();
 
-const emptySummary = {
-  as_of: "2026-07-16",
-  total_assets: "0.00",
-  total_liabilities: "0.00",
-  total_net_worth: "0.00",
-  active_account_count: 0,
-  archived_account_count: 0,
-  resolved_asset_count: 0,
-  resolved_liability_count: 0,
-  unresolved_account_count: 0,
+const account = {
+  id: 1,
+  name: "Everyday checking",
+  type: "asset",
+  subtype: "cash",
+  archived_on: null,
+  created_at: "2026-01-01T00:00:00",
+  as_of: "2026-07-19",
+  balance: "-25.00",
+  balance_state: "overdrawn",
+  opening_balance: "1000.00",
+  opening_date: "2026-01-01",
+  opening_activity_id: 1,
   currency: "USD",
 };
 
-describe("net worth workflow", () => {
-  it("shows first-use education without implying complete zero coverage", async () => {
-    window.history.pushState({}, "", "/accounts");
+const overview = {
+  summary: {
+    as_of: "2026-07-19",
+    total_assets: "-25.00",
+    total_liabilities: "0.00",
+    total_net_worth: "-25.00",
+    active_account_count: 1,
+    archived_account_count: 0,
+    resolved_asset_count: 1,
+    resolved_liability_count: 0,
+    account_state_warning_count: 1,
+    currency: "USD",
+  },
+  history: {
+    as_of: "2026-07-19",
+    months: 2,
+    points: [
+      {
+        as_of: "2026-06-30",
+        total_assets: "100.00",
+        total_liabilities: "0.00",
+        total_net_worth: "100.00",
+        resolved_asset_count: 1,
+        resolved_liability_count: 0,
+        account_state_warning_count: 0,
+      },
+      {
+        as_of: "2026-07-19",
+        total_assets: "-25.00",
+        total_liabilities: "0.00",
+        total_net_worth: "-25.00",
+        resolved_asset_count: 1,
+        resolved_liability_count: 0,
+        account_state_warning_count: 1,
+      },
+    ],
+    change_amount: "-125.00",
+    change_percent: "-125.0",
+    currency: "USD",
+  },
+  comparison: {
+    start_date: "2026-06-30",
+    end_date: "2026-07-19",
+    available: true,
+    start_value: "100.00",
+    end_value: "-25.00",
+    change_amount: "-125.00",
+    change_percent: "-125.0",
+  },
+  accounts: [],
+  account_state: { warning_count: 1, oldest_activity_date: "2026-01-01" },
+  attribution: {
+    cashflow: "-100.00",
+    adjustments: "-25.00",
+    transfers: "0.00",
+  },
+  currency: "USD",
+};
+
+function route() {
+  return document.querySelector<HTMLElement>(
+    '[data-route="accounts"].is-active',
+  )!;
+}
+
+describe("account activity workflow", () => {
+  it("shows derived opening provenance and negative-balance attention", async () => {
+    window.history.replaceState({}, "", "/accounts?months=2");
     mockFetch({
       "/api/settings": { currency: "USD" },
-      "/api/net-worth/overview": overview(emptySummary, [], []),
+      "/api/net-worth/overview": overview,
+      "/api/accounts": { accounts: [account] },
     });
-
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: "Accounts", level: 1 }),
+      await screen.findByRole("heading", { level: 1, name: "Accounts" }),
     ).toBeVisible();
-    expect(screen.getByText("Add your first account")).toBeVisible();
-    expect(screen.getByText("Start with what you know")).toBeVisible();
-    expect(screen.getByText(/No bank connection is required/)).toBeVisible();
-    expect(screen.getAllByRole("button", { name: "Add account" })).toHaveLength(
-      1,
-    );
+    expect(within(route()).getAllByText("Everyday checking")[0]).toBeVisible();
+    expect(within(route()).getByText("Overdrawn")).toBeVisible();
+    expect(within(route()).getByText(/1,000\.00.*2026-01-01/)).toBeVisible();
+    expect(within(route()).getByText("Income and expenses")).toBeVisible();
+    expect(within(route()).getByText("Transfers")).toBeVisible();
+    expect(within(route()).getAllByText("$0.00").length).toBeGreaterThan(0);
     expect(
-      screen.queryByRole("img", { name: /Net worth over time/ }),
-    ).toBeNull();
-    expect(document.title).toContain("Accounts");
+      within(route()).getByRole("link", { name: "Activity" }),
+    ).toHaveAttribute("href", "/activity?account_id=1");
+    expect(within(route()).getAllByRole("table")).toHaveLength(1);
   });
 
-  it("guides and submits first-account setup", async () => {
-    window.history.pushState({}, "", "/accounts");
-    const fetchMock = mockFetch({
-      "/api/settings": { currency: "USD" },
-      "/api/accounts": {
-        notice: "Account added.",
-        notice_code: "account.created",
-        account: {},
-      },
-      "/api/net-worth/overview": overview(emptySummary, [], []),
-    });
-
+  it("records an observed balance from the account context", async () => {
+    window.history.replaceState({}, "", "/accounts");
+    let submitted: Record<string, unknown> | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.startsWith("/api/settings"))
+          return response({ currency: "USD" });
+        if (url.startsWith("/api/net-worth/overview"))
+          return response(overview);
+        if (url.startsWith("/api/accounts"))
+          return response({ accounts: [account] });
+        if (url === "/api/activities" && init?.method === "POST") {
+          submitted = JSON.parse(String(init.body));
+          return response({
+            notice: "Balance updated.",
+            notice_code: "activity.created",
+          });
+        }
+        return response({});
+      }),
+    );
     render(<App />);
-
+    await waitFor(() =>
+      expect(screen.getAllByText("Everyday checking").length).toBeGreaterThan(
+        0,
+      ),
+    );
     await userEvent.click(
-      await screen.findByRole("button", { name: "Add account" }),
+      within(route()).getByRole("button", {
+        name: "Actions for Everyday checking",
+      }),
+    );
+    await userEvent.click(
+      within(route()).getByRole("menuitem", { name: "Update balance" }),
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Update Everyday checking balance",
+    });
+    const balance = within(dialog).getByLabelText("Observed balance");
+    await userEvent.clear(balance);
+    await userEvent.type(balance, "50.00");
+    expect(within(dialog).getByText(/Net-worth effect.*75\.00/)).toBeVisible();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(submitted).toMatchObject({
+        kind: "adjustment",
+        amount: "50.00",
+        account_id: 1,
+      }),
+    );
+  });
+
+  it("creates an account with subtype and dated opening balance", async () => {
+    window.history.replaceState({}, "", "/accounts");
+    let submitted: Record<string, unknown> | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.startsWith("/api/settings"))
+          return response({ currency: "USD" });
+        if (url.startsWith("/api/net-worth/overview"))
+          return response(overview);
+        if (url === "/api/accounts" && init?.method === "POST") {
+          submitted = JSON.parse(String(init.body));
+          return response({
+            notice: "Account created.",
+            notice_code: "account.created",
+          });
+        }
+        if (url.startsWith("/api/accounts"))
+          return response({ accounts: [account] });
+        return response({});
+      }),
+    );
+    render(<App />);
+    await waitFor(() =>
+      expect(screen.getAllByText("Everyday checking").length).toBeGreaterThan(
+        0,
+      ),
+    );
+    await userEvent.click(
+      within(route()).getByRole("button", { name: "Add account" }),
     );
     const dialog = screen.getByRole("dialog", { name: "Add account" });
-    expect(dialog).toHaveClass("account-setup-dialog");
-    expect(
-      within(dialog).getByRole("heading", { name: "What happens next" }),
-    ).toBeVisible();
-
     await userEvent.click(
-      within(dialog).getByRole("radio", { name: /Liability/ }),
+      within(dialog).getByRole("radio", { name: "Liability" }),
     );
-    expect(
-      within(dialog).getByText("Enter liabilities as a positive amount owed."),
-    ).toBeVisible();
-    await userEvent.type(
-      within(dialog).getByRole("textbox", { name: "Account name" }),
-      "Travel card",
+    await userEvent.selectOptions(
+      within(dialog).getByLabelText("Subtype"),
+      "loan",
     );
     await userEvent.type(
-      within(dialog).getByRole("textbox", { name: "Initial balance" }),
-      "725.40",
+      within(dialog).getByLabelText("Account"),
+      "Education loan",
     );
-    const effectiveDate = within(dialog).getByLabelText("Effective date");
+    await userEvent.type(
+      within(dialog).getByLabelText("Opening balance"),
+      "9000",
+    );
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Add account" }),
     );
-
-    const createRequest = fetchMock.mock.calls.find(
-      ([input]) => String(input) === "/api/accounts",
-    );
-    expect(createRequest).toBeDefined();
-    const options = (
-      createRequest as unknown as [RequestInfo | URL, RequestInit | undefined]
-    )?.[1];
-    expect(options?.method).toBe("POST");
-    expect(JSON.parse(String(options?.body))).toEqual({
-      name: "Travel card",
-      type: "liability",
-      initial_balance: "725.40",
-      initial_balance_date: (effectiveDate as HTMLInputElement).value,
-    });
-  });
-
-  it("renders signed totals, account composition, focusable points, and table data", async () => {
-    window.history.pushState({}, "", "/accounts?months=6");
-    mockFetch({
-      "/api/settings": { currency: "USD" },
-      "/api/net-worth/overview": overview(
-        {
-          ...emptySummary,
-          total_assets: "1100.00",
-          total_liabilities: "1250.00",
-          total_net_worth: "-150.00",
-          active_account_count: 2,
-          resolved_asset_count: 1,
-          resolved_liability_count: 1,
-        },
-        [
-          historyPoint("2026-06-30", "1000.00", "1200.00", "-200.00"),
-          historyPoint("2026-07-16", "1100.00", "1250.00", "-150.00"),
-        ],
-        [
-          analytics(1, "Savings", "asset", "1100.00", "1000.00", "100.00"),
-          analytics(2, "Loan", "liability", "1250.00", "1200.00", "-50.00"),
-        ],
-      ),
-    });
-
-    render(<App />);
-
-    expect((await screen.findAllByText("-$150.00"))[0]).toBeVisible();
-    expect(screen.getAllByText("Savings")[0]).toBeVisible();
-    expect(screen.getAllByText("Loan")[0]).toBeVisible();
-    const chart = screen.getByRole("img", {
-      name: /Net worth over time/,
-    });
-    expect(chart.querySelector("path")?.getAttribute("d")).not.toContain("NaN");
-    expect(chart.querySelector(".net-worth-line")).not.toHaveAttribute(
-      "pathLength",
-    );
-    const points = within(chart).getAllByRole("button");
-    expect(points).toHaveLength(2);
-    await userEvent.tab();
-    await userEvent.click(screen.getByText("Show complete chart data"));
-    expect(
-      screen.getByRole("table", {
-        name: "Net worth history with asset and liability totals",
+    await waitFor(() =>
+      expect(submitted).toMatchObject({
+        name: "Education loan",
+        type: "liability",
+        subtype: "loan",
+        opening_balance: "9000",
       }),
-    ).toBeVisible();
-  });
-
-  it("uses a positive nice-number scale and reveals details across the plot", async () => {
-    window.history.pushState({}, "", "/accounts?months=6");
-    mockFetch({
-      "/api/settings": { currency: "USD" },
-      "/api/net-worth/overview": overview(
-        {
-          ...emptySummary,
-          total_assets: "28100.00",
-          total_net_worth: "28100.00",
-          active_account_count: 1,
-          resolved_asset_count: 1,
-        },
-        [
-          historyPoint("2026-06-30", "10700.00", "0.00", "10700.00"),
-          historyPoint("2026-07-16", "28100.00", "0.00", "28100.00"),
-        ],
-        [analytics(1, "Savings", "asset", "28100.00", "10700.00", "17400.00")],
-      ),
-    });
-
-    render(<App />);
-
-    const chart = await screen.findByRole("img", {
-      name: /Net worth over time/,
-    });
-    expect(within(chart).getByText("0")).toBeVisible();
-    expect(within(chart).getByText("10,000")).toBeVisible();
-    expect(within(chart).getByText("20,000")).toBeVisible();
-    expect(chart.textContent).not.toContain("-5,000");
-
-    vi.spyOn(chart, "getBoundingClientRect").mockReturnValue(
-      DOMRect.fromRect({ x: 0, y: 0, width: 820, height: 350 }),
     );
-    const figure = chart.closest("figure");
-    expect(figure).not.toBeNull();
-    vi.spyOn(figure as HTMLElement, "getBoundingClientRect").mockReturnValue(
-      DOMRect.fromRect({ x: 0, y: 0, width: 820, height: 350 }),
-    );
-
-    fireEvent.pointerMove(chart, {
-      clientX: 780,
-      clientY: 160,
-      pointerType: "mouse",
-    });
-
-    const tooltip = figure?.querySelector(".wealth-chart-tooltip");
-    expect(tooltip).not.toHaveAttribute("hidden");
-    expect(tooltip).toHaveTextContent("+$28,100.00");
-    expect(tooltip).toHaveTextContent("Assets$28,100.00");
-  });
-
-  it("does not calculate change from an unknown comparison balance", async () => {
-    window.history.pushState({}, "", "/accounts?months=6");
-    mockFetch({
-      "/api/settings": { currency: "USD" },
-      "/api/net-worth/overview": overview(
-        {
-          ...emptySummary,
-          total_assets: "1100.00",
-          total_net_worth: "1100.00",
-          active_account_count: 1,
-          resolved_asset_count: 1,
-        },
-        [
-          historyPoint("2026-06-30", "0.00", "0.00", "0.00"),
-          historyPoint("2026-07-16", "1100.00", "0.00", "1100.00"),
-        ],
-        [analytics(1, "New savings", "asset", "1100.00", null, null)],
-      ),
-    });
-
-    render(<App />);
-
-    expect(
-      await screen.findByText(
-        /Change is unavailable because one or more accounts/,
-      ),
-    ).toBeVisible();
-    expect(screen.queryByText("Since June 30, 2026")).toBeNull();
-  });
-
-  it("uses a native destructive dialog that names the sole account snapshot", async () => {
-    window.history.pushState({}, "", "/accounts");
-    mockFetch({
-      "/api/accounts/1/balance-snapshots": {
-        balance_snapshots: [
-          {
-            id: 1,
-            account_id: 1,
-            amount: "1100.00",
-            effective_date: "2026-07-16",
-            created_at: "2026-07-16T00:00:00",
-            updated_at: "2026-07-16T00:00:00",
-            currency: "USD",
-          },
-        ],
-      },
-      "/api/settings": { currency: "USD" },
-      "/api/net-worth/overview": overview(
-        {
-          ...emptySummary,
-          total_assets: "1100.00",
-          total_net_worth: "1100.00",
-          active_account_count: 1,
-          resolved_asset_count: 1,
-        },
-        [historyPoint("2026-07-16", "1100.00", "0.00", "1100.00")],
-        [analytics(1, "Savings", "asset", "1100.00", "1100.00", "0.00")],
-      ),
-    });
-
-    render(<App />);
-
-    expect(screen.queryByRole("button", { name: "Manage" })).toBeNull();
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Actions for Savings" }),
-    );
-    await userEvent.click(screen.getByRole("menuitem", { name: "Manage" }));
-    await userEvent.click(screen.getByRole("button", { name: "History" }));
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Delete account" }),
-    );
-
-    expect(screen.getAllByRole("dialog")).toHaveLength(2);
-    expect(
-      screen.getByRole("heading", {
-        name: /Permanently delete Savings and its initial balance/,
-      }),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        /This permanently removes its only balance, \$1,100\.00 recorded on/,
-      ),
-    ).toBeVisible();
-  });
-
-  it("submits only changed rows from the balance check-in", async () => {
-    window.history.pushState({}, "", "/accounts");
-    const fetchMock = mockFetch({
-      "/api/settings": { currency: "USD" },
-      "/api/accounts/balance-check-ins": {
-        notice: "1 account balance updated.",
-        notice_code: "balance_check_in.saved",
-        balance_snapshots: [],
-        replaced_count: 0,
-      },
-      "/api/net-worth/overview": overview(
-        {
-          ...emptySummary,
-          total_assets: "1100.00",
-          total_liabilities: "1250.00",
-          total_net_worth: "-150.00",
-          active_account_count: 2,
-          resolved_asset_count: 1,
-          resolved_liability_count: 1,
-        },
-        [
-          historyPoint("2026-06-30", "1000.00", "1200.00", "-200.00"),
-          historyPoint("2026-07-16", "1100.00", "1250.00", "-150.00"),
-        ],
-        [
-          analytics(1, "Savings", "asset", "1100.00", "1000.00", "100.00"),
-          analytics(2, "Loan", "liability", "1250.00", "1200.00", "-50.00"),
-        ],
-      ),
-    });
-
-    render(<App />);
-    const updateButtons = await screen.findAllByRole("button", {
-      name: "Update balances",
-    });
-    await userEvent.click(updateButtons[1]);
-    const dialog = screen.getByRole("dialog", { name: "Update balances" });
-    expect(within(dialog).getByText("Assets")).toBeVisible();
-    expect(within(dialog).getByText("Liabilities")).toBeVisible();
-    expect(within(dialog).getByText("Net worth after updates")).toBeVisible();
-    const amountInputs = within(dialog).getAllByRole("spinbutton");
-    await userEvent.type(amountInputs[0], "1150");
-    expect(within(dialog).getByText("1 update(s) ready")).toBeVisible();
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Save 1 update(s)" }),
-    );
-
-    const request = fetchMock.mock.calls.find(([input]) =>
-      String(input).startsWith("/api/accounts/balance-check-ins/"),
-    );
-    expect(request).toBeDefined();
-    const options = (
-      request as unknown as [RequestInfo | URL, RequestInit | undefined]
-    )?.[1];
-    expect(JSON.parse(String(options?.body))).toEqual({
-      updates: [{ account_id: 1, amount: "1150" }],
-    });
   });
 });
-
-function historyPoint(
-  asOf: string,
-  assets: string,
-  liabilities: string,
-  total: string,
-) {
-  return {
-    as_of: asOf,
-    total_assets: assets,
-    total_liabilities: liabilities,
-    total_net_worth: total,
-    resolved_asset_count: 1,
-    resolved_liability_count: 1,
-    unresolved_account_count: 0,
-  };
-}
-
-function analytics(
-  accountId: number,
-  name: string,
-  type: "asset" | "liability",
-  current: string,
-  comparison: string | null,
-  contribution: string | null,
-) {
-  return {
-    account_id: accountId,
-    name,
-    type,
-    archived_on: null,
-    current_balance: current,
-    current_balance_date: "2026-07-16",
-    comparison_balance: comparison,
-    comparison_balance_date: comparison === null ? null : "2026-06-30",
-    contribution_change: contribution,
-    composition_percent: "100.0",
-    currency: "USD",
-  };
-}
-
-function overview(
-  summary: typeof emptySummary,
-  points: ReturnType<typeof historyPoint>[],
-  accounts: ReturnType<typeof analytics>[],
-) {
-  const start = points[0]?.as_of ?? summary.as_of;
-  const comparisonAvailable =
-    points.length > 1 &&
-    accounts.length > 0 &&
-    accounts.every((account) => account.contribution_change !== null);
-  return {
-    summary,
-    history: {
-      as_of: summary.as_of,
-      months: 12,
-      points,
-      change_amount: points.length > 1 ? "50.00" : null,
-      change_percent: points.length > 1 ? "25.0" : null,
-      currency: "USD",
-    },
-    comparison: {
-      start_date: start,
-      end_date: summary.as_of,
-      available: comparisonAvailable,
-      start_value: comparisonAvailable
-        ? (points[0]?.total_net_worth ?? summary.total_net_worth)
-        : null,
-      end_value: comparisonAvailable ? summary.total_net_worth : null,
-      change_amount: comparisonAvailable ? "50.00" : null,
-      change_percent: comparisonAvailable ? "25.0" : null,
-    },
-    accounts,
-    coverage: {
-      resolved_account_count:
-        summary.resolved_asset_count + summary.resolved_liability_count,
-      unresolved_account_count: summary.unresolved_account_count,
-      oldest_balance_date: accounts.length ? "2026-06-30" : null,
-    },
-    currency: "USD",
-  };
-}

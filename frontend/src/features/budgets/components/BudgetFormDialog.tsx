@@ -122,7 +122,11 @@ export function BudgetFormDialog({
                   value={form.amount}
                   onChange={(event) => {
                     const next = normalizeBudgetAmountDraft(event.target.value);
-                    if (next !== null) onChange({ ...form, amount: next });
+                    if (next !== null) {
+                      onChange({ ...form, amount: next });
+                    } else {
+                      event.target.value = form.amount;
+                    }
                   }}
                 />
               </div>

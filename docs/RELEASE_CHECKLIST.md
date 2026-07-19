@@ -1,8 +1,9 @@
 # Release Checklist
 
-Use this checklist for the v1.1 hardened portfolio release and later reviewer-demo refreshes.
+Use this checklist for the schema-v3 unified activity-ledger release and later reviewer-demo
+refreshes.
 
-## v1.1.0
+## v3.0.0
 
 - [ ] Create a fresh environment and install the app:
 
@@ -18,21 +19,22 @@ npm run build
 
 ```bash
 .venv/bin/python examples/build_demo.py --force
-finance-tracker budget-status --month 7 --year 2026 --db-path demo.sqlite3
-finance-tracker category-rule-list --db-path demo.sqlite3
-finance-tracker recurring-list --db-path demo.sqlite3
-finance-tracker net-worth-history --months 12 --as-of 2026-07-16 --db-path demo.sqlite3
+finance-tracker activity list --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker budget status --month 7 --year 2026 --db-path demo.sqlite3
+finance-tracker category list --db-path demo.sqlite3
+finance-tracker recurring list --db-path demo.sqlite3
+finance-tracker report net-worth-history --months 12 --as-of 2026-07-16 --db-path demo.sqlite3
 ```
 
 - [ ] Regenerate demo charts and exports:
 
 ```bash
 mkdir -p reports exports
-finance-tracker report --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
-finance-tracker trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
-finance-tracker import-csv examples/sample_transactions.csv --preview --db-path demo.sqlite3
-finance-tracker export-csv exports/transactions.csv --db-path demo.sqlite3
-finance-tracker export-budgets-csv exports/budgets.csv --db-path demo.sqlite3
+finance-tracker report monthly --month 7 --year 2026 --chart reports/july-2026.png --db-path demo.sqlite3
+finance-tracker report trends --months 12 --end-month 7 --end-year 2026 --chart reports/trends.png --db-path demo.sqlite3
+finance-tracker activity import examples/sample_activities.csv --preview --db-path demo.sqlite3
+finance-tracker activity export exports/activities.csv --db-path demo.sqlite3
+finance-tracker budget export exports/budgets.csv --db-path demo.sqlite3
 ```
 
 - [ ] Refresh reviewer screenshots in `docs/assets/screenshots/` from the generated demo:
@@ -82,11 +84,11 @@ before release.
 - [ ] Create and verify a disposable complete-ledger backup, then test a confirmed restore into a
       separate temporary `--db-path`.
 
-- [ ] Confirm README badges, docs, static showcase, screenshots, packaged SPA assets, and `ROADMAP.md` describe the same release state.
+- [ ] Confirm README, Usage, Architecture, Project Plan, static showcase, screenshots, and packaged
+      SPA assets describe the same Activity/account-ledger release state.
 
 - [ ] Confirm the architecture cleanup evidence is current: Python import/adapter manifests pass
       under pytest, ESLint feature/API/shared boundaries pass, the CSS layer checker passes, and no
-      legacy monolith or expired compatibility façade remains. Record the final results in
-      `docs/ARCHITECTURE_CLEANUP_EVIDENCE.md`.
+      registered transaction/snapshot endpoint or command remains.
 
 - [ ] Tag the release only after checks, docs, demo flow, and screenshots are all in sync.

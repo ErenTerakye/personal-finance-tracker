@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from finance_tracker.models import Transaction
+from finance_tracker.models import ActivityRecord
 from finance_tracker.reports import (
     MonthlyReport,
     NetWorthSummary,
@@ -16,9 +16,9 @@ from finance_tracker.reports import (
     build_trend_report,
 )
 from finance_tracker.services.accounts import AccountService
+from finance_tracker.services.activities import ActivityService
 from finance_tracker.services.budgets import BudgetService, BudgetStatus
 from finance_tracker.services.settings import SettingsService
-from finance_tracker.services.transactions import TransactionService
 
 
 @dataclass(frozen=True)
@@ -28,7 +28,7 @@ class OverviewSnapshot:
     currency: str
     report: MonthlyReport
     trend: TrendReport
-    recent_transactions: list[Transaction]
+    recent_activities: list[ActivityRecord]
     budget_statuses: list[BudgetStatus]
     net_worth: NetWorthSummary
 
@@ -41,14 +41,17 @@ class OverviewService:
 
     def get(self, month: int, year: int, *, as_of: date | None = None) -> OverviewSnapshot:
         resolved_date = as_of or date.today()
-        transaction_service = TransactionService(self.db_path)
-        all_transactions = transaction_service.list_transactions()
-        period_transactions = transaction_service.list_transactions(month=month, year=year)
+        activity_service = ActivityService(self.db_path)
+        all_records = activity_service.list_activities()
+        all_activities = [record.activity for record in all_records]
+        period_activities = [
+            record.activity for record in activity_service.list_activities(month=month, year=year)
+        ]
         report = build_monthly_report(
-            period_transactions,
+            period_activities,
             month=month,
             year=year,
-            context_transactions=all_transactions,
+            context_transactions=all_activities,
         )
         accounts, snapshots = AccountService(self.db_path).report_data(resolved_date)
         return OverviewSnapshot(
@@ -57,12 +60,12 @@ class OverviewService:
             currency=SettingsService(self.db_path).get_currency(),
             report=report,
             trend=build_trend_report(
-                all_transactions,
+                all_activities,
                 months=6,
                 end_month=month,
                 end_year=year,
             ),
-            recent_transactions=all_transactions[:5],
+            recent_activities=all_records[:5],
             budget_statuses=BudgetService(self.db_path).budget_statuses(month, year),
             net_worth=build_net_worth_summary(accounts, snapshots, resolved_date),
         )

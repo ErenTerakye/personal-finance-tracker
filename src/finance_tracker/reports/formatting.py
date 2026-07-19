@@ -98,8 +98,7 @@ def format_trend_report(report: TrendReport, currency_code: str = "USD") -> str:
 
 def _format_table(headers: list[str], rows: list[list[str]]) -> list[str]:
     widths = [
-        max(len(header), *(len(row[index]) for row in rows))
-        for index, header in enumerate(headers)
+        max(len(header), *(len(row[index]) for row in rows)) for index, header in enumerate(headers)
     ]
 
     def format_cell(index: int, value: str) -> str:
@@ -112,8 +111,7 @@ def _format_table(headers: list[str], rows: list[list[str]]) -> list[str]:
         "  ".join("-" * width for width in widths),
     ]
     lines.extend(
-        "  ".join(format_cell(index, value) for index, value in enumerate(row))
-        for row in rows
+        "  ".join(format_cell(index, value) for index, value in enumerate(row)) for row in rows
     )
     return lines
 

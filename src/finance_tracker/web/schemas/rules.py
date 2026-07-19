@@ -1,11 +1,11 @@
 """Category-rule and recurring-template schemas."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field
 
+from finance_tracker.web.schemas.activities import ActivityResponse
 from finance_tracker.web.schemas.common import ApiModel
-from finance_tracker.web.schemas.transactions import TransactionResponse
 
 
 class CategoryRuleRequest(ApiModel):
@@ -13,12 +13,28 @@ class CategoryRuleRequest(ApiModel):
     category: str = Field(min_length=1, max_length=100)
 
 
-class RecurringTemplateRequest(ApiModel):
-    type: Literal["income", "expense"]
+class RecurringCashflowTemplateRequest(ApiModel):
+    kind: Literal["income", "expense"]
     amount: str = Field(min_length=1, max_length=64)
     category: str = Field(min_length=1, max_length=100)
     description: str = Field(default="", max_length=500)
     day_of_month: int = Field(ge=1, le=31)
+    account_id: int = Field(gt=0)
+
+
+class RecurringTransferTemplateRequest(ApiModel):
+    kind: Literal["transfer"]
+    amount: str = Field(min_length=1, max_length=64)
+    description: str = Field(default="", max_length=500)
+    day_of_month: int = Field(ge=1, le=31)
+    from_account_id: int = Field(gt=0)
+    to_account_id: int = Field(gt=0)
+
+
+RecurringTemplateRequest = Annotated[
+    RecurringCashflowTemplateRequest | RecurringTransferTemplateRequest,
+    Field(discriminator="kind"),
+]
 
 
 class CategoryRuleResponse(ApiModel):
@@ -30,11 +46,14 @@ class CategoryRuleResponse(ApiModel):
 
 class RecurringTemplateResponse(ApiModel):
     id: int
-    type: str
+    kind: Literal["income", "expense", "transfer"]
     amount: str
-    category: str
+    category: str | None
     description: str
     day_of_month: int
+    account_id: int | None
+    from_account_id: int | None
+    to_account_id: int | None
     active: bool
     created_at: str | None
 
@@ -64,4 +83,4 @@ class RecurringApplyResponse(ApiModel):
     notice_code: str
     created_count: int
     skipped_duplicates: int
-    transactions: list[TransactionResponse]
+    activities: list[ActivityResponse]

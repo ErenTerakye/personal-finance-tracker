@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from finance_tracker.config import resolve_db_path
 from finance_tracker.web.dependencies import initialize_web_database
@@ -17,11 +17,21 @@ def create_app(db_path: Path | str | None = None) -> FastAPI:
 
     resolved_db_path = resolve_db_path(db_path)
     initialize_web_database(resolved_db_path)
-    app = FastAPI(title="Personal Finance Tracker", version="1.1.0")
+    app = FastAPI(title="Personal Finance Tracker", version="3.0.0")
     app.state.db_path = resolved_db_path
     app.middleware("http")(security_headers)
     install_error_handlers(app)
     for router in ROUTERS:
         app.include_router(router)
+
+    async def unknown_api_path(api_path: str) -> None:
+        raise HTTPException(status_code=404, detail=f"API route not found: /api/{api_path}")
+
+    app.add_api_route(
+        "/api/{api_path:path}",
+        unknown_api_path,
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        include_in_schema=False,
+    )
     mount_spa(app)
     return app

@@ -1,9 +1,9 @@
 """Dashboard and financial report schemas."""
 
 from finance_tracker.web.schemas.accounts import NetWorthSummaryResponse
+from finance_tracker.web.schemas.activities import ActivityResponse
 from finance_tracker.web.schemas.budgets import BudgetStatusResponse
 from finance_tracker.web.schemas.common import ApiModel
-from finance_tracker.web.schemas.transactions import TransactionResponse
 
 
 class MonthlyReportResponse(ApiModel):
@@ -53,7 +53,7 @@ class DashboardResponse(ApiModel):
     report: MonthlyReportResponse
     trend: TrendReportResponse
     savings_rate: str
-    recent_transactions: list[TransactionResponse]
+    recent_activities: list[ActivityResponse]
     budget_statuses: list[BudgetStatusResponse]
     net_worth: NetWorthSummaryResponse
     currency: str

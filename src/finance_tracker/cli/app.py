@@ -4,16 +4,22 @@ import typer
 
 from finance_tracker.cli.accounts import (
     account_add,
+    account_adjust,
     account_archive,
-    account_balance_check_in,
-    account_balance_delete,
-    account_balance_list,
-    account_balance_set,
     account_delete,
     account_edit,
     account_list,
     net_worth,
     net_worth_history,
+)
+from finance_tracker.cli.activities import (
+    activity_add,
+    activity_delete,
+    activity_edit,
+    activity_export,
+    activity_import,
+    activity_list,
+    activity_transfer,
 )
 from finance_tracker.cli.budgets import budget_delete, budget_list, budget_set, budget_status
 from finance_tracker.cli.category_rules import (
@@ -21,7 +27,7 @@ from finance_tracker.cli.category_rules import (
     category_rule_list,
     category_rule_set,
 )
-from finance_tracker.cli.csv_commands import export_budgets, export_csv, import_budgets, import_csv
+from finance_tracker.cli.csv_commands import export_budgets, import_budgets
 from finance_tracker.cli.migration import MigrationAwareGroup
 from finance_tracker.cli.output import json_command
 from finance_tracker.cli.overview import overview
@@ -35,7 +41,6 @@ from finance_tracker.cli.recurring import (
 from finance_tracker.cli.reports import report, trends
 from finance_tracker.cli.root import root_callback, tui_command
 from finance_tracker.cli.settings import settings_get, settings_set
-from finance_tracker.cli.transactions import add, delete, edit, list_transactions
 from finance_tracker.cli.web import init, web
 
 app = typer.Typer(
@@ -45,11 +50,10 @@ app = typer.Typer(
 )
 app.callback(invoke_without_command=True)(root_callback)
 
-transaction_app = typer.Typer(help="Create, inspect, and move ledger transactions.")
+activity_app = typer.Typer(help="Create, inspect, transfer, and import account activity.")
 budget_app = typer.Typer(help="Plan categories and review budget pressure.")
 account_app = typer.Typer(help="Manage accounts and net-worth inputs.")
-balance_app = typer.Typer(help="Manage dated account balance snapshots.")
-recurring_app = typer.Typer(help="Manage recurring transaction templates.")
+recurring_app = typer.Typer(help="Manage recurring activity templates.")
 category_app = typer.Typer(help="Normalize imported and entered categories.")
 report_app = typer.Typer(help="Generate deterministic financial reports.")
 data_app = typer.Typer(help="Initialize, protect, and recover the local ledger.")
@@ -58,22 +62,22 @@ settings_app = typer.Typer(help="Manage ledger-wide preferences.")
 app.command("tui")(tui_command)
 app.command()(overview)
 app.command()(web)
-app.add_typer(transaction_app, name="transaction")
+app.add_typer(activity_app, name="activity")
 app.add_typer(budget_app, name="budget")
 app.add_typer(account_app, name="account")
-account_app.add_typer(balance_app, name="balance")
 app.add_typer(recurring_app, name="recurring")
 app.add_typer(category_app, name="category")
 app.add_typer(report_app, name="report")
 app.add_typer(data_app, name="data")
 app.add_typer(settings_app, name="settings")
 
-transaction_app.command()(json_command(add))
-transaction_app.command("list")(json_command(list_transactions))
-transaction_app.command()(json_command(edit))
-transaction_app.command()(json_command(delete))
-transaction_app.command("import")(json_command(import_csv))
-transaction_app.command("export")(json_command(export_csv))
+activity_app.command("add")(json_command(activity_add))
+activity_app.command("transfer")(json_command(activity_transfer))
+activity_app.command("list")(json_command(activity_list))
+activity_app.command("edit")(json_command(activity_edit))
+activity_app.command("delete")(json_command(activity_delete))
+activity_app.command("import")(json_command(activity_import))
+activity_app.command("export")(json_command(activity_export))
 
 budget_app.command("set")(json_command(budget_set))
 budget_app.command("list")(json_command(budget_list))
@@ -83,14 +87,11 @@ budget_app.command("import")(json_command(import_budgets))
 budget_app.command("export")(json_command(export_budgets))
 
 account_app.command("add")(json_command(account_add))
+account_app.command("adjust")(json_command(account_adjust))
 account_app.command("list")(json_command(account_list))
 account_app.command("edit")(json_command(account_edit))
 account_app.command("archive")(json_command(account_archive))
 account_app.command("delete")(json_command(account_delete))
-balance_app.command("set")(json_command(account_balance_set))
-balance_app.command("list")(json_command(account_balance_list))
-balance_app.command("delete")(json_command(account_balance_delete))
-balance_app.command("check-in")(json_command(account_balance_check_in))
 
 recurring_app.command("add")(json_command(recurring_add))
 recurring_app.command("list")(json_command(recurring_list))

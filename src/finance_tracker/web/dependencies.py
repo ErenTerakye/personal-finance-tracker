@@ -6,12 +6,13 @@ from fastapi import HTTPException, Request, status
 
 from finance_tracker.services import (
     AccountService,
+    ActivityService,
     BudgetService,
     CategoryRuleService,
     RecurringTemplateService,
     SettingsService,
-    TransactionService,
 )
+from finance_tracker.services.transactions import TransactionService
 
 MAX_CSV_BYTES = 5 * 1024 * 1024
 
@@ -19,14 +20,19 @@ MAX_CSV_BYTES = 5 * 1024 * 1024
 def initialize_web_database(db_path: Path) -> None:
     """Initialize the ledger through the public application-service boundary."""
 
-    TransactionService(db_path)
+    ActivityService(db_path)
 
 
 def account_service(request: Request) -> AccountService:
     return AccountService(request.app.state.db_path, initialize=False)
 
 
+def activity_service(request: Request) -> ActivityService:
+    return ActivityService(request.app.state.db_path, initialize=False)
+
+
 def transaction_service(request: Request) -> TransactionService:
+    """Legacy dependency for the unregistered v2 router module."""
     return TransactionService(request.app.state.db_path, initialize=False)
 
 

@@ -8,9 +8,11 @@ from finance_tracker.web.schemas import (
     ErrorResponse,
     NoticeResponse,
     RecurringApplyResponse,
+    RecurringCashflowTemplateRequest,
     RecurringTemplateListResponse,
     RecurringTemplateMutationResponse,
     RecurringTemplateRequest,
+    RecurringTransferTemplateRequest,
 )
 
 router = APIRouter()
@@ -35,11 +37,24 @@ def create_recurring_template(
     payload: RecurringTemplateRequest,
 ) -> RecurringTemplateMutationResponse:
     template = recurring_template_service(request).add_template(
-        transaction_type=payload.type,
+        kind=payload.kind,
         amount=payload.amount,
-        category=payload.category,
+        category=(
+            payload.category if isinstance(payload, RecurringCashflowTemplateRequest) else None
+        ),
         description=payload.description,
         day_of_month=payload.day_of_month,
+        account_id=(
+            payload.account_id if isinstance(payload, RecurringCashflowTemplateRequest) else None
+        ),
+        from_account_id=(
+            payload.from_account_id
+            if isinstance(payload, RecurringTransferTemplateRequest)
+            else None
+        ),
+        to_account_id=(
+            payload.to_account_id if isinstance(payload, RecurringTransferTemplateRequest) else None
+        ),
     )
     return RecurringTemplateMutationResponse(
         notice="Recurring template saved.",

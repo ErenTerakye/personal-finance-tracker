@@ -10,8 +10,15 @@ import {
   Tags,
   Trash2,
 } from "lucide-react";
-import { type FormEvent, type ReactNode, useEffect, useState } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import "./manage.css";
+import { api } from "../../api/client";
 import {
   manageViewOrder,
   pathForView,
@@ -32,6 +39,7 @@ import { money } from "../../shared/format/money";
 import { periodLabel } from "../../shared/format/periods";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { localizedNotice } from "../../shared/i18n/notices";
+import { useResource } from "../../shared/hooks/useResource";
 import type {
   CategoryRule,
   CategoryRuleInput,
@@ -182,12 +190,26 @@ function ManageNavigation({
   );
 }
 
-const defaultTemplate: RecurringTemplateInput = {
-  type: "expense",
+type RecurringForm = {
+  kind: "income" | "expense" | "transfer";
+  amount: string;
+  category: string;
+  description: string;
+  day_of_month: number;
+  account_id: string;
+  from_account_id: string;
+  to_account_id: string;
+};
+
+const defaultTemplate: RecurringForm = {
+  kind: "expense",
   amount: "",
   category: "",
   description: "",
   day_of_month: 1,
+  account_id: "",
+  from_account_id: "",
+  to_account_id: "",
 };
 
 function AutomationsView({
@@ -215,7 +237,17 @@ function AutomationsView({
   );
   const templatesResource = useRecurringTemplates();
   const settingsResource = useLedgerSettings();
+  const loadAccounts = useCallback(
+    (signal: AbortSignal) => api.accounts({}, signal),
+    [],
+  );
+  const accountsResource = useResource(loadAccounts, "recurring-accounts", {
+    cacheKey: "recurring-accounts",
+  });
   const templates = templatesResource.data?.templates ?? [];
+  const accounts =
+    accountsResource.data?.accounts.filter((account) => !account.archived_on) ??
+    [];
   const activeTemplates = templates.filter((template) => template.active);
   const currency = settingsResource.data?.currency ?? "USD";
   const period = periodLabel(selectedPeriod.month, selectedPeriod.year);
@@ -257,11 +289,31 @@ function AutomationsView({
       ? templatesResource.error.message
       : settingsResource.status === "error"
         ? settingsResource.error.message
-        : "";
+        : accountsResource.status === "error"
+          ? accountsResource.error.message
+          : "";
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void saveMutation.mutate(form);
+    const payload: RecurringTemplateInput =
+      form.kind === "transfer"
+        ? {
+            kind: "transfer",
+            amount: form.amount,
+            description: form.description,
+            day_of_month: form.day_of_month,
+            from_account_id: Number(form.from_account_id),
+            to_account_id: Number(form.to_account_id),
+          }
+        : {
+            kind: form.kind,
+            amount: form.amount,
+            category: form.category,
+            description: form.description,
+            day_of_month: form.day_of_month,
+            account_id: Number(form.account_id),
+          };
+    void saveMutation.mutate(payload);
   }
 
   return (
@@ -293,6 +345,7 @@ function AutomationsView({
           onRetry={() => {
             templatesResource.refetch();
             settingsResource.refetch();
+            accountsResource.refetch();
           }}
         />
       ) : null}
@@ -375,20 +428,27 @@ function AutomationsView({
                   <strong>{template.description || template.category}</strong>
                   <small>
                     {t("rules.recurringSentence", {
-                      type: tUpper(`common.${template.type}`),
-                      category: template.category,
+                      type: tUpper(`activity.kinds.${template.kind}`),
+                      category: template.category ?? "—",
                       day: template.day_of_month,
                     })}
                   </small>
                 </span>
-                <strong className={`manage-record-amount ${template.type}`}>
-                  {template.type === "expense" ? "−" : "+"}
+                <strong className={`manage-record-amount ${template.kind}`}>
+                  {template.kind === "expense"
+                    ? "−"
+                    : template.kind === "income"
+                      ? "+"
+                      : "↔"}
                   {money(template.amount)}
                 </strong>
                 <IconButton
                   icon={Trash2}
                   label={t("rules.deleteNamed", {
-                    name: template.description || template.category,
+                    name:
+                      template.description ||
+                      template.category ||
+                      template.kind,
                   })}
                   onClick={() => setPendingDelete(template)}
                 />
@@ -429,8 +489,8 @@ function AutomationsView({
               <input
                 type="radio"
                 name="manage-recurring-type"
-                checked={form.type === "expense"}
-                onChange={() => setForm({ ...form, type: "expense" })}
+                checked={form.kind === "expense"}
+                onChange={() => setForm({ ...form, kind: "expense" })}
               />
               <span>{t("common.expense")}</span>
             </label>
@@ -438,10 +498,19 @@ function AutomationsView({
               <input
                 type="radio"
                 name="manage-recurring-type"
-                checked={form.type === "income"}
-                onChange={() => setForm({ ...form, type: "income" })}
+                checked={form.kind === "income"}
+                onChange={() => setForm({ ...form, kind: "income" })}
               />
               <span>{t("common.income")}</span>
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="manage-recurring-type"
+                checked={form.kind === "transfer"}
+                onChange={() => setForm({ ...form, kind: "transfer" })}
+              />
+              <span>{t("activity.kinds.transfer")}</span>
             </label>
           </fieldset>
           <Field
@@ -489,16 +558,81 @@ function AutomationsView({
               />
             </Field>
           </div>
-          <Field id="manage-template-category" label={t("common.category")}>
-            <input
-              id="manage-template-category"
-              required
-              value={form.category}
-              onChange={(event) =>
-                setForm({ ...form, category: event.target.value })
-              }
-            />
-          </Field>
+          {form.kind === "transfer" ? (
+            <div className="manage-form-row">
+              <Field
+                id="manage-template-from"
+                label={t("activity.fromAccount")}
+              >
+                <select
+                  id="manage-template-from"
+                  required
+                  value={form.from_account_id}
+                  onChange={(event) =>
+                    setForm({ ...form, from_account_id: event.target.value })
+                  }
+                >
+                  <option value="">{t("activity.selectAccount")}</option>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field id="manage-template-to" label={t("activity.toAccount")}>
+                <select
+                  id="manage-template-to"
+                  required
+                  value={form.to_account_id}
+                  onChange={(event) =>
+                    setForm({ ...form, to_account_id: event.target.value })
+                  }
+                >
+                  <option value="">{t("activity.selectAccount")}</option>
+                  {accounts
+                    .filter(
+                      (account) => String(account.id) !== form.from_account_id,
+                    )
+                    .map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+            </div>
+          ) : (
+            <>
+              <Field id="manage-template-category" label={t("common.category")}>
+                <input
+                  id="manage-template-category"
+                  required
+                  value={form.category}
+                  onChange={(event) =>
+                    setForm({ ...form, category: event.target.value })
+                  }
+                />
+              </Field>
+              <Field id="manage-template-account" label={t("activity.account")}>
+                <select
+                  id="manage-template-account"
+                  required
+                  value={form.account_id}
+                  onChange={(event) =>
+                    setForm({ ...form, account_id: event.target.value })
+                  }
+                >
+                  <option value="">{t("activity.selectAccount")}</option>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </>
+          )}
           <SubmitButton busy={saveMutation.status === "pending"} icon={Repeat2}>
             {t("manage.automations.add")}
           </SubmitButton>
@@ -518,14 +652,18 @@ function AutomationsView({
                 <strong>{template.description || template.category}</strong>
                 <small>
                   {t("rules.recurringSentence", {
-                    type: tUpper(`common.${template.type}`),
-                    category: template.category,
+                    type: tUpper(`activity.kinds.${template.kind}`),
+                    category: template.category ?? "—",
                     day: template.day_of_month,
                   })}
                 </small>
               </span>
               <strong>
-                {template.type === "expense" ? "−" : "+"}
+                {template.kind === "expense"
+                  ? "−"
+                  : template.kind === "income"
+                    ? "+"
+                    : "↔"}
                 {money(template.amount)}
               </strong>
             </li>
@@ -556,7 +694,13 @@ function AutomationsView({
       <ModalDialog
         open={pendingDelete !== null}
         title={t("rules.deleteTitle")}
-        description={pendingDelete?.description || pendingDelete?.category}
+        description={
+          pendingDelete
+            ? pendingDelete.description ||
+              pendingDelete.category ||
+              pendingDelete.kind
+            : undefined
+        }
         onClose={() => setPendingDelete(null)}
       >
         {deleteMutation.status === "error" ? (

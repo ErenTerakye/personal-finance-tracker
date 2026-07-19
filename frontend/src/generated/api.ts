@@ -38,23 +38,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/accounts/balance-check-ins/{effective_date}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Check In Balances */
-    put: operations["check_in_balances_api_accounts_balance_check_ins__effective_date__put"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/accounts": {
     parameters: {
       query?: never;
@@ -103,41 +86,6 @@ export interface paths {
     /** Archive Account */
     post: operations["archive_account_api_accounts__account_id__archive_post"];
     delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/accounts/{account_id}/balance-snapshots": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List Balance Snapshots */
-    get: operations["list_balance_snapshots_api_accounts__account_id__balance_snapshots_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/accounts/{account_id}/balance-snapshots/{effective_date}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Set Balance Snapshot */
-    put: operations["set_balance_snapshot_api_accounts__account_id__balance_snapshots__effective_date__put"];
-    post?: never;
-    /** Delete Balance Snapshot */
-    delete: operations["delete_balance_snapshot_api_accounts__account_id__balance_snapshots__effective_date__delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -194,25 +142,25 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/transactions": {
+  "/api/activities": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** List Transactions */
-    get: operations["list_transactions_api_transactions_get"];
+    /** List Activities */
+    get: operations["list_activities_api_activities_get"];
     put?: never;
-    /** Create Transaction */
-    post: operations["create_transaction_api_transactions_post"];
+    /** Create Activity */
+    post: operations["create_activity_api_activities_post"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/transactions/import-csv": {
+  "/api/activities/import-csv": {
     parameters: {
       query?: never;
       header?: never;
@@ -221,15 +169,15 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Import Transactions */
-    post: operations["import_transactions_api_transactions_import_csv_post"];
+    /** Import Activities */
+    post: operations["import_activities_api_activities_import_csv_post"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/transactions/import-csv/preview": {
+  "/api/activities/import-csv/preview": {
     parameters: {
       query?: never;
       header?: never;
@@ -238,23 +186,23 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Preview Transaction Import */
-    post: operations["preview_transaction_import_api_transactions_import_csv_preview_post"];
+    /** Preview Activity Import */
+    post: operations["preview_activity_import_api_activities_import_csv_preview_post"];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/transactions/export-csv": {
+  "/api/activities/export-csv": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Export Transactions */
-    get: operations["export_transactions_api_transactions_export_csv_get"];
+    /** Export Activities */
+    get: operations["export_activities_api_activities_export_csv_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -263,7 +211,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/transactions/{transaction_id}": {
+  "/api/activities/{activity_id}": {
     parameters: {
       query?: never;
       header?: never;
@@ -271,14 +219,14 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
-    put?: never;
+    /** Update Activity */
+    put: operations["update_activity_api_activities__activity_id__put"];
     post?: never;
-    /** Delete Transaction */
-    delete: operations["delete_transaction_api_transactions__transaction_id__delete"];
+    /** Delete Activity */
+    delete: operations["delete_activity_api_activities__activity_id__delete"];
     options?: never;
     head?: never;
-    /** Update Transaction */
-    patch: operations["update_transaction_api_transactions__transaction_id__patch"];
+    patch?: never;
     trace?: never;
   };
   "/api/budgets": {
@@ -551,8 +499,6 @@ export interface components {
        * Format: date
        */
       closing_date: string;
-      /** Confirm Zero Balance */
-      confirm_zero_balance: boolean;
     };
     /** AccountCreateRequest */
     AccountCreateRequest: {
@@ -563,13 +509,19 @@ export interface components {
        * @enum {string}
        */
       type: "asset" | "liability";
-      /** Initial Balance */
-      initial_balance: string;
       /**
-       * Initial Balance Date
+       * Subtype
+       * @enum {string}
+       */
+      subtype:
+        "cash" | "investment" | "property" | "credit_card" | "loan" | "other";
+      /** Opening Balance */
+      opening_balance: string;
+      /**
+       * Opening Date
        * Format: date
        */
-      initial_balance_date: string;
+      opening_date: string;
     };
     /** AccountListResponse */
     AccountListResponse: {
@@ -588,6 +540,17 @@ export interface components {
     AccountPatchRequest: {
       /** Name */
       name?: string | null;
+      /** Subtype */
+      subtype?:
+        | (
+            | "cash"
+            | "investment"
+            | "property"
+            | "credit_card"
+            | "loan"
+            | "other"
+          )
+        | null;
     };
     /** AccountResponse */
     AccountResponse: {
@@ -600,18 +563,174 @@ export interface components {
        * @enum {string}
        */
       type: "asset" | "liability";
+      /**
+       * Subtype
+       * @enum {string}
+       */
+      subtype:
+        "cash" | "investment" | "property" | "credit_card" | "loan" | "other";
       /** Archived On */
       archived_on: string | null;
       /** Created At */
       created_at: string;
       /** As Of */
       as_of: string;
-      /** Resolved Balance */
-      resolved_balance: string | null;
-      /** Resolved Balance Date */
-      resolved_balance_date: string | null;
+      /** Balance */
+      balance: string;
+      /**
+       * Balance State
+       * @enum {string}
+       */
+      balance_state: "normal" | "overdrawn" | "credit_balance";
+      /** Opening Balance */
+      opening_balance: string;
+      /** Opening Date */
+      opening_date: string;
+      /** Opening Activity Id */
+      opening_activity_id: number;
       /** Currency */
       currency: string;
+    };
+    /** ActivityAccountEffectResponse */
+    ActivityAccountEffectResponse: {
+      /** Id */
+      id: number;
+      /** Name */
+      name: string;
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: "asset" | "liability";
+      /**
+       * Subtype
+       * @enum {string}
+       */
+      subtype:
+        "cash" | "investment" | "property" | "credit_card" | "loan" | "other";
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: "account" | "source" | "destination";
+      /** Before Balance */
+      before_balance: string;
+      /** After Balance */
+      after_balance: string;
+      /** Balance Effect */
+      balance_effect: string;
+      /**
+       * Balance State
+       * @enum {string}
+       */
+      balance_state: "normal" | "overdrawn" | "credit_balance";
+    };
+    /** ActivityImportPreviewResponse */
+    ActivityImportPreviewResponse: {
+      /** Valid Count */
+      valid_count: number;
+      /** Duplicate Count */
+      duplicate_count: number;
+      /** Invalid Count */
+      invalid_count: number;
+      /** Rows */
+      rows: components["schemas"]["ActivityImportPreviewRowResponse"][];
+    };
+    /** ActivityImportPreviewRowResponse */
+    ActivityImportPreviewRowResponse: {
+      /** Line Number */
+      line_number: number;
+      /** Status */
+      status: string;
+      activity: components["schemas"]["ActivityPreviewRecordResponse"] | null;
+      /** Original Category */
+      original_category: string | null;
+      /** Error */
+      error: string | null;
+    };
+    /** ActivityListResponse */
+    ActivityListResponse: {
+      /** Activities */
+      activities: components["schemas"]["ActivityResponse"][];
+      page: components["schemas"]["PageResponse"];
+    };
+    /** ActivityMutationResponse */
+    ActivityMutationResponse: {
+      /** Notice */
+      notice: string;
+      /** Notice Code */
+      notice_code: string;
+      activity: components["schemas"]["ActivityResponse"];
+    };
+    /** ActivityPreviewRecordResponse */
+    ActivityPreviewRecordResponse: {
+      /** Kind */
+      kind: string;
+      /** Amount */
+      amount: string;
+      /** Category */
+      category: string | null;
+      /** Description */
+      description: string;
+      /** Date */
+      date: string;
+      /** Account */
+      account: string | null;
+      /** From Account */
+      from_account: string | null;
+      /** To Account */
+      to_account: string | null;
+      /** Balance Effects */
+      balance_effects: string[];
+    };
+    /** ActivityResponse */
+    ActivityResponse: {
+      /** Id */
+      id: number;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "opening" | "income" | "expense" | "transfer" | "adjustment";
+      /** Amount */
+      amount: string;
+      /** Category */
+      category: string | null;
+      /** Description */
+      description: string;
+      /** Date */
+      date: string;
+      account: components["schemas"]["ActivityAccountEffectResponse"] | null;
+      from_account:
+        components["schemas"]["ActivityAccountEffectResponse"] | null;
+      to_account: components["schemas"]["ActivityAccountEffectResponse"] | null;
+      /** Net Worth Effect */
+      net_worth_effect: string;
+      /** Cashflow Effect */
+      cashflow_effect: string;
+      /** Created At */
+      created_at: string | null;
+      /** Updated At */
+      updated_at: string | null;
+    };
+    /** AdjustmentActivityRequest */
+    AdjustmentActivityRequest: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "adjustment";
+      /** Amount */
+      amount: string;
+      /**
+       * Description
+       * @default Balance update
+       */
+      description: string;
+      /** Date */
+      date: string;
+      /** Account Id */
+      account_id: number;
     };
     /** ApiErrorDetail */
     ApiErrorDetail: {
@@ -623,64 +742,6 @@ export interface components {
       fields?: {
         [key: string]: string;
       } | null;
-    };
-    /** BalanceCheckInItemRequest */
-    BalanceCheckInItemRequest: {
-      /** Account Id */
-      account_id: number;
-      /** Amount */
-      amount: string;
-    };
-    /** BalanceCheckInRequest */
-    BalanceCheckInRequest: {
-      /** Updates */
-      updates: components["schemas"]["BalanceCheckInItemRequest"][];
-    };
-    /** BalanceCheckInResponse */
-    BalanceCheckInResponse: {
-      /** Notice */
-      notice: string;
-      /** Notice Code */
-      notice_code: string;
-      /** Balance Snapshots */
-      balance_snapshots: components["schemas"]["BalanceSnapshotResponse"][];
-      /** Replaced Count */
-      replaced_count: number;
-    };
-    /** BalanceSnapshotListResponse */
-    BalanceSnapshotListResponse: {
-      /** Balance Snapshots */
-      balance_snapshots: components["schemas"]["BalanceSnapshotResponse"][];
-    };
-    /** BalanceSnapshotMutationResponse */
-    BalanceSnapshotMutationResponse: {
-      /** Notice */
-      notice: string;
-      /** Notice Code */
-      notice_code: string;
-      snapshot: components["schemas"]["BalanceSnapshotResponse"];
-    };
-    /** BalanceSnapshotRequest */
-    BalanceSnapshotRequest: {
-      /** Amount */
-      amount: string;
-    };
-    /** BalanceSnapshotResponse */
-    BalanceSnapshotResponse: {
-      /** Id */
-      id: number;
-      /** Account Id */
-      account_id: number;
-      /** Amount */
-      amount: string;
-      /** Effective Date */
-      effective_date: string;
-      /** Created At */
-      created_at: string;
-      /** Updated At */
-      updated_at: string;
-      /** Currency */
-      currency: string;
     };
     /** BudgetListResponse */
     BudgetListResponse: {
@@ -782,8 +843,8 @@ export interface components {
       trend: components["schemas"]["TrendReportResponse"];
       /** Savings Rate */
       savings_rate: string;
-      /** Recent Transactions */
-      recent_transactions: components["schemas"]["TransactionResponse"][];
+      /** Recent Activities */
+      recent_activities: components["schemas"]["ActivityResponse"][];
       /** Budget Statuses */
       budget_statuses: components["schemas"]["BudgetStatusResponse"][];
       net_worth: components["schemas"]["NetWorthSummaryResponse"];
@@ -811,6 +872,27 @@ export interface components {
       skipped_count: number;
       /** Errors */
       errors: string[];
+    };
+    /** IncomeExpenseActivityRequest */
+    IncomeExpenseActivityRequest: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "income" | "expense";
+      /** Amount */
+      amount: string;
+      /** Category */
+      category: string;
+      /**
+       * Description
+       * @default
+       */
+      description: string;
+      /** Date */
+      date: string;
+      /** Account Id */
+      account_id: number;
     };
     /** MonthlyReportResponse */
     MonthlyReportResponse: {
@@ -872,8 +954,29 @@ export interface components {
       contribution_change: string | null;
       /** Composition Percent */
       composition_percent: string | null;
+      /**
+       * Balance State
+       * @enum {string}
+       */
+      balance_state: "normal" | "overdrawn" | "credit_balance";
       /** Currency */
       currency: string;
+    };
+    /** NetWorthAccountStateResponse */
+    NetWorthAccountStateResponse: {
+      /** Warning Count */
+      warning_count: number;
+      /** Oldest Activity Date */
+      oldest_activity_date: string | null;
+    };
+    /** NetWorthAttributionResponse */
+    NetWorthAttributionResponse: {
+      /** Cashflow */
+      cashflow: string;
+      /** Adjustments */
+      adjustments: string;
+      /** Transfers */
+      transfers: string;
     };
     /** NetWorthComparisonResponse */
     NetWorthComparisonResponse: {
@@ -892,15 +995,6 @@ export interface components {
       /** Change Percent */
       change_percent: string | null;
     };
-    /** NetWorthCoverageResponse */
-    NetWorthCoverageResponse: {
-      /** Resolved Account Count */
-      resolved_account_count: number;
-      /** Unresolved Account Count */
-      unresolved_account_count: number;
-      /** Oldest Balance Date */
-      oldest_balance_date: string | null;
-    };
     /** NetWorthHistoryPointResponse */
     NetWorthHistoryPointResponse: {
       /** As Of */
@@ -915,8 +1009,8 @@ export interface components {
       resolved_asset_count: number;
       /** Resolved Liability Count */
       resolved_liability_count: number;
-      /** Unresolved Account Count */
-      unresolved_account_count: number;
+      /** Account State Warning Count */
+      account_state_warning_count: number;
     };
     /** NetWorthHistoryResponse */
     NetWorthHistoryResponse: {
@@ -940,7 +1034,8 @@ export interface components {
       comparison: components["schemas"]["NetWorthComparisonResponse"];
       /** Accounts */
       accounts: components["schemas"]["NetWorthAccountAnalyticsResponse"][];
-      coverage: components["schemas"]["NetWorthCoverageResponse"];
+      account_state: components["schemas"]["NetWorthAccountStateResponse"];
+      attribution: components["schemas"]["NetWorthAttributionResponse"];
       /** Currency */
       currency: string;
     };
@@ -962,8 +1057,8 @@ export interface components {
       resolved_asset_count: number;
       /** Resolved Liability Count */
       resolved_liability_count: number;
-      /** Unresolved Account Count */
-      unresolved_account_count: number;
+      /** Account State Warning Count */
+      account_state_warning_count: number;
       /** Currency */
       currency: string;
     };
@@ -993,8 +1088,29 @@ export interface components {
       created_count: number;
       /** Skipped Duplicates */
       skipped_duplicates: number;
-      /** Transactions */
-      transactions: components["schemas"]["TransactionResponse"][];
+      /** Activities */
+      activities: components["schemas"]["ActivityResponse"][];
+    };
+    /** RecurringCashflowTemplateRequest */
+    RecurringCashflowTemplateRequest: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "income" | "expense";
+      /** Amount */
+      amount: string;
+      /** Category */
+      category: string;
+      /**
+       * Description
+       * @default
+       */
+      description: string;
+      /** Day Of Month */
+      day_of_month: number;
+      /** Account Id */
+      account_id: number;
     };
     /** RecurringTemplateListResponse */
     RecurringTemplateListResponse: {
@@ -1009,17 +1125,43 @@ export interface components {
       notice_code: string;
       template: components["schemas"]["RecurringTemplateResponse"];
     };
-    /** RecurringTemplateRequest */
-    RecurringTemplateRequest: {
+    /** RecurringTemplateResponse */
+    RecurringTemplateResponse: {
+      /** Id */
+      id: number;
       /**
-       * Type
+       * Kind
        * @enum {string}
        */
-      type: "income" | "expense";
+      kind: "income" | "expense" | "transfer";
       /** Amount */
       amount: string;
       /** Category */
-      category: string;
+      category: string | null;
+      /** Description */
+      description: string;
+      /** Day Of Month */
+      day_of_month: number;
+      /** Account Id */
+      account_id: number | null;
+      /** From Account Id */
+      from_account_id: number | null;
+      /** To Account Id */
+      to_account_id: number | null;
+      /** Active */
+      active: boolean;
+      /** Created At */
+      created_at: string | null;
+    };
+    /** RecurringTransferTemplateRequest */
+    RecurringTransferTemplateRequest: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "transfer";
+      /** Amount */
+      amount: string;
       /**
        * Description
        * @default
@@ -1027,25 +1169,10 @@ export interface components {
       description: string;
       /** Day Of Month */
       day_of_month: number;
-    };
-    /** RecurringTemplateResponse */
-    RecurringTemplateResponse: {
-      /** Id */
-      id: number;
-      /** Type */
-      type: string;
-      /** Amount */
-      amount: string;
-      /** Category */
-      category: string;
-      /** Description */
-      description: string;
-      /** Day Of Month */
-      day_of_month: number;
-      /** Active */
-      active: boolean;
-      /** Created At */
-      created_at: string | null;
+      /** From Account Id */
+      from_account_id: number;
+      /** To Account Id */
+      to_account_id: number;
     };
     /** SettingsRequest */
     SettingsRequest: {
@@ -1057,81 +1184,15 @@ export interface components {
       /** Currency */
       currency: string;
     };
-    /** TransactionImportPreviewResponse */
-    TransactionImportPreviewResponse: {
-      /** Valid Count */
-      valid_count: number;
-      /** Duplicate Count */
-      duplicate_count: number;
-      /** Invalid Count */
-      invalid_count: number;
-      /** Rows */
-      rows: components["schemas"]["TransactionImportPreviewRowResponse"][];
-    };
-    /** TransactionImportPreviewRowResponse */
-    TransactionImportPreviewRowResponse: {
-      /** Line Number */
-      line_number: number;
-      /** Status */
-      status: string;
-      transaction:
-        components["schemas"]["TransactionPreviewRecordResponse"] | null;
-      /** Original Category */
-      original_category: string | null;
-      /** Error */
-      error: string | null;
-    };
-    /** TransactionListResponse */
-    TransactionListResponse: {
-      /** Transactions */
-      transactions: components["schemas"]["TransactionResponse"][];
-      page: components["schemas"]["PageResponse"];
-    };
-    /** TransactionMutationResponse */
-    TransactionMutationResponse: {
-      /** Notice */
-      notice: string;
-      /** Notice Code */
-      notice_code: string;
-      transaction: components["schemas"]["TransactionResponse"];
-    };
-    /** TransactionPatchRequest */
-    TransactionPatchRequest: {
-      /** Type */
-      type?: ("income" | "expense") | null;
-      /** Amount */
-      amount?: string | null;
-      /** Category */
-      category?: string | null;
-      /** Description */
-      description?: string | null;
-      /** Date */
-      date?: string | null;
-    };
-    /** TransactionPreviewRecordResponse */
-    TransactionPreviewRecordResponse: {
-      /** Type */
-      type: string;
-      /** Amount */
-      amount: string;
-      /** Category */
-      category: string;
-      /** Description */
-      description: string;
-      /** Date */
-      date: string;
-    };
-    /** TransactionRequest */
-    TransactionRequest: {
+    /** TransferActivityRequest */
+    TransferActivityRequest: {
       /**
-       * Type
+       * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      type: "income" | "expense";
+      kind: "transfer";
       /** Amount */
       amount: string;
-      /** Category */
-      category: string;
       /**
        * Description
        * @default
@@ -1139,23 +1200,10 @@ export interface components {
       description: string;
       /** Date */
       date: string;
-    };
-    /** TransactionResponse */
-    TransactionResponse: {
-      /** Id */
-      id: number;
-      /** Type */
-      type: string;
-      /** Amount */
-      amount: string;
-      /** Category */
-      category: string;
-      /** Description */
-      description: string;
-      /** Date */
-      date: string;
-      /** Created At */
-      created_at: string | null;
+      /** From Account Id */
+      from_account_id: number;
+      /** To Account Id */
+      to_account_id: number;
     };
     /** TrendMonthResponse */
     TrendMonthResponse: {
@@ -1266,59 +1314,6 @@ export interface operations {
       };
       /** @description Bad Request */
       400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  check_in_balances_api_accounts_balance_check_ins__effective_date__put: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        effective_date: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["BalanceCheckInRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BalanceCheckInResponse"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -1577,152 +1572,6 @@ export interface operations {
       };
     };
   };
-  list_balance_snapshots_api_accounts__account_id__balance_snapshots_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        account_id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BalanceSnapshotListResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  set_balance_snapshot_api_accounts__account_id__balance_snapshots__effective_date__put: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        account_id: number;
-        effective_date: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["BalanceSnapshotRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BalanceSnapshotMutationResponse"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  delete_balance_snapshot_api_accounts__account_id__balance_snapshots__effective_date__delete: {
-    parameters: {
-      query?: {
-        confirm?: boolean;
-      };
-      header?: never;
-      path: {
-        account_id: number;
-        effective_date: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NoticeResponse"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
   net_worth_overview_api_net_worth_overview_get: {
     parameters: {
       query?: {
@@ -1846,13 +1695,16 @@ export interface operations {
       };
     };
   };
-  list_transactions_api_transactions_get: {
+  list_activities_api_activities_get: {
     parameters: {
       query?: {
         month?: number | null;
         year?: number | null;
         category?: string | null;
-        transaction_type?: ("income" | "expense") | null;
+        kind?:
+          ("opening" | "income" | "expense" | "transfer" | "adjustment") | null;
+        account_id?: number | null;
+        search?: string | null;
         limit?: number;
         offset?: number;
       };
@@ -1868,7 +1720,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["TransactionListResponse"];
+          "application/json": components["schemas"]["ActivityListResponse"];
         };
       };
       /** @description Bad Request */
@@ -1891,7 +1743,7 @@ export interface operations {
       };
     };
   };
-  create_transaction_api_transactions_post: {
+  create_activity_api_activities_post: {
     parameters: {
       query?: never;
       header?: never;
@@ -1900,7 +1752,10 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["TransactionRequest"];
+        "application/json":
+          | components["schemas"]["IncomeExpenseActivityRequest"]
+          | components["schemas"]["TransferActivityRequest"]
+          | components["schemas"]["AdjustmentActivityRequest"];
       };
     };
     responses: {
@@ -1910,11 +1765,20 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["TransactionMutationResponse"];
+          "application/json": components["schemas"]["ActivityMutationResponse"];
         };
       };
       /** @description Bad Request */
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -1933,7 +1797,7 @@ export interface operations {
       };
     };
   };
-  import_transactions_api_transactions_import_csv_post: {
+  import_activities_api_activities_import_csv_post: {
     parameters: {
       query?: {
         allow_duplicates?: boolean;
@@ -1973,7 +1837,7 @@ export interface operations {
       };
     };
   };
-  preview_transaction_import_api_transactions_import_csv_preview_post: {
+  preview_activity_import_api_activities_import_csv_preview_post: {
     parameters: {
       query?: never;
       header?: never;
@@ -1988,7 +1852,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["TransactionImportPreviewResponse"];
+          "application/json": components["schemas"]["ActivityImportPreviewResponse"];
         };
       };
       /** @description Bad Request */
@@ -2002,13 +1866,16 @@ export interface operations {
       };
     };
   };
-  export_transactions_api_transactions_export_csv_get: {
+  export_activities_api_activities_export_csv_get: {
     parameters: {
       query?: {
         month?: number | null;
         year?: number | null;
         category?: string | null;
-        transaction_type?: ("income" | "expense") | null;
+        kind?:
+          ("opening" | "income" | "expense" | "transfer" | "adjustment") | null;
+        account_id?: number | null;
+        search?: string | null;
       };
       header?: never;
       path?: never;
@@ -2045,16 +1912,23 @@ export interface operations {
       };
     };
   };
-  delete_transaction_api_transactions__transaction_id__delete: {
+  update_activity_api_activities__activity_id__put: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        transaction_id: number;
+        activity_id: number;
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        "application/json":
+          | components["schemas"]["IncomeExpenseActivityRequest"]
+          | components["schemas"]["TransferActivityRequest"]
+          | components["schemas"]["AdjustmentActivityRequest"];
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {
@@ -2062,7 +1936,16 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["NoticeResponse"];
+          "application/json": components["schemas"]["ActivityMutationResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
       /** @description Not Found */
@@ -2085,20 +1968,16 @@ export interface operations {
       };
     };
   };
-  update_transaction_api_transactions__transaction_id__patch: {
+  delete_activity_api_activities__activity_id__delete: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        transaction_id: number;
+        activity_id: number;
       };
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["TransactionPatchRequest"];
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description Successful Response */
       200: {
@@ -2106,7 +1985,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["TransactionMutationResponse"];
+          "application/json": components["schemas"]["NoticeResponse"];
         };
       };
       /** @description Bad Request */
@@ -2507,7 +2386,9 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["RecurringTemplateRequest"];
+        "application/json":
+          | components["schemas"]["RecurringCashflowTemplateRequest"]
+          | components["schemas"]["RecurringTransferTemplateRequest"];
       };
     };
     responses: {

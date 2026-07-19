@@ -1,32 +1,39 @@
 """Deterministic monthly financial report calculations."""
 
+from collections.abc import Sequence
 from decimal import Decimal
 
+from finance_tracker.models.activities import Activity, ActivityKind
 from finance_tracker.models.transactions import Transaction, TransactionType
 from finance_tracker.reports.models import MonthlyReport
 
+CashflowEntry = Transaction | Activity
+
 
 def build_monthly_report(
-    transactions: list[Transaction],
+    transactions: Sequence[CashflowEntry],
     month: int,
     year: int,
-    context_transactions: list[Transaction] | None = None,
+    context_transactions: Sequence[CashflowEntry] | None = None,
 ) -> MonthlyReport:
+    transactions = [entry for entry in transactions if _cashflow_kind(entry) is not None]
     total_income = Decimal("0.00")
     total_expenses = Decimal("0.00")
     income_by_category: dict[str, Decimal] = {}
     expenses_by_category: dict[str, Decimal] = {}
 
     for transaction in transactions:
-        if transaction.type == TransactionType.INCOME:
+        category = transaction.category
+        assert category is not None
+        if _cashflow_kind(transaction) is ActivityKind.INCOME:
             total_income += transaction.amount
-            income_by_category[transaction.category] = (
-                income_by_category.get(transaction.category, Decimal("0.00")) + transaction.amount
+            income_by_category[category] = (
+                income_by_category.get(category, Decimal("0.00")) + transaction.amount
             )
         else:
             total_expenses += transaction.amount
-            expenses_by_category[transaction.category] = (
-                expenses_by_category.get(transaction.category, Decimal("0.00")) + transaction.amount
+            expenses_by_category[category] = (
+                expenses_by_category.get(category, Decimal("0.00")) + transaction.amount
             )
 
     context = context_transactions if context_transactions is not None else transactions
@@ -68,7 +75,7 @@ def _previous_month(year: int, month: int) -> tuple[int, int]:
 
 
 def _totals_for_period(
-    transactions: list[Transaction],
+    transactions: Sequence[CashflowEntry],
     month: int,
     year: int,
 ) -> dict[str, Decimal]:
@@ -77,15 +84,15 @@ def _totals_for_period(
     for transaction in transactions:
         if transaction.date.month != month or transaction.date.year != year:
             continue
-        if transaction.type == TransactionType.INCOME:
+        if _cashflow_kind(transaction) is ActivityKind.INCOME:
             income += transaction.amount
-        else:
+        elif _cashflow_kind(transaction) is ActivityKind.EXPENSE:
             expenses += transaction.amount
     return {"income": income, "expenses": expenses}
 
 
 def _totals_for_year_to_month(
-    transactions: list[Transaction],
+    transactions: Sequence[CashflowEntry],
     month: int,
     year: int,
 ) -> dict[str, Decimal]:
@@ -94,8 +101,22 @@ def _totals_for_year_to_month(
     for transaction in transactions:
         if transaction.date.year != year or transaction.date.month > month:
             continue
-        if transaction.type == TransactionType.INCOME:
+        if _cashflow_kind(transaction) is ActivityKind.INCOME:
             income += transaction.amount
-        else:
+        elif _cashflow_kind(transaction) is ActivityKind.EXPENSE:
             expenses += transaction.amount
     return {"income": income, "expenses": expenses}
+
+
+def _cashflow_kind(entry: CashflowEntry) -> ActivityKind | None:
+    if isinstance(entry, Activity):
+        return entry.kind if entry.kind in {ActivityKind.INCOME, ActivityKind.EXPENSE} else None
+    return (
+        ActivityKind(entry.type.value)
+        if entry.type
+        in {
+            TransactionType.INCOME,
+            TransactionType.EXPENSE,
+        }
+        else None
+    )

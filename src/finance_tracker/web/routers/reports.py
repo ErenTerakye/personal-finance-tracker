@@ -12,7 +12,7 @@ from finance_tracker.reports import (
     format_monthly_report,
     format_trend_report,
 )
-from finance_tracker.web.dependencies import transaction_service
+from finance_tracker.web.dependencies import activity_service
 from finance_tracker.web.responses import download_response, resolve_period
 from finance_tracker.web.schemas import ErrorResponse
 
@@ -20,8 +20,11 @@ router = APIRouter()
 
 
 def monthly_report(request: Request, month: int, year: int) -> MonthlyReport:
-    transactions = transaction_service(request).list_transactions(month=month, year=year)
-    all_transactions = transaction_service(request).list_transactions()
+    transactions = [
+        record.activity
+        for record in activity_service(request).list_activities(month=month, year=year)
+    ]
+    all_transactions = [record.activity for record in activity_service(request).list_activities()]
     return build_monthly_report(
         transactions,
         month=month,
@@ -31,7 +34,7 @@ def monthly_report(request: Request, month: int, year: int) -> MonthlyReport:
 
 
 def trend_report(request: Request, months: int, end_month: int, end_year: int) -> TrendReport:
-    transactions = transaction_service(request).list_transactions()
+    transactions = [record.activity for record in activity_service(request).list_activities()]
     return build_trend_report(
         transactions,
         months=months,

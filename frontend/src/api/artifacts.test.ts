@@ -4,13 +4,13 @@ import { artifactUrls } from "./artifacts";
 describe("artifactUrls", () => {
   it("owns report, chart, and filtered CSV download URLs", () => {
     expect(
-      artifactUrls.transactionsCsv({
+      artifactUrls.activitiesCsv({
         month: 7,
         year: 2026,
         category: "Food & drink",
       }),
     ).toBe(
-      "/api/transactions/export-csv?month=7&year=2026&category=Food+%26+drink",
+      "/api/activities/export-csv?month=7&year=2026&category=Food+%26+drink",
     );
     expect(artifactUrls.budgetsCsv({ month: 7, year: 2026 })).toBe(
       "/api/budgets/export-csv?month=7&year=2026",

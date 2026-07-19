@@ -60,4 +60,77 @@
     border-radius: var(--radius-pill);
     font-size: var(--font-size-sm);
   }
+
+  .activity-hero-actions,
+  .row-actions-inline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .activity-table-scroll {
+    max-inline-size: 100%;
+    overflow-x: auto;
+  }
+
+  .activity-table {
+    min-inline-size: 58rem;
+  }
+
+  .status-chip,
+  .balance-effect {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius-pill);
+    font-size: var(--font-size-sm);
+  }
+
+  .status-chip {
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--rule-strong);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .status-chip.income {
+    color: var(--positive);
+  }
+
+  .status-chip.expense {
+    color: var(--negative);
+  }
+
+  .balance-effect {
+    display: flex;
+    inline-size: max-content;
+    max-inline-size: 24rem;
+    margin-block: 0.15rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .projection-card {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.85rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-muted);
+  }
+
+  .link-button {
+    min-block-size: 2.25rem;
+    padding: 0;
+    color: var(--action);
+    background: transparent;
+    border: 0;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  @media (forced-colors: active) {
+    .status-chip,
+    .projection-card {
+      border: 1px solid CanvasText;
+    }
+  }
 }

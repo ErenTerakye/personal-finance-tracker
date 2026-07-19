@@ -1,163 +1,114 @@
 from decimal import Decimal
 
 import pytest
-from typer.testing import CliRunner
 
-from finance_tracker.cli import app
-from finance_tracker.exceptions import TransactionNotFoundError, ValidationError
+from finance_tracker.exceptions import ActivityNotFoundError, ValidationError
+from finance_tracker.models import ActivityKind
 from finance_tracker.services import (
+    AccountService,
+    ActivityService,
     CategoryRuleService,
     RecurringTemplateService,
-    TransactionService,
 )
 
 
-def test_add_and_filter_transactions(tmp_path):
-    service = TransactionService(tmp_path / "finance.sqlite3")
-
-    income = service.add_transaction("income", "2500", "Salary", "June salary", "2026-06-01")
-    service.add_transaction("expense", "45.90", "Food", "Groceries", "2026-06-12")
-    service.add_transaction("expense", "20", "Food", "Lunch", "2026-07-01")
-
-    june_transactions = service.list_transactions(month=6, year=2026)
-    food_transactions = service.list_transactions(category="food", transaction_type="expense")
-
-    assert income.id is not None
-    assert len(june_transactions) == 2
-    assert len(food_transactions) == 2
-    assert food_transactions[0].amount == Decimal("20.00")
+def _cash_account(db_path, name="Checking"):
+    return AccountService(db_path).create_account(name, "asset", "100", "2026-01-01", "cash")
 
 
-@pytest.mark.parametrize(
-    ("transaction_type", "amount", "category", "transaction_date", "message"),
-    [
-        ("bonus", "10", "Other", "2026-06-01", "income'.*expense"),
-        ("income", "-10", "Salary", "2026-06-01", "greater than zero"),
-        ("income", "abc", "Salary", "2026-06-01", "valid number"),
-        ("income", "10", "", "2026-06-01", "Category is required"),
-        ("income", "10", "Salary", "06-01-2026", "YYYY-MM-DD"),
-    ],
-)
-def test_add_transaction_validates_input(
-    tmp_path, transaction_type, amount, category, transaction_date, message
-):
-    service = TransactionService(tmp_path / "finance.sqlite3")
-
-    with pytest.raises(ValidationError, match=message):
-        service.add_transaction(transaction_type, amount, category, "", transaction_date)
-
-
-def test_amount_accepts_safe_cent_boundary_and_rejects_larger_value(tmp_path):
-    service = TransactionService(tmp_path / "finance.sqlite3")
-
-    transaction = service.add_transaction(
-        "income", "90071992547409.91", "Other", "Boundary", "2026-06-01"
+def test_add_filter_edit_reclassify_and_delete_activity(tmp_path):
+    db_path = tmp_path / "ledger.sqlite3"
+    account = _cash_account(db_path)
+    service = ActivityService(db_path)
+    income = service.add_activity(
+        "income", "2500", "Salary", "June salary", "2026-06-01", account.id
+    )
+    expense = service.add_activity(
+        "expense", "45.90", "Food", "Groceries", "2026-06-12", account.id
     )
 
-    assert transaction.amount == Decimal("90071992547409.91")
-    with pytest.raises(ValidationError, match="no greater than 90071992547409.91"):
-        service.add_transaction("income", "90071992547409.92", "Other", "Too large", "2026-06-01")
+    assert [item.activity.id for item in service.list_activities(month=6, year=2026)] == [
+        expense.activity.id,
+        income.activity.id,
+    ]
+    assert service.list_activities(category="food")[0].activity.amount == Decimal("45.90")
+    assert service.list_activities(search="groc")[0].activity.id == expense.activity.id
 
-
-def test_delete_transaction(tmp_path):
-    service = TransactionService(tmp_path / "finance.sqlite3")
-    transaction = service.add_transaction("expense", "15", "Food", "Coffee", "2026-06-02")
-
-    service.delete_transaction(transaction.id)
-
-    assert service.count_transactions() == 0
-    with pytest.raises(TransactionNotFoundError):
-        service.delete_transaction(transaction.id)
-
-
-def test_edit_transaction_updates_selected_fields(tmp_path):
-    service = TransactionService(tmp_path / "finance.sqlite3")
-    transaction = service.add_transaction("expense", "15", "Food", "Coffee", "2026-06-02")
-
-    updated = service.edit_transaction(
-        transaction.id,
-        amount="18.50",
-        category="Dining",
-        description="Breakfast",
+    updated = service.edit_activity(
+        expense.activity.id,
+        kind="income",
+        amount="50",
+        category="Refund",
+        description="Grocery refund",
+        activity_date="2026-06-13",
+        account_id=account.id,
     )
+    assert updated.activity.kind is ActivityKind.INCOME
+    assert updated.activity.category == "Refund"
 
-    assert updated.id == transaction.id
-    assert updated.amount == Decimal("18.50")
-    assert updated.category == "Dining"
-    assert updated.description == "Breakfast"
-    assert updated.type == transaction.type
-    assert updated.date == transaction.date
-
-
-def test_edit_transaction_validates_updates(tmp_path):
-    service = TransactionService(tmp_path / "finance.sqlite3")
-    transaction = service.add_transaction("expense", "15", "Food", "Coffee", "2026-06-02")
-
-    with pytest.raises(ValidationError, match="greater than zero"):
-        service.edit_transaction(transaction.id, amount="-1")
+    service.delete_activity(updated.activity.id)
+    with pytest.raises(ActivityNotFoundError):
+        service.get_activity(updated.activity.id)
 
 
-def test_category_rules_canonicalize_transaction_writes(tmp_path):
-    db_path = tmp_path / "finance.sqlite3"
-    rules = CategoryRuleService(db_path)
-    transactions = TransactionService(db_path)
+def test_opening_is_read_only_and_transfer_kind_is_immutable(tmp_path):
+    db_path = tmp_path / "ledger.sqlite3"
+    source = _cash_account(db_path, "Checking")
+    destination = _cash_account(db_path, "Savings")
+    service = ActivityService(db_path)
+    opening = service.list_activities(kind="opening")[0]
+    transfer = service.add_transfer("25", "Save", "2026-01-02", source.id, destination.id)
 
-    rule = rules.set_rule("groceries", "Food")
-    transaction = transactions.add_transaction(
-        "expense",
-        "42.50",
-        "groceries",
-        "Market",
-        "2026-06-12",
+    with pytest.raises(ValidationError, match="cannot be deleted"):
+        service.delete_activity(opening.activity.id)
+    with pytest.raises(ValidationError, match="kind cannot change"):
+        service.edit_activity(
+            transfer.activity.id,
+            kind="expense",
+            amount="25",
+            category="Other",
+            description="",
+            activity_date="2026-01-02",
+            account_id=source.id,
+        )
+
+
+def test_category_rules_apply_to_activity_and_recurring_transfer_duplicates(tmp_path):
+    db_path = tmp_path / "ledger.sqlite3"
+    source = _cash_account(db_path, "Checking")
+    destination = _cash_account(db_path, "Savings")
+    CategoryRuleService(db_path).set_rule("groceries", "Food")
+    activity = ActivityService(db_path).add_activity(
+        "expense", "10", "groceries", "Market", "2026-02-01", source.id
     )
-
-    assert rule.category == "Food"
-    assert transaction.category == "Food"
-    assert transactions.list_transactions(category="Food")[0].description == "Market"
-
-
-def test_recurring_templates_apply_manually_and_skip_duplicates(tmp_path):
-    db_path = tmp_path / "finance.sqlite3"
     recurring = RecurringTemplateService(db_path)
-    transactions = TransactionService(db_path)
-
-    recurring.add_template("expense", "1200", "Rent", "Monthly rent", 31)
-    first_apply = recurring.apply_templates(month=2, year=2026)
-    second_apply = recurring.apply_templates(month=2, year=2026)
-    stored = transactions.list_transactions(month=2, year=2026)
-
-    assert len(first_apply.created) == 1
-    assert first_apply.created[0].date.isoformat() == "2026-02-28"
-    assert second_apply.skipped_duplicates == 1
-    assert len(stored) == 1
-
-
-def test_cli_list_aligns_long_category_names(tmp_path):
-    runner = CliRunner()
-    db_path = tmp_path / "finance.sqlite3"
-
-    runner.invoke(
-        app,
-        [
-            "transaction",
-            "add",
-            "expense",
-            "22.50",
-            "--category",
-            "Transportation",
-            "--description",
-            "Monthly pass",
-            "--date",
-            "2026-06-18",
-            "--db-path",
-            str(db_path),
-        ],
+    recurring.add_template(
+        "transfer",
+        "20",
+        None,
+        "Monthly saving",
+        28,
+        from_account_id=source.id,
+        to_account_id=destination.id,
     )
 
-    result = runner.invoke(app, ["transaction", "list", "--db-path", str(db_path)])
+    first = recurring.apply_templates(2, 2026)
+    second = recurring.apply_templates(2, 2026)
 
-    assert result.exit_code == 0
-    lines = result.output.splitlines()
-    header = next(line for line in lines if line.startswith("ID"))
-    row = next(line for line in lines if "Transportation" in line)
-    assert header.index("Description") == row.index("Monthly pass")
+    assert activity.activity.category == "Food"
+    assert len(first.created) == 1
+    assert second.skipped_duplicates == 1
+
+
+def test_decimal_safe_activity_boundary(tmp_path):
+    db_path = tmp_path / "ledger.sqlite3"
+    account = _cash_account(db_path)
+    service = ActivityService(db_path)
+    stored = service.add_activity(
+        "income", "90071992547409.91", "Other", "Boundary", "2026-01-02", account.id
+    )
+    assert stored.activity.amount == Decimal("90071992547409.91")
+    with pytest.raises(ValidationError, match="no greater than"):
+        service.add_activity(
+            "income", "90071992547409.92", "Other", "Too large", "2026-01-02", account.id
+        )

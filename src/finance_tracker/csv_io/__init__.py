@@ -1,5 +1,18 @@
 """Public CSV import and export API."""
 
+from finance_tracker.csv_io.activities import (
+    ACTIVITY_CSV_FIELDS,
+    ActivityImportPreview,
+    ActivityImportPreviewRow,
+    export_activities_csv,
+    export_activities_csv_text,
+    import_activities_csv,
+    import_activities_csv_file,
+    import_activities_csv_text,
+    preview_activities_csv_file,
+    preview_activities_csv_text,
+    write_activities_csv,
+)
 from finance_tracker.csv_io.budgets import (
     BUDGET_CSV_FIELDS,
     export_budgets_csv,
@@ -26,15 +39,23 @@ from finance_tracker.csv_io.transactions import (
 
 __all__ = [
     "BUDGET_CSV_FIELDS",
+    "ACTIVITY_CSV_FIELDS",
+    "ActivityImportPreview",
+    "ActivityImportPreviewRow",
     "CSV_FIELDS",
     "ImportResult",
     "TransactionImportPreview",
     "TransactionImportPreviewRow",
     "export_budgets_csv",
+    "export_activities_csv",
+    "export_activities_csv_text",
     "export_budgets_csv_text",
     "export_transactions_csv",
     "export_transactions_csv_text",
     "import_budgets_csv",
+    "import_activities_csv",
+    "import_activities_csv_file",
+    "import_activities_csv_text",
     "import_budgets_csv_file",
     "import_budgets_csv_text",
     "import_transactions_csv",
@@ -42,6 +63,9 @@ __all__ = [
     "import_transactions_csv_text",
     "preview_transactions_csv_file",
     "preview_transactions_csv_text",
+    "preview_activities_csv_file",
+    "preview_activities_csv_text",
     "write_budgets_csv",
     "write_transactions_csv",
+    "write_activities_csv",
 ]

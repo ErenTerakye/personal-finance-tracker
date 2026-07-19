@@ -1,12 +1,12 @@
-"""SQLite persistence for recurring templates."""
+"""SQLite persistence for recurring activity templates."""
 
 import sqlite3
 from datetime import datetime
 from decimal import Decimal
 
 from finance_tracker.exceptions import RecurringTemplateNotFoundError
+from finance_tracker.models.activities import ActivityKind
 from finance_tracker.models.recurring import RecurringTemplate
-from finance_tracker.models.transactions import TransactionType
 
 
 class RecurringTemplateRepository:
@@ -17,15 +17,19 @@ class RecurringTemplateRepository:
         cursor = self.connection.execute(
             """
             INSERT INTO recurring_templates
-                (type, amount, category, description, day_of_month, active)
-            VALUES (?, ?, ?, ?, ?, ?)
+                (kind, amount, category, description, day_of_month,
+                 account_id, from_account_id, to_account_id, active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                template.type.value,
+                template.kind.value,
                 str(template.amount),
                 template.category,
                 template.description,
                 template.day_of_month,
+                template.account_id,
+                template.from_account_id,
+                template.to_account_id,
                 int(template.active),
             ),
         )
@@ -34,13 +38,10 @@ class RecurringTemplateRepository:
 
     def get(self, template_id: int) -> RecurringTemplate:
         row = self.connection.execute(
-            "SELECT * FROM recurring_templates WHERE id = ?",
-            (template_id,),
+            "SELECT * FROM recurring_templates WHERE id = ?", (template_id,)
         ).fetchone()
         if row is None:
-            raise RecurringTemplateNotFoundError(
-                f"Recurring template {template_id} was not found."
-            )
+            raise RecurringTemplateNotFoundError(f"Recurring template {template_id} was not found.")
         return self._from_row(row)
 
     def list(self, active_only: bool = False) -> list[RecurringTemplate]:
@@ -52,23 +53,25 @@ class RecurringTemplateRepository:
 
     def delete(self, template_id: int) -> None:
         cursor = self.connection.execute(
-            "DELETE FROM recurring_templates WHERE id = ?",
-            (template_id,),
+            "DELETE FROM recurring_templates WHERE id = ?", (template_id,)
         )
         if cursor.rowcount == 0:
-            raise RecurringTemplateNotFoundError(
-                f"Recurring template {template_id} was not found."
-            )
+            raise RecurringTemplateNotFoundError(f"Recurring template {template_id} was not found.")
 
     @staticmethod
     def _from_row(row: sqlite3.Row) -> RecurringTemplate:
         return RecurringTemplate(
             id=int(row["id"]),
-            type=TransactionType(row["type"]),
+            kind=ActivityKind(row["kind"]),
             amount=Decimal(row["amount"]),
-            category=row["category"],
-            description=row["description"],
+            category=str(row["category"]) if row["category"] is not None else None,
+            description=str(row["description"]),
             day_of_month=int(row["day_of_month"]),
+            account_id=int(row["account_id"]) if row["account_id"] is not None else None,
+            from_account_id=(
+                int(row["from_account_id"]) if row["from_account_id"] is not None else None
+            ),
+            to_account_id=int(row["to_account_id"]) if row["to_account_id"] is not None else None,
             active=bool(row["active"]),
             created_at=datetime.fromisoformat(row["created_at"]),
         )

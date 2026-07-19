@@ -75,15 +75,16 @@ def _json_data(snapshot) -> dict[str, object]:
             "total": str(snapshot.net_worth.total_net_worth),
         },
         "budget_attention_count": sum(item.status != "ok" for item in snapshot.budget_statuses),
-        "recent_transactions": [
+        "recent_activities": [
             {
-                "id": item.id,
-                "date": item.date.isoformat(),
-                "type": item.type.value,
-                "amount": str(item.amount),
-                "category": item.category,
-                "description": item.description,
+                "id": item.activity.id,
+                "date": item.activity.date.isoformat(),
+                "kind": item.activity.kind.value,
+                "amount": str(item.activity.amount),
+                "category": item.activity.category,
+                "description": item.activity.description,
+                "accounts": [effect.account_name for effect in item.effects],
             }
-            for item in snapshot.recent_transactions
+            for item in snapshot.recent_activities
         ],
     }

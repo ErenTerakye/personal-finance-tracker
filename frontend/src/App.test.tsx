@@ -10,7 +10,7 @@ import {
   mockCompactLayout,
   mockFetch,
   response,
-  transaction,
+  activity,
 } from "./test/appTestSupport";
 
 installAppTestLifecycle();
@@ -84,13 +84,13 @@ describe("app composition", () => {
     const links = within(compactNavigation).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual([
       "Overview",
-      "Transactions",
+      "Activity",
       "Budgets",
       "Accounts",
     ]);
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/",
-      "/transactions",
+      "/activity",
       "/budgets",
       "/accounts",
     ]);
@@ -142,12 +142,16 @@ describe("app composition", () => {
     ).toHaveAttribute("data-variant", "outline-open-door");
   });
 
-  it("keeps the global command tied to Add transaction", async () => {
+  it("keeps the global command tied to Add activity", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
       "/api/budgets": { budgets: [] },
       "/api/budgets/status": { statuses: [] },
-      "/api/transactions": { transactions: [] },
+      "/api/activities": {
+        activities: [],
+        page: { limit: 100, offset: 0, total: 0 },
+      },
+      "/api/accounts": { accounts: [] },
     });
 
     render(<App />);
@@ -157,9 +161,9 @@ describe("app composition", () => {
       document.querySelector<HTMLButtonElement>(".rail-create")!,
     );
 
-    expect(window.location.pathname).toBe("/transactions");
+    expect(window.location.pathname).toBe("/activity");
     expect(
-      await screen.findByRole("dialog", { name: "Add transaction" }),
+      await screen.findByRole("dialog", { name: "Add activity" }),
     ).toBeVisible();
   });
 
@@ -281,7 +285,7 @@ describe("app composition", () => {
         screen.getByRole("heading", { level: 1, name: "Genel Bakış" }),
       ).toBeVisible(),
     );
-    expect(screen.getByRole("link", { name: "İşlemler" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Hareketler" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Bütçeler" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Hesaplar" })).toBeVisible();
     expect(document.title).toBe("Genel Bakış | Personal Finance Tracker");
@@ -290,7 +294,11 @@ describe("app composition", () => {
   it("restores a visited destination without resetting its local view state", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
-      "/api/transactions": { transactions: [transaction()] },
+      "/api/activities": {
+        activities: [activity()],
+        page: { limit: 100, offset: 0, total: 1 },
+      },
+      "/api/accounts": { accounts: [] },
       "/api/budgets/status": { statuses: [] },
       "/api/budgets": { budgets: [] },
       "/api/category-rules": { rules: [] },
@@ -298,13 +306,13 @@ describe("app composition", () => {
     render(<App />);
 
     await userEvent.click(
-      await screen.findByRole("link", { name: "Transactions" }),
+      await screen.findByRole("link", { name: "Activity" }),
     );
     const search = await screen.findByRole("searchbox");
     await userEvent.type(search, "groceries");
     await userEvent.click(screen.getByRole("link", { name: "Budgets" }));
     await screen.findByRole("heading", { name: "Budgets" });
-    await userEvent.click(screen.getByRole("link", { name: "Transactions" }));
+    await userEvent.click(screen.getByRole("link", { name: "Activity" }));
 
     expect(await screen.findByRole("searchbox")).toHaveValue("groceries");
     expect(document.querySelector(".route-loading-shell")).toBeNull();
@@ -313,7 +321,11 @@ describe("app composition", () => {
   it("activates each destination at its remembered scroll position", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
-      "/api/transactions": { transactions: [transaction()] },
+      "/api/activities": {
+        activities: [activity()],
+        page: { limit: 100, offset: 0, total: 1 },
+      },
+      "/api/accounts": { accounts: [] },
     });
     let scrollY = 420;
     vi.spyOn(window, "scrollY", "get").mockImplementation(() => scrollY);
@@ -325,9 +337,9 @@ describe("app composition", () => {
 
     render(<App />);
     await userEvent.click(
-      await screen.findByRole("link", { name: "Transactions" }),
+      await screen.findByRole("link", { name: "Activity" }),
     );
-    await screen.findByRole("heading", { name: "Transactions" });
+    await screen.findByRole("heading", { name: "Activity" });
 
     expect(scrollTo).toHaveBeenLastCalledWith({
       top: 0,
@@ -347,7 +359,11 @@ describe("app composition", () => {
   it("switches destinations without interpolating their scroll contexts", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
-      "/api/transactions": { transactions: [transaction()] },
+      "/api/activities": {
+        activities: [activity()],
+        page: { limit: 100, offset: 0, total: 1 },
+      },
+      "/api/accounts": { accounts: [] },
     });
     const startViewTransition = vi.fn();
     Object.defineProperty(document, "startViewTransition", {
@@ -357,9 +373,9 @@ describe("app composition", () => {
 
     render(<App />);
     await userEvent.click(
-      await screen.findByRole("link", { name: "Transactions" }),
+      await screen.findByRole("link", { name: "Activity" }),
     );
-    await screen.findByRole("heading", { name: "Transactions" });
+    await screen.findByRole("heading", { name: "Activity" });
 
     expect(startViewTransition).not.toHaveBeenCalled();
     expect(document.documentElement).not.toHaveClass("route-view-transition");

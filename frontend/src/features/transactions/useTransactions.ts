@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { api, type TransactionFilters } from "../../api/client";
+import { api, type ActivityFilters } from "../../api/client";
 import { useResource } from "../../shared/hooks/useResource";
 import { useMutation } from "../../shared/hooks/useMutation";
 import {
@@ -7,127 +7,86 @@ import {
   prefetchResource,
 } from "../../shared/hooks/resourceCache";
 import {
+  activityResourceKey,
+  activityTags,
   resourceTags,
-  transactionCategoriesResourceKey,
-  transactionCategoryTags,
-  transactionResourceKey,
-  transactionTags,
 } from "../../shared/hooks/resourceKeys";
 import type {
+  ActivityImportPreview,
+  ActivityInput,
+  ActivityMutationResponse,
   ImportSummary,
-  TransactionImportPreview,
-  TransactionInput,
-  TransactionMutationResponse,
   NoticeResponse,
 } from "../../types";
 
-export function useTransactions(filters: TransactionFilters) {
-  const { month, year, category, transaction_type: transactionType } = filters;
+export function useActivities(filters: ActivityFilters) {
+  const { month, year, category, kind, account_id, search } = filters;
   const load = useCallback(
-    (signal: AbortSignal) =>
-      api.transactions(
-        { month, year, category, transaction_type: transactionType },
-        signal,
-      ),
-    [month, year, category, transactionType],
+    (signal: AbortSignal) => api.activities(filters, signal),
+    // Individual primitives prevent object-identity refetch loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [month, year, category, kind, account_id, search],
   );
-  const cacheKey = transactionResourceKey(filters);
+  const cacheKey = activityResourceKey(filters);
   return useResource(load, cacheKey, {
     cacheKey,
-    cacheTags: transactionTags,
+    cacheTags: activityTags,
     retainData: true,
   });
 }
 
-export function useTransactionCategories() {
-  const load = useCallback(async (signal: AbortSignal) => {
-    const [budgetResponse, ruleResponse] = await Promise.all([
-      api.budgets({}, signal),
-      api.categoryRules(signal),
-    ]);
-    return Array.from(
-      new Set([
-        ...budgetResponse.budgets.map((budget) => budget.category),
-        ...ruleResponse.rules.map((rule) => rule.category),
-      ]),
-    ).sort();
-  }, []);
-  return useResource(load, transactionCategoriesResourceKey, {
-    cacheKey: transactionCategoriesResourceKey,
-    cacheTags: transactionCategoryTags,
-    retainData: true,
-  });
+export function preloadActivities(filters: ActivityFilters) {
+  return prefetchResource(
+    activityResourceKey(filters),
+    (signal) => api.activities(filters, signal),
+    { tags: activityTags },
+  );
 }
 
-export function preloadTransactions(filters: TransactionFilters) {
-  return Promise.all([
-    prefetchResource(
-      transactionResourceKey(filters),
-      (signal) => api.transactions(filters, signal),
-      { tags: transactionTags },
-    ),
-    prefetchResource(
-      transactionCategoriesResourceKey,
-      async (signal) => {
-        const [budgetResponse, ruleResponse] = await Promise.all([
-          api.budgets({}, signal),
-          api.categoryRules(signal),
-        ]);
-        return Array.from(
-          new Set([
-            ...budgetResponse.budgets.map((budget) => budget.category),
-            ...ruleResponse.rules.map((rule) => rule.category),
-          ]),
-        ).sort();
-      },
-      { tags: transactionCategoryTags },
-    ),
-  ]);
+function invalidateActivityConsumers() {
+  invalidateResourceTags(
+    resourceTags.activities,
+    resourceTags.accounts,
+    resourceTags.dashboard,
+    resourceTags.budgets,
+  );
 }
 
-export function useSaveTransaction(
-  onSuccess: (response: TransactionMutationResponse) => void,
+export function useSaveActivity(
+  onSuccess: (response: ActivityMutationResponse) => void,
 ) {
   return useMutation(
-    ({ id, payload }: { id?: number; payload: TransactionInput }) =>
-      id ? api.updateTransaction(id, payload) : api.createTransaction(payload),
+    ({ id, payload }: { id?: number; payload: ActivityInput }) =>
+      id ? api.updateActivity(id, payload) : api.createActivity(payload),
     {
       onSuccess: (response) => {
-        invalidateResourceTags(
-          resourceTags.transactions,
-          resourceTags.dashboard,
-          resourceTags.budgets,
-        );
+        invalidateActivityConsumers();
         onSuccess(response);
       },
     },
   );
 }
 
-export function useDeleteTransaction(
+export function useDeleteActivity(
   onSuccess: (response: NoticeResponse) => void,
 ) {
-  return useMutation((id: number) => api.deleteTransaction(id), {
+  return useMutation((id: number) => api.deleteActivity(id), {
     onSuccess: (response) => {
-      invalidateResourceTags(
-        resourceTags.transactions,
-        resourceTags.dashboard,
-        resourceTags.budgets,
-      );
+      invalidateActivityConsumers();
       onSuccess(response);
     },
   });
 }
 
-export function useTransactionPreview(
-  onSuccess?: (response: TransactionImportPreview) => void,
+export function useActivityPreview(
+  onSuccess?: (response: ActivityImportPreview) => void,
 ) {
-  return useMutation((csvText: string) => api.previewTransactionsCsv(csvText), {
+  return useMutation((csvText: string) => api.previewActivitiesCsv(csvText), {
     onSuccess,
   });
 }
 
-export function useTransactionImport(
+export function useActivityImport(
   onSuccess: (response: ImportSummary) => void,
 ) {
   return useMutation(
@@ -137,14 +96,10 @@ export function useTransactionImport(
     }: {
       csvText: string;
       allowDuplicates: boolean;
-    }) => api.importTransactionsCsvWithOptions(csvText, allowDuplicates),
+    }) => api.importActivitiesCsv(csvText, allowDuplicates),
     {
       onSuccess: (response) => {
-        invalidateResourceTags(
-          resourceTags.transactions,
-          resourceTags.dashboard,
-          resourceTags.budgets,
-        );
+        invalidateActivityConsumers();
         onSuccess(response);
       },
     },

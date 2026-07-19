@@ -1,435 +1,217 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import App from "../../app/App";
 import {
+  activity,
   installAppTestLifecycle,
-  mockCompactLayout,
   mockFetch,
   response,
-  transaction,
-  dashboardPayload,
 } from "../../test/appTestSupport";
 
 installAppTestLifecycle();
 
-describe("transactions workflow", () => {
-  it("uses friendly localized copy for a ledger without transactions", async () => {
+const account = {
+  id: 1,
+  name: "Everyday checking",
+  type: "asset",
+  subtype: "cash",
+  archived_on: null,
+  created_at: "2026-01-01T00:00:00",
+  as_of: "2026-07-19",
+  balance: "954.10",
+  balance_state: "normal",
+  opening_balance: "1000.00",
+  opening_date: "2026-01-01",
+  opening_activity_id: 1,
+  currency: "USD",
+};
+
+const emptyPage = {
+  activities: [],
+  page: { limit: 100, offset: 0, total: 0 },
+};
+
+function route() {
+  return document.querySelector<HTMLElement>(
+    '[data-route="transactions"].is-active',
+  )!;
+}
+
+describe("activity workflow", () => {
+  it("renders semantic account references and calculated effects", async () => {
+    window.history.replaceState({}, "", "/activity?kind=expense");
     mockFetch({
-      "/api/dashboard": dashboardPayload({}),
-      "/api/transactions": { transactions: [] },
-    });
-
-    render(<App />);
-    await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions|Activity/i }),
-    );
-
-    const emptyState = (
-      await screen.findByText("No transactions yet")
-    ).closest<HTMLElement>(".empty-state")!;
-    expect(emptyState).toHaveTextContent(
-      "Add your first entry for this period to start building your history.",
-    );
-    expect(
-      within(emptyState).getByRole("button", { name: "Add transaction" }),
-    ).toBeVisible();
-    expect(emptyState).not.toHaveTextContent("TRANSACTIONS.EMPTY.EYEBROW");
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Switch to Turkish" }),
-    );
-    expect(await screen.findByText("Henüz işlem yok")).toBeVisible();
-    expect(
-      screen.getByText(
-        "Bu dönem için ilk işleminizi ekleyerek geçmişinizi oluşturmaya başlayın.",
-      ),
-    ).toBeVisible();
-  });
-
-  it("distinguishes a search miss and clears the query to restore records", async () => {
-    mockFetch({
-      "/api/dashboard": dashboardPayload({}),
-      "/api/transactions": { transactions: [transaction()] },
-    });
-
-    render(<App />);
-    await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions|Activity/i }),
-    );
-    const search = await screen.findByRole("searchbox");
-    await userEvent.type(search, "does not exist");
-
-    const emptyState = (
-      await screen.findByText("No matching transactions")
-    ).closest<HTMLElement>(".empty-state")!;
-    expect(emptyState).toHaveTextContent(
-      "Try a different search or clear your filters.",
-    );
-    expect(
-      within(emptyState).queryByRole("button", { name: "Add transaction" }),
-    ).toBeNull();
-    await userEvent.click(
-      within(emptyState).getByRole("button", {
-        name: "Clear search and filters",
-      }),
-    );
-
-    expect(search).toHaveValue("");
-    expect(await within(activeRoute()).findByText("Groceries")).toBeVisible();
-  });
-
-  it("retries a failed transaction resource load", async () => {
-    let transactionAttempts = 0;
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.startsWith("/api/transactions")) {
-        transactionAttempts += 1;
-        if (transactionAttempts === 1) throw new TypeError("Load failed");
-        return response({ transactions: [] });
-      }
-      if (url.startsWith("/api/dashboard")) {
-        return response(dashboardPayload({}));
-      }
-      return response({});
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    render(<App />);
-    await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions|Activity/i }),
-    );
-    const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Load failed");
-    await userEvent.click(within(alert).getByRole("button", { name: "Retry" }));
-
-    expect(await screen.findByText("No transactions yet")).toBeVisible();
-    expect(transactionAttempts).toBe(2);
-  });
-
-  it("opens the shared transaction form from the global create command", async () => {
-    mockFetch({
-      "/api/dashboard": dashboardPayload({}),
-      "/api/transactions": { transactions: [] },
-    });
-
-    render(<App />);
-    await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions|Activity/i }),
-    );
-    act(() =>
-      window.dispatchEvent(new Event("finance-tracker:add-transaction")),
-    );
-
-    expect(
-      await screen.findByRole("dialog", { name: "Add transaction" }),
-    ).toHaveAttribute("open");
-  });
-
-  it("searches the loaded ledger immediately and discloses advanced filters", async () => {
-    mockFetch({
-      "/api/dashboard": dashboardPayload({}),
-      "/api/transactions": {
-        transactions: [
-          transaction(),
-          {
-            ...transaction(),
-            id: 2,
-            category: "Salary",
-            description: "July pay",
-          },
-        ],
+      "/api/settings": { currency: "USD" },
+      "/api/accounts": { accounts: [account] },
+      "/api/activities": {
+        activities: [activity()],
+        page: { limit: 100, offset: 0, total: 1 },
       },
     });
 
     render(<App />);
-    await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions|Activity/i }),
-    );
-    const search = await screen.findByRole("searchbox");
-    await userEvent.type(search, "salary");
 
-    await waitFor(() => {
-      expect(within(activeRoute()).getByText("Salary")).toBeInTheDocument();
-      expect(within(activeRoute()).queryByText("Groceries")).toBeNull();
-    });
-    await userEvent.click(
-      screen.getByRole("button", { name: "Advanced filters" }),
-    );
-    expect(screen.getByLabelText("Transaction filter period")).toBeVisible();
-    const resetFilters = screen.getByRole("button", { name: "Reset filters" });
-    expect(resetFilters).toBeVisible();
-    expect(resetFilters).toBeDisabled();
-    await userEvent.type(
-      within(
-        document.querySelector<HTMLElement>(".transaction-filter-panel")!,
-      ).getByLabelText("Category"),
-      "Food",
-    );
-    await waitFor(() => expect(resetFilters).toBeEnabled());
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Activity" }),
+    ).toBeVisible();
+    await userEvent.type(within(route()).getByLabelText("Search"), "Groceries");
+    expect(await within(route()).findByText("Groceries")).toBeVisible();
+    expect(
+      within(route()).getByRole("button", { name: "Everyday checking" }),
+    ).toBeVisible();
+    expect(within(route()).getByText(/1,000\.00.*954\.10/)).toBeVisible();
+    expect(within(route()).getByLabelText("Kind")).toHaveValue("expense");
   });
 
-  it("summarizes cash movement and groups the timeline by day", async () => {
-    mockFetch({
-      "/api/dashboard": dashboardPayload({}),
-      "/api/transactions": {
-        transactions: [
-          transaction(),
-          {
-            ...transaction(),
-            id: 2,
-            type: "income",
-            amount: "125.00",
-            category: "Freelance",
-            description: "Invoice payment",
-            date: "2026-06-01",
-          },
-        ],
-      },
-    });
-
-    render(<App />);
-    await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions|Activity/i }),
-    );
-
-    const snapshot = await screen.findByRole("region", {
-      name: "Transaction summary",
-    });
-    expect(snapshot).toHaveTextContent("Money in$125.00");
-    expect(snapshot).toHaveTextContent("Money out$45.90");
-    expect(snapshot).toHaveTextContent("Net activity+$79.10");
-    expect(screen.getByText("Friday, June 12")).toBeVisible();
-    expect(screen.getByText("Monday, June 1")).toBeVisible();
-
-    await userEvent.selectOptions(
-      screen.getByLabelText("Sort transactions"),
-      "oldest",
-    );
-    expect(document.querySelector(".ledger-day time")).toHaveTextContent(
-      "Monday, June 1",
-    );
-  });
-
-  it("creates a transaction from a dialog and announces success", async () => {
-    mockCompactLayout();
-    const fetchMock = mockFetch({
-      "/api/dashboard": dashboardPayload({}),
-      "/api/transactions": { transactions: [] },
-    });
-    fetchMock.mockImplementation(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
+  it("requires an account and previews an exact expense effect", async () => {
+    window.history.replaceState({}, "", "/activity");
+    let submitted: Record<string, unknown> | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
-        if (url === "/api/transactions" && init?.method === "POST") {
+        if (url.startsWith("/api/settings"))
+          return response({ currency: "USD" });
+        if (url.startsWith("/api/accounts"))
+          return response({ accounts: [account] });
+        if (url === "/api/activities" && init?.method === "POST") {
+          submitted = JSON.parse(String(init.body));
           return response({
-            notice: "Transaction added to the local ledger.",
-            transaction: transaction(),
+            notice: "Activity added.",
+            notice_code: "activity.created",
+            activity: activity(),
           });
         }
-        if (url.startsWith("/api/transactions")) {
-          return response({ transactions: [] });
-        }
-        return response(dashboardPayload({}));
-      },
+        if (url.startsWith("/api/activities")) return response(emptyPage);
+        return response({});
+      }),
     );
-
     render(<App />);
+    await screen.findByRole("heading", { name: "Activity" });
+
     await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions|Activity/i }),
+      within(route()).getAllByRole("button", { name: "Add activity" })[0],
     );
-    await userEvent.click(
-      within(
-        document.querySelector<HTMLElement>(".compact-app-bar")!,
-      ).getByRole("button", { name: "Add transaction" }),
-    );
-    const dialog = screen.getByRole("dialog", { name: "Add transaction" });
+    const dialog = screen.getByRole("dialog", { name: "Add activity" });
+    expect(within(dialog).getByLabelText("Account")).toBeRequired();
     await userEvent.type(within(dialog).getByLabelText("Amount"), "45.90");
+    await userEvent.selectOptions(
+      within(dialog).getByLabelText("Account"),
+      "1",
+    );
     await userEvent.type(within(dialog).getByLabelText("Category"), "Food");
+    expect(within(dialog).getByText(/954\.10.*908\.20/)).toBeVisible();
     await userEvent.click(
-      within(dialog).getByRole("button", { name: "Add expense" }),
+      within(dialog).getByRole("button", { name: "Add activity" }),
     );
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "Transaction added to the local ledger.",
-      ),
-    );
-  });
-
-  it("makes transaction direction explicit and adapts the primary action", async () => {
-    mockFetch({
-      "/api/dashboard": dashboardPayload({}),
-      "/api/transactions": { transactions: [] },
-    });
-
-    render(<App />);
-    await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions|Activity/i }),
-    );
-    await userEvent.click(
-      screen.getAllByRole("button", { name: "Add transaction" })[0],
-    );
-
-    const dialog = await screen.findByRole("dialog", {
-      name: "Add transaction",
-    });
-    expect(within(dialog).getByText("What are you recording?")).toBeVisible();
-    expect(within(dialog).getByLabelText("Expense")).toBeChecked();
-    expect(within(dialog).queryByText("Private by design")).toBeNull();
-    expect(
-      within(dialog).getByRole("button", { name: "Add expense" }),
-    ).toBeVisible();
-    const amount = within(dialog).getByLabelText("Amount");
-    await userEvent.type(amount, "0.00");
-    expect(amount).toBeInvalid();
-    await userEvent.clear(amount);
-    await userEvent.type(amount, "12a.345");
-    expect(amount).toHaveValue("12.34");
-    expect(amount).toBeValid();
-    await userEvent.clear(amount);
-    await userEvent.type(amount, "1,5");
-    expect(amount).toHaveValue("1.5");
-
-    await userEvent.click(within(dialog).getByLabelText("Income"));
-
-    expect(within(dialog).getByLabelText("Income")).toBeChecked();
-    expect(
-      within(dialog).getByRole("button", { name: "Add income" }),
-    ).toBeVisible();
-    expect(dialog).toHaveClass("entry-dialog-income");
-  });
-
-  it("imports transaction CSV from a dialog and shows row results", async () => {
-    const fetchMock = vi.fn(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = String(input);
-        if (
-          url === "/api/transactions/import-csv/preview" &&
-          init?.method === "POST"
-        ) {
-          return response({
-            valid_count: 2,
-            duplicate_count: 0,
-            invalid_count: 1,
-            rows: [
-              {
-                line_number: 2,
-                status: "valid",
-                transaction: {
-                  type: "income",
-                  amount: "1000.00",
-                  category: "Salary",
-                  description: "Paycheck",
-                  date: "2026-06-01",
-                },
-                original_category: "Salary",
-                error: null,
-              },
-              {
-                line_number: 3,
-                status: "invalid",
-                transaction: null,
-                original_category: null,
-                error: "Amount must be greater than zero.",
-              },
-            ],
-          });
-        }
-        if (
-          url.startsWith("/api/transactions/import-csv?") &&
-          init?.method === "POST"
-        ) {
-          return response({
-            notice: "Transaction CSV import finished.",
-            imported_count: 2,
-            skipped_count: 1,
-            errors: ["Line 3: Amount must be greater than zero."],
-          });
-        }
-        if (url.startsWith("/api/transactions")) {
-          return response({ transactions: [] });
-        }
-        return response(dashboardPayload({}));
-      },
-    );
-    vi.stubGlobal("fetch", fetchMock);
-
-    render(<App />);
-    await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions|Activity/i }),
-    );
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Import CSV" }),
-    );
-    const dialog = screen.getByRole("dialog", {
-      name: "Import transaction CSV",
-    });
-    const file = new File(
-      [
-        "type,amount,category,description,date\nincome,1000,Salary,Paycheck,2026-06-01\n",
-      ],
-      "transactions.csv",
-      { type: "text/csv" },
-    );
-
-    await userEvent.upload(within(dialog).getByLabelText("CSV file"), file);
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Preview CSV" }),
-    );
-
-    expect(await within(dialog).findByRole("status")).toHaveTextContent(
-      "2 valid, 0 duplicate, 1 invalid.",
-    );
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Import CSV" }),
-    );
-
-    expect(await within(dialog).findByRole("status")).toHaveTextContent(
-      "Imported 2, skipped 1.",
-    );
-    expect(
-      within(dialog).getByText("Line 3: Amount must be greater than zero."),
-    ).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/transactions/import-csv?allow_duplicates=false",
-      expect.objectContaining({ body: expect.stringContaining("income,1000") }),
-    );
-  });
-
-  it("opens and cancels delete confirmation", async () => {
-    mockFetch({
-      "/api/dashboard": dashboardPayload({}),
-      "/api/transactions": { transactions: [transaction()] },
-    });
-
-    render(<App />);
-    await userEvent.click(
-      await screen.findByRole("link", { name: /Transactions|Activity/i }),
-    );
-    await within(activeRoute()).findByText("Groceries");
-    expect(
-      within(activeRoute()).queryByRole("button", {
-        name: /Edit .+ transaction/,
+      expect(submitted).toMatchObject({
+        kind: "expense",
+        amount: "45.90",
+        category: "Food",
+        account_id: 1,
       }),
-    ).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Actions" }));
-    const popover = document.getElementById("row-actions-1");
-    if (popover && typeof (popover as any).showPopover === "function") {
-      (popover as any).showPopover();
-    } else if (popover) {
-      // Fallback: manually strip popover attribute if JSDOM doesn't support the API
-      popover.removeAttribute("popover");
-    }
-    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
-    const dialog = screen.getByRole("dialog", { name: "Delete transaction" });
+    );
+  });
 
-    expect(dialog).toHaveAttribute("open");
-    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  it("offers transfer creation with distinct account fields", async () => {
+    window.history.replaceState({}, "", "/activity");
+    const savings = {
+      ...account,
+      id: 2,
+      name: "Emergency fund",
+      balance: "500.00",
+    };
+    mockFetch({
+      "/api/settings": { currency: "USD" },
+      "/api/accounts": { accounts: [account, savings] },
+      "/api/activities": emptyPage,
+    });
+    render(<App />);
+    await screen.findByRole("heading", { name: "Activity" });
 
-    await waitFor(() => expect(dialog).not.toHaveAttribute("open"));
+    await userEvent.click(
+      within(route()).getAllByRole("button", { name: "Add activity" })[0],
+    );
+    const dialog = screen.getByRole("dialog", { name: "Add activity" });
+    await userEvent.click(
+      within(dialog).getByRole("radio", { name: "Transfer" }),
+    );
+    expect(within(dialog).getByLabelText("From account")).toBeRequired();
+    expect(within(dialog).getByLabelText("To account")).toBeRequired();
+    expect(within(dialog).queryByLabelText("Category")).toBeNull();
+  });
+
+  it("keeps openings read-only", async () => {
+    window.history.replaceState({}, "", "/activity");
+    const opening = {
+      ...activity(),
+      id: 7,
+      kind: "opening",
+      amount: "1000.00",
+      category: null,
+      description: "Opening balance",
+      cashflow_effect: "0.00",
+      net_worth_effect: "1000.00",
+    };
+    mockFetch({
+      "/api/settings": { currency: "USD" },
+      "/api/accounts": { accounts: [account] },
+      "/api/activities": {
+        activities: [opening],
+        page: { limit: 100, offset: 0, total: 1 },
+      },
+    });
+    render(<App />);
+    expect(await screen.findByText("Read-only")).toBeVisible();
+    expect(within(route()).queryByRole("button", { name: "Edit" })).toBeNull();
+  });
+
+  it("opens account-aware CSV preview and exports the active filters", async () => {
+    window.history.replaceState({}, "", "/activity?account_id=1");
+    mockFetch({
+      "/api/settings": { currency: "USD" },
+      "/api/accounts": { accounts: [account] },
+      "/api/activities": emptyPage,
+    });
+    render(<App />);
+    await screen.findByRole("heading", { name: "Activity" });
+    expect(
+      within(route()).getByRole("link", { name: "Export CSV" }),
+    ).toHaveAttribute("href", expect.stringContaining("account_id=1"));
+    await userEvent.click(
+      within(route()).getByRole("button", { name: "Import CSV" }),
+    );
+    expect(
+      screen.getByRole("dialog", { name: "Import activity CSV" }),
+    ).toHaveAttribute("open");
+  });
+
+  it("restricts the amount field to maximum two decimal places", async () => {
+    window.history.replaceState({}, "", "/activity");
+    mockFetch({
+      "/api/settings": { currency: "USD" },
+      "/api/accounts": { accounts: [account] },
+      "/api/activities": emptyPage,
+    });
+    render(<App />);
+    await screen.findByRole("heading", { name: "Activity" });
+
+    await userEvent.click(
+      within(route()).getAllByRole("button", { name: "Add activity" })[0],
+    );
+    const dialog = screen.getByRole("dialog", { name: "Add activity" });
+    const amountInput = within(dialog).getByLabelText(
+      "Amount",
+    ) as HTMLInputElement;
+
+    await userEvent.type(amountInput, "12.345");
+    expect(amountInput.value).toBe("12.34");
+
+    await userEvent.clear(amountInput);
+    await userEvent.type(amountInput, "abc");
+    expect(amountInput.value).toBe("");
   });
 });
-
-function activeRoute() {
-  return document.querySelector<HTMLElement>(".route-stage.is-active")!;
-}

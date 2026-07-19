@@ -1,11 +1,17 @@
 import type {
   AccountInput,
+  AccountCreateInput,
   AccountMutationResponse,
   AccountRecord,
   BalanceSnapshot,
   BalanceCheckInResponse,
   BalanceSnapshotMutationResponse,
   ApiErrorBody,
+  ActivityImportPreview,
+  ActivityInput,
+  ActivityMutationResponse,
+  ActivityRecord,
+  ActivityKind,
   BudgetInput,
   BudgetMutationResponse,
   BudgetRecord,
@@ -42,6 +48,15 @@ export interface TransactionFilters {
   transaction_type?: TransactionType | "";
 }
 
+export interface ActivityFilters {
+  month?: number | "";
+  year?: number | "";
+  category?: string;
+  kind?: ActivityKind | "";
+  account_id?: number | "";
+  search?: string;
+}
+
 export interface BudgetFilters {
   month?: number | "";
   year?: number | "";
@@ -64,13 +79,16 @@ export const api = {
       signal,
     }),
 
-  createAccount: (payload: AccountInput) =>
+  createAccount: (payload: AccountInput | AccountCreateInput) =>
     request<AccountMutationResponse>("/api/accounts", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(normalizeAccountInput(payload)),
     }),
 
-  updateAccount: (id: number, payload: { name: string }) =>
+  updateAccount: (
+    id: number,
+    payload: { name?: string; subtype?: AccountCreateInput["subtype"] },
+  ) =>
     request<AccountMutationResponse>(`/api/accounts/${id}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
@@ -83,11 +101,11 @@ export const api = {
 
   archiveAccount: (
     id: number,
-    payload: { closing_date: string; confirm_zero_balance: boolean },
+    payload: { closing_date: string; confirm_zero_balance?: boolean },
   ) =>
     request<AccountMutationResponse>(`/api/accounts/${id}/archive`, {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ closing_date: payload.closing_date }),
     }),
 
   balanceSnapshots: (id: number, signal?: AbortSignal) =>
@@ -148,6 +166,44 @@ export const api = {
         body: JSON.stringify({ updates }),
       },
     ),
+
+  activities: (filters: ActivityFilters = {}, signal?: AbortSignal) =>
+    request<{ activities: ActivityRecord[]; page: PageMetadata }>(
+      `/api/activities?${query(filters)}`,
+      { signal },
+    ),
+
+  previewActivitiesCsv: (csvText: string) =>
+    request<ActivityImportPreview>("/api/activities/import-csv/preview", {
+      method: "POST",
+      body: csvText,
+      headers: { "Content-Type": "text/csv; charset=utf-8" },
+    }),
+
+  importActivitiesCsv: (csvText: string, allowDuplicates = false) =>
+    request<ImportSummary>(
+      `/api/activities/import-csv?${query({ allow_duplicates: allowDuplicates })}`,
+      {
+        method: "POST",
+        body: csvText,
+        headers: { "Content-Type": "text/csv; charset=utf-8" },
+      },
+    ),
+
+  createActivity: (payload: ActivityInput) =>
+    request<ActivityMutationResponse>("/api/activities", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  updateActivity: (id: number, payload: ActivityInput) =>
+    request<ActivityMutationResponse>(`/api/activities/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  deleteActivity: (id: number) =>
+    request<NoticeResponse>(`/api/activities/${id}`, { method: "DELETE" }),
 
   transactions: (filters: TransactionFilters = {}, signal?: AbortSignal) =>
     request<{ transactions: TransactionRecord[]; page: PageMetadata }>(
@@ -270,6 +326,19 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 };
+
+function normalizeAccountInput(
+  payload: AccountInput | AccountCreateInput,
+): AccountCreateInput {
+  if ("opening_balance" in payload) return payload;
+  return {
+    name: payload.name,
+    type: payload.type,
+    subtype: "other",
+    opening_balance: payload.initial_balance,
+    opening_date: payload.initial_balance_date,
+  };
+}
 
 export function query(values: object): string {
   const params = new URLSearchParams();

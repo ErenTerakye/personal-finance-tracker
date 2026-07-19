@@ -12,11 +12,14 @@ installAppTestLifecycle();
 
 const recurringTemplate = {
   id: 1,
-  type: "expense",
+  kind: "expense",
   amount: "1200.00",
   category: "Housing",
   description: "Monthly rent",
   day_of_month: 1,
+  account_id: 1,
+  from_account_id: null,
+  to_account_id: null,
   active: true,
   created_at: "2026-07-01T00:00:00",
   currency: "USD",
@@ -27,6 +30,7 @@ describe("Manage workflows", () => {
     window.history.replaceState({}, "", "/manage/automations");
     mockFetch({
       "/api/settings": { currency: "USD" },
+      "/api/accounts": { accounts: [] },
       "/api/recurring-templates": { templates: [recurringTemplate] },
     });
 
@@ -77,10 +81,14 @@ describe("Manage workflows", () => {
         notice_code: "recurring.applied",
         created_count: 1,
         skipped_duplicates: 0,
-        transactions: [],
+        activities: [],
       },
       "/api/recurring-templates": { templates: [recurringTemplate] },
-      "/api/transactions": { transactions: [] },
+      "/api/accounts": { accounts: [] },
+      "/api/activities": {
+        activities: [],
+        page: { limit: 100, offset: 0, total: 0 },
+      },
     });
 
     render(<App />);
@@ -100,11 +108,11 @@ describe("Manage workflows", () => {
     );
     await userEvent.click(
       await screen.findByRole("button", {
-        name: "View created transactions",
+        name: "View created activity",
       }),
     );
 
-    expect(window.location.pathname).toBe("/transactions");
+    expect(window.location.pathname).toBe("/activity");
     expect(window.location.search).toContain("month=7");
     expect(window.location.search).toContain("year=2026");
   });
@@ -118,7 +126,7 @@ describe("Manage workflows", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Data" }),
     ).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Transactions" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Activity" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Budgets" })).toBeVisible();
     expect(screen.getAllByRole("link", { name: "Export CSV" })).toHaveLength(2);
     expect(screen.getByText("Your ledger stays local")).toBeVisible();

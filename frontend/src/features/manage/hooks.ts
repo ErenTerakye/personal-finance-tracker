@@ -104,7 +104,7 @@ export function useSaveRecurringTemplate(
     (input: RecurringTemplateInput) => api.createRecurringTemplate(input),
     {
       onSuccess: (response) => {
-        invalidateResourceTags(resourceTags.transactions);
+        invalidateResourceTags(resourceTags.activities);
         onSuccess(response);
       },
     },
@@ -116,7 +116,7 @@ export function useDeleteRecurringTemplate(
 ) {
   return useMutation((id: number) => api.deleteRecurringTemplate(id), {
     onSuccess: (response) => {
-      invalidateResourceTags(resourceTags.transactions);
+      invalidateResourceTags(resourceTags.activities);
       onSuccess(response);
     },
   });
@@ -142,7 +142,7 @@ export function useApplyRecurringTemplates(
     {
       onSuccess: (response) => {
         invalidateResourceTags(
-          resourceTags.transactions,
+          resourceTags.activities,
           resourceTags.dashboard,
           resourceTags.budgets,
         );

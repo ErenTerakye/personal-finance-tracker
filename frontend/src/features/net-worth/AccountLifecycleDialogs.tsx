@@ -17,12 +17,14 @@ import { ModalDialog } from "../../shared/components/dialogs";
 import { ErrorBanner } from "../../shared/components/feedback";
 import { Field } from "../../shared/components/fields";
 import { formatDate, todayIso } from "../../shared/format/dates";
-import { money } from "../../shared/format/money";
+import { money, negateMoney, subtractMoney } from "../../shared/format/money";
 import { useMutation } from "../../shared/hooks/useMutation";
 import { useResource } from "../../shared/hooks/useResource";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import type {
-  AccountInput,
+  AccountCreateInput,
+  AccountSubtype,
+  AccountType,
   AccountRecord,
   BalanceSnapshot,
   NetWorthAccountAnalytics,
@@ -66,9 +68,9 @@ export function AccountInspectorDialog({
         <div>
           <dt>{t("netWorth.inspector.balance")}</dt>
           <dd>
-            {account.resolved_balance === null
+            {account.resolved_balance == null
               ? t("netWorth.account.unresolved")
-              : money(account.resolved_balance)}
+              : money(account.resolved_balance ?? 0)}
           </dd>
         </div>
         <div>
@@ -85,7 +87,15 @@ export function AccountInspectorDialog({
           id="account-inspector-history"
           className="button secondary"
           type="button"
-          onClick={() => onAction({ kind: "history", account })}
+          onClick={() => {
+            onClose();
+            window.history.pushState(
+              {},
+              "",
+              `/activity?account_id=${account.id}`,
+            );
+            window.dispatchEvent(new PopStateEvent("popstate"));
+          }}
         >
           <History aria-hidden="true" />
           {t("netWorth.actions.history")}
@@ -123,9 +133,15 @@ export function toAccountRecord(
     id: account.account_id,
     name: account.name,
     type: account.type,
+    subtype: account.type === "asset" ? "other" : "other",
     archived_on: account.archived_on,
     created_at: "",
     as_of: data.summary.as_of,
+    balance: account.current_balance ?? "0.00",
+    balance_state: account.balance_state,
+    opening_balance: "0.00",
+    opening_date: data.summary.as_of,
+    opening_activity_id: 0,
     resolved_balance: account.current_balance,
     resolved_balance_date: account.current_balance_date,
     currency: data.currency,
@@ -134,18 +150,34 @@ export function toAccountRecord(
 
 export function AddAccountDialog({ open, onClose, onChanged }: DialogProps) {
   const { t } = useI18n();
-  const [form, setForm] = useState<AccountInput>({
+  const [form, setForm] = useState<AccountCreateInput>({
     name: "",
     type: "asset",
-    initial_balance: "",
-    initial_balance_date: todayIso(),
+    subtype: "cash",
+    opening_balance: "",
+    opening_date: todayIso(),
   });
-  const mutation = useMutation(api.createAccount, { onSuccess: onChanged });
+  const mutation = useMutation(() => api.createAccount(form), {
+    onSuccess: onChanged,
+  });
+  const subtypes =
+    form.type === "asset"
+      ? ["cash", "investment", "property", "other"]
+      : ["credit_card", "loan", "other"];
+
+  function changeType(type: AccountType) {
+    setForm({
+      ...form,
+      type,
+      subtype: (type === "asset" ? "cash" : "credit_card") as AccountSubtype,
+    });
+  }
+
   return (
     <ModalDialog
       open={open}
       title={t("netWorth.dialog.addTitle")}
-      description={t("netWorth.dialog.addDescription")}
+      description={t("accounts.addDescription")}
       onClose={onClose}
       initialFocusId="account-name"
       className="entry-dialog account-setup-dialog"
@@ -157,13 +189,13 @@ export function AddAccountDialog({ open, onClose, onChanged }: DialogProps) {
         className="net-worth-form account-setup-form"
         onSubmit={(event) => {
           event.preventDefault();
-          void mutation.mutate(form);
+          void mutation.mutate(undefined);
         }}
       >
         <div className="account-setup-content">
           <div className="account-setup-fields">
             <fieldset className="account-kind-fieldset">
-              <legend>{t("netWorth.form.type")}</legend>
+              <legend>{t("accounts.type")}</legend>
               <p id="account-type-hint">{t("netWorth.form.typeHint")}</p>
               <div className="account-type-options">
                 {(["asset", "liability"] as const).map((type) => {
@@ -173,10 +205,9 @@ export function AddAccountDialog({ open, onClose, onChanged }: DialogProps) {
                       <input
                         type="radio"
                         name="account-type"
-                        value={type}
-                        aria-describedby="account-type-hint"
                         checked={form.type === type}
-                        onChange={() => setForm({ ...form, type })}
+                        aria-label={t(`netWorth.account.${type}`)}
+                        onChange={() => changeType(type)}
                       />
                       <span>
                         <Icon aria-hidden="true" />
@@ -194,17 +225,29 @@ export function AddAccountDialog({ open, onClose, onChanged }: DialogProps) {
                 })}
               </div>
             </fieldset>
-            <Field
-              id="account-name"
-              label={t("netWorth.form.name")}
-              hint={t("netWorth.form.nameHint")}
-            >
+            <Field id="account-subtype" label={t("accounts.subtype")}>
+              <select
+                id="account-subtype"
+                required
+                value={form.subtype}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    subtype: event.target.value as AccountSubtype,
+                  })
+                }
+              >
+                {subtypes.map((subtype) => (
+                  <option key={subtype} value={subtype}>
+                    {t(`accounts.subtypes.${subtype}`)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field id="account-name" label={t("accounts.name")}>
               <input
                 id="account-name"
-                name="name"
                 required
-                autoComplete="off"
-                enterKeyHint="next"
                 value={form.name}
                 onChange={(event) =>
                   setForm({ ...form, name: event.target.value })
@@ -212,45 +255,30 @@ export function AddAccountDialog({ open, onClose, onChanged }: DialogProps) {
               />
             </Field>
             <div className="account-opening-fields">
-              <Field
-                id="initial-balance"
-                label={t("netWorth.form.initialBalance")}
-                hint={
-                  form.type === "liability"
-                    ? t("netWorth.form.liabilityHint")
-                    : t("netWorth.form.balanceHint")
-                }
-              >
+              <Field id="account-opening" label={t("accounts.openingBalance")}>
                 <input
-                  id="initial-balance"
-                  name="initial_balance"
-                  inputMode="decimal"
-                  pattern="[0-9]+(?:\.[0-9]{1,2})?"
+                  id="account-opening"
                   required
-                  enterKeyHint="next"
-                  value={form.initial_balance}
+                  inputMode="decimal"
+                  pattern="-?[0-9]+(?:\.[0-9]{1,2})?"
+                  value={form.opening_balance}
                   onChange={(event) =>
-                    setForm({ ...form, initial_balance: event.target.value })
+                    setForm({ ...form, opening_balance: event.target.value })
                   }
                 />
               </Field>
               <Field
-                id="initial-date"
-                label={t("netWorth.form.effectiveDate")}
-                hint={t("netWorth.form.dateHint")}
+                id="account-opening-date"
+                label={t("accounts.openingDate")}
               >
                 <input
-                  id="initial-date"
-                  name="initial_balance_date"
+                  id="account-opening-date"
+                  required
                   type="date"
                   max={todayIso()}
-                  required
-                  value={form.initial_balance_date}
+                  value={form.opening_date}
                   onChange={(event) =>
-                    setForm({
-                      ...form,
-                      initial_balance_date: event.target.value,
-                    })
+                    setForm({ ...form, opening_date: event.target.value })
                   }
                 />
               </Field>
@@ -306,23 +334,32 @@ export function BalanceDialog({
     snapshot?.effective_date ?? todayIso(),
   );
   const mutation = useMutation(
-    () => api.setBalanceSnapshot(account.id, effectiveDate, amount),
+    () =>
+      api.createActivity({
+        kind: "adjustment",
+        amount,
+        date: effectiveDate,
+        account_id: account.id,
+        description: "Balance update",
+      }),
     { onSuccess: onChanged },
   );
+
+  let netWorth = "0.00";
+  try {
+    const delta = subtractMoney(amount || "0", account.balance);
+    netWorth = account.type === "asset" ? delta : negateMoney(delta);
+  } catch {
+    // Input validation prevents invalid submission.
+  }
+
   return (
     <ModalDialog
       open={open}
-      title={
-        snapshot
-          ? t("netWorth.dialog.correctTitle")
-          : t("netWorth.dialog.balanceTitle")
-      }
-      description={t("netWorth.dialog.balanceDescription", {
-        name: account.name,
-        type: t(`netWorth.account.${account.type}`),
-      })}
+      title={t("accounts.updateBalanceFor", { name: account.name })}
+      description={t("accounts.adjustDescription")}
       onClose={onClose}
-      initialFocusId="balance-amount"
+      initialFocusId="observed-balance"
     >
       {mutation.status === "error" ? (
         <ErrorBanner message={mutation.error.message} />
@@ -334,22 +371,17 @@ export function BalanceDialog({
           void mutation.mutate(undefined);
         }}
       >
-        <Field id="balance-amount" label={t("common.amount")}>
+        <Field id="observed-balance" label={t("activity.observedBalance")}>
           <input
-            id="balance-amount"
-            name="amount"
-            inputMode="decimal"
-            pattern="[0-9]+(?:\.[0-9]{1,2})?"
+            id="observed-balance"
             required
+            inputMode="decimal"
+            pattern="-?[0-9]+(?:\.[0-9]{1,2})?"
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
           />
         </Field>
-        <Field
-          id="balance-date"
-          label={t("netWorth.form.effectiveDate")}
-          hint={t("netWorth.form.replaceHint")}
-        >
+        <Field id="balance-date" label={t("common.date")}>
           <input
             id="balance-date"
             name="effective_date"
@@ -361,6 +393,15 @@ export function BalanceDialog({
             onChange={(event) => setEffectiveDate(event.target.value)}
           />
         </Field>
+        <output className="projection-card" aria-live="polite">
+          <strong>{t("activity.projected")}</strong>
+          <span>
+            {money(account.balance)} → {money(amount || account.balance)}
+          </span>
+          <span>
+            {t("accounts.netWorthEffect")}: {money(netWorth)}
+          </span>
+        </output>
         <DialogActions
           busy={mutation.status === "pending"}
           onClose={onClose}

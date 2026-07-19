@@ -34,6 +34,8 @@
   .entry-kind-option {
     position: relative;
     min-inline-size: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .entry-kind-option input {
@@ -49,6 +51,7 @@
     align-items: center;
     gap: 0.7rem;
     min-block-size: 4.4rem;
+    flex-grow: 1;
     padding: 0.7rem;
     color: var(--muted);
     background: color-mix(in srgb, var(--surface-2) 72%, var(--surface));
@@ -103,12 +106,38 @@
     border-color: color-mix(in srgb, var(--cash) 48%, var(--rule));
   }
 
+  .entry-kind-option.transfer input:checked + .entry-kind-card {
+    color: var(--action);
+    background: color-mix(in srgb, var(--action) 7%, var(--surface));
+    border-color: color-mix(in srgb, var(--action) 48%, var(--rule));
+  }
+
+  .entry-kind-option.adjustment input:checked + .entry-kind-card {
+    color: var(--warning);
+    background: color-mix(in srgb, var(--warning) 7%, var(--surface));
+    border-color: color-mix(in srgb, var(--warning) 48%, var(--rule));
+  }
+
   .entry-kind-option.expense input:checked + .entry-kind-card .entry-kind-icon {
     color: var(--expenses);
   }
 
   .entry-kind-option.income input:checked + .entry-kind-card .entry-kind-icon {
     color: var(--cash);
+  }
+
+  .entry-kind-option.transfer
+    input:checked
+    + .entry-kind-card
+    .entry-kind-icon {
+    color: var(--action);
+  }
+
+  .entry-kind-option.adjustment
+    input:checked
+    + .entry-kind-card
+    .entry-kind-icon {
+    color: var(--warning);
   }
 
   .entry-amount-stage {
@@ -147,7 +176,7 @@
     flex: none;
     color: var(--entry-accent);
     font-family: var(--font-mono);
-    font-size: clamp(1.4rem, 5vw, 2rem);
+    font-size: clamp(1.7rem, 7vw, 2.55rem);
     font-weight: var(--font-weight-bold);
     line-height: 1;
   }
@@ -306,6 +335,89 @@
 
     .entry-actions .button {
       min-inline-size: 0;
+    }
+  }
+
+  .activity-composer-dialog {
+    inline-size: min(58rem, calc(100% - 1.5rem)) !important;
+    max-block-size: min(calc(100dvh - 1.5rem), 54rem) !important;
+  }
+
+  .activity-composer-form {
+    display: block;
+  }
+
+  .activity-composer-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(15.5rem, 0.75fr);
+    gap: clamp(1rem, 3vw, 1.75rem);
+    padding: clamp(1rem, 3vw, 1.75rem) clamp(1rem, 4vw, 2rem);
+  }
+
+  .activity-composer-fields {
+    display: grid;
+    gap: 1.25rem;
+    align-content: start;
+    min-inline-size: 0;
+  }
+
+  .activity-composer-guide {
+    display: grid;
+    align-content: start;
+    gap: 0.75rem;
+    padding: clamp(1.25rem, 4vw, 2rem);
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+
+  .activity-composer-actions {
+    position: sticky;
+    z-index: 2;
+    inset-block-end: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem clamp(1.25rem, 4vw, 2rem);
+    background: var(--surface);
+    border-block-start: 1px solid var(--rule);
+    flex-shrink: 0;
+  }
+
+  .activity-composer-actions .entry-actions {
+    grid-column: 2;
+    display: flex;
+    gap: 0.55rem;
+  }
+
+  .activity-composer-dialog .entry-kind-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  @media (max-width: 48rem) {
+    .activity-composer-body {
+      grid-template-columns: 1fr;
+    }
+
+    .activity-composer-dialog .entry-kind-options {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 34rem) {
+    .activity-composer-dialog .entry-kind-options {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .activity-composer-actions {
+      grid-template-columns: 1fr;
+    }
+
+    .activity-composer-actions .entry-actions {
+      grid-column: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
     }
   }
 }

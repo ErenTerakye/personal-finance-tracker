@@ -36,7 +36,7 @@ import {
 import { useMediaQuery } from "../../shared/hooks/useMediaQuery";
 import { periodLabel } from "../../shared/format/periods";
 import { useI18n } from "../../shared/i18n/I18nProvider";
-import type { DashboardData, TransactionRecord } from "../../types";
+import type { ActivityRecord, DashboardData } from "../../types";
 import { preloadDashboard, useDashboard } from "./useDashboard";
 import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
 import { RollingNumber } from "../../shared/components/RollingNumber";
@@ -64,7 +64,7 @@ export function DashboardView({
   onReviewAccounts: (asOf?: string) => void;
   onReviewBudget: (target: BudgetReviewTarget) => void;
   onReviewCategory: (category: string) => void;
-  onReviewTransaction: (transaction: TransactionRecord) => void;
+  onReviewTransaction: (transaction: ActivityRecord) => void;
   onViewTransactions: () => void;
 }) {
   const { t, locale, tUpper } = useI18n();
@@ -351,7 +351,7 @@ export function DashboardView({
             }
           >
             <ActivityList
-              transactions={data.recent_transactions}
+              transactions={data.recent_activities ?? []}
               onSelect={onReviewTransaction}
             />
           </Panel>

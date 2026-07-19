@@ -11,12 +11,12 @@ from pathlib import Path
 
 import typer
 
-from finance_tracker.cli.accounts import account_balance_check_in
+from finance_tracker.cli.accounts import account_adjust
+from finance_tracker.cli.activities import activity_add, activity_list
 from finance_tracker.cli.budgets import budget_status
 from finance_tracker.cli.common import account_service
 from finance_tracker.cli.overview import _json_data
 from finance_tracker.cli.runtime import current_runtime
-from finance_tracker.cli.transactions import add, list_transactions
 from finance_tracker.config import resolve_db_path
 from finance_tracker.exceptions import FinanceTrackerError
 from finance_tracker.reports import format_money
@@ -26,9 +26,7 @@ from finance_tracker.services import OverviewService
 def is_interactive_terminal() -> bool:
     """Return whether the inline home may safely ask for input."""
     return (
-        sys.stdin.isatty()
-        and sys.stdout.isatty()
-        and os.environ.get("TERM", "").lower() != "dumb"
+        sys.stdin.isatty() and sys.stdout.isatty() and os.environ.get("TERM", "").lower() != "dumb"
     )
 
 
@@ -68,25 +66,29 @@ def _render_snapshot(snapshot) -> None:
     )
     typer.echo("")
     typer.echo(
-        f"{report.transaction_count} transactions · "
-        f"{attention_count} budgets need attention"
+        f"{report.transaction_count} cashflow activities · {attention_count} budgets need attention"
     )
-    if snapshot.recent_transactions:
+    if snapshot.recent_activities:
         typer.echo("")
         typer.secho("Recent", bold=True)
-        for transaction in snapshot.recent_transactions[:3]:
-            marker = "+" if transaction.type.value == "income" else "−"
-            description = transaction.description or transaction.category
-            amount = format_money(transaction.amount, snapshot.currency)
-            typer.echo(
-                f"{transaction.date.isoformat()}  {marker}{amount}  {description}"
+        for record in snapshot.recent_activities[:3]:
+            activity = record.activity
+            marker = (
+                "+"
+                if activity.kind.value == "income"
+                else "−"
+                if activity.kind.value == "expense"
+                else "•"
             )
+            description = activity.description or activity.category or activity.kind.value
+            amount = format_money(activity.amount, snapshot.currency)
+            typer.echo(f"{activity.date.isoformat()}  {marker}{amount}  {description}")
 
 
 def _render_command_hints() -> None:
     typer.echo("")
-    typer.echo("Next: transaction add · transaction list · budget status")
-    typer.echo("      account balance check-in")
+    typer.echo("Next: activity add · activity transfer · activity list · budget status")
+    typer.echo("      account adjust")
     typer.echo("Workspace: finance-tracker tui")
 
 
@@ -104,16 +106,16 @@ def _run_action(action: str | None, launch_workspace: Callable[[Path | None], No
     if action == "add":
         _guided_transaction_add()
         return
-    if action == "transactions":
+    if action == "activity":
         today = date.today()
-        list_transactions(month=today.month, year=today.year, db_path=current_runtime().db_path)
+        activity_list(month=today.month, year=today.year, db_path=current_runtime().db_path)
         return
     if action == "budgets":
         today = date.today()
         budget_status(month=today.month, year=today.year, db_path=current_runtime().db_path)
         return
-    if action == "balances":
-        _guided_balance_check_in()
+    if action == "adjust":
+        _guided_account_adjustment()
         return
     if action == "workspace":
         launch_workspace(current_runtime().db_path)
@@ -121,24 +123,33 @@ def _run_action(action: str | None, launch_workspace: Callable[[Path | None], No
 
 def _guided_transaction_add() -> None:
     typer.echo("")
-    typer.secho("Add transaction", bold=True)
-    transaction_type = typer.prompt("Type (income/expense)", default="expense")
+    typer.secho("Add activity", bold=True)
+    transaction_type = typer.prompt("Kind (income/expense)", default="expense")
     amount = typer.prompt("Amount")
     category = typer.prompt("Category")
     description = typer.prompt("Description", default="", show_default=False)
     transaction_date = typer.prompt("Date", default=date.today().isoformat())
+    accounts = account_service(current_runtime().db_path).list_accounts()
+    if not accounts:
+        typer.echo("Create an account first with 'finance-tracker account add'.")
+        return
+    typer.echo(
+        "Accounts: " + ", ".join(f"{item.account.id}={item.account.name}" for item in accounts)
+    )
+    account_id = typer.prompt("Account ID", type=int)
     typer.echo("")
-    add(
-        transaction_type=transaction_type,
+    activity_add(
+        kind=transaction_type,
         amount=amount,
+        account_id=account_id,
         category=category,
         description=description,
-        transaction_date=transaction_date,
+        activity_date=transaction_date,
         db_path=current_runtime().db_path,
     )
 
 
-def _guided_balance_check_in() -> None:
+def _guided_account_adjustment() -> None:
     runtime = current_runtime()
     try:
         accounts = account_service(runtime.db_path).list_accounts(include_archived=False)
@@ -149,17 +160,21 @@ def _guided_balance_check_in() -> None:
         return
 
     typer.echo("")
-    typer.secho("Balance check-in", bold=True)
+    typer.secho("Update account balance", bold=True)
+    typer.echo(
+        "Accounts: " + ", ".join(f"{item.account.id}={item.account.name}" for item in accounts)
+    )
+    account_id = typer.prompt("Account ID", type=int)
     effective_date = typer.prompt("Date", default=date.today().isoformat())
-    balances: list[str] = []
-    for item in accounts:
-        assert item.account.id is not None
-        default = str(item.balance) if item.balance is not None else "0"
-        amount = typer.prompt(item.account.name, default=default)
-        balances.append(f"{item.account.id}={amount}")
+    selected = next((item for item in accounts if item.account.id == account_id), None)
+    if selected is None:
+        typer.echo("Unknown account ID.")
+        return
+    amount = typer.prompt("Observed balance", default=str(selected.balance))
     typer.echo("")
-    account_balance_check_in(
-        balances=balances,
+    account_adjust(
+        account_id=account_id,
+        observed_balance=amount,
         effective_date=effective_date,
         db_path=runtime.db_path,
     )

@@ -7,7 +7,7 @@ import typer
 
 from finance_tracker.cli.common import DbPathOption
 from finance_tracker.config import resolve_db_path
-from finance_tracker.services import TransactionService
+from finance_tracker.services import ActivityService
 
 
 def _is_loopback_host(host: str) -> bool:
@@ -23,7 +23,7 @@ def _is_loopback_host(host: str) -> bool:
 def init(db_path: DbPathOption = None) -> None:
     """Initialize the SQLite database."""
     resolved_path = resolve_db_path(db_path)
-    TransactionService(resolved_path)
+    ActivityService(resolved_path)
     typer.echo(f"Initialized database at {resolved_path}")
 
 
@@ -81,6 +81,7 @@ def web(
         )
     if reload:
         import os
+
         os.environ["FINANCE_TRACKER_DB"] = str(resolved_path)
         uvicorn.run(
             "finance_tracker.web.app:create_app",

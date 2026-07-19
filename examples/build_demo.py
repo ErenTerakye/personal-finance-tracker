@@ -9,18 +9,18 @@ from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from finance_tracker.csv_io import import_budgets_csv, import_transactions_csv
+from finance_tracker.csv_io import import_activities_csv, import_budgets_csv
 from finance_tracker.services import (
     AccountService,
+    ActivityService,
     BudgetService,
     CategoryRuleService,
     RecurringTemplateService,
     SettingsService,
-    TransactionService,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-TRANSACTIONS_CSV = PROJECT_ROOT / "examples" / "sample_transactions.csv"
+ACTIVITIES_CSV = PROJECT_ROOT / "examples" / "sample_activities.csv"
 BUDGETS_CSV = PROJECT_ROOT / "examples" / "sample_budgets.csv"
 DEMO_MONTH = 7
 DEMO_YEAR = 2026
@@ -39,6 +39,27 @@ RECURRING_TEMPLATES = (
     ("expense", "1500.00", "Rent", "Apartment rent", 2),
     ("expense", "44.99", "streaming", "Streaming and cloud storage", 20),
     ("expense", "35.00", "Fitness", "Community gym membership", 24),
+)
+
+ACCOUNT_SUBTYPES = {
+    "Everyday checking": "cash",
+    "Emergency fund": "cash",
+    "Retirement portfolio": "investment",
+    "Brokerage account": "investment",
+    "Education loan": "loan",
+    "Rewards credit card": "credit_card",
+    "Previous checking account": "cash",
+}
+
+TRANSFERS = (
+    ("2026-01-05", "300.00", "Everyday checking", "Emergency fund", "Monthly savings"),
+    ("2026-02-05", "300.00", "Everyday checking", "Emergency fund", "Monthly savings"),
+    ("2026-03-05", "300.00", "Everyday checking", "Emergency fund", "Monthly savings"),
+    ("2026-04-05", "350.00", "Everyday checking", "Emergency fund", "Monthly savings"),
+    ("2026-05-05", "400.00", "Everyday checking", "Brokerage account", "Brokerage contribution"),
+    ("2026-06-05", "400.00", "Everyday checking", "Brokerage account", "Brokerage contribution"),
+    ("2026-07-05", "200.00", "Everyday checking", "Education loan", "Student loan payment"),
+    ("2026-07-10", "710.00", "Everyday checking", "Rewards credit card", "Card payment"),
 )
 
 
@@ -384,14 +405,14 @@ ARCHIVED_ACCOUNT = (
 
 @dataclass(frozen=True)
 class DemoBuildResult:
-    transaction_count: int
+    activity_count: int
     budget_count: int
     category_rule_count: int
     recurring_template_count: int
     recurring_created_count: int
     recurring_duplicate_count: int
     account_count: int
-    snapshot_count: int
+    adjustment_count: int
 
 
 def build_demo_database(db_path: Path, *, force: bool = False) -> DemoBuildResult:
@@ -401,54 +422,93 @@ def build_demo_database(db_path: Path, *, force: bool = False) -> DemoBuildResul
     settings = SettingsService(db_path)
     settings.set_currency("USD")
     rules = CategoryRuleService(db_path)
-    transactions = TransactionService(db_path)
+    activities = ActivityService(db_path)
     budgets = BudgetService(db_path)
     recurring = RecurringTemplateService(db_path)
     accounts = AccountService(db_path)
 
-    for alias, category in CATEGORY_RULES:
-        rules.set_rule(alias, category)
-
-    transaction_import = import_transactions_csv(TRANSACTIONS_CSV, transactions)
-    budget_import = import_budgets_csv(BUDGETS_CSV, budgets)
-    if transaction_import.skipped_count or budget_import.skipped_count:
-        errors = transaction_import.errors + budget_import.errors
-        raise RuntimeError("Demo source data contains invalid rows: " + "; ".join(errors))
-
-    for transaction_type, amount, category, description, day in RECURRING_TEMPLATES:
-        recurring.add_template(transaction_type, amount, category, description, day)
-    recurring_created = recurring.apply_templates(DEMO_MONTH, DEMO_YEAR)
-    recurring_duplicates = recurring.apply_templates(DEMO_MONTH, DEMO_YEAR)
-
-    snapshot_count = 0
+    account_ids: dict[str, int] = {}
+    adjustment_count = 0
     for name, account_type, history in ACCOUNT_HISTORIES:
         first_date, first_amount = history[0]
-        account = accounts.create_account(name, account_type, first_amount, first_date)
+        account = accounts.create_account(
+            name,
+            account_type,
+            first_amount,
+            first_date,
+            ACCOUNT_SUBTYPES[name],
+        )
         assert account.id is not None
-        snapshot_count += 1
-        for effective_date, amount in history[1:]:
-            accounts.set_balance(account.id, amount, effective_date)
-            snapshot_count += 1
+        account_ids[name] = account.id
 
     archived_name, archived_type, archived_history, archived_on = ARCHIVED_ACCOUNT
     first_date, first_amount = archived_history[0]
     archived = accounts.create_account(
-        archived_name, archived_type, first_amount, first_date
+        archived_name,
+        archived_type,
+        first_amount,
+        first_date,
+        ACCOUNT_SUBTYPES[archived_name],
     )
     assert archived.id is not None
-    snapshot_count += 1
+    account_ids[archived_name] = archived.id
+
+    for alias, category in CATEGORY_RULES:
+        rules.set_rule(alias, category)
+
+    activity_import = import_activities_csv(ACTIVITIES_CSV, activities)
+    budget_import = import_budgets_csv(BUDGETS_CSV, budgets)
+    if activity_import.skipped_count or budget_import.skipped_count:
+        errors = activity_import.errors + budget_import.errors
+        raise RuntimeError("Demo source data contains invalid rows: " + "; ".join(errors))
+
+    for transfer_date, amount, source, destination, description in TRANSFERS:
+        activities.add_transfer(
+            amount,
+            description,
+            transfer_date,
+            account_ids[source],
+            account_ids[destination],
+        )
+
+    checking_id = account_ids["Everyday checking"]
+    for activity_kind, amount, category, description, day in RECURRING_TEMPLATES:
+        recurring.add_template(
+            activity_kind,
+            amount,
+            category,
+            description,
+            day,
+            account_id=checking_id,
+        )
+    recurring_created = recurring.apply_templates(DEMO_MONTH, DEMO_YEAR)
+    recurring_duplicates = recurring.apply_templates(DEMO_MONTH, DEMO_YEAR)
+
+    # Record observed balances after the detailed activity is present. Same-day
+    # observations therefore remain authoritative by the ledger's stable ID order.
+    for name, _account_type, history in ACCOUNT_HISTORIES:
+        for effective_date, amount in history[1:]:
+            accounts.adjust_account(
+                account_ids[name],
+                amount,
+                effective_date,
+                "Observed month-end balance",
+            )
+            adjustment_count += 1
     for effective_date, amount in archived_history[1:]:
-        accounts.set_balance(archived.id, amount, effective_date)
-        snapshot_count += 1
-    accounts.archive_account(
-        archived.id,
-        archived_on,
-        confirm_zero_balance=True,
-    )
-    snapshot_count += 1
+        accounts.adjust_account(
+            archived.id,
+            amount,
+            effective_date,
+            "Observed month-end balance",
+        )
+        adjustment_count += 1
+    accounts.adjust_account(archived.id, "0.00", archived_on, "Account closed")
+    adjustment_count += 1
+    accounts.archive_account(archived.id, archived_on)
 
     return DemoBuildResult(
-        transaction_count=transactions.count_transactions(),
+        activity_count=activities.count_activities(),
         budget_count=len(budgets.list_budgets()),
         category_rule_count=len(rules.list_rules()),
         recurring_template_count=len(recurring.list_templates()),
@@ -457,7 +517,7 @@ def build_demo_database(db_path: Path, *, force: bool = False) -> DemoBuildResul
         account_count=len(
             accounts.list_accounts(DEMO_AS_OF, include_archived=True)
         ),
-        snapshot_count=snapshot_count,
+        adjustment_count=adjustment_count,
     )
 
 
@@ -495,12 +555,12 @@ def main() -> None:
     result = build_demo_database(args.db_path.resolve(), force=args.force)
     print(f"Built demo database: {args.db_path.resolve()}")
     print(
-        f"{result.transaction_count} transactions, {result.budget_count} budgets, "
+        f"{result.activity_count} activities, {result.budget_count} budgets, "
         f"{result.category_rule_count} category rules, "
         f"{result.recurring_template_count} recurring templates"
     )
     print(
-        f"{result.account_count} accounts and {result.snapshot_count} balance snapshots; "
+        f"{result.account_count} accounts and {result.adjustment_count} balance adjustments; "
         f"{result.recurring_created_count} July recurring entries created and "
         f"{result.recurring_duplicate_count} duplicate entries safely skipped"
     )

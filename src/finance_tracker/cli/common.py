@@ -9,13 +9,14 @@ from finance_tracker.config import resolve_db_path
 from finance_tracker.exceptions import FinanceTrackerError
 from finance_tracker.services import (
     AccountService,
+    ActivityService,
     BudgetService,
     BudgetStatus,
     CategoryRuleService,
     RecurringTemplateService,
     SettingsService,
-    TransactionService,
 )
+from finance_tracker.services.transactions import TransactionService
 
 DbPathOption = Annotated[
     Path | None,
@@ -30,7 +31,12 @@ def account_service(db_path: Path | None) -> AccountService:
     return AccountService(resolve_db_path(db_path))
 
 
+def activity_service(db_path: Path | None) -> ActivityService:
+    return ActivityService(resolve_db_path(db_path))
+
+
 def transaction_service(db_path: Path | None) -> TransactionService:
+    """Internal legacy adapter retained for non-registered v2 modules."""
     return TransactionService(resolve_db_path(db_path))
 
 
@@ -73,8 +79,7 @@ def format_table(
 ) -> list[str]:
     right_aligned_headers = right_aligned_headers or set()
     widths = [
-        max(len(header), *(len(row[index]) for row in rows))
-        for index, header in enumerate(headers)
+        max(len(header), *(len(row[index]) for row in rows)) for index, header in enumerate(headers)
     ]
 
     def format_cell(index: int, value: str) -> str:
@@ -89,7 +94,6 @@ def format_table(
         "  ".join("-" * width for width in widths),
     ]
     lines.extend(
-        "  ".join(format_cell(index, value) for index, value in enumerate(row))
-        for row in rows
+        "  ".join(format_cell(index, value) for index, value in enumerate(row)) for row in rows
     )
     return lines

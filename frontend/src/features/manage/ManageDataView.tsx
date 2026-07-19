@@ -17,10 +17,10 @@ export function ManageDataView({
   onOpenBudgetImport: () => void;
 }) {
   const { t } = useI18n();
-  const transactionFilters = {
+  const activityFilters = {
     ...selectedPeriod,
     category: "",
-    transaction_type: "" as const,
+    kind: "" as const,
   };
   const budgetFilters = { ...selectedPeriod, category: "" };
   return (
@@ -49,7 +49,7 @@ export function ManageDataView({
             </ActionButton>
             <DownloadLink
               icon={Download}
-              href={artifactUrls.transactionsCsv(transactionFilters)}
+              href={artifactUrls.activitiesCsv(activityFilters)}
               download
             >
               {t("common.exportCsv")}

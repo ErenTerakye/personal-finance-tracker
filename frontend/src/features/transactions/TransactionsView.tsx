@@ -1,5 +1,6 @@
 import {
-  FormEvent,
+  type FormEvent,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -9,66 +10,94 @@ import {
 import "./transactions-components.css";
 import "./transactions.css";
 import "./transactions-overrides.css";
+import "./components/TransactionFormDialog.css";
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  ArrowRightLeft,
+  Check,
   Download,
+  ListFilter,
   MoreHorizontal,
   Plus,
-  Search,
+  RotateCcw,
   Scale,
+  Search,
+  Sparkles,
   Trash2,
   Upload,
 } from "lucide-react";
-import type { TransactionFilters } from "../../api/client";
 import { artifactUrls } from "../../api/artifacts";
+import { api, type ActivityFilters } from "../../api/client";
+import {
+  ActionButton,
+  DownloadLink,
+  SubmitButton,
+} from "../../shared/components/actions";
 import { CsvImportDialog } from "../../shared/components/CsvImportDialog";
-import { TableSkeleton } from "../../shared/components/tables";
-import { ActionButton, DownloadLink } from "../../shared/components/actions";
 import { ModalDialog } from "../../shared/components/dialogs";
 import { ErrorBanner } from "../../shared/components/feedback";
+import { Field, FilterBar } from "../../shared/components/fields";
 import { PageHeader } from "../../shared/components/lists";
+import { PeriodControl } from "../../shared/components/PeriodControl";
 import {
   absoluteMoney,
   compareMoney,
+  currencySymbol,
   money,
+  negateMoney,
   subtractMoney,
   sumMoney,
 } from "../../shared/format/money";
-import { periodLabel } from "../../shared/format/periods";
-import type {
-  TransactionInput,
-  TransactionRecord,
-  TransactionType,
-} from "../../types";
+import { todayIso } from "../../shared/format/dates";
+import { useResource } from "../../shared/hooks/useResource";
 import { localizedNotice } from "../../shared/i18n/notices";
 import { useI18n } from "../../shared/i18n/I18nProvider";
-import { usePeriodTransition } from "../../shared/hooks/usePeriodTransition";
+import type {
+  AccountRecord,
+  ActivityInput,
+  ActivityKind,
+  ActivityRecord,
+} from "../../types";
 import {
-  defaultTransaction,
-  readTransactionFilters,
-  writeTransactionFilters,
-} from "./transactionForm";
-import {
-  useDeleteTransaction,
-  useSaveTransaction,
-  useTransactionImport,
-  useTransactionPreview,
-  useTransactionCategories,
-  useTransactions,
-  preloadTransactions,
+  preloadActivities,
+  useActivities,
+  useActivityImport,
+  useActivityPreview,
+  useDeleteActivity,
+  useSaveActivity,
 } from "./useTransactions";
-import { TransactionFilterForm } from "./components/TransactionFilterForm";
-import { TransactionFormDialog } from "./components/TransactionFormDialog";
 import { ActivityLedger } from "./components/ActivityLedger";
+import { normalizeAmountDraft } from "./transactionForm";
 
-type TransactionDialog = "create" | "edit" | null;
+type EditableKind = "income" | "expense" | "transfer" | "adjustment";
+type Draft = {
+  kind: EditableKind;
+  amount: string;
+  category: string;
+  description: string;
+  date: string;
+  accountId: string;
+  fromAccountId: string;
+  toAccountId: string;
+};
+
+const emptyDraft = (): Draft => ({
+  kind: "expense",
+  amount: "",
+  category: "",
+  description: "",
+  date: todayIso(),
+  accountId: "",
+  fromAccountId: "",
+  toAccountId: "",
+});
 
 export function preloadTransactionsView(period: {
   month: number;
   year: number;
 }) {
-  return preloadTransactions(readTransactionFilters(period));
+  return preloadActivities({ month: period.month, year: period.year });
 }
 
 export function TransactionsView({
@@ -82,248 +111,107 @@ export function TransactionsView({
   createRequestId?: number;
   locationVersion?: number;
 }) {
-  const [filters, setFilters] = useState<TransactionFilters>(() =>
-    readTransactionFilters(selectedPeriod),
+  const { t } = useI18n();
+  const [filters, setFilters] = useState<ActivityFilters>(() =>
+    filtersFromUrl(selectedPeriod),
   );
-  const [form, setForm] = useState<TransactionInput>(defaultTransaction);
-  const [dialog, setDialog] = useState<TransactionDialog>(null);
+  const [dialog, setDialog] = useState<"create" | "edit" | null>(null);
+  const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<TransactionRecord | null>(
-    null,
-  );
+  const [deleteTarget, setDeleteTarget] = useState<ActivityRecord | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  const [search, setSearch] = useState(() => readSearchParam());
+  const [filtersOpen, setFiltersOpen] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return (
+      params.has("kind") || params.has("account_id") || params.has("search")
+    );
+  });
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const commandBarRef = useRef<HTMLDivElement>(null);
   const commandBarScrollAnchor = useRef<{
     top: number;
     periodKey: string;
   } | null>(null);
-  const ledgerHeadingRef = useRef<HTMLElement>(null);
-  const handledCreateRequest = useRef(0);
-  const { t } = useI18n();
-  const transactionResource = useTransactions(filters);
-  const categoryResource = useTransactionCategories();
+  const handledCreate = useRef(0);
+  const resource = useActivities(filters);
+  const accounts = useActiveAccounts();
+  const records = resource.data?.activities;
+
   const requestedPeriod = {
     month: Number(filters.month || selectedPeriod.month),
     year: Number(filters.year || selectedPeriod.year),
   };
-  const periodTransition = usePeriodTransition(
-    requestedPeriod,
-    transactionResource,
-  );
-  const transactions = useMemo(
-    () => periodTransition.data?.transactions ?? [],
-    [periodTransition.data?.transactions],
-  );
-  const visibleTransactions = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase();
-    const matches = query
-      ? transactions.filter((transaction) =>
-          [
-            transaction.category,
-            transaction.description,
-            transaction.amount,
-            transaction.date,
-            transaction.type,
-          ].some((value) => String(value).toLocaleLowerCase().includes(query)),
-        )
-      : [...transactions];
-    return matches.sort((a, b) => {
-      const byDate = b.date.localeCompare(a.date) || b.id - a.id;
-      return sort === "oldest" ? -byDate : byDate;
-    });
-  }, [search, sort, transactions]);
-  const loading =
-    transactionResource.status === "loading" && !periodTransition.data;
-  const categories = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...(categoryResource.data ?? []),
-          ...transactions.map((transaction) => transaction.category),
-        ]),
-      )
-        .filter(Boolean)
-        .sort(),
-    [categoryResource.data, transactions],
-  );
-  const saveMutation = useSaveTransaction((response) => {
+  const requestedPeriodKey = activityPeriodKey(requestedPeriod);
+
+  const save = useSaveActivity((response) => {
     setNotice(localizedNotice(response, t));
     setDialog(null);
-    setForm(defaultTransaction());
+    setDraft(emptyDraft());
     setEditingId(null);
-    transactionResource.refetch();
+    resource.refetch();
+    accounts.refetch();
   });
-  const deleteMutation = useDeleteTransaction((response) => {
+  const remove = useDeleteActivity((response) => {
     setNotice(localizedNotice(response, t));
-    setPendingDelete(null);
-    transactionResource.refetch();
-    requestAnimationFrame(() => ledgerHeadingRef.current?.focus());
+    setDeleteTarget(null);
+    resource.refetch();
+    accounts.refetch();
   });
-  const previewMutation = useTransactionPreview();
-  const importMutation = useTransactionImport((response) => {
+  const preview = useActivityPreview();
+  const importMutation = useActivityImport((response) => {
     setNotice(localizedNotice(response, t));
-    previewMutation.reset();
-    transactionResource.refetch();
+    preview.reset();
+    resource.refetch();
+    accounts.refetch();
   });
 
-  function openCreate() {
-    setForm(defaultTransaction());
+  const openCreate = useCallback(() => {
+    const accountFromUrl =
+      new URLSearchParams(window.location.search).get("account_id") ?? "";
+    setDraft({ ...emptyDraft(), accountId: accountFromUrl });
     setEditingId(null);
-    saveMutation.reset();
+    save.reset();
     setDialog("create");
-  }
+  }, [save]);
 
   useEffect(() => {
-    // Prop-to-query synchronization is deliberate; the app owns the selected period.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFilters((current) => ({
-      ...current,
-      month: selectedPeriod.month,
-      year: selectedPeriod.year,
-    }));
-  }, [selectedPeriod.month, selectedPeriod.year]);
-
-  useEffect(() => {
-    window.addEventListener("finance-tracker:add-transaction", openCreate);
-    return () =>
-      window.removeEventListener("finance-tracker:add-transaction", openCreate);
-  });
-
-  useEffect(() => {
-    if (createRequestId <= handledCreateRequest.current) return;
-    handledCreateRequest.current = createRequestId;
+    if (createRequestId <= handledCreate.current) return;
+    handledCreate.current = createRequestId;
     openCreate();
-    // openCreate must read the latest mutation state without retriggering this request.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [createRequestId]);
+  }, [createRequestId, openCreate]);
 
   useEffect(() => {
-    // Browser-history changes intentionally hydrate this feature's complete route state.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFilters(readTransactionFilters(selectedPeriod));
-    setSearch(readSearchParam());
-    setImportOpen(
-      new URLSearchParams(window.location.search).get("data") === "import",
-    );
+    const next = filtersFromUrl(selectedPeriod);
+    const shouldImport =
+      new URLSearchParams(window.location.search).get("data") === "import";
+    let current = true;
+    queueMicrotask(() => {
+      if (!current) return;
+      setFilters(next);
+      setImportOpen(shouldImport);
+    });
+    return () => {
+      current = false;
+    };
   }, [locationVersion, selectedPeriod]);
 
   useEffect(() => {
-    const closeTransientUi = () => {
+    const close = () => {
       setDialog(null);
-      setEditingId(null);
-      setPendingDelete(null);
+      setDeleteTarget(null);
       setImportOpen(false);
     };
-    window.addEventListener("finance-tracker:route-leave", closeTransientUi);
+    window.addEventListener("finance-tracker:route-leave", close);
     return () =>
-      window.removeEventListener(
-        "finance-tracker:route-leave",
-        closeTransientUi,
-      );
+      window.removeEventListener("finance-tracker:route-leave", close);
   }, []);
-
-  function openEdit(transaction: TransactionRecord) {
-    setForm({
-      type: transaction.type as TransactionType,
-      amount: transaction.amount,
-      category: transaction.category,
-      description: transaction.description,
-      date: transaction.date,
-    });
-    setEditingId(transaction.id);
-    saveMutation.reset();
-    setDialog("edit");
-  }
-
-  function saveTransaction(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void saveMutation.mutate({
-      id: dialog === "edit" ? (editingId ?? undefined) : undefined,
-      payload: form,
-    });
-  }
-
-  function confirmDelete() {
-    if (!pendingDelete) {
-      return;
-    }
-    void deleteMutation.mutate(pendingDelete.id);
-  }
-
-  function clearSearchAndFilters() {
-    const next = {
-      month: selectedPeriod.month,
-      year: selectedPeriod.year,
-      transaction_type: "" as const,
-      category: "",
-    };
-    setSearch("");
-    writeSearchParam("");
-    writeTransactionFilters(next);
-    setFilters(next);
-  }
-
-  async function previewTransactions(csvText: string) {
-    importMutation.reset();
-    previewMutation.reset();
-    await previewMutation.mutate(csvText);
-  }
-
-  async function importTransactions(csvText: string, allowDuplicates = false) {
-    importMutation.reset();
-    await importMutation.mutate({ csvText, allowDuplicates });
-  }
-
-  const detailLabel = loading
-    ? t("transactions.historyDetail.loading")
-    : t("transactions.historyDetail.count", {
-        count: visibleTransactions.length,
-      });
-
-  const activeFilterLabels = [
-    Number(filters.month) !== selectedPeriod.month ||
-    Number(filters.year) !== selectedPeriod.year
-      ? `${filters.year}-${String(filters.month).padStart(2, "0")}`
-      : null,
-    filters.category ? `${t("common.category")}: ${filters.category}` : null,
-    filters.transaction_type ? t(`common.${filters.transaction_type}`) : null,
-  ].filter((label): label is string => Boolean(label));
-
-  const activitySummary = {
-    income: sumMoney(
-      visibleTransactions
-        .filter((transaction) => transaction.type === "income")
-        .map((transaction) => transaction.amount),
-    ),
-    expenses: sumMoney(
-      visibleTransactions
-        .filter((transaction) => transaction.type === "expense")
-        .map((transaction) => transaction.amount),
-    ),
-  };
-  const netActivity = subtractMoney(
-    activitySummary.income,
-    activitySummary.expenses,
-  );
-  const netDirection = compareMoney(netActivity, 0);
-  const hasRefinements = Boolean(search.trim() || activeFilterLabels.length);
-  const presentedPeriod = periodTransition.presentedPeriod ?? requestedPeriod;
-  const requestedPeriodKey = transactionPeriodKey(requestedPeriod);
-  const presentedPeriodKey = transactionPeriodKey(presentedPeriod);
 
   useLayoutEffect(() => {
     const anchor = commandBarScrollAnchor.current;
     if (!anchor || anchor.periodKey !== requestedPeriodKey) return;
 
     restoreTransactionScrollAnchor(commandBarRef.current, anchor.top);
-    if (
-      transactionResource.status !== "success" ||
-      presentedPeriodKey !== requestedPeriodKey
-    ) {
-      return;
-    }
+    if (resource.status !== "success") return;
 
     let finalFrame = 0;
     const settleFrame = window.requestAnimationFrame(() => {
@@ -339,9 +227,9 @@ export function TransactionsView({
       window.cancelAnimationFrame(settleFrame);
       window.cancelAnimationFrame(finalFrame);
     };
-  }, [transactionResource.status, presentedPeriodKey, requestedPeriodKey]);
+  }, [resource.status, requestedPeriodKey]);
 
-  function updateFilters(next: TransactionFilters) {
+  function updateFilters(next: ActivityFilters) {
     const periodChanged =
       Number(next.month) !== Number(filters.month) ||
       Number(next.year) !== Number(filters.year);
@@ -349,43 +237,123 @@ export function TransactionsView({
     if (periodChanged && commandBar && window.scrollY > 0) {
       commandBarScrollAnchor.current = {
         top: commandBar.getBoundingClientRect().top,
-        periodKey: transactionPeriodKey({
+        periodKey: activityPeriodKey({
           month: Number(next.month),
           year: Number(next.year),
         }),
       };
     }
-    writeTransactionFilters(next);
     setFilters(next);
+    writeFilters(next);
   }
 
+  function openEdit(record: ActivityRecord) {
+    if (record.kind === "opening") return;
+    setDraft({
+      kind: record.kind as EditableKind,
+      amount: record.amount,
+      category: record.category ?? "",
+      description: record.description,
+      date: record.date,
+      accountId: String(record.account?.id ?? ""),
+      fromAccountId: String(record.from_account?.id ?? ""),
+      toAccountId: String(record.to_account?.id ?? ""),
+    });
+    setEditingId(record.id);
+    save.reset();
+    setDialog("edit");
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void save.mutate({
+      id: dialog === "edit" ? (editingId ?? undefined) : undefined,
+      payload: payloadFromDraft(draft),
+    });
+  }
+
+  function clearSearchAndFilters() {
+    const next = {
+      month: selectedPeriod.month,
+      year: selectedPeriod.year,
+      kind: "" as const,
+      account_id: "" as const,
+      search: "",
+    };
+    updateFilters(next);
+  }
+
+  const activeAccountsList = accounts.data?.accounts ?? [];
+
+  const visibleRecords = useMemo(() => {
+    const list = [...(records ?? [])];
+    return list.sort((a, b) => {
+      const byDate = b.date.localeCompare(a.date) || b.id - a.id;
+      return sort === "oldest" ? -byDate : byDate;
+    });
+  }, [records, sort]);
+
+  const activitySummary = useMemo(() => {
+    return {
+      income: sumMoney(
+        visibleRecords
+          .filter((record) => record.kind === "income")
+          .map((record) => record.amount),
+      ),
+      expenses: sumMoney(
+        visibleRecords
+          .filter((record) => record.kind === "expense")
+          .map((record) => record.amount),
+      ),
+    };
+  }, [visibleRecords]);
+  const netActivity = subtractMoney(
+    activitySummary.income,
+    activitySummary.expenses,
+  );
+  const netDirection = compareMoney(netActivity, 0);
+
+  const detailLabel =
+    resource.status === "loading"
+      ? t("transactions.historyDetail.loading")
+      : t("transactions.historyDetail.count", {
+          count: visibleRecords.length,
+        });
+
+  const activeFilterLabels = [
+    Number(filters.month) !== selectedPeriod.month ||
+    Number(filters.year) !== selectedPeriod.year
+      ? `${filters.year}-${String(filters.month).padStart(2, "0")}`
+      : null,
+    filters.kind
+      ? `${t("activity.kind")}: ${t(`activity.kinds.${filters.kind}`)}`
+      : null,
+    filters.account_id
+      ? `${t("activity.account")}: ${activeAccountsList.find((a) => a.id === filters.account_id)?.name || filters.account_id}`
+      : null,
+  ].filter((label): label is string => Boolean(label));
+
+  const hasActiveFilters = Boolean(
+    (filters.search && filters.search.trim()) ||
+    filters.kind ||
+    filters.account_id ||
+    Number(filters.month) !== selectedPeriod.month ||
+    Number(filters.year) !== selectedPeriod.year,
+  );
+
   return (
-    <div
-      className={`transactions-period-view${periodTransition.pending ? " is-period-pending" : ""}`}
-      aria-busy={periodTransition.pending}
-    >
-      <p className="sr-only" aria-live="polite" aria-atomic="true">
-        {!periodTransition.pending && periodTransition.presentedPeriod
-          ? t("common.periodLoaded", {
-              period: periodLabel(
-                periodTransition.presentedPeriod.month,
-                periodTransition.presentedPeriod.year,
-              ),
-            })
-          : ""}
-      </p>
+    <div className="transactions-period-view">
       <PageHeader
-        eyebrow={t("transactions.eyebrow")}
-        title={t("transactions.title")}
-        summary={t("transactions.routeSummary", {
-          count: visibleTransactions.length,
-          period: periodLabel(presentedPeriod.month, presentedPeriod.year),
+        eyebrow={t("activity.eyebrow")}
+        title={t("activity.title")}
+        summary={t("activity.summary", {
+          count: resource.data?.page?.total ?? records?.length ?? 0,
         })}
         className="activity-hero"
         actions={
           <div className="activity-hero-actions">
             <ActionButton icon={Plus} onClick={openCreate}>
-              {t("common.addTransaction")}
+              {t("activity.add")}
             </ActionButton>
             <details className="data-menu">
               <summary className="button secondary">
@@ -402,7 +370,7 @@ export function TransactionsView({
                 </ActionButton>
                 <DownloadLink
                   icon={Download}
-                  href={artifactUrls.transactionsCsv(filters)}
+                  href={artifactUrls.activitiesCsv(filters)}
                   download
                   variant="ghost"
                 >
@@ -415,17 +383,14 @@ export function TransactionsView({
         }
       />
 
-      {transactionResource.status === "error" ? (
+      {resource.status === "error" ? (
         <ErrorBanner
-          message={transactionResource.error.message}
-          onRetry={transactionResource.refetch}
+          message={resource.error.message}
+          onRetry={resource.refetch}
         />
       ) : null}
 
-      <section
-        className="activity-workspace"
-        aria-label={t("transactions.title")}
-      >
+      <section className="activity-workspace" aria-label={t("activity.title")}>
         <section
           className="activity-snapshot"
           aria-label={t("transactions.snapshot.title")}
@@ -465,187 +430,717 @@ export function TransactionsView({
         </section>
 
         <div className="activity-command-bar" ref={commandBarRef}>
-          <label className="transaction-search" htmlFor="activity-search">
-            <span>{t("transactions.searchLabel")}</span>
-            <span className="search-control">
-              <Search aria-hidden="true" size={18} />
+          <div className="transaction-search">
+            <label htmlFor="activity-search">{t("activity.search")}</label>
+            <div className="search-control">
+              <Search size={18} aria-hidden="true" />
               <input
                 id="activity-search"
                 type="search"
-                value={search}
-                placeholder={t("transactions.searchHint")}
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  writeSearchParam(event.target.value);
-                }}
+                placeholder={t("transactions.historyDetail.searchPlaceholder")}
+                value={filters.search ?? ""}
+                onChange={(event) =>
+                  updateFilters({ ...filters, search: event.target.value })
+                }
               />
-            </span>
-          </label>
-          <TransactionFilterForm
-            filters={filters}
-            selectedPeriod={selectedPeriod}
-            onChange={updateFilters}
-          />
-          {hasRefinements ? (
-            <div
-              className="active-filter-summary"
-              aria-label={t("transactions.filters.active")}
+            </div>
+          </div>
+          <div className="transaction-filter-toggle-container">
+            <button
+              className="button secondary transaction-filter-toggle"
+              type="button"
+              aria-expanded={filtersOpen}
+              onClick={() => setFiltersOpen((open) => !open)}
             >
-              <span>{t("transactions.filters.active")}</span>
-              {search.trim() ? (
-                <span className="filter-chip">“{search.trim()}”</span>
-              ) : null}
+              <ListFilter aria-hidden="true" size={18} />
+              <span>{t("transactions.filters.open")}</span>
+            </button>
+          </div>
+          {filtersOpen ? (
+            <div className="transaction-filter-panel">
+              <FilterBar
+                title={t("activity.filters")}
+                summary={t("activity.filtersSummary")}
+              >
+                <form
+                  className="filter-form"
+                  onSubmit={(event) => event.preventDefault()}
+                >
+                  <PeriodControl
+                    label={t("transactions.filterPeriod")}
+                    value={requestedPeriod}
+                    onChange={(nextPeriod) =>
+                      updateFilters({ ...filters, ...nextPeriod })
+                    }
+                  />
+                  <Field id="filter-kind" label={t("activity.kind")}>
+                    <select
+                      id="filter-kind"
+                      value={filters.kind ?? ""}
+                      onChange={(event) =>
+                        updateFilters({
+                          ...filters,
+                          kind: event.target.value as ActivityKind | "",
+                        })
+                      }
+                    >
+                      <option value="">{t("common.all")}</option>
+                      {(
+                        [
+                          "opening",
+                          "income",
+                          "expense",
+                          "transfer",
+                          "adjustment",
+                        ] as const
+                      ).map((kind) => (
+                        <option key={kind} value={kind}>
+                          {t(`activity.kinds.${kind}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field id="filter-account" label={t("activity.account")}>
+                    <select
+                      id="filter-account"
+                      value={filters.account_id ?? ""}
+                      onChange={(event) =>
+                        updateFilters({
+                          ...filters,
+                          account_id: event.target.value
+                            ? Number(event.target.value)
+                            : "",
+                        })
+                      }
+                    >
+                      <option value="">{t("common.all")}</option>
+                      {activeAccountsList.map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <div className="filter-actions">
+                    <ActionButton
+                      icon={RotateCcw}
+                      variant="ghost"
+                      disabled={!hasActiveFilters}
+                      onClick={clearSearchAndFilters}
+                    >
+                      {t("common.resetFilters")}
+                    </ActionButton>
+                  </div>
+                </form>
+              </FilterBar>
+            </div>
+          ) : null}
+          {activeFilterLabels.length > 0 ? (
+            <div className="active-filter-summary">
               {activeFilterLabels.map((label) => (
                 <span className="filter-chip" key={label}>
                   {label}
                 </span>
               ))}
-              <button
-                className="button ghost"
-                type="button"
-                onClick={clearSearchAndFilters}
-              >
-                {t("transactions.filters.clear")}
-              </button>
             </div>
           ) : null}
         </div>
 
-        <article
-          className="activity-ledger"
-          ref={ledgerHeadingRef}
-          tabIndex={-1}
-        >
+        <div className="activity-ledger">
           <header className="activity-ledger-header">
             <div>
-              <p className="eyebrow">
-                {periodLabel(presentedPeriod.month, presentedPeriod.year)}
-              </p>
-              <h2>{t("transactions.historyTitle")}</h2>
-              <p aria-live="polite">{detailLabel}</p>
+              <h2>{t("activity.ledger")}</h2>
+              <p>{detailLabel}</p>
             </div>
-            <label className="activity-sort" htmlFor="activity-sort">
-              <span>{t("transactions.sort.label")}</span>
+            <div className="activity-sort">
+              <span>{t("transactions.historyDetail.sortLabel")}</span>
               <select
-                id="activity-sort"
                 value={sort}
-                onChange={(event) => setSort(event.target.value as typeof sort)}
+                onChange={(event) =>
+                  setSort(event.target.value as "newest" | "oldest")
+                }
               >
                 <option value="newest">{t("transactions.sort.newest")}</option>
                 <option value="oldest">{t("transactions.sort.oldest")}</option>
               </select>
-            </label>
+            </div>
           </header>
           <div className="activity-ledger-body">
-            {loading ? (
-              <TableSkeleton rows={5} />
-            ) : (
-              <ActivityLedger
-                transactions={visibleTransactions}
-                onEdit={openEdit}
-                onDelete={setPendingDelete}
-                onCreate={openCreate}
-                filtered={hasRefinements}
-                onClear={clearSearchAndFilters}
-              />
-            )}
+            <ActivityLedger
+              records={visibleRecords}
+              onEdit={openEdit}
+              onDelete={(record) => setDeleteTarget(record)}
+              onAccount={(id) => updateFilters({ ...filters, account_id: id })}
+              onClear={clearSearchAndFilters}
+              filtered={hasActiveFilters}
+              onCreate={openCreate}
+            />
           </div>
-        </article>
+        </div>
       </section>
 
-      <CsvImportDialog
-        open={importOpen}
-        title={t("csv.importTitle")}
-        description={t("csv.importDesc")}
-        preview={
-          previewMutation.status === "success" ? previewMutation.data : null
-        }
-        result={
-          importMutation.status === "success" ? importMutation.data : null
-        }
-        error={
-          previewMutation.status === "error"
-            ? previewMutation.error.message
-            : importMutation.status === "error"
-              ? importMutation.error.message
-              : ""
-        }
-        uploading={importMutation.status === "pending"}
-        previewing={previewMutation.status === "pending"}
-        onClose={() => setImportOpen(false)}
-        onPreview={previewTransactions}
-        onImport={importTransactions}
-        onReset={() => {
-          importMutation.reset();
-          previewMutation.reset();
-        }}
-      />
-
-      <TransactionFormDialog
+      <ActivityDialog
         open={dialog !== null}
         mode={dialog ?? "create"}
-        form={form}
-        error={
-          saveMutation.status === "error" ? saveMutation.error.message : ""
-        }
-        saving={saveMutation.status === "pending"}
+        draft={draft}
+        accounts={activeAccountsList}
+        error={save.status === "error" ? save.error.message : ""}
+        saving={save.status === "pending"}
+        onChange={setDraft}
         onClose={() => setDialog(null)}
-        onSubmit={saveTransaction}
-        onChange={setForm}
+        onSubmit={submit}
       />
 
       <ModalDialog
-        open={pendingDelete !== null}
-        title={t("transactions.dialog.deleteTitle")}
-        description={
-          pendingDelete
-            ? t("transactions.dialog.deleteDescription", {
-                category: pendingDelete.category,
-                amount: money(pendingDelete.amount),
-              })
-            : undefined
-        }
-        onClose={() => {
-          setPendingDelete(null);
-          deleteMutation.reset();
-        }}
+        open={deleteTarget !== null}
+        title={t("activity.deleteTitle")}
+        description={t("activity.deleteDescription")}
+        onClose={() => setDeleteTarget(null)}
       >
-        {deleteMutation.status === "error" ? (
-          <ErrorBanner message={deleteMutation.error.message} />
+        {remove.status === "error" ? (
+          <ErrorBanner message={remove.error.message} />
         ) : null}
-        <p className="dialog-copy">
-          {t("transactions.dialog.deleteConfirmText")}
-        </p>
         <div className="dialog-actions">
           <button
             className="button secondary"
             type="button"
-            onClick={() => setPendingDelete(null)}
+            onClick={() => setDeleteTarget(null)}
           >
             {t("common.cancel")}
           </button>
           <button
             className="button danger"
             type="button"
-            disabled={deleteMutation.status === "pending"}
-            onClick={confirmDelete}
+            disabled={remove.status === "pending"}
+            onClick={() => deleteTarget && void remove.mutate(deleteTarget.id)}
           >
-            <Trash2 aria-hidden="true" size={18} />
-            <span>{t("transactions.dialog.deleteBtn")}</span>
+            <Trash2 aria-hidden="true" size={18} /> {t("common.delete")}
           </button>
         </div>
       </ModalDialog>
 
-      <datalist id="category-suggestions">
-        {categories.map((cat) => (
-          <option key={cat} value={cat} />
-        ))}
-      </datalist>
+      <CsvImportDialog
+        open={importOpen}
+        title={t("activity.importTitle")}
+        description={t("activity.importDescription")}
+        result={importMutation.data ?? null}
+        preview={preview.data ?? null}
+        error={
+          preview.status === "error"
+            ? preview.error.message
+            : importMutation.status === "error"
+              ? importMutation.error.message
+              : ""
+        }
+        uploading={importMutation.status === "pending"}
+        previewing={preview.status === "pending"}
+        onClose={() => setImportOpen(false)}
+        onPreview={(text) => preview.mutate(text)}
+        onImport={(csvText, allowDuplicates = false) =>
+          importMutation.mutate({ csvText, allowDuplicates })
+        }
+        onReset={() => {
+          preview.reset();
+          importMutation.reset();
+        }}
+      />
     </div>
   );
 }
 
-function transactionPeriodKey(period: { month: number; year: number }) {
+function ActivityDialog({
+  open,
+  mode,
+  draft,
+  accounts,
+  error,
+  saving,
+  onChange,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  mode: "create" | "edit";
+  draft: Draft;
+  accounts: AccountRecord[];
+  error: string;
+  saving: boolean;
+  onChange: (draft: Draft) => void;
+  onClose: () => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const { t } = useI18n();
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
+  const projection = useMemo(
+    () => projectedEffects(draft, accounts),
+    [draft, accounts],
+  );
+  const kindLocked =
+    mode === "edit" && ["transfer", "adjustment"].includes(draft.kind);
+  return (
+    <ModalDialog
+      open={open}
+      title={mode === "edit" ? t("activity.editTitle") : t("activity.add")}
+      description={t("activity.formDescription")}
+      onClose={onClose}
+      initialFocusId="activity-amount"
+      className="entry-dialog activity-composer-dialog"
+    >
+      {error ? (
+        <div ref={errorRef} tabIndex={-1}>
+          <ErrorBanner message={error} />
+        </div>
+      ) : null}
+      <form className="activity-composer-form" onSubmit={onSubmit}>
+        <div className="activity-composer-body">
+          <div className="activity-composer-fields">
+            <section
+              className="entry-amount-stage"
+              style={{ marginInline: 0, marginBlockEnd: "1rem" }}
+            >
+              <div className="entry-amount-heading">
+                <label htmlFor="activity-amount">{t("common.amount")}</label>
+              </div>
+              <div className="entry-amount-control">
+                <span className="entry-currency" aria-hidden="true">
+                  {currencySymbol()}
+                </span>
+                <input
+                  id="activity-amount"
+                  required
+                  inputMode="decimal"
+                  pattern="[0-9]+(?:\.[0-9]{1,2})?"
+                  placeholder="0.00"
+                  value={draft.amount}
+                  onChange={(event) => {
+                    const amount = normalizeAmountDraft(event.target.value);
+                    if (amount !== null) {
+                      onChange({ ...draft, amount });
+                    } else {
+                      event.target.value = draft.amount;
+                    }
+                  }}
+                />
+              </div>
+            </section>
+            {mode === "create" ? (
+              <fieldset
+                className="entry-kind-picker"
+                style={{ paddingInline: 0, border: 0, marginBlock: 0 }}
+              >
+                <legend
+                  style={{
+                    paddingBlockStart: 0,
+                    marginBlockEnd: "0.55rem",
+                    fontSize: "var(--font-size-sm)",
+                    fontWeight: "var(--font-weight-semibold)",
+                  }}
+                >
+                  {t("activity.chooseKind")}
+                </legend>
+                <div className="entry-kind-options">
+                  {(
+                    ["income", "expense", "transfer", "adjustment"] as const
+                  ).map((kind) => {
+                    const Icon =
+                      kind === "income"
+                        ? ArrowDownLeft
+                        : kind === "expense"
+                          ? ArrowUpRight
+                          : kind === "transfer"
+                            ? ArrowRightLeft
+                            : Scale;
+                    return (
+                      <label key={kind} className={`entry-kind-option ${kind}`}>
+                        <input
+                          type="radio"
+                          name="activity-kind"
+                          value={kind}
+                          checked={draft.kind === kind}
+                          aria-label={t(`activity.kinds.${kind}`)}
+                          onChange={() => onChange({ ...draft, kind })}
+                        />
+                        <span className="entry-kind-card">
+                          <span className="entry-kind-icon" aria-hidden="true">
+                            <Icon size={20} strokeWidth={2.2} />
+                          </span>
+                          <span className="entry-kind-copy">
+                            <strong>{t(`activity.kinds.${kind}`)}</strong>
+                            <small>
+                              {t(`activity.kindsDescription.${kind}`)}
+                            </small>
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            ) : kindLocked ? (
+              <Field id="activity-kind-readonly" label={t("activity.kind")}>
+                <input
+                  id="activity-kind-readonly"
+                  readOnly
+                  disabled
+                  value={t(`activity.kinds.${draft.kind}`)}
+                />
+              </Field>
+            ) : (
+              <fieldset
+                className="entry-kind-picker"
+                style={{ paddingInline: 0, border: 0, marginBlock: 0 }}
+              >
+                <legend
+                  style={{
+                    paddingBlockStart: 0,
+                    marginBlockEnd: "0.55rem",
+                    fontSize: "var(--font-size-sm)",
+                    fontWeight: "var(--font-weight-semibold)",
+                  }}
+                >
+                  {t("activity.chooseKind")}
+                </legend>
+                <div className="entry-kind-options">
+                  {(["income", "expense"] as const).map((kind) => {
+                    const Icon =
+                      kind === "income" ? ArrowDownLeft : ArrowUpRight;
+                    return (
+                      <label key={kind} className={`entry-kind-option ${kind}`}>
+                        <input
+                          type="radio"
+                          name="activity-kind"
+                          value={kind}
+                          checked={draft.kind === kind}
+                          aria-label={t(`activity.kinds.${kind}`)}
+                          onChange={() => onChange({ ...draft, kind })}
+                        />
+                        <span className="entry-kind-card">
+                          <span className="entry-kind-icon" aria-hidden="true">
+                            <Icon size={20} strokeWidth={2.2} />
+                          </span>
+                          <span className="entry-kind-copy">
+                            <strong>{t(`activity.kinds.${kind}`)}</strong>
+                            <small>
+                              {t(`activity.kindsDescription.${kind}`)}
+                            </small>
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            )}
+            {draft.kind === "transfer" ? (
+              <fieldset>
+                <legend>{t("activity.transferAccounts")}</legend>
+                <Field id="activity-from" label={t("activity.fromAccount")}>
+                  <AccountSelect
+                    id="activity-from"
+                    value={draft.fromAccountId}
+                    accounts={accounts}
+                    onChange={(value) =>
+                      onChange({ ...draft, fromAccountId: value })
+                    }
+                  />
+                </Field>
+                <Field id="activity-to" label={t("activity.toAccount")}>
+                  <AccountSelect
+                    id="activity-to"
+                    value={draft.toAccountId}
+                    accounts={accounts}
+                    exclude={draft.fromAccountId}
+                    onChange={(value) =>
+                      onChange({ ...draft, toAccountId: value })
+                    }
+                  />
+                </Field>
+              </fieldset>
+            ) : (
+              <Field id="activity-account-select" label={t("activity.account")}>
+                <AccountSelect
+                  id="activity-account-select"
+                  value={draft.accountId}
+                  accounts={accounts}
+                  onChange={(value) => onChange({ ...draft, accountId: value })}
+                />
+              </Field>
+            )}
+            {draft.kind === "income" || draft.kind === "expense" ? (
+              <Field id="activity-category" label={t("common.category")}>
+                <input
+                  id="activity-category"
+                  required
+                  value={draft.category}
+                  onChange={(event) =>
+                    onChange({ ...draft, category: event.target.value })
+                  }
+                />
+              </Field>
+            ) : null}
+            <Field id="activity-date" label={t("common.date")}>
+              <input
+                id="activity-date"
+                type="date"
+                required
+                value={draft.date}
+                onChange={(event) =>
+                  onChange({ ...draft, date: event.target.value })
+                }
+              />
+            </Field>
+            <Field id="activity-description" label={t("common.description")}>
+              <input
+                id="activity-description"
+                maxLength={500}
+                value={draft.description}
+                onChange={(event) =>
+                  onChange({ ...draft, description: event.target.value })
+                }
+              />
+            </Field>
+          </div>
+          <aside className="activity-composer-guide">
+            <div
+              className="account-setup-guide-icon"
+              style={{
+                color: "var(--action)",
+                background:
+                  "color-mix(in srgb, var(--action) 10%, var(--surface))",
+                display: "grid",
+                placeItems: "center",
+                inlineSize: "2.75rem",
+                blockSize: "2.75rem",
+                borderRadius: "0.8rem",
+                marginBlockEnd: "0.5rem",
+              }}
+              aria-hidden="true"
+            >
+              <Sparkles size={22} />
+            </div>
+            <h3
+              style={{
+                fontSize: "var(--font-size-lg)",
+                fontWeight: "var(--font-weight-semibold)",
+                marginBlockEnd: "0.5rem",
+                color: "var(--ink)",
+              }}
+            >
+              {t("activity.projected")}
+            </h3>
+            {projection.length ? (
+              <ol
+                style={{
+                  display: "grid",
+                  gap: "0.75rem",
+                  margin: 0,
+                  padding: 0,
+                  listStyle: "none",
+                }}
+              >
+                {projection.map((item, index) => (
+                  <li
+                    key={index}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "auto minmax(0, 1fr)",
+                      alignItems: "start",
+                      gap: "0.55rem",
+                      color: "var(--muted)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
+                  >
+                    <Check
+                      size={16}
+                      style={{
+                        color: "var(--cash)",
+                        flexShrink: 0,
+                        marginBlockStart: "0.15rem",
+                      }}
+                    />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p
+                style={{
+                  color: "var(--muted)",
+                  fontSize: "var(--font-size-sm)",
+                  margin: 0,
+                }}
+              >
+                {t("activity.completeFields")}
+              </p>
+            )}
+          </aside>
+        </div>
+        <footer className="activity-composer-actions">
+          <div className="entry-actions">
+            <button
+              className="button secondary"
+              type="button"
+              onClick={onClose}
+            >
+              {t("common.cancel")}
+            </button>
+            <SubmitButton
+              busy={saving}
+              icon={draft.kind === "transfer" ? ArrowRightLeft : Plus}
+            >
+              {mode === "edit" ? t("common.save") : t("activity.add")}
+            </SubmitButton>
+          </div>
+        </footer>
+      </form>
+    </ModalDialog>
+  );
+}
+
+function AccountSelect({
+  id,
+  value,
+  accounts,
+  exclude,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  accounts: AccountRecord[];
+  exclude?: string;
+  onChange: (value: string) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <select
+      id={id}
+      required
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    >
+      <option value="">{t("activity.chooseAccount")}</option>
+      {accounts
+        .filter(
+          (account) => String(account.id) !== exclude && !account.archived_on,
+        )
+        .map((account) => (
+          <option key={account.id} value={account.id}>
+            {account.name} · {money(account.balance)}
+          </option>
+        ))}
+    </select>
+  );
+}
+
+function payloadFromDraft(draft: Draft): ActivityInput {
+  const common = {
+    amount: draft.amount,
+    description: draft.description,
+    date: draft.date,
+  };
+  if (draft.kind === "transfer") {
+    return {
+      kind: "transfer",
+      ...common,
+      from_account_id: Number(draft.fromAccountId),
+      to_account_id: Number(draft.toAccountId),
+    };
+  }
+  if (draft.kind === "adjustment") {
+    return {
+      kind: "adjustment",
+      ...common,
+      account_id: Number(draft.accountId),
+    };
+  }
+  return {
+    kind: draft.kind,
+    ...common,
+    category: draft.category,
+    account_id: Number(draft.accountId),
+  };
+}
+
+function projectedEffects(draft: Draft, accounts: AccountRecord[]) {
+  if (!/^-?\d+(?:\.\d{0,2})?$/.test(draft.amount)) return [];
+  const amount = draft.amount;
+  const byId = new Map(
+    accounts.map((account) => [String(account.id), account]),
+  );
+  if (draft.kind === "transfer") {
+    const source = byId.get(draft.fromAccountId);
+    const destination = byId.get(draft.toAccountId);
+    if (!source || !destination) return [];
+    const sourceDelta = source.type === "asset" ? negateMoney(amount) : amount;
+    const destinationDelta =
+      destination.type === "asset" ? amount : negateMoney(amount);
+    return [
+      `${source.name}: ${money(source.balance)} → ${money(sumMoney([source.balance, sourceDelta]))}`,
+      `${destination.name}: ${money(destination.balance)} → ${money(sumMoney([destination.balance, destinationDelta]))}`,
+      "Net worth 0.00 · Cashflow 0.00",
+    ];
+  }
+  const account = byId.get(draft.accountId);
+  if (!account) return [];
+  if (draft.kind === "adjustment") {
+    const change = subtractMoney(amount, account.balance);
+    const netWorth = account.type === "asset" ? change : negateMoney(change);
+    return [
+      `${account.name}: ${money(account.balance)} → ${money(amount)}`,
+      `Net worth ${money(netWorth)} · Cashflow 0.00`,
+    ];
+  }
+  const economic = draft.kind === "income" ? amount : negateMoney(amount);
+  const delta = account.type === "asset" ? economic : negateMoney(economic);
+  return [
+    `${account.name}: ${money(account.balance)} → ${money(sumMoney([account.balance, delta]))}`,
+    `Net worth ${money(economic)} · Cashflow ${money(economic)}`,
+  ];
+}
+
+function useActiveAccounts() {
+  const load = useCallback(
+    (signal: AbortSignal) => api.accounts({}, signal),
+    [],
+  );
+  return useResource(load, "activity-accounts", {
+    cacheKey: "activity-accounts",
+    retainData: true,
+  });
+}
+
+function filtersFromUrl(period: {
+  month: number;
+  year: number;
+}): ActivityFilters {
+  const params = new URLSearchParams(window.location.search);
+  const kind = params.get("kind") as ActivityKind | null;
+  const account = Number(params.get("account_id"));
+  return {
+    month: Number(params.get("month")) || period.month,
+    year: Number(params.get("year")) || period.year,
+    kind: kind ?? "",
+    account_id: account > 0 ? account : "",
+    search: params.get("search") ?? "",
+  };
+}
+
+function writeFilters(filters: ActivityFilters) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== "" && value !== undefined) params.set(key, String(value));
+  });
+  window.history.replaceState(
+    {},
+    "",
+    `/activity${params.size ? `?${params}` : ""}`,
+  );
+}
+
+function activityPeriodKey(period: { month: number; year: number }) {
   return `${period.year}-${period.month}`;
 }
 
@@ -660,16 +1155,4 @@ function restoreTransactionScrollAnchor(
     top: window.scrollY + offset,
     behavior: "instant",
   });
-}
-
-function readSearchParam(): string {
-  return new URLSearchParams(window.location.search).get("search") ?? "";
-}
-
-function writeSearchParam(value: string) {
-  const url = new URL(window.location.href);
-  const normalized = value.trim();
-  if (normalized) url.searchParams.set("search", normalized);
-  else url.searchParams.delete("search");
-  window.history.replaceState({}, "", `${url.pathname}${url.search}`);
 }

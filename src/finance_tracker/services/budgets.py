@@ -6,11 +6,11 @@ from pathlib import Path
 
 from finance_tracker.database import initialize_database
 from finance_tracker.database import transaction as database_transaction
+from finance_tracker.models.activities import ActivityFilters, ActivityKind
 from finance_tracker.models.budgets import Budget, BudgetFilters
-from finance_tracker.models.transactions import TransactionFilters, TransactionType
+from finance_tracker.repositories.activities import ActivityRepository
 from finance_tracker.repositories.budgets import BudgetRepository
 from finance_tracker.repositories.category_rules import CategoryRuleRepository
-from finance_tracker.repositories.transactions import TransactionRepository
 
 
 @dataclass(frozen=True)
@@ -72,16 +72,17 @@ class BudgetService:
         filters = BudgetFilters(month=month, year=year)
         with database_transaction(self.db_path) as connection:
             budgets = BudgetRepository(connection).list(filters)
-            transactions = TransactionRepository(connection).list(
-                TransactionFilters(
+            transactions = ActivityRepository(connection).list(
+                ActivityFilters(
                     month=month,
                     year=year,
-                    transaction_type=TransactionType.EXPENSE,
+                    kind=ActivityKind.EXPENSE,
                 )
             )
 
         expenses_by_category: dict[str, Decimal] = {}
         for transaction in transactions:
+            assert transaction.category is not None
             category_key = transaction.category.lower()
             expenses_by_category[category_key] = (
                 expenses_by_category.get(category_key, Decimal("0.00")) + transaction.amount
@@ -90,9 +91,7 @@ class BudgetService:
         return [
             self._build_status(
                 budget=budget,
-                actual_expenses=expenses_by_category.get(
-                    budget.category.lower(), Decimal("0.00")
-                ),
+                actual_expenses=expenses_by_category.get(budget.category.lower(), Decimal("0.00")),
             )
             for budget in budgets
         ]
@@ -100,9 +99,7 @@ class BudgetService:
     @staticmethod
     def _build_status(budget: Budget, actual_expenses: Decimal) -> BudgetStatus:
         remaining = budget.amount - actual_expenses
-        percent_used = (actual_expenses / budget.amount * Decimal("100")).quantize(
-            Decimal("0.1")
-        )
+        percent_used = (actual_expenses / budget.amount * Decimal("100")).quantize(Decimal("0.1"))
 
         if actual_expenses > budget.amount:
             status = "over budget"

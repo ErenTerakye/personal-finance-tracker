@@ -179,6 +179,34 @@ export function transaction() {
   };
 }
 
+export function activity() {
+  return {
+    id: 1,
+    kind: "expense",
+    amount: "45.90",
+    category: "Food",
+    description: "Groceries",
+    date: "2026-06-12",
+    account: {
+      id: 1,
+      name: "Everyday checking",
+      type: "asset",
+      subtype: "cash",
+      role: "account",
+      before_balance: "1000.00",
+      after_balance: "954.10",
+      balance_effect: "-45.90",
+      balance_state: "normal",
+    },
+    from_account: null,
+    to_account: null,
+    net_worth_effect: "-45.90",
+    cashflow_effect: "-45.90",
+    created_at: "2026-06-12T12:00:00",
+    updated_at: "2026-06-12T12:00:00",
+  };
+}
+
 export function budget() {
   return {
     id: 1,
@@ -227,7 +255,7 @@ export function dashboardPayload(overrides: Record<string, unknown>) {
       top_expense_categories: { Food: "386.40" },
     },
     savings_rate: "84.5",
-    recent_transactions: [transaction()],
+    recent_activities: [activity()],
     budget_statuses: [],
     net_worth: {
       as_of: "2026-07-16",
@@ -238,7 +266,7 @@ export function dashboardPayload(overrides: Record<string, unknown>) {
       archived_account_count: 0,
       resolved_asset_count: 0,
       resolved_liability_count: 0,
-      unresolved_account_count: 0,
+      account_state_warning_count: 0,
       currency: "USD",
     },
     ...overrides,

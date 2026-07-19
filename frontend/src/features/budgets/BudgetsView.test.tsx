@@ -282,6 +282,57 @@ describe("budgets workflow", () => {
       expect.objectContaining({ body: expect.stringContaining("Food,400") }),
     );
   });
+
+  it("restricts the budget limit amount field to maximum two decimal places", async () => {
+    const budgetRecord = {
+      id: 1,
+      category: "Food",
+      amount: "500.00",
+      month: 7,
+      year: 2026,
+      created_at: null,
+    };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith("/api/budgets/status")) {
+        return response({
+          statuses: [
+            {
+              budget: budgetRecord,
+              actual_expenses: "120.00",
+              remaining: "180.00",
+              percent_used: "40.0",
+              status: "on track",
+            },
+          ],
+        });
+      }
+      if (url.startsWith("/api/budgets")) {
+        return response({ budgets: [budgetRecord] });
+      }
+      return response(dashboardPayload({}));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await userEvent.click(
+      await screen.findByRole("link", { name: /Budgets/i }),
+    );
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Set budget" }),
+    );
+    const dialog = screen.getByRole("dialog", { name: "Set budget" });
+    const amountInput = within(dialog).getByLabelText(
+      "Amount",
+    ) as HTMLInputElement;
+
+    await userEvent.type(amountInput, "12.345");
+    expect(amountInput.value).toBe("12.34");
+
+    await userEvent.clear(amountInput);
+    await userEvent.type(amountInput, "abc");
+    expect(amountInput.value).toBe("");
+  });
 });
 
 function activeRoute() {

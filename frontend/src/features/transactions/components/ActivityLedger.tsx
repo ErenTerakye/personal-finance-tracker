@@ -1,6 +1,9 @@
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  ArrowRightLeft,
+  Scale,
+  Landmark,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -8,7 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { CSSProperties } from "react";
-import type { TransactionRecord } from "../../../types";
+import type { ActivityRecord } from "../../../types";
 import { EmptyState } from "../../../shared/components/feedback";
 import { formatDate, getFormatterLocale } from "../../../shared/format/dates";
 import {
@@ -22,27 +25,27 @@ import { useI18n } from "../../../shared/i18n/I18nProvider";
 
 type ActivityGroup = {
   date: string;
-  transactions: TransactionRecord[];
+  records: ActivityRecord[];
   income: string;
   expenses: string;
 };
 
-function groupTransactions(transactions: TransactionRecord[]): ActivityGroup[] {
+function groupActivities(records: ActivityRecord[]): ActivityGroup[] {
   const groups = new Map<string, ActivityGroup>();
-  for (const transaction of transactions) {
-    const group = groups.get(transaction.date) ?? {
-      date: transaction.date,
-      transactions: [],
+  for (const record of records) {
+    const group = groups.get(record.date) ?? {
+      date: record.date,
+      records: [],
       income: "0.00",
       expenses: "0.00",
     };
-    group.transactions.push(transaction);
-    if (transaction.type === "income") {
-      group.income = sumMoney([group.income, transaction.amount]);
-    } else {
-      group.expenses = sumMoney([group.expenses, transaction.amount]);
+    group.records.push(record);
+    if (record.kind === "income") {
+      group.income = sumMoney([group.income, record.amount]);
+    } else if (record.kind === "expense") {
+      group.expenses = sumMoney([group.expenses, record.amount]);
     }
-    groups.set(transaction.date, group);
+    groups.set(record.date, group);
   }
   return [...groups.values()];
 }
@@ -58,23 +61,25 @@ function dayLabel(dateValue: string) {
 }
 
 export function ActivityLedger({
-  transactions,
+  records,
   onEdit,
   onDelete,
-  onCreate,
+  onAccount,
   onClear,
   filtered,
+  onCreate,
 }: {
-  transactions: TransactionRecord[];
-  onEdit: (transaction: TransactionRecord) => void;
-  onDelete: (transaction: TransactionRecord) => void;
-  onCreate: () => void;
+  records: ActivityRecord[];
+  onEdit: (record: ActivityRecord) => void;
+  onDelete: (record: ActivityRecord) => void;
+  onAccount: (id: number) => void;
   onClear: () => void;
   filtered: boolean;
+  onCreate: () => void;
 }) {
   const { t } = useI18n();
 
-  if (!transactions.length) {
+  if (!records.length) {
     return (
       <EmptyState
         icon={ReceiptText}
@@ -110,7 +115,7 @@ export function ActivityLedger({
 
   return (
     <ol className="ledger-days" role="list">
-      {groupTransactions(transactions).map((group) => {
+      {groupActivities(records).map((group) => {
         const net = subtractMoney(group.income, group.expenses);
         const netDirection = compareMoney(net, 0);
         return (
@@ -120,10 +125,10 @@ export function ActivityLedger({
                 <time dateTime={group.date}>{dayLabel(group.date)}</time>
                 <span>
                   {t(
-                    group.transactions.length === 1
+                    group.records.length === 1
                       ? "transactions.feed.entryCountOne"
                       : "transactions.feed.entryCount",
-                    { count: group.transactions.length },
+                    { count: group.records.length },
                   )}
                 </span>
               </div>
@@ -133,81 +138,182 @@ export function ActivityLedger({
               </strong>
             </header>
             <ol className="ledger-entries" role="list">
-              {group.transactions.map((transaction) => {
-                const isIncome = transaction.type === "income";
-                const DirectionIcon = isIncome ? ArrowDownLeft : ArrowUpRight;
-                const name = transaction.description || transaction.category;
+              {group.records.map((record) => {
+                const isIncome = record.kind === "income";
+                const isExpense = record.kind === "expense";
+                const isTransfer = record.kind === "transfer";
+                const isAdjustment = record.kind === "adjustment";
+
+                const DirectionIcon = isIncome
+                  ? ArrowDownLeft
+                  : isExpense
+                    ? ArrowUpRight
+                    : isTransfer
+                      ? ArrowRightLeft
+                      : isAdjustment
+                        ? Scale
+                        : Landmark;
+
+                const name =
+                  record.description ||
+                  record.category ||
+                  t(`activity.kinds.${record.kind}`);
+
+                const effects = [
+                  record.account,
+                  record.from_account,
+                  record.to_account,
+                ].filter((item): item is NonNullable<typeof item> =>
+                  Boolean(item),
+                );
+
                 return (
-                  <li
-                    className={`ledger-entry ${transaction.type}`}
-                    key={transaction.id}
-                  >
+                  <li className={`ledger-entry ${record.kind}`} key={record.id}>
                     <span className="ledger-entry-icon" aria-hidden="true">
                       <DirectionIcon size={19} />
                     </span>
                     <div className="ledger-entry-copy">
                       <strong>{name}</strong>
-                      <span>
-                        <span>{transaction.category}</span>
-                        {transaction.description
-                          ? ` · ${t(`common.${transaction.type}`)}`
-                          : ""}
+                      <span className="ledger-entry-subtitle">
+                        {isIncome || isExpense ? (
+                          <>
+                            {record.category ? (
+                              <span>{record.category}</span>
+                            ) : null}
+                            {record.category && record.account ? " · " : ""}
+                            {record.account ? (
+                              <button
+                                className="link-button"
+                                type="button"
+                                onClick={() => onAccount(record.account!.id)}
+                              >
+                                {record.account.name}
+                              </button>
+                            ) : null}
+                          </>
+                        ) : isTransfer ? (
+                          record.from_account && record.to_account ? (
+                            <>
+                              <button
+                                className="link-button"
+                                type="button"
+                                onClick={() =>
+                                  onAccount(record.from_account!.id)
+                                }
+                              >
+                                {record.from_account.name}
+                              </button>
+                              {" → "}
+                              <button
+                                className="link-button"
+                                type="button"
+                                onClick={() => onAccount(record.to_account!.id)}
+                              >
+                                {record.to_account.name}
+                              </button>
+                            </>
+                          ) : null
+                        ) : record.account ? (
+                          <button
+                            className="link-button"
+                            type="button"
+                            onClick={() => onAccount(record.account!.id)}
+                          >
+                            {record.account.name}
+                          </button>
+                        ) : null}
                       </span>
+                      {effects.length > 0 && (
+                        <div
+                          className="ledger-entry-effects"
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "0.15rem",
+                            marginBlockStart: "0.25rem",
+                          }}
+                        >
+                          {effects.map((effect) => (
+                            <span
+                              key={effect.role}
+                              className={`balance-effect ${effect.balance_state}`}
+                              style={{ fontSize: "var(--font-size-xs)" }}
+                            >
+                              {effect.name}: {money(effect.before_balance)} →{" "}
+                              {money(effect.after_balance)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <strong className="ledger-entry-amount">
                       <span className="sr-only">
-                        {t(`common.${transaction.type}`)}{" "}
+                        {t(`activity.kinds.${record.kind}`)}{" "}
                       </span>
-                      {isIncome ? "+" : "−"}
-                      {money(transaction.amount)}
+                      {isIncome ? "+" : isExpense ? "−" : ""}
+                      {money(record.amount)}
                     </strong>
                     <div className="ledger-entry-actions">
-                      <button
-                        className="icon-button ghost action-trigger-btn"
-                        type="button"
-                        popoverTarget={`row-actions-${transaction.id}`}
-                        aria-label={t("common.actions")}
-                        style={
-                          {
-                            anchorName: `--row-anchor-${transaction.id}`,
-                          } as CSSProperties
-                        }
-                      >
-                        <MoreHorizontal aria-hidden="true" size={19} />
-                      </button>
-                      <div
-                        popover="auto"
-                        id={`row-actions-${transaction.id}`}
-                        className="row-action-panel"
-                        style={
-                          {
-                            positionAnchor: `--row-anchor-${transaction.id}`,
-                          } as CSSProperties
-                        }
-                      >
-                        <button
-                          className="row-action-item edit"
-                          type="button"
-                          onClick={() => {
-                            closePopover(`row-actions-${transaction.id}`);
-                            onEdit(transaction);
+                      {record.kind !== "opening" ? (
+                        <>
+                          <button
+                            className="icon-button ghost action-trigger-btn"
+                            type="button"
+                            popoverTarget={`row-actions-${record.id}`}
+                            aria-label={t("common.actions")}
+                            style={
+                              {
+                                anchorName: `--row-anchor-${record.id}`,
+                              } as CSSProperties
+                            }
+                          >
+                            <MoreHorizontal aria-hidden="true" size={19} />
+                          </button>
+                          <div
+                            popover="auto"
+                            id={`row-actions-${record.id}`}
+                            className="row-action-panel"
+                            style={
+                              {
+                                positionAnchor: `--row-anchor-${record.id}`,
+                              } as CSSProperties
+                            }
+                          >
+                            <button
+                              className="row-action-item edit"
+                              type="button"
+                              onClick={() => {
+                                closePopover(`row-actions-${record.id}`);
+                                onEdit(record);
+                              }}
+                            >
+                              <Pencil aria-hidden="true" size={16} />
+                              <span>{t("common.edit")}</span>
+                            </button>
+                            <button
+                              className="row-action-item delete"
+                              type="button"
+                              onClick={() => {
+                                closePopover(`row-actions-${record.id}`);
+                                onDelete(record);
+                              }}
+                            >
+                              <Trash2 aria-hidden="true" size={16} />
+                              <span>{t("common.delete")}</span>
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <span
+                          style={{
+                            fontSize: "var(--font-size-xs)",
+                            color: "var(--muted)",
+                            paddingInlineEnd: "0.5rem",
                           }}
                         >
-                          <Pencil aria-hidden="true" size={16} />
-                          <span>{t("common.edit")}</span>
-                        </button>
-                        <button
-                          className="row-action-item delete"
-                          type="button"
-                          onClick={() => {
-                            closePopover(`row-actions-${transaction.id}`);
-                            onDelete(transaction);
-                          }}
-                        >
-                          <Trash2 aria-hidden="true" size={16} />
-                          <span>{t("common.delete")}</span>
-                        </button>
-                      </div>
+                          {t("activity.readOnly")}
+                        </span>
+                      )}
                     </div>
                   </li>
                 );

@@ -13,7 +13,7 @@ from textual.screen import Screen
 from textual.widgets import Footer, Header, Input, TabbedContent, TabPane
 
 from finance_tracker.config import resolve_db_path
-from finance_tracker.services import TransactionService
+from finance_tracker.services import ActivityService
 from finance_tracker.tui.forms import HelpScreen
 from finance_tracker.tui.views import (
     AccountsView,
@@ -37,10 +37,10 @@ class FinanceTrackerTui(App[None]):
         Binding("q", "quit", "Quit", priority=True),
         Binding("r", "refresh", "Refresh", priority=True),
         Binding("?", "help", "Help", priority=True),
-        Binding("a", "add_transaction", "Add transaction", priority=True),
+        Binding("a", "add_activity", "Add activity", priority=True),
         Binding("slash", "focus_search", "Search", priority=True),
         Binding("1", "workspace('overview-tab')", "Overview", show=False, priority=True),
-        Binding("2", "workspace('transactions-tab')", "Transactions", show=False, priority=True),
+        Binding("2", "workspace('transactions-tab')", "Activity", show=False, priority=True),
         Binding("3", "workspace('budgets-tab')", "Budgets", show=False, priority=True),
         Binding("4", "workspace('accounts-tab')", "Accounts", show=False, priority=True),
         Binding("5", "workspace('manage-tab')", "Manage", show=False, priority=True),
@@ -49,14 +49,14 @@ class FinanceTrackerTui(App[None]):
     def __init__(self, *, db_path: Path | None = None) -> None:
         super().__init__()
         self.db_path = resolve_db_path(db_path).resolve()
-        TransactionService(self.db_path)
+        ActivityService(self.db_path)
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Container(id="workspace"), TabbedContent(initial="overview-tab"):
             with TabPane("1 Overview", id="overview-tab"):
                 yield OverviewView()
-            with TabPane("2 Transactions", id="transactions-tab"):
+            with TabPane("2 Activity", id="transactions-tab"):
                 yield TransactionsView()
             with TabPane("3 Budgets", id="budgets-tab"):
                 yield BudgetsView()
@@ -87,7 +87,7 @@ class FinanceTrackerTui(App[None]):
                 "quit",
                 "refresh",
                 "help",
-                "add_transaction",
+                "add_activity",
                 "focus_search",
                 "workspace",
             }
@@ -107,7 +107,7 @@ class FinanceTrackerTui(App[None]):
     def action_help(self) -> None:
         self.push_screen(HelpScreen())
 
-    def action_add_transaction(self) -> None:
+    def action_add_activity(self) -> None:
         self.action_workspace("transactions-tab")
         self.query_one(TransactionsView).open_add()
 
@@ -118,14 +118,14 @@ class FinanceTrackerTui(App[None]):
             "budgets-tab": "#budget-search",
         }.get(active)
         if selector is None:
-            self.notify("Search is available in Transactions and Budgets.", severity="information")
+            self.notify("Search is available in Activity and Budgets.", severity="information")
             return
         self.query_one(selector, Input).focus()
 
     def get_system_commands(self, screen: Screen) -> Iterable[SystemCommand]:
         yield from super().get_system_commands(screen)
         yield SystemCommand(
-            "Add transaction", "Open the global transaction form", self.action_add_transaction
+            "Add activity", "Open the global account-aware form", self.action_add_activity
         )
         yield SystemCommand("Refresh ledger", "Reload all workspace data", self.refresh_all)
         yield SystemCommand(
@@ -134,7 +134,7 @@ class FinanceTrackerTui(App[None]):
             lambda: self.action_workspace("overview-tab"),
         )
         yield SystemCommand(
-            "Go to Transactions",
+            "Go to Activity",
             "Search and edit the ledger",
             lambda: self.action_workspace("transactions-tab"),
         )

@@ -1,17 +1,23 @@
 """Deterministic multi-month financial trend calculations."""
 
+from collections.abc import Sequence
 from datetime import date
 from decimal import Decimal
 
 from finance_tracker.exceptions import ValidationError
+from finance_tracker.models.activities import ActivityKind
 from finance_tracker.models.common import validate_month, validate_year
-from finance_tracker.models.transactions import Transaction, TransactionType
 from finance_tracker.reports.models import TrendMonth, TrendReport
-from finance_tracker.reports.monthly import build_monthly_report, calculate_savings_rate
+from finance_tracker.reports.monthly import (
+    CashflowEntry,
+    _cashflow_kind,
+    build_monthly_report,
+    calculate_savings_rate,
+)
 
 
 def build_trend_report(
-    transactions: list[Transaction],
+    transactions: Sequence[CashflowEntry],
     months: int,
     end_month: int,
     end_year: int,
@@ -21,7 +27,7 @@ def build_trend_report(
         raise ValidationError("Months must be a positive integer.")
 
     periods = _month_window(months=months, end_month=end_month, end_year=end_year)
-    transactions_by_period: dict[tuple[int, int], list[Transaction]] = {
+    transactions_by_period: dict[tuple[int, int], list[CashflowEntry]] = {
         (year, month): [] for year, month in periods
     }
 
@@ -66,7 +72,7 @@ def build_trend_report(
 
 
 def _build_trend_month(
-    transactions: list[Transaction],
+    transactions: Sequence[CashflowEntry],
     month: int,
     year: int,
     previous_totals: dict[str, Decimal] | None = None,
@@ -113,7 +119,7 @@ def _month_window(months: int, end_month: int, end_year: int) -> list[tuple[int,
 
 
 def _top_expense_categories(
-    transactions: list[Transaction],
+    transactions: Sequence[CashflowEntry],
     periods: set[tuple[int, int]],
     limit: int,
 ) -> dict[str, Decimal]:
@@ -122,9 +128,10 @@ def _top_expense_categories(
 
     for transaction in transactions:
         period = (transaction.date.year, transaction.date.month)
-        if transaction.type != TransactionType.EXPENSE or period not in periods:
+        if _cashflow_kind(transaction) is not ActivityKind.EXPENSE or period not in periods:
             continue
 
+        assert transaction.category is not None
         category_key = transaction.category.lower()
         if category_key not in category_names or (
             category_names[category_key].islower() and not transaction.category.islower()

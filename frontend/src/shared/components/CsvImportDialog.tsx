@@ -1,7 +1,11 @@
 import { FormEvent, useEffect, useState } from "react";
 import "./CsvImportDialog.css";
 import { Search, Upload } from "lucide-react";
-import type { ImportSummary, TransactionImportPreview } from "../../types";
+import type {
+  ActivityImportPreview,
+  ImportSummary,
+  TransactionImportPreview,
+} from "../../types";
 import { localizedNotice } from "../i18n/notices";
 import { useI18n } from "../i18n/I18nProvider";
 import { SubmitButton } from "./actions";
@@ -27,13 +31,13 @@ export function CsvImportDialog({
   title: string;
   description: string;
   result: ImportSummary | null;
-  preview?: TransactionImportPreview | null;
+  preview?: TransactionImportPreview | ActivityImportPreview | null;
   error: string;
   uploading: boolean;
   previewing?: boolean;
   onClose: () => void;
-  onImport: (csvText: string, allowDuplicates?: boolean) => Promise<void>;
-  onPreview?: (csvText: string) => Promise<void>;
+  onImport: (csvText: string, allowDuplicates?: boolean) => Promise<unknown>;
+  onPreview?: (csvText: string) => Promise<unknown>;
   onReset: () => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
@@ -145,7 +149,7 @@ function ImportPreviewSummary({
   allowDuplicates,
   onAllowDuplicatesChange,
 }: {
-  preview: TransactionImportPreview;
+  preview: TransactionImportPreview | ActivityImportPreview;
   allowDuplicates: boolean;
   onAllowDuplicatesChange: (value: boolean) => void;
 }) {
@@ -180,15 +184,28 @@ function ImportPreviewSummary({
                 status: t(`common.${row.status}`) || row.status,
               })}
             </strong>
-            <span>
-              {row.error ??
-                `${t(`common.${row.transaction?.type}`) || row.transaction?.type} ${row.transaction?.amount} ${row.original_category !== row.transaction?.category ? `${row.original_category} -> ` : ""}${row.transaction?.category}`}
-            </span>
+            <span>{previewRowDetail(row, t)}</span>
           </li>
         ))}
       </ul>
     </div>
   );
+}
+
+function previewRowDetail(
+  row:
+    | TransactionImportPreview["rows"][number]
+    | ActivityImportPreview["rows"][number],
+  t: (key: string) => string,
+) {
+  if (row.error) return row.error;
+  if ("activity" in row) {
+    const activity = row.activity;
+    return activity
+      ? `${t(`activity.kinds.${activity.kind}`)} ${activity.amount} · ${activity.balance_effects.join(", ")}`
+      : "";
+  }
+  return `${t(`common.${row.transaction?.type}`) || row.transaction?.type} ${row.transaction?.amount} ${row.original_category !== row.transaction?.category ? `${row.original_category} -> ` : ""}${row.transaction?.category}`;
 }
 
 function ImportResultSummary({ result }: { result: ImportSummary }) {

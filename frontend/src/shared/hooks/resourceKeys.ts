@@ -1,4 +1,8 @@
-import type { BudgetFilters, TransactionFilters } from "../../api/client";
+import type {
+  ActivityFilters,
+  BudgetFilters,
+  TransactionFilters,
+} from "../../api/client";
 
 export const resourceTags = {
   accounts: "accounts",
@@ -7,10 +11,12 @@ export const resourceTags = {
   rules: "rules",
   settings: "settings",
   transactions: "transactions",
+  activities: "activities",
 } as const;
 
 export const dashboardTags = [resourceTags.dashboard] as const;
 export const transactionTags = [resourceTags.transactions] as const;
+export const activityTags = [resourceTags.activities] as const;
 export const transactionCategoryTags = [
   resourceTags.budgets,
   resourceTags.rules,
@@ -29,6 +35,10 @@ export function dashboardResourceKey(month: number, year: number) {
 
 export function transactionResourceKey(filters: TransactionFilters) {
   return `transactions:${stableEntries(filters)}`;
+}
+
+export function activityResourceKey(filters: ActivityFilters) {
+  return `activities:${stableEntries(filters)}`;
 }
 
 export const transactionCategoriesResourceKey = "transaction-categories";

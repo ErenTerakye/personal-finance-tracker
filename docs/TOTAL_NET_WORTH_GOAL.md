@@ -1,8 +1,13 @@
 # Total Net Worth Feature Goal
 
+> **Superseded:** This snapshot-only design documents the original net-worth milestone. Schema v3
+> replaced it with the unified account activity ledger described in `docs/ARCHITECTURE.md` and
+> `docs/PROJECT_PLAN.md`. It is retained as historical design evidence and is not a current command,
+> API, persistence, or product contract.
+
 ## Document Status
 
-- **Status:** Implemented product and implementation goal
+- **Status:** Superseded historical design
 - **Scope:** Asset and liability accounts, dated balance snapshots, total net worth reporting, CLI
   parity, FastAPI contracts, and a dedicated React Web UI destination
 - **Target:** Python 3.14+, Node.js 24+, and Baseline 2026-capable browsers defined in `AGENTS.md`

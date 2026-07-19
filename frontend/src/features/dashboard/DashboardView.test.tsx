@@ -138,7 +138,7 @@ describe("dashboard workflow", () => {
       within(actions)
         .getAllByRole("button")
         .map((button) => button.textContent),
-    ).toEqual(["Add transaction", "Set budget"]);
+    ).toEqual(["Add activity", "Set budget"]);
     expect(actions.closest(".page-heading")).toContainElement(toolbar);
     expect(document.querySelector(".quick-actions")).not.toBeInTheDocument();
   });
@@ -310,10 +310,14 @@ describe("dashboard workflow", () => {
     });
   });
 
-  it("keeps one global transaction action that moves creation to Transactions", async () => {
+  it("keeps one global activity action that moves creation to Activity", async () => {
     mockFetch({
       "/api/dashboard": dashboardPayload({}),
-      "/api/transactions": { transactions: [] },
+      "/api/activities": {
+        activities: [],
+        page: { limit: 100, offset: 0, total: 0 },
+      },
+      "/api/accounts": { accounts: [] },
       "/api/budgets": { budgets: [] },
       "/api/budgets/status": { statuses: [] },
     });
@@ -322,16 +326,16 @@ describe("dashboard workflow", () => {
     await screen.findByRole("heading", { name: "Overview" });
     expect(
       within(screen.getByLabelText("Next actions")).getByRole("button", {
-        name: "Add transaction",
+        name: "Add activity",
       }),
     ).toBeVisible();
     await userEvent.click(
       document.querySelector<HTMLButtonElement>(".rail-create")!,
     );
 
-    expect(window.location.pathname).toBe("/transactions");
+    expect(window.location.pathname).toBe("/activity");
     expect(
-      await screen.findByRole("dialog", { name: "Add transaction" }),
+      await screen.findByRole("dialog", { name: "Add activity" }),
     ).toHaveAttribute("open");
   });
 
@@ -356,7 +360,7 @@ describe("dashboard workflow", () => {
     expect(within(dialog).getByLabelText("Year")).toHaveValue(2026);
   });
 
-  it("uses Add transaction consistently for every global create command", async () => {
+  it("uses Add activity consistently for every global create command", async () => {
     mockCompactLayout();
     mockFetch({ "/api/dashboard": dashboardPayload({}) });
 
@@ -365,7 +369,7 @@ describe("dashboard workflow", () => {
 
     expect(document.querySelector(".rail-create")).not.toBeInTheDocument();
     expect(document.querySelector(".compact-create")).toHaveAccessibleName(
-      "Add transaction",
+      "Add activity",
     );
   });
 
@@ -379,7 +383,7 @@ describe("dashboard workflow", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("No budgets for this period")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "All transactions" }),
+      screen.getByRole("button", { name: "All activity" }),
     ).toBeInTheDocument();
     expect(screen.queryByText("Latest activity")).not.toBeInTheDocument();
     expect(screen.getByText("-$45.90")).toBeInTheDocument();
@@ -542,7 +546,7 @@ describe("dashboard workflow", () => {
     render(<App />);
 
     const activityHeading = await screen.findByRole("heading", {
-      name: "Recent transactions",
+      name: "Recent activity",
     });
     const mixHeading = screen.getByRole("heading", { name: "Expense mix" });
     const analysisPair = document.querySelector(".dashboard-analysis-pair");

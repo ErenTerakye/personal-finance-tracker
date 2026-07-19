@@ -6,7 +6,7 @@ from typing import Annotated
 import typer
 
 from finance_tracker.charts import save_monthly_chart, save_trend_chart
-from finance_tracker.cli.common import DbPathOption, currency, handle_error, transaction_service
+from finance_tracker.cli.common import DbPathOption, activity_service, currency, handle_error
 from finance_tracker.exceptions import FinanceTrackerError
 from finance_tracker.reports import (
     build_monthly_report,
@@ -23,13 +23,15 @@ def summary(
 ) -> None:
     """Print a monthly income, expense, and net savings summary."""
     try:
-        service = transaction_service(db_path)
-        transactions = service.list_transactions(month=month, year=year)
+        service = activity_service(db_path)
+        transactions = [
+            record.activity for record in service.list_activities(month=month, year=year)
+        ]
         report = build_monthly_report(
             transactions,
             month=month,
             year=year,
-            context_transactions=service.list_transactions(),
+            context_transactions=[record.activity for record in service.list_activities()],
         )
         currency_code = currency(db_path)
     except FinanceTrackerError as exc:
@@ -45,13 +47,15 @@ def report(
 ) -> None:
     """Print a monthly report and optionally save a PNG chart."""
     try:
-        service = transaction_service(db_path)
-        transactions = service.list_transactions(month=month, year=year)
+        service = activity_service(db_path)
+        transactions = [
+            record.activity for record in service.list_activities(month=month, year=year)
+        ]
         monthly_report = build_monthly_report(
             transactions,
             month=month,
             year=year,
-            context_transactions=service.list_transactions(),
+            context_transactions=[record.activity for record in service.list_activities()],
         )
         currency_code = currency(db_path)
     except FinanceTrackerError as exc:
@@ -72,7 +76,7 @@ def trends(
 ) -> None:
     """Print a multi-month financial trend report."""
     try:
-        transactions = transaction_service(db_path).list_transactions()
+        transactions = [record.activity for record in activity_service(db_path).list_activities()]
         trend_report = build_trend_report(
             transactions=transactions,
             months=months,

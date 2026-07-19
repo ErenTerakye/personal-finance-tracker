@@ -57,10 +57,26 @@ export function BalanceCheckInDialog({
   const [amounts, setAmounts] =
     useState<Record<number, string>>(initialAmounts);
   const mutation = useMutation(
-    (payload: {
+    async (payload: {
       effectiveDate: string;
       updates: { account_id: number; amount: string }[];
-    }) => api.checkInBalances(payload.effectiveDate, payload.updates),
+    }) => {
+      await Promise.all(
+        payload.updates.map((update) =>
+          api.createActivity({
+            kind: "adjustment",
+            amount: update.amount,
+            date: payload.effectiveDate,
+            account_id: update.account_id,
+            description: "Balance check-in",
+          }),
+        ),
+      );
+      return {
+        notice: t("accounts.updated"),
+        notice_code: "balance_check_in.saved",
+      };
+    },
     { onSuccess: onChanged },
   );
   const updates = accounts

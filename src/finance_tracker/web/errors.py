@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from finance_tracker.exceptions import (
     AccountNotFoundError,
+    ActivityNotFoundError,
     BudgetNotFoundError,
     CategoryRuleNotFoundError,
     FinanceTrackerError,
@@ -35,6 +36,7 @@ async def handle_finance_error(_request: Request, exc: Exception) -> JSONRespons
             exc,
             (
                 AccountNotFoundError,
+                ActivityNotFoundError,
                 BudgetNotFoundError,
                 CategoryRuleNotFoundError,
                 RecurringTemplateNotFoundError,

@@ -47,10 +47,11 @@ class LedgerRecoveryService:
             raise ValidationError(f"Cannot read ledger backup: {exc}") from exc
         if integrity != "ok":
             raise ValidationError(f"Ledger integrity check failed: {integrity}")
-        if schema_version < 1 or schema_version > SCHEMA_VERSION:
+        if schema_version != SCHEMA_VERSION:
             raise ValidationError(
                 f"Unsupported ledger schema version {schema_version}; "
-                f"this app supports versions 1 through {SCHEMA_VERSION}."
+                f"this app requires schema version {SCHEMA_VERSION}. Back up old "
+                "ledgers, then rebuild or import their activity data into a new ledger."
             )
         if foreign_key_rows:
             first = foreign_key_rows[0]
@@ -60,8 +61,7 @@ class LedgerRecoveryService:
             )
         if schema_violations:
             raise ValidationError(
-                "Ledger schema does not match its declared version: "
-                + "; ".join(schema_violations)
+                "Ledger schema does not match its declared version: " + "; ".join(schema_violations)
             )
         return LedgerVerification(candidate, schema_version, integrity)
 
@@ -105,9 +105,7 @@ class LedgerRecoveryService:
             raise ValidationError("Backup source must differ from the active ledger.")
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
-        source = sqlite3.connect(
-            f"file:{source_path.resolve()}?mode=ro", uri=True, autocommit=True
-        )
+        source = sqlite3.connect(f"file:{source_path.resolve()}?mode=ro", uri=True, autocommit=True)
         temporary_path: Path | None = None
         try:
             descriptor, temporary_name = tempfile.mkstemp(
@@ -129,6 +127,4 @@ class LedgerRecoveryService:
             source.close()
             if temporary_path is not None:
                 temporary_path.unlink(missing_ok=True)
-        return LedgerVerification(
-            self.db_path, prepared.schema_version, prepared.integrity
-        )
+        return LedgerVerification(self.db_path, prepared.schema_version, prepared.integrity)
