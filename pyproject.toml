@@ -22,7 +22,7 @@ classifiers = [
     "Topic :: Office/Business :: Financial",
 ]
 dependencies = [
-    "matplotlib>=3.8",
+    "matplotlib>=3.11.1",
     "textual>=6.0,<7.0",
     "typer>=0.12",
 ]
