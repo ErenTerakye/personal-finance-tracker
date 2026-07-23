@@ -24,9 +24,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
+        uses: actions/configure-pages@v6
 
       - name: Prepare static showcase
         run: |
