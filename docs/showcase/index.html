@@ -1,9 +1,17 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="light dark">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta
+      name="description"
+      content="Explore the Personal Finance Tracker's local-first architecture, cashflow overview, budgets, and account-aware finance workflows."
+    />
+    <link
+      rel="canonical"
+      href="https://erenterakye.github.io/personal-finance-tracker/"
+    />
     <title>Personal Finance Tracker Showcase</title>
     <style>
       :root {
@@ -22,7 +30,9 @@
         --muted: #667181;
         --radius: 8px;
         --mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
-        --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --sans:
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
       }
 
       @media (prefers-color-scheme: dark) {
@@ -52,8 +62,17 @@
         margin: 0;
         color: var(--text);
         background:
-          linear-gradient(90deg, color-mix(in srgb, var(--rule) 42%, transparent) 1px, transparent 1px) 0 0 / 28px 28px,
-          linear-gradient(180deg, color-mix(in srgb, var(--action) 10%, transparent), transparent 20rem),
+          linear-gradient(
+              90deg,
+              color-mix(in srgb, var(--rule) 42%, transparent) 1px,
+              transparent 1px
+            )
+            0 0 / 28px 28px,
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--action) 10%, transparent),
+            transparent 20rem
+          ),
           var(--paper);
         font-family: var(--sans);
         line-height: 1.5;
@@ -370,7 +389,10 @@
   </head>
   <body>
     <header>
-      <a class="brand" href="../PROJECT_PLAN.md">
+      <a
+        class="brand"
+        href="https://github.com/ErenTerakye/personal-finance-tracker"
+      >
         <span class="mark" aria-hidden="true">FT</span>
         <span>
           <strong>Finance Tracker</strong>
@@ -391,7 +413,11 @@
             workflows.
           </p>
         </div>
-        <a class="button" href="../../README.md">Run the local demo</a>
+        <a
+          class="button"
+          href="https://github.com/ErenTerakye/personal-finance-tracker#build-and-explore-the-demo"
+          >Run the local demo</a
+        >
       </section>
 
       <section class="lead" aria-label="Overview preview">
@@ -399,31 +425,69 @@
           <h2>Overview cashflow trend</h2>
           <p>Six months through July 2026</p>
           <ol class="tape" aria-label="Six-month cashflow summary">
-            <li style="--cash-size: 90%; --outflow-size: 54%; --net-size: 37%;">
-              <time>Feb 26</time><div class="bars" aria-hidden="true"><span class="cash"></span><span class="outflow"></span><span class="net"></span></div><strong>+$1.7k</strong><small>9 entries</small>
+            <li style="--cash-size: 90%; --outflow-size: 54%; --net-size: 37%">
+              <time>Feb 26</time>
+              <div class="bars" aria-hidden="true">
+                <span class="cash"></span><span class="outflow"></span
+                ><span class="net"></span>
+              </div>
+              <strong>+$1.7k</strong><small>9 entries</small>
             </li>
-            <li style="--cash-size: 98%; --outflow-size: 52%; --net-size: 46%;">
-              <time>Mar 26</time><div class="bars" aria-hidden="true"><span class="cash"></span><span class="outflow"></span><span class="net"></span></div><strong>+$2.1k</strong><small>10 entries</small>
+            <li style="--cash-size: 98%; --outflow-size: 52%; --net-size: 46%">
+              <time>Mar 26</time>
+              <div class="bars" aria-hidden="true">
+                <span class="cash"></span><span class="outflow"></span
+                ><span class="net"></span>
+              </div>
+              <strong>+$2.1k</strong><small>10 entries</small>
             </li>
-            <li style="--cash-size: 90%; --outflow-size: 62%; --net-size: 29%;">
-              <time>Apr 26</time><div class="bars" aria-hidden="true"><span class="cash"></span><span class="outflow"></span><span class="net"></span></div><strong>+$1.3k</strong><small>9 entries</small>
+            <li style="--cash-size: 90%; --outflow-size: 62%; --net-size: 29%">
+              <time>Apr 26</time>
+              <div class="bars" aria-hidden="true">
+                <span class="cash"></span><span class="outflow"></span
+                ><span class="net"></span>
+              </div>
+              <strong>+$1.3k</strong><small>9 entries</small>
             </li>
-            <li style="--cash-size: 93%; --outflow-size: 59%; --net-size: 34%;">
-              <time>May 26</time><div class="bars" aria-hidden="true"><span class="cash"></span><span class="outflow"></span><span class="net"></span></div><strong>+$1.6k</strong><small>11 entries</small>
+            <li style="--cash-size: 93%; --outflow-size: 59%; --net-size: 34%">
+              <time>May 26</time>
+              <div class="bars" aria-hidden="true">
+                <span class="cash"></span><span class="outflow"></span
+                ><span class="net"></span>
+              </div>
+              <strong>+$1.6k</strong><small>11 entries</small>
             </li>
-            <li style="--cash-size: 100%; --outflow-size: 62%; --net-size: 38%;">
-              <time>Jun 26</time><div class="bars" aria-hidden="true"><span class="cash"></span><span class="outflow"></span><span class="net"></span></div><strong>+$1.8k</strong><small>11 entries</small>
+            <li style="--cash-size: 100%; --outflow-size: 62%; --net-size: 38%">
+              <time>Jun 26</time>
+              <div class="bars" aria-hidden="true">
+                <span class="cash"></span><span class="outflow"></span
+                ><span class="net"></span>
+              </div>
+              <strong>+$1.8k</strong><small>11 entries</small>
             </li>
-            <li style="--cash-size: 97%; --outflow-size: 100%; --net-size: 10%;">
-              <time>Jul 26</time><div class="bars" aria-hidden="true"><span class="cash"></span><span class="outflow"></span><span class="net"></span></div><strong>-$466</strong><small>12 entries</small>
+            <li style="--cash-size: 97%; --outflow-size: 100%; --net-size: 10%">
+              <time>Jul 26</time>
+              <div class="bars" aria-hidden="true">
+                <span class="cash"></span><span class="outflow"></span
+                ><span class="net"></span>
+              </div>
+              <strong>-$466</strong><small>12 entries</small>
             </li>
           </ol>
         </article>
 
         <div class="stack">
-          <article class="kpi cash"><span>Monthly net cashflow</span><strong>-$466.24</strong><em>12 entries</em></article>
-          <article class="kpi"><span>Savings rate</span><strong>-10.4%</strong><em>$4.5k income</em></article>
-          <article class="kpi warning"><span>Budget risk</span><strong>7</strong><em>3 over, 4 near</em></article>
+          <article class="kpi cash">
+            <span>Monthly net cashflow</span><strong>-$466.24</strong
+            ><em>12 entries</em>
+          </article>
+          <article class="kpi">
+            <span>Savings rate</span><strong>-10.4%</strong
+            ><em>$4.5k income</em>
+          </article>
+          <article class="kpi warning">
+            <span>Budget risk</span><strong>7</strong><em>3 over, 4 near</em>
+          </article>
         </div>
       </section>
 
@@ -431,14 +495,32 @@
         <article class="panel">
           <h2>Trend context</h2>
           <p>Income, outflow, and net lines</p>
-          <svg role="img" aria-labelledby="trend-title trend-desc" viewBox="0 0 720 300">
+          <svg
+            role="img"
+            aria-labelledby="trend-title trend-desc"
+            viewBox="0 0 720 300"
+          >
             <title id="trend-title">Six-month financial trend preview</title>
-            <desc id="trend-desc">Line chart preview for income, outflow, and net savings.</desc>
+            <desc id="trend-desc">
+              Line chart preview for income, outflow, and net savings.
+            </desc>
             <line class="axis" x1="56" x2="680" y1="250" y2="250"></line>
             <line class="axis" x1="56" x2="56" y1="42" y2="250"></line>
-            <polyline class="line" stroke="var(--cash)" points="56,78 178,64 300,78 422,74 544,60 666,66"></polyline>
-            <polyline class="line" stroke="var(--outflow)" points="56,148 178,151 300,133 422,138 544,132 666,86"></polyline>
-            <polyline class="line" stroke="var(--action)" points="56,181 178,164 300,195 422,186 544,178 666,236"></polyline>
+            <polyline
+              class="line"
+              stroke="var(--cash)"
+              points="56,78 178,64 300,78 422,74 544,60 666,66"
+            ></polyline>
+            <polyline
+              class="line"
+              stroke="var(--outflow)"
+              points="56,148 178,151 300,133 422,138 544,132 666,86"
+            ></polyline>
+            <polyline
+              class="line"
+              stroke="var(--action)"
+              points="56,181 178,164 300,195 422,186 544,178 666,236"
+            ></polyline>
           </svg>
         </article>
 
@@ -446,15 +528,42 @@
           <h2>Budgets attention sample</h2>
           <p>July 2026</p>
           <table>
-            <caption>Budget pressure sample</caption>
+            <caption>
+              Budget pressure sample
+            </caption>
             <thead>
-              <tr><th scope="col">Category</th><th scope="col">Actual</th><th scope="col">Budget</th><th scope="col">Status</th></tr>
+              <tr>
+                <th scope="col">Category</th>
+                <th scope="col">Actual</th>
+                <th scope="col">Budget</th>
+                <th scope="col">Status</th>
+              </tr>
             </thead>
             <tbody>
-              <tr><td>Rent</td><td><strong>$3,100.00</strong></td><td>$1,600.00</td><td>over budget</td></tr>
-              <tr><td>Travel</td><td><strong>$640.00</strong></td><td>$550.00</td><td>over budget</td></tr>
-              <tr><td>Dining</td><td><strong>$164.30</strong></td><td>$170.00</td><td>near limit</td></tr>
-              <tr><td>Food</td><td><strong>$428.75</strong></td><td>$480.00</td><td>ok</td></tr>
+              <tr>
+                <td>Rent</td>
+                <td><strong>$3,100.00</strong></td>
+                <td>$1,600.00</td>
+                <td>over budget</td>
+              </tr>
+              <tr>
+                <td>Travel</td>
+                <td><strong>$640.00</strong></td>
+                <td>$550.00</td>
+                <td>over budget</td>
+              </tr>
+              <tr>
+                <td>Dining</td>
+                <td><strong>$164.30</strong></td>
+                <td>$170.00</td>
+                <td>near limit</td>
+              </tr>
+              <tr>
+                <td>Food</td>
+                <td><strong>$428.75</strong></td>
+                <td>$480.00</td>
+                <td>ok</td>
+              </tr>
             </tbody>
           </table>
         </article>

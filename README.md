@@ -4,6 +4,10 @@ A portfolio-scale, single-user, local-first finance tracker with a Typer CLI, Fa
 SQLite, account-aware CSV workflows, deterministic reports, charts, tests, and practical
 documentation.
 
+[View the hosted showcase](https://erenterakye.github.io/personal-finance-tracker/).
+GitHub Pages presents the project’s static reviewer showcase; the complete local-first application
+continues to run locally with FastAPI and SQLite.
+
 The tracker uses one unified **Activity** ledger. Every opening balance, income, expense, transfer,
 and observed-balance adjustment belongs to an account and explains both cashflow and net-worth
 movement. Balances are calculated from ordered activity; there is no unassigned activity or
