@@ -28,7 +28,7 @@
   "dependencies": {
     "@fontsource-variable/instrument-sans": "^5.2.8",
     "@fontsource/ibm-plex-mono": "^5.2.7",
-    "lucide-react": "^1.24.0",
+    "lucide-react": "^1.27.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
